@@ -98,3 +98,25 @@ What the difficulties mean (the user said: what you built so far feels like 簡�
 - Don't edit index.html, sw.js, core.js or style.css — the lead adds the script tags.
 - Tests as before: node --check, `node tools/smoke.js <id> 40`, `node tools/check_<id>.js` proving 簡單/普通/困難
   levels 1–40 winnable (bot/solver), no-input loses where it applies, endless ends for a no-input player.
+
+## v4: art restyle — 卡通 Q 版 (user approved preview A)
+
+Reference: `tools/preview/style_a.html` (code) and `tools/preview/style_a.png` (render). Read the code: it shows the
+exact drawing technique. Apply the same style to every character, enemy, prop and background in your games.
+
+Style rules:
+- Thick dark outline on everything (`#2a1a14`, lineWidth ≈ 3 at phone scale, scaled with object size).
+- Characters are chibi: head ≈ as big as the body, big round eyes with highlight, simple rounded limbs,
+  short legs; soft flat fills plus one lighter highlight shape — no realistic gradients on characters.
+- Props/UI-in-canvas (gates, blocks, tubes, tiles, buttons): chunky rounded shapes, outline, a white gloss strip,
+  bold big numbers with a dark text stroke (strokeText then fillText).
+- Backgrounds: themed, illustrated, with depth layers (sky gradient, silhouettes with outline and small details,
+  ground). Each game gets a background that fits its theme, e.g.:
+  zombie — apocalyptic city (smoky orange sky, ruined buildings with lit windows, burning wrecks, cracked road,
+  barricades), the world scrolls so the squad walks forward; crowd — sunny floating track; runner — jungle temple;
+  survivor — haunted meadow; hole — toy-like city; pins — cosy lab; water — potion shop shelves, etc.
+- Living details are welcome (smoke drifting, flicker, clouds) but cache static layers in an offscreen canvas;
+  keep 60 fps on phone.
+- Gameplay, layout hit-areas, generators and difficulty must NOT change. Only drawing code. All check scripts
+  must still pass unchanged.
+- Text the player sees stays Traditional Chinese.

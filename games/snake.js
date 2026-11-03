@@ -12,47 +12,125 @@
   const HS_PLAN = 9;         // speed the solvability planner assumes (safety margin)
   const HUES = ['#4cd986', '#3de0e0', '#4c9bff', '#5560c8', '#b26bff', '#ff7ac8', '#ff8f3d', '#ff5d6c'];
 
-  // ---------- art (swap these for the chibi restyle) ----------
-  function drawBackground(g, W, H, ox, lw, scroll, U) {
-    const gr = g.createLinearGradient(0, 0, 0, H);
-    gr.addColorStop(0, '#151a3d'); gr.addColorStop(1, '#2a1846');
-    g.fillStyle = gr; g.fillRect(0, 0, W, H);
-    g.fillStyle = 'rgba(255,255,255,0.03)';
-    for (let i = 0; i < LANES; i += 2) g.fillRect(ox + i * lw, 0, lw, H);
-    g.strokeStyle = 'rgba(140,160,255,0.08)'; g.lineWidth = 1;
-    const step = lw * 2, off = ((scroll * lw) % step + step) % step;
-    for (let y = off - step; y < H; y += step) { g.beginPath(); g.moveTo(ox, y); g.lineTo(ox + LANES * lw, y); g.stroke(); }
-    g.fillStyle = 'rgba(0,0,0,0.25)';
-    g.fillRect(0, 0, ox, H); g.fillRect(ox + LANES * lw, 0, W - ox - LANES * lw, H);
-    g.fillStyle = 'rgba(140,160,255,0.35)';
-    g.fillRect(ox - 2, 0, 2, H); g.fillRect(ox + LANES * lw, 0, 2, H);
+  // ---------- art: 卡通 Q 版 (thick outlines, cartoon snake with a face, garden track) ----------
+  const OL = '#2a1a14';
+  function U_otext(g, str, x, y, size, col, lw, align) {
+    g.font = '900 ' + size + 'px -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif';
+    g.textAlign = align || 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+    g.lineWidth = lw || 4; g.strokeStyle = OL; g.strokeText(str, x, y);
+    g.fillStyle = col; g.fillText(str, x, y);
   }
-  function drawSnakeBall(g, x, y, r, head) {
-    const gr = g.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
-    gr.addColorStop(0, '#fff6b8'); gr.addColorStop(0.5, '#ffcc4d'); gr.addColorStop(1, '#e08a1e');
-    g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill();
-    if (!head) return;
-    for (let i = -1; i <= 1; i += 2) {
-      g.fillStyle = '#fff'; g.beginPath(); g.arc(x + i * r * 0.38, y - r * 0.22, r * 0.3, 0, 6.283); g.fill();
-      g.fillStyle = '#1b1f3b'; g.beginPath(); g.arc(x + i * r * 0.38, y - r * 0.3, r * 0.15, 0, 6.283); g.fill();
+  let bgTile = null, bgKey = '';
+  // one scrolling garden tile (4 lanes tall): checker grass lanes, flowers, pebbles, hedges on the sides
+  function buildTile(W, ox, lw, U) {
+    const dpr = Math.min(2, (typeof window !== 'undefined' && window.devicePixelRatio) || 1);
+    const T = Math.round(lw * 4);
+    const c = document.createElement('canvas');
+    c.width = Math.ceil(W * dpr); c.height = Math.ceil(T * dpr);
+    const x = c.getContext('2d'); x.scale(dpr, dpr);
+    const tw = LANES * lw;
+    // hedges
+    x.fillStyle = '#3f9a4a'; x.fillRect(0, 0, W, T);
+    for (let k = 0; k < 4; k++) for (const side of [0, 1]) {
+      const bx = side ? ox + tw + 6 : ox - 6, by = k * lw + lw * 0.5;
+      x.beginPath(); x.arc(bx, by, lw * 0.42, 0, 6.283); x.fillStyle = '#4fb85a'; x.fill(); x.lineWidth = 2.5; x.strokeStyle = OL; x.stroke();
+      x.fillStyle = 'rgba(255,255,255,0.25)'; x.beginPath(); x.arc(bx - lw * 0.12, by - lw * 0.14, lw * 0.12, 0, 6.283); x.fill();
+      if ((k + side) % 2 === 0) { x.beginPath(); x.arc(bx + (side ? 4 : -4), by + lw * 0.1, 4, 0, 6.283); x.fillStyle = '#ff7ab0'; x.fill(); x.lineWidth = 1.5; x.stroke(); }
     }
-    g.fillStyle = '#ff7ac8'; g.beginPath(); g.ellipse(x, y + r * 0.35, r * 0.18, r * 0.1, 0, 0, 6.283); g.fill();
+    // checker grass lanes
+    for (let j = 0; j < 4; j++) for (let i = 0; i < LANES; i++) {
+      x.fillStyle = (i + j) % 2 ? '#8fdc6a' : '#a2e57a';
+      x.fillRect(ox + i * lw, j * lw, lw, lw);
+    }
+    // tufts, flowers, pebbles (fixed pattern so it scrolls seamlessly)
+    for (let k = 0; k < 14; k++) {
+      const px = ox + ((k * 0.37 + 0.13) % 1) * tw, py = ((k * 0.61 + 0.07) % 1) * T;
+      if (k % 3 === 0) { x.strokeStyle = '#5fb04a'; x.lineWidth = 2; x.lineCap = 'round'; x.beginPath(); x.moveTo(px - 4, py); x.lineTo(px - 2, py - 7); x.moveTo(px, py); x.lineTo(px + 1, py - 9); x.moveTo(px + 4, py); x.lineTo(px + 3, py - 6); x.stroke(); x.lineCap = 'butt'; }
+      else if (k % 3 === 1) { x.fillStyle = 'rgba(255,255,255,0.75)'; for (let a = 0; a < 5; a++) { x.beginPath(); x.arc(px + Math.cos(a * 1.257) * 3, py + Math.sin(a * 1.257) * 3, 2.2, 0, 6.283); x.fill(); } x.fillStyle = '#ffd34a'; x.beginPath(); x.arc(px, py, 1.8, 0, 6.283); x.fill(); }
+      else { x.beginPath(); x.ellipse(px, py, 4, 3, 0, 0, 6.283); x.fillStyle = '#c9c2b0'; x.fill(); x.lineWidth = 1.2; x.strokeStyle = 'rgba(42,26,20,0.5)'; x.stroke(); }
+    }
+    // track edges
+    x.fillStyle = OL; x.fillRect(ox - 3, 0, 3, T); x.fillRect(ox + tw, 0, 3, T);
+    x.fillStyle = 'rgba(255,255,255,0.35)'; x.fillRect(ox, 0, 2, T); x.fillRect(ox + tw - 2, 0, 2, T);
+    bgTile = { c, T };
   }
+  function drawBackground(g, W, H, ox, lw, scroll, U) {
+    const key = W + ',' + ox + ',' + lw;
+    if (!bgTile || bgKey !== key) { bgKey = key; buildTile(W, ox, lw, U); }
+    const T = bgTile.T, off = ((scroll * lw) % T + T) % T;
+    for (let y = off - T; y < H; y += T) g.drawImage(bgTile.c, 0, y, W, T);
+  }
+  // golden food orb (pickups)
+  function drawSnakeBall(g, x, y, r, head) {
+    g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fillStyle = '#ffcc4d'; g.fill();
+    g.fillStyle = '#f0a43a'; g.beginPath(); g.arc(x + r * 0.12, y + r * 0.15, r * 0.8, 0, Math.PI); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.8)'; g.beginPath(); g.ellipse(x - r * 0.32, y - r * 0.35, r * 0.28, r * 0.17, -0.6, 0, 6.283); g.fill();
+    g.beginPath(); g.arc(x, y, r, 0, 6.283); g.lineWidth = Math.max(2, r * 0.22); g.strokeStyle = OL; g.stroke();
+  }
+  // cartoon snake: one outlined tube of body balls, spots, big-eyed head with a flicking tongue
   function drawHero(g, segs, n, lenShown, sx, sy, r, t) {
-    for (let i = n - 1; i >= 1; i--) drawSnakeBall(g, segs[i * 2], segs[i * 2 + 1], r * (0.92 - Math.min(0.2, i * 0.01)), false);
-    drawSnakeBall(g, sx, sy, r * 1.08, true);
+    const lw = Math.max(2.2, r * 0.17), BODY = '#7ed957', DARK = '#5bb53e';
+    const rad = (i) => r * (0.92 - Math.min(0.28, i * 0.012));
+    // the balls are joined into one smooth body tube: all outlines first, then all fills
+    const tube = (col, extra) => {
+      if (n < 2) return;
+      g.lineCap = 'round'; g.lineJoin = 'round';
+      g.beginPath(); g.moveTo(sx, sy);
+      for (let i = 1; i < n; i++) g.lineTo(segs[i * 2], segs[i * 2 + 1]);
+      g.strokeStyle = col; g.lineWidth = rad(n - 1) * 1.7 + extra; g.stroke();
+      g.lineCap = 'butt';
+    };
+    tube(OL, lw * 2);
+    g.fillStyle = OL;
+    for (let i = n - 1; i >= 1; i--) { g.beginPath(); g.arc(segs[i * 2], segs[i * 2 + 1], rad(i) + lw, 0, 6.283); g.fill(); }
+    tube(BODY, 0);
+    for (let i = n - 1; i >= 1; i--) {
+      const x = segs[i * 2], y = segs[i * 2 + 1], rr = rad(i);
+      g.fillStyle = BODY; g.beginPath(); g.arc(x, y, rr, 0, 6.283); g.fill();
+      if (i % 2 === 0) { g.fillStyle = DARK; g.beginPath(); g.ellipse(x, y, rr * 0.55, rr * 0.4, 0, 0, 6.283); g.fill(); }
+      else { g.fillStyle = '#ffe680'; g.beginPath(); g.arc(x - rr * 0.3, y - rr * 0.15, rr * 0.18, 0, 6.283); g.arc(x + rr * 0.32, y + rr * 0.1, rr * 0.14, 0, 6.283); g.fill(); }
+      g.fillStyle = 'rgba(255,255,255,0.3)'; g.beginPath(); g.ellipse(x - rr * 0.4, y - rr * 0.35, rr * 0.22, rr * 0.12, -0.6, 0, 6.283); g.fill();
+    }
+    // tongue (flicks out every ~1.4 s)
+    const R = r * 1.3, flick = (t % 1.4) < 0.35;
+    if (flick) {
+      const L = R * (0.55 + 0.25 * Math.sin(t * 40));
+      g.strokeStyle = OL; g.lineWidth = Math.max(4, R * 0.2); g.lineCap = 'round';
+      g.beginPath(); g.moveTo(sx, sy - R * 0.8); g.lineTo(sx, sy - R * 0.8 - L); g.stroke();
+      g.strokeStyle = '#ff4d6a'; g.lineWidth = Math.max(2, R * 0.1);
+      g.beginPath(); g.moveTo(sx, sy - R * 0.8); g.lineTo(sx, sy - R * 0.8 - L); g.moveTo(sx, sy - R * 0.8 - L); g.lineTo(sx - R * 0.14, sy - R * 0.95 - L);
+      g.moveTo(sx, sy - R * 0.8 - L); g.lineTo(sx + R * 0.14, sy - R * 0.95 - L); g.stroke(); g.lineCap = 'butt';
+    }
+    // head
+    g.beginPath(); g.ellipse(sx, sy, R * 1.12, R, 0, 0, 6.283); g.fillStyle = BODY; g.fill();
+    g.lineWidth = lw; g.strokeStyle = OL; g.stroke();
+    g.fillStyle = 'rgba(255,255,255,0.35)'; g.beginPath(); g.ellipse(sx - R * 0.5, sy - R * 0.5, R * 0.28, R * 0.14, -0.5, 0, 6.283); g.fill();
+    const blink = (t % 3.4) > 3.25;
+    for (let i = -1; i <= 1; i += 2) {
+      const ex = sx + i * R * 0.45, ey = sy - R * 0.2;
+      if (blink) { g.strokeStyle = OL; g.lineWidth = lw; g.lineCap = 'round'; g.beginPath(); g.moveTo(ex - R * 0.22, ey); g.lineTo(ex + R * 0.22, ey); g.stroke(); g.lineCap = 'butt'; continue; }
+      g.beginPath(); g.ellipse(ex, ey, R * 0.3, R * 0.34, 0, 0, 6.283); g.fillStyle = '#fffbe8'; g.fill(); g.lineWidth = lw * 0.8; g.strokeStyle = OL; g.stroke();
+      g.fillStyle = OL; g.beginPath(); g.arc(ex + i * R * 0.04, ey - R * 0.06, R * 0.17, 0, 6.283); g.fill();
+      g.fillStyle = '#fff'; g.beginPath(); g.arc(ex + i * R * 0.04 - R * 0.06, ey - R * 0.13, R * 0.065, 0, 6.283); g.fill();
+    }
+    g.fillStyle = 'rgba(255,110,140,0.55)';
+    g.beginPath(); g.ellipse(sx - R * 0.8, sy + R * 0.3, R * 0.17, R * 0.1, 0, 0, 6.283); g.ellipse(sx + R * 0.8, sy + R * 0.3, R * 0.17, R * 0.1, 0, 0, 6.283); g.fill();
+    g.strokeStyle = OL; g.lineWidth = lw * 0.8; g.lineCap = 'round';
+    g.beginPath(); g.arc(sx, sy + R * 0.32, R * 0.2, 0.25, Math.PI - 0.25); g.stroke(); g.lineCap = 'butt';
   }
+  // chunky jelly block with a big outlined number
   function drawBlock(g, x, y, w, h, v, col, pulse, U) {
     const s = 1 + pulse * 0.06;
     const cx = x + w / 2, cy = y + h / 2;
-    const ww = w * s, hh = h * s;
-    const gr = g.createLinearGradient(0, cy - hh / 2, 0, cy + hh / 2);
-    gr.addColorStop(0, U.shade(col, 0.3)); gr.addColorStop(1, U.shade(col, -0.2));
-    g.fillStyle = 'rgba(0,0,0,0.25)'; U.rr(g, cx - ww / 2 + 2, cy - hh / 2 + 4, ww, hh, w * 0.16); g.fill();
-    g.fillStyle = gr; U.rr(g, cx - ww / 2, cy - hh / 2, ww, hh, w * 0.16); g.fill();
-    g.fillStyle = 'rgba(255,255,255,0.22)'; U.rr(g, cx - ww / 2 + 3, cy - hh / 2 + 3, ww - 6, hh * 0.3, w * 0.1); g.fill();
-    const fs = Math.min(w * 0.42, w * 1.6 / Math.max(2, String(v).length));
-    U.text(g, String(v), cx, cy + 2, fs, '#ffffff', 'center', 900);
+    const ww = w * s, hh = h * s, rad = w * 0.18, lw = Math.max(2.5, w * 0.04);
+    const x0 = cx - ww / 2, y0 = cy - hh / 2;
+    g.fillStyle = 'rgba(0,0,0,0.2)'; U.rr(g, x0 + 3, y0 + 6, ww, hh, rad); g.fill();
+    U.rr(g, x0, y0, ww, hh, rad); g.fillStyle = U.shade(col, -0.28); g.fill();
+    U.rr(g, x0, y0, ww, hh - Math.max(4, hh * 0.1), rad); g.fillStyle = col; g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.45)'; U.rr(g, x0 + ww * 0.1, y0 + hh * 0.08, ww * 0.8, hh * 0.16, hh * 0.08); g.fill();
+    U.rr(g, x0, y0, ww, hh, rad); g.lineWidth = lw; g.strokeStyle = OL; g.stroke();
+    const fs = Math.min(w * 0.44, w * 1.6 / Math.max(2, String(v).length));
+    U_otext(g, String(v), cx, cy + 1, Math.round(fs), '#ffffff', Math.max(3, fs * 0.16));
   }
 
   // ---------- level plan ----------
@@ -438,16 +516,20 @@
         if (!ENDLESS && plan.dist < yTop) {
           const fy = SYw(plan.dist), sq = lw / 4;
           for (let i = 0; i < LANES * 4; i++) for (let j = 0; j < 2; j++) {
-            g.fillStyle = (i + j) % 2 ? '#ffffff' : '#1b1f3b'; g.fillRect(ox + i * sq, fy - sq * (j + 1), sq, sq);
+            g.fillStyle = (i + j) % 2 ? '#ffffff' : '#2a1a14'; g.fillRect(ox + i * sq, fy - sq * (j + 1), sq, sq);
           }
-          U.text(g, '🏁 終點', W / 2, fy - sq * 2 - 16, 18, '#ffffff', 'center', 900);
+          g.lineWidth = 3; g.strokeStyle = OL; g.strokeRect(ox, fy - sq * 2, LANES * lw, sq * 2);
+          U.rr(g, W / 2 - 52, fy - sq * 2 - 32, 104, 30, 15); g.fillStyle = '#ff5d6c'; g.fill(); g.lineWidth = 3; g.strokeStyle = OL; g.stroke();
+          U_otext(g, '🏁 終點', W / 2, fy - sq * 2 - 17, 17, '#ffffff', 4);
         }
         // walls
         for (const w of plan.walls) {
           if (w.y1 < yBot || w.y0 > yTop) continue;
           const x = SX(w.b), y0 = SYw(w.y1), y1 = SYw(w.y0);
-          g.fillStyle = 'rgba(200,220,255,0.25)'; U.rr(g, x - 5, y0, 10, y1 - y0, 5); g.fill();
-          g.fillStyle = '#e8eeff'; U.rr(g, x - 3, y0, 6, y1 - y0, 3); g.fill();
+          g.fillStyle = 'rgba(0,0,0,0.18)'; U.rr(g, x - 3, y0 + 5, 10, y1 - y0, 5); g.fill();
+          U.rr(g, x - 5, y0, 10, y1 - y0, 5); g.fillStyle = '#d99a55'; g.fill(); g.lineWidth = 2.5; g.strokeStyle = OL; g.stroke();
+          g.fillStyle = 'rgba(255,240,200,0.6)'; g.fillRect(x - 3, y0 + 4, 2, Math.max(0, y1 - y0 - 8));
+          for (let py = y0 + 6; py < y1 - 4; py += lw * 0.5) { U.rr(g, x - 7, py, 14, 8, 3); g.fillStyle = '#b8743a'; g.fill(); g.lineWidth = 2; g.strokeStyle = OL; g.stroke(); }
         }
         // pickups
         for (const e of balls) {
@@ -456,7 +538,7 @@
             const it = e.items[l]; if (!it || it.taken) continue;
             const x = SX(l + 0.5), y = SYw(e.y) + Math.sin(anim * 4 + l) * 2;
             drawSnakeBall(g, x, y, lw * 0.17, false);
-            U.text(g, String(it.v), x, y - lw * 0.36, Math.max(11, lw * 0.22), '#ffffff', 'center', 900);
+            U_otext(g, String(it.v), x, y - lw * 0.36, Math.round(Math.max(12, lw * 0.24)), '#ffffff', 3.5);
           }
         }
         // blocks
@@ -475,7 +557,7 @@
           const n = bodyPoints();
           drawHero(g, segs, n, S.len, SX(S.x), headSY, lw * HR, anim);
           const tx = SX(S.x), ty = headSY - lw * 0.5;
-          U.text(g, String(S.len), tx, ty, Math.max(14, lw * 0.26), '#ffffff', 'center', 900);
+          U_otext(g, String(S.len), tx, ty, Math.round(Math.max(15, lw * 0.27)), '#ffffff', 4);
         }
         for (let i = 0; i < parts.length; i++) {
           const p = parts[i]; if (!p.on) continue;
@@ -483,32 +565,34 @@
           g.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
         }
         g.globalAlpha = 1;
-        for (const f of floats) { g.globalAlpha = 1 - f.t / 0.9; U.text(g, f.text, f.x, f.y - f.t * 40, 18, f.col, 'center', 900); }
+        for (const f of floats) { g.globalAlpha = 1 - f.t / 0.9; U_otext(g, f.text, f.x, f.y - f.t * 40, 19, f.col, 4); }
         g.globalAlpha = 1;
         g.restore();
         if (flash > 0) { g.fillStyle = 'rgba(255,60,80,' + flash + ')'; g.fillRect(0, 0, W, H); }
         // HUD
-        g.fillStyle = 'rgba(10,12,35,0.55)'; U.rr(g, 8, 6, W - 16, 34, 12); g.fill();
-        U.text(g, '🐍 ' + S.len, 20, 23, 17, '#ffcc4d', 'left', 900);
+        g.fillStyle = 'rgba(42,26,20,0.8)'; U.rr(g, 8, 6, W - 16, 34, 17); g.fill();
+        U_otext(g, '🐍 ' + S.len, 20, 23, 17, '#ffcc4d', 3, 'left');
         if (ENDLESS) {
-          U.text(g, '分數 ' + score(), W / 2, 23, 16, '#ffffff', 'center', 900);
-          U.text(g, '最高 ' + Math.max(api.best || 0, score()), W - 20, 23, 14, '#ffe27a', 'right', 800);
+          U_otext(g, '分數 ' + score(), W / 2, 23, 16, '#ffffff', 3);
+          U_otext(g, '最高 ' + Math.max(api.best || 0, score()), W - 20, 23, 14, '#ffe27a', 3, 'right');
         } else {
           const k = U.clamp(S.y / plan.dist, 0, 1), bx = W * 0.36, bw = W * 0.56;
-          g.fillStyle = 'rgba(255,255,255,0.15)'; U.rr(g, bx, 18, bw, 10, 5); g.fill();
-          g.fillStyle = '#4cd986'; U.rr(g, bx, 18, Math.max(10, bw * k), 10, 5); g.fill();
+          g.fillStyle = 'rgba(255,255,255,0.18)'; U.rr(g, bx, 17, bw, 12, 6); g.fill();
+          g.fillStyle = '#7ed957'; U.rr(g, bx, 17, Math.max(12, bw * k), 12, 6); g.fill();
+          g.fillStyle = 'rgba(255,255,255,0.45)'; U.rr(g, bx + 3, 19, Math.max(6, bw * k - 6), 3, 1.5); g.fill();
+          g.lineWidth = 2; g.strokeStyle = '#000'; U.rr(g, bx, 17, bw, 12, 6); g.stroke();
           U.text(g, '🏁', bx + bw + 4, 23, 13, '#fff', 'left', 800);
         }
         if (S.start > 0 && !S.over) {
           g.globalAlpha = Math.min(1, S.start * 2);
-          U.text(g, '準備！', W / 2, H * 0.45, 34, '#ffffff', 'center', 900);
+          U_otext(g, '準備！', W / 2, H * 0.45, 36, '#ffffff', 6);
           g.globalAlpha = 1;
         }
         if (hintT > 0 && !S.drag) {
           g.globalAlpha = Math.min(1, hintT) * (0.6 + 0.4 * Math.sin(anim * 5));
           const k = Math.sin(anim * 2.5);
           U.text(g, '👆', W / 2 + k * lw * 1.2, headSY + lw * 1.4, 34, '#fff', 'center', 900);
-          U.text(g, '← 拖曳 →', W / 2, headSY + lw * 2.3, 16, '#ffffff', 'center', 900);
+          U_otext(g, '← 拖曳 →', W / 2, headSY + lw * 2.3, 17, '#ffffff', 4);
           g.globalAlpha = 1;
         }
         if (banner) {
@@ -517,7 +601,7 @@
           const sz = Math.min(40, W / 9) * U.easeOutBack(k);
           g.font = '900 ' + sz + 'px -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif';
           g.textAlign = 'center'; g.textBaseline = 'middle';
-          g.lineWidth = 6; g.strokeStyle = 'rgba(20,10,40,0.85)'; g.lineJoin = 'round';
+          g.lineWidth = 7; g.strokeStyle = OL; g.lineJoin = 'round';
           g.strokeText(banner.text, W / 2, H * 0.4); g.fillStyle = banner.col; g.fillText(banner.text, W / 2, H * 0.4);
           g.globalAlpha = 1;
         }

@@ -138,6 +138,7 @@
     return { n, edges: finalEdges, solX: xs, solY: ys, startX: sx, startY: sy, startCross: best };
   }
 
+  const OL = '#2a1a14';   // cartoon outline colour (卡通 Q 版 style)
   const ROPE = ['#ff6b6b', '#ffb84d', '#ffe066', '#69db7c', '#4dabf7', '#9775fa', '#f783ac', '#38d9a9'];
 
   MG.register({
@@ -259,27 +260,44 @@
         else paintBg(g, W, H);
       }
       function paintBg(c, W, H) {
-        const gr = c.createLinearGradient(0, 0, 0, H);
-        gr.addColorStop(0, '#2d8f8a'); gr.addColorStop(1, '#16525e');
-        c.fillStyle = gr; c.fillRect(0, 0, W, H);
-        // wooden board
+        c.lineJoin = 'round';
+        // cosy playroom: striped wallpaper, a window, wooden floor
+        c.fillStyle = '#ffe9c7'; c.fillRect(0, 0, W, H);
+        c.fillStyle = '#ffdcb0';
+        for (let x = 0; x < W; x += 36) c.fillRect(x, 0, 18, H);
+        c.fillStyle = 'rgba(255,140,120,0.35)';
+        for (let x = 9; x < W; x += 36) for (let y = 20; y < H; y += 46) { c.beginPath(); c.arc(x + 18, y + (x % 72 ? 23 : 0), 3, 0, 7); c.fill(); }
+        const fy = H * 0.86;
+        c.fillStyle = '#c98a52'; c.fillRect(0, fy, W, H - fy);
+        c.strokeStyle = OL; c.lineWidth = 3; c.beginPath(); c.moveTo(0, fy); c.lineTo(W, fy); c.stroke();
+        c.lineWidth = 2; c.strokeStyle = 'rgba(42,26,20,0.45)';
+        for (let x = 0; x < W + 60; x += 58) { c.beginPath(); c.moveTo(x, fy); c.lineTo(x - 30, H); c.stroke(); }
+        c.fillStyle = '#e8b27a'; c.fillRect(0, fy - 10, W, 10); c.strokeStyle = OL; c.lineWidth = 2.5; c.strokeRect(-4, fy - 10, W + 8, 10);
+        // window peeking above the board
+        const wx = W * 0.62, ww = Math.min(110, W * 0.3), wy = 8, wh = Math.max(0, ay - 36);
+        if (wh > 30) {
+          U.rr(c, wx, wy, ww, wh, 8); c.fillStyle = '#9fdcff'; c.fill(); c.lineWidth = 4; c.strokeStyle = OL; c.stroke();
+          c.fillStyle = '#fff'; c.beginPath(); c.arc(wx + ww * 0.3, wy + wh * 0.55, 9, 0, 7); c.arc(wx + ww * 0.42, wy + wh * 0.45, 11, 0, 7); c.arc(wx + ww * 0.55, wy + wh * 0.58, 8, 0, 7); c.fill();
+          c.lineWidth = 3; c.beginPath(); c.moveTo(wx + ww / 2, wy); c.lineTo(wx + ww / 2, wy + wh); c.stroke();
+        }
+        // wooden board with thick outline and brass nails
         const bx = ax - 12, by = ay - 12, bw = aw + 24, bh = ah + 24;
-        c.fillStyle = 'rgba(0,0,0,0.25)'; U.rr(c, bx + 2, by + 6, bw, bh, 22); c.fill();
-        const wg = c.createLinearGradient(bx, by, bx + bw, by + bh);
-        wg.addColorStop(0, '#f3d3a1'); wg.addColorStop(1, '#ddb27a');
-        c.fillStyle = wg; U.rr(c, bx, by, bw, bh, 22); c.fill();
-        c.strokeStyle = 'rgba(150,95,45,0.18)'; c.lineWidth = 2;
+        c.fillStyle = 'rgba(42,26,20,0.3)'; U.rr(c, bx + 4, by + 8, bw, bh, 22); c.fill();
+        U.rr(c, bx - 6, by - 6, bw + 12, bh + 12, 26); c.fillStyle = '#b8743c'; c.fill(); c.lineWidth = 4; c.strokeStyle = OL; c.stroke();
+        U.rr(c, bx, by, bw, bh, 20); c.fillStyle = '#f6d9a8'; c.fill(); c.lineWidth = 3; c.stroke();
+        c.strokeStyle = 'rgba(160,100,50,0.22)'; c.lineWidth = 2;
         for (let i = 0; i < 16; i++) {
           const yy = by + 14 + i * (bh - 28) / 15;
           c.beginPath(); c.moveTo(bx + 10, yy);
           c.bezierCurveTo(bx + bw * 0.3, yy + 5 * Math.sin(i), bx + bw * 0.6, yy - 6 * Math.cos(i * 1.7), bx + bw - 10, yy + 2);
           c.stroke();
         }
-        c.strokeStyle = 'rgba(255,255,255,0.45)'; c.lineWidth = 2;
-        U.rr(c, bx + 3, by + 3, bw - 6, bh - 6, 19); c.stroke();
+        c.fillStyle = 'rgba(255,255,255,0.4)'; U.rr(c, bx + 10, by + 6, bw - 20, 8, 4); c.fill();
+        const nail = (x, y) => { c.beginPath(); c.arc(x, y, 5, 0, 7); c.fillStyle = '#ffcc4d'; c.fill(); c.lineWidth = 2; c.strokeStyle = OL; c.stroke(); c.fillStyle = '#fff6c8'; c.beginPath(); c.arc(x - 1.5, y - 1.5, 1.6, 0, 7); c.fill(); };
+        nail(bx + 2, by + 2); nail(bx + bw - 2, by + 2); nail(bx + 2, by + bh - 2); nail(bx + bw - 2, by + bh - 2);
       }
 
-      const DASH = [5, 6];
+      const DASH = [5, 7];
       const NODASH = [];
       function rope(g, i) {
         const e = edges[i];
@@ -288,54 +306,77 @@
         const sag = won ? 0 : Math.min(14, len * 0.05) * (1 + 0.08 * Math.sin(time * 2 + i));
         const mx = (x1 + x2) / 2, my = (y1 + y2) / 2 + sag;
         const bad = flags[i] === 1;
-        const base = won ? '#4cd986' : (bad ? '#ff4d5e' : '#43c97a');
-        const dark = won ? '#239b58' : (bad ? '#b8202f' : '#238a51');
-        const lw = Math.max(5, pegR * 0.52);
+        const base = won ? '#5ee08f' : (bad ? '#ff5d6c' : '#5ad48a');
+        const lw = Math.max(5, pegR * 0.5);
         g.lineCap = 'round';
-        g.strokeStyle = 'rgba(0,0,0,0.22)'; g.lineWidth = lw + 2;
-        g.beginPath(); g.moveTo(x1 + 2, y1 + 5); g.quadraticCurveTo(mx + 2, my + 5, x2 + 2, y2 + 5); g.stroke();
-        g.strokeStyle = dark; g.lineWidth = lw + 2;
-        g.beginPath(); g.moveTo(x1, y1); g.quadraticCurveTo(mx, my, x2, y2); g.stroke();
-        g.strokeStyle = base; g.lineWidth = lw;
-        g.stroke();
-        g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = lw * 0.42;
-        g.setLineDash(DASH); g.lineDashOffset = i * 3;
-        g.stroke();
+        g.strokeStyle = 'rgba(42,26,20,0.22)'; g.lineWidth = lw + 3;
+        g.beginPath(); g.moveTo(x1 + 2, y1 + 6); g.quadraticCurveTo(mx + 2, my + 6, x2 + 2, y2 + 6); g.stroke();
+        g.beginPath(); g.moveTo(x1, y1); g.quadraticCurveTo(mx, my, x2, y2);
+        g.strokeStyle = OL; g.lineWidth = lw + 5; g.stroke();
+        g.strokeStyle = base; g.lineWidth = lw; g.stroke();
+        // twisted-rope stripes
+        g.strokeStyle = U.shade(base, -0.25); g.lineWidth = lw * 0.55;
+        g.setLineDash(DASH); g.lineDashOffset = i * 3; g.stroke();
         g.setLineDash(NODASH);
+        g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = Math.max(1.5, lw * 0.22);
+        g.beginPath(); g.moveTo(x1, y1 - lw * 0.22); g.quadraticCurveTo(mx, my - lw * 0.22, x2, y2 - lw * 0.22); g.stroke();
         if (flash[i] > 0) {
           g.strokeStyle = 'rgba(255,255,255,' + (flash[i] * 0.8).toFixed(3) + ')'; g.lineWidth = lw + 6 * flash[i];
-          g.stroke();
+          g.beginPath(); g.moveTo(x1, y1); g.quadraticCurveTo(mx, my, x2, y2); g.stroke();
         }
       }
 
+      // pegs are little Q critters: worried while any of their ropes cross, smiling once free
+      const nodeBad = new Uint8Array(n);
       function peg(g, i) {
-        const x = SX(dxs[i]), y = SY(dys[i]);
+        const x = SX(dxs[i]), y0 = SY(dys[i]);
         const lift = i === drag ? 1 : 0;
         const r = pegR * (1 + lift * 0.18 + pulse[i] * 0.15 * Math.sin(pulse[i] * 10));
-        g.fillStyle = 'rgba(0,0,0,' + (0.25 + lift * 0.1) + ')';
-        g.beginPath(); g.ellipse(x + 2 + lift * 4, y + 4 + lift * 8, r, r * 0.8, 0, 0, Math.PI * 2); g.fill();
+        const y = y0 - lift * 5;
+        g.fillStyle = 'rgba(42,26,20,' + (0.25 + lift * 0.1) + ')';
+        g.beginPath(); g.ellipse(x + 2 + lift * 4, y0 + r * 0.55 + lift * 8, r * 0.95, r * 0.4, 0, 0, 7); g.fill();
         const c = pegCol[i];
-        const gr = g.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
-        gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.35, U.shade(c, 0.25)); gr.addColorStop(1, U.shade(c, -0.3));
-        g.fillStyle = gr;
-        g.beginPath(); g.arc(x, y - lift * 4, r, 0, Math.PI * 2); g.fill();
-        g.fillStyle = U.shade(c, -0.45);
-        g.beginPath(); g.arc(x, y - lift * 4, r * 0.38, 0, Math.PI * 2); g.fill();
-        g.fillStyle = 'rgba(255,255,255,0.8)';
-        g.beginPath(); g.ellipse(x - r * 0.35, y - lift * 4 - r * 0.45, r * 0.3, r * 0.17, -0.6, 0, Math.PI * 2); g.fill();
+        const lw = Math.max(2, r * 0.17);
+        g.lineWidth = lw; g.strokeStyle = OL; g.lineJoin = 'round';
+        // ears
+        for (let sd = -1; sd <= 1; sd += 2) {
+          g.beginPath(); g.ellipse(x + sd * r * 0.62, y - r * 0.78, r * 0.3, r * 0.36, sd * 0.4, 0, 7); g.fillStyle = c; g.fill(); g.stroke();
+        }
+        g.beginPath(); g.arc(x, y, r, 0, 7); g.fillStyle = c; g.fill(); g.stroke();
+        g.fillStyle = U.shade(c, 0.45); g.beginPath(); g.ellipse(x, y + r * 0.38, r * 0.55, r * 0.38, 0, 0, 7); g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.7)'; g.beginPath(); g.ellipse(x - r * 0.42, y - r * 0.48, r * 0.24, r * 0.13, -0.6, 0, 7); g.fill();
+        const sad = !won && nodeBad[i];
+        const ex = r * 0.36, ey = y - r * 0.08, es = r * 0.2;
+        g.fillStyle = OL;
+        g.beginPath(); g.ellipse(x - ex, ey, es * 0.8, es, 0, 0, 7); g.ellipse(x + ex, ey, es * 0.8, es, 0, 0, 7); g.fill();
+        g.fillStyle = '#fff';
+        g.beginPath(); g.arc(x - ex + es * 0.25, ey - es * 0.35, es * 0.35, 0, 7); g.arc(x + ex + es * 0.25, ey - es * 0.35, es * 0.35, 0, 7); g.fill();
+        g.fillStyle = 'rgba(255,90,110,0.55)'; g.beginPath(); g.ellipse(x - r * 0.62, y + r * 0.22, r * 0.16, r * 0.1, 0, 0, 7); g.ellipse(x + r * 0.62, y + r * 0.22, r * 0.16, r * 0.1, 0, 0, 7); g.fill();
+        g.strokeStyle = OL; g.lineWidth = Math.max(1.2, r * 0.1); g.lineCap = 'round';
+        g.beginPath();
+        if (sad) g.arc(x, y + r * 0.42, r * 0.16, Math.PI * 1.15, Math.PI * 1.85);
+        else g.arc(x, y + r * 0.2, r * 0.18, 0.15 * Math.PI, 0.85 * Math.PI);
+        g.stroke();
+        if (sad && r > 13) { g.fillStyle = '#7fd0ff'; g.beginPath(); g.ellipse(x + r * 0.85, y - r * 0.35, r * 0.1, r * 0.16, 0, 0, 7); g.fill(); }
       }
 
       function draw(g) {
         drawBg(g);
+        nodeBad.fill(0);
+        for (let i = 0; i < edges.length; i++) if (flags[i]) { nodeBad[edges[i][0]] = 1; nodeBad[edges[i][1]] = 1; }
         for (let i = 0; i < edges.length; i++) if (!flags[i]) rope(g, i);
         for (let i = 0; i < edges.length; i++) if (flags[i]) rope(g, i);
         for (let i = 0; i < n; i++) if (i !== drag) peg(g, i);
         if (drag >= 0) peg(g, drag);
         // header counter
         const ok = crossings === 0;
-        g.fillStyle = ok ? 'rgba(46,190,100,0.95)' : 'rgba(255,255,255,0.92)';
-        U.rr(g, api.W / 2 - 64, 10, 128, 34, 17); g.fill();
-        U.text(g, ok ? '全部解開！' : '交叉 ' + crossings, api.W / 2, 27, 16, ok ? '#fff' : '#d6334a', 'center', 900);
+        U.rr(g, api.W / 2 - 66, 9, 132, 36, 18); g.fillStyle = ok ? '#4cd986' : '#fff6e6'; g.fill();
+        g.lineWidth = 3; g.strokeStyle = OL; g.stroke();
+        g.fillStyle = 'rgba(255,255,255,0.45)'; U.rr(g, api.W / 2 - 56, 13, 112, 9, 4.5); g.fill();
+        g.font = '900 17px -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.lineJoin = 'round'; g.lineWidth = 4; g.strokeStyle = OL;
+        const lbl = ok ? '全部解開！' : '交叉 ' + crossings;
+        g.strokeText(lbl, api.W / 2, 28); g.fillStyle = ok ? '#fff' : '#ff5d6c'; g.fillText(lbl, api.W / 2, 28);
         if (!api.diff && api.level === 1 && moves === 0 && !won) {
           const t = (time % 2) / 2;
           const i0 = edges[0][0];

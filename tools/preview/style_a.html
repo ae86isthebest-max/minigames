@@ -1,0 +1,113 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>body{margin:0;background:#111}canvas{display:block}</style></head>
+<body><canvas id="c" width="390" height="700"></canvas>
+<script>
+// Style preview A: hand-drawn-in-code cartoon Q version (thick outlines, big heads), apocalyptic zombie road.
+const c = document.getElementById('c'), g = c.getContext('2d');
+const W = 390, H = 700, OL = '#2a1a14';
+function rr(x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+function blob(x, y, rx, ry, fill, lw) { g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, 7); g.fillStyle = fill; g.fill(); g.lineWidth = lw || 3; g.strokeStyle = OL; g.stroke(); }
+function rnd(s) { let a = s; return () => { a = (a * 9301 + 49297) % 233280; return a / 233280; }; }
+
+// --- sky: smoky orange apocalypse
+let sk = g.createLinearGradient(0, 0, 0, 300);
+sk.addColorStop(0, '#3b1f2b'); sk.addColorStop(0.45, '#a8432c'); sk.addColorStop(0.8, '#f08a3c'); sk.addColorStop(1, '#f6b45a');
+g.fillStyle = sk; g.fillRect(0, 0, W, 300);
+g.fillStyle = 'rgba(255,220,150,.9)'; g.beginPath(); g.arc(250, 205, 34, 0, 7); g.fill();
+const R = rnd(7);
+// smoke columns
+for (let i = 0; i < 3; i++) {
+  const sx = [60, 300, 180][i];
+  for (let k = 0; k < 9; k++) { g.fillStyle = 'rgba(40,25,30,' + (0.35 - k * 0.03) + ')'; g.beginPath(); g.arc(sx + k * 9 + Math.sin(k) * 10, 240 - k * 26, 16 + k * 5, 0, 7); g.fill(); }
+}
+// ruined skyline (cartoon, outlined)
+function ruin(x, w, h, col) {
+  const y = 300 - h;
+  g.beginPath(); g.moveTo(x, 300); g.lineTo(x, y + 8); g.lineTo(x + w * 0.3, y); g.lineTo(x + w * 0.45, y + 14); g.lineTo(x + w * 0.7, y + 4); g.lineTo(x + w, y + 18); g.lineTo(x + w, 300); g.closePath();
+  g.fillStyle = col; g.fill(); g.lineWidth = 2.5; g.strokeStyle = OL; g.stroke();
+  for (let wy = y + 22; wy < 290; wy += 18) for (let wx = x + 7; wx < x + w - 10; wx += 14) {
+    const lit = R() < 0.15; g.fillStyle = lit ? '#ffcf6a' : 'rgba(0,0,0,.45)'; g.fillRect(wx, wy, 7, 9);
+  }
+}
+ruin(-10, 70, 150, '#5a3b44'); ruin(55, 55, 110, '#6b4550'); ruin(300, 100, 170, '#563842'); ruin(255, 50, 95, '#6e4a52');
+// road with perspective
+const hz = 300;
+g.fillStyle = '#4a3f45'; g.beginPath(); g.moveTo(150, hz); g.lineTo(240, hz); g.lineTo(W + 80, H); g.lineTo(-80, H); g.closePath(); g.fill();
+g.fillStyle = '#7d5a4a'; g.beginPath(); g.moveTo(0, hz); g.lineTo(150, hz); g.lineTo(-80, H); g.lineTo(0, H); g.closePath(); g.fill();
+g.beginPath(); g.moveTo(240, hz); g.lineTo(W, hz); g.lineTo(W, H); g.lineTo(W + 80, H); g.closePath(); g.fill();
+g.lineWidth = 3; g.strokeStyle = OL; g.beginPath(); g.moveTo(150, hz); g.lineTo(-80, H); g.moveTo(240, hz); g.lineTo(W + 80, H); g.stroke();
+// cracks + dashes
+g.strokeStyle = 'rgba(20,10,10,.55)'; g.lineWidth = 2;
+for (let i = 0; i < 9; i++) { const x = 60 + R() * 270, y = 340 + R() * 330; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 14, y + 8); g.lineTo(x + 10, y + 20); g.lineTo(x + 26, y + 26); g.stroke(); }
+for (let i = 0; i < 6; i++) { const t = i / 6, y = hz + 10 + t * t * 390, w = 3 + t * 9, l = 6 + t * 30; g.fillStyle = 'rgba(255,214,120,.7)'; g.fillRect(195 - w / 2, y, w, l); }
+// burning wreck (left)
+function wreck(x, y, s) {
+  rr(x, y, 70 * s, 30 * s, 8 * s); g.fillStyle = '#6d7b86'; g.fill(); g.lineWidth = 3; g.strokeStyle = OL; g.stroke();
+  rr(x + 12 * s, y - 16 * s, 40 * s, 20 * s, 7 * s); g.fillStyle = '#5c6873'; g.fill(); g.stroke();
+  blob(x + 16 * s, y + 30 * s, 9 * s, 9 * s, '#2d2d33'); blob(x + 54 * s, y + 30 * s, 9 * s, 9 * s, '#2d2d33');
+  for (let k = 0; k < 5; k++) { g.fillStyle = ['#ff5a2a', '#ff9a3a', '#ffd25a'][k % 3]; g.beginPath(); const fx = x + 20 * s + k * 8 * s; g.moveTo(fx - 8 * s, y - 14 * s); g.quadraticCurveTo(fx, y - (40 + k * 6) * s, fx + 8 * s, y - 14 * s); g.fill(); }
+}
+wreck(8, 420, 0.9);
+// barricade (right)
+g.save(); g.translate(330, 470); g.rotate(-0.15); rr(-40, -12, 80, 24, 6); g.fillStyle = '#e8e2d0'; g.fill(); g.lineWidth = 3; g.strokeStyle = OL; g.stroke();
+g.fillStyle = '#e04a3c'; for (let k = -36; k < 36; k += 18) { g.beginPath(); g.moveTo(k, -12); g.lineTo(k + 9, -12); g.lineTo(k + 1, 12); g.lineTo(k - 8, 12); g.fill(); } g.restore();
+
+// --- Q zombie: big head, green skin, stitched, arms out
+function zombie(x, y, s, tint, hp) {
+  g.save(); g.translate(x, y); g.scale(s, s);
+  g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(0, 46, 26, 7, 0, 0, 7); g.fill();
+  blob(-9, 38, 7, 10, '#4b3d5e'); blob(9, 38, 7, 10, '#4b3d5e');            // legs
+  rr(-17, 4, 34, 32, 10); g.fillStyle = tint; g.fill(); g.lineWidth = 3; g.strokeStyle = OL; g.stroke(); // torn shirt
+  g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.moveTo(-17, 28); g.lineTo(-10, 36); g.lineTo(-3, 28); g.lineTo(5, 36); g.lineTo(12, 28); g.lineTo(17, 36); g.lineTo(17, 28); g.fill();
+  blob(-24, 10, 6, 13, '#8fcf6a'); blob(24, 10, 6, 13, '#8fcf6a');           // arms out
+  blob(0, -18, 28, 26, '#9fdc78');                                            // big head
+  g.fillStyle = '#7cbf58'; g.beginPath(); g.arc(-12, -30, 6, 0, 7); g.fill();
+  g.strokeStyle = OL; g.lineWidth = 2; g.beginPath(); g.moveTo(8, -38); g.lineTo(16, -30); g.moveTo(10, -32); g.lineTo(14, -36); g.stroke(); // stitch
+  blob(-10, -16, 8, 9, '#fffbe8', 2); blob(11, -16, 6, 7, '#fffbe8', 2);
+  g.fillStyle = '#d13b3b'; g.beginPath(); g.arc(-9, -15, 3.5, 0, 7); g.arc(11, -15, 2.5, 0, 7); g.fill();
+  g.fillStyle = OL; rr(-8, -3, 16, 7, 3); g.fill(); g.fillStyle = '#fff'; g.fillRect(-5, -3, 3, 3); g.fillRect(1, -3, 3, 3);
+  if (hp) { rr(-20, -54, 40, 9, 4); g.fillStyle = '#2a1a14'; g.fill(); rr(-18, -52, 36 * hp, 5, 3); g.fillStyle = '#ff5d6c'; g.fill(); }
+  g.restore();
+}
+zombie(205, 345, 0.55, '#7a6aa8', 1); zombie(160, 368, 0.62, '#b0715a', 1); zombie(232, 380, 0.68, '#6a8fb0', 0.7);
+zombie(190, 420, 0.85, '#a85a7a', 0.6); zombie(130, 445, 0.9, '#7a6aa8', 1);
+// boss far
+zombie(270, 330, 0.75, '#5a3b44', 1);
+
+// --- cartoon gates
+function gate(x, y, s, label, val, col) {
+  g.save(); g.translate(x, y); g.scale(s, s);
+  rr(-40, -34, 80, 68, 14); g.fillStyle = col; g.fill(); g.lineWidth = 4; g.strokeStyle = OL; g.stroke();
+  rr(-34, -28, 68, 20, 8); g.fillStyle = 'rgba(255,255,255,.35)'; g.fill();
+  g.font = '900 18px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff'; g.lineWidth = 4; g.strokeStyle = OL;
+  g.strokeText(label, 0, -16); g.fillText(label, 0, -16);
+  g.font = '900 30px sans-serif'; g.strokeText(val, 0, 12); g.fillText(val, 0, 12);
+  g.restore();
+}
+gate(70, 520, 0.95, '衝鋒槍', '6', '#4c9bff'); gate(318, 545, 0.9, '+2 幫手', '9', '#4cd986');
+
+// --- Q soldier seen from behind, walking forward (big head, helmet)
+function soldier(x, y, s, step) {
+  g.save(); g.translate(x, y); g.scale(s, s);
+  g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(0, 44, 24, 7, 0, 0, 7); g.fill();
+  blob(-9, 36 + step, 7, 10, '#3a3f52'); blob(9, 36 - step, 7, 10, '#3a3f52');
+  rr(-18, 2, 36, 32, 11); g.fillStyle = '#5f8a4a'; g.fill(); g.lineWidth = 3; g.strokeStyle = OL; g.stroke();
+  rr(-14, 6, 28, 18, 6); g.fillStyle = '#8a6a3a'; g.fill(); g.stroke(); // backpack
+  blob(0, -20, 26, 24, '#f2c9a0');                                       // head (back)
+  g.beginPath(); g.arc(0, -24, 27, Math.PI, 0); g.lineTo(28, -18); g.lineTo(-28, -18); g.closePath(); g.fillStyle = '#4f7a3c'; g.fill(); g.stroke(); // helmet
+  g.fillStyle = '#ffd34a'; g.font = '900 14px sans-serif'; g.textAlign = 'center'; g.fillText('★', 0, -30);
+  // gun up front
+  rr(14, -26, 9, 40, 3); g.fillStyle = '#3a3a44'; g.fill(); g.stroke();
+  g.fillStyle = '#ffe27a'; g.beginPath(); g.arc(18, -32, 8, 0, 7); g.fill();
+  g.restore();
+}
+soldier(195, 610, 1.15, 3); soldier(150, 640, 0.95, -3); soldier(240, 640, 0.95, 3);
+// bullets
+g.fillStyle = '#ffe27a'; for (let i = 0; i < 6; i++) { rr(212 - i * 2, 560 - i * 40, 5, 14, 2); g.fill(); }
+// floating damage
+g.font = '900 20px sans-serif'; g.textAlign = 'center'; g.lineWidth = 4; g.strokeStyle = OL; g.fillStyle = '#ffd34a';
+g.strokeText('-3', 200, 395); g.fillText('-3', 200, 395);
+// HUD pill
+rr(12, 12, 130, 34, 17); g.fillStyle = 'rgba(42,26,20,.75)'; g.fill(); g.fillStyle = '#fff'; g.font = '800 15px sans-serif'; g.textAlign = 'left'; g.fillText('🔫 衝鋒槍  ×3', 26, 30);
+rr(W - 112, 12, 100, 34, 17); g.fillStyle = 'rgba(42,26,20,.75)'; g.fill(); g.fillStyle = '#fff'; g.fillText('💀 128', W - 92, 30);
+</script></body></html>

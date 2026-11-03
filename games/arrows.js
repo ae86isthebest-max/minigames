@@ -197,25 +197,69 @@
           paintBg(g);
         }
       }
+      // ---------- cartoon helpers (卡通 Q 版) ----------
+      const OL = '#2a1a14';
+      function olStroke(g, lw) { g.lineWidth = lw; g.strokeStyle = OL; g.lineJoin = 'round'; g.stroke(); }
+      function otext(g, str, x, y, size, color) {
+        g.font = '900 ' + size + 'px -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif';
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.lineWidth = Math.max(2.5, size * 0.22); g.strokeStyle = OL; g.lineJoin = 'round';
+        g.strokeText(str, x, y); g.fillStyle = color; g.fillText(str, x, y);
+      }
+      function cloud(g, x, y, s) {
+        const puffs = () => {
+          g.beginPath();
+          g.moveTo(x - 20 * s + 16 * s, y); g.arc(x - 20 * s, y, 16 * s, 0, Math.PI * 2);
+          g.moveTo(x + 22 * s + 15 * s, y + 2 * s); g.arc(x + 22 * s, y + 2 * s, 15 * s, 0, Math.PI * 2);
+          g.moveTo(x + 22 * s, y - 8 * s); g.arc(x, y - 8 * s, 22 * s, 0, Math.PI * 2);
+          g.rect(x - 20 * s, y, 42 * s, 15 * s);
+        };
+        puffs(); g.lineWidth = 3; g.strokeStyle = OL; g.stroke();
+        g.fillStyle = '#ffffff'; puffs(); g.fill();
+        g.fillStyle = '#dcefff'; g.fillRect(x - 24 * s, y + 9 * s, 50 * s, 6 * s);
+      }
+      // themed board: sunny toy-box sky, hills, and a wooden puzzle tray with a cream tile mat
       function paintBg(g) {
         const { W, H, cell, bx, by, bw, bh } = lay;
-        let gr = g.createLinearGradient(0, 0, W, H);
-        gr.addColorStop(0, '#1c1640'); gr.addColorStop(0.5, '#151b3a'); gr.addColorStop(1, '#0e2236');
+        let gr = g.createLinearGradient(0, 0, 0, H);
+        gr.addColorStop(0, '#7cc8ff'); gr.addColorStop(0.6, '#bfe6ff'); gr.addColorStop(1, '#e6f6ff');
         g.fillStyle = gr; g.fillRect(0, 0, W, H);
-        gr = g.createRadialGradient(W * 0.5, H * 0.35, 10, W * 0.5, H * 0.35, Math.max(W, H) * 0.7);
-        gr.addColorStop(0, 'rgba(178,107,255,0.18)'); gr.addColorStop(1, 'rgba(178,107,255,0)');
-        g.fillStyle = gr; g.fillRect(0, 0, W, H);
-        const pad = cell * 0.22;
-        g.fillStyle = 'rgba(0,0,0,0.35)';
-        U.rr(g, bx - pad + 3, by - pad + 6, bw + pad * 2, bh + pad * 2, cell * 0.4); g.fill();
-        gr = g.createLinearGradient(0, by, 0, by + bh);
-        gr.addColorStop(0, '#1d2340'); gr.addColorStop(1, '#141a30');
-        g.fillStyle = gr;
-        U.rr(g, bx - pad, by - pad, bw + pad * 2, bh + pad * 2, cell * 0.4); g.fill();
-        g.strokeStyle = 'rgba(255,255,255,0.08)'; g.lineWidth = 2; g.stroke();
-        g.fillStyle = 'rgba(255,255,255,0.13)';
+        g.fillStyle = 'rgba(255,240,170,0.9)'; g.beginPath(); g.arc(W * 0.86, H * 0.13, 26, 0, Math.PI * 2); g.fill();
+        g.fillStyle = 'rgba(255,240,170,0.35)'; g.beginPath(); g.arc(W * 0.86, H * 0.13, 40, 0, Math.PI * 2); g.fill();
+        const cr = MG.mulberry32(api.level * 17 + 3);
+        for (let i = 0; i < 5; i++) cloud(g, cr() * W, H * (0.08 + cr() * 0.8), 0.55 + cr() * 0.45);
+        // rolling hills (two layers)
+        const hill = (y0, amp, col, ph) => {
+          g.beginPath(); g.moveTo(0, H);
+          for (let x = 0; x <= W + 10; x += 10) g.lineTo(x, y0 - Math.sin(x / W * Math.PI * 2 + ph) * amp - Math.sin(x / W * 7 + ph) * amp * 0.3);
+          g.lineTo(W, H); g.closePath();
+          g.fillStyle = col; g.fill(); g.lineWidth = 3; g.strokeStyle = OL; g.stroke();
+        };
+        hill(H * 0.86, 18, '#8fd673', 1.2);
+        hill(H * 0.93, 12, '#6cc35c', 3.1);
+        // wooden tray
+        const pad = cell * 0.28, rad = cell * 0.42;
+        g.fillStyle = 'rgba(42,26,20,0.28)';
+        U.rr(g, bx - pad + 4, by - pad + 8, bw + pad * 2, bh + pad * 2, rad); g.fill();
+        U.rr(g, bx - pad, by - pad, bw + pad * 2, bh + pad * 2, rad);
+        g.fillStyle = '#d99a5b'; g.fill(); olStroke(g, 4);
+        U.rr(g, bx - pad + 6, by - pad + 5, bw + pad * 2 - 12, Math.max(6, pad * 0.35), pad * 0.2);
+        g.fillStyle = 'rgba(255,255,255,0.35)'; g.fill();
+        g.strokeStyle = 'rgba(140,80,30,0.35)'; g.lineWidth = 1.5;
+        g.beginPath();
+        g.moveTo(bx - pad * 0.5, by + bh + pad * 0.5); g.lineTo(bx + bw * 0.4, by + bh + pad * 0.5);
+        g.moveTo(bx + bw + pad * 0.5, by + bh * 0.2); g.lineTo(bx + bw + pad * 0.5, by + bh * 0.7);
+        g.stroke();
+        // cream tile mat with soft checker
+        U.rr(g, bx - 3, by - 3, bw + 6, bh + 6, cell * 0.22);
+        g.fillStyle = '#fff6e0'; g.fill(); olStroke(g, 2.5);
+        g.save(); U.rr(g, bx - 3, by - 3, bw + 6, bh + 6, cell * 0.22); g.clip();
+        g.fillStyle = '#f6e3bd';
+        for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) if ((x + y) % 2) g.fillRect(bx + x * cell, by + y * cell, cell, cell);
+        g.restore();
+        g.fillStyle = 'rgba(160,110,60,0.25)';
         for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-          g.beginPath(); g.arc(bx + (x + 0.5) * cell, by + (y + 0.5) * cell, Math.max(1.5, cell * 0.045), 0, Math.PI * 2); g.fill();
+          g.beginPath(); g.arc(bx + (x + 0.5) * cell, by + (y + 0.5) * cell, Math.max(1.5, cell * 0.05), 0, Math.PI * 2); g.fill();
         }
       }
 
@@ -349,7 +393,7 @@
           if (!lay) return;
           if (api.W !== lay.W || api.H !== lay.H) layout();
           const { W, H, cell, bx, by, bw, bh } = lay;
-          g.fillStyle = '#151b3a'; g.fillRect(0, 0, W, H);
+          g.fillStyle = '#bfe6ff'; g.fillRect(0, 0, W, H);
           g.save();
           if (shake > 0) g.translate((Math.random() - 0.5) * 8 * shake, (Math.random() - 0.5) * 8 * shake);
           if (lay.bg && lay.bg.getContext) g.drawImage(lay.bg, 0, 0, W, H); else paintBg(g);
@@ -373,25 +417,33 @@
               g.globalAlpha = alpha;
               const fl = p.flash;
               const col = p.color;
+              // chunky outlined candy tube: shadow, dark outline, colour, darker belly, gloss
+              const ow = Math.max(2.5, cell * 0.06);
+              const body = fl > 0 ? U.shade(col, fl * 0.5) : col;
+              g.save(); g.translate(1.5, 3); piecePath(g, p);
+              g.strokeStyle = 'rgba(42,26,20,0.22)'; g.lineWidth = lw + ow * 2; g.stroke(); g.restore();
               piecePath(g, p);
-              g.strokeStyle = col; g.globalAlpha = alpha * (0.18 + fl * 0.25); g.lineWidth = lw * 2.6; g.stroke();
+              g.strokeStyle = OL; g.lineWidth = lw + ow * 2; g.stroke();
+              g.strokeStyle = body; g.lineWidth = lw; g.stroke();
+              g.save(); g.translate(0, lw * 0.18); piecePath(g, p);
+              g.strokeStyle = U.shade(col, -0.18); g.lineWidth = lw * 0.45; g.globalAlpha = alpha * 0.55; g.stroke(); g.restore();
               g.globalAlpha = alpha;
-              g.strokeStyle = fl > 0 ? U.shade(col, fl * 0.6) : col; g.lineWidth = lw; g.stroke();
-              g.strokeStyle = 'rgba(255,255,255,' + (0.35 + fl * 0.5).toFixed(3) + ')'; g.lineWidth = lw * 0.32; g.stroke();
-              // tail cap dot
+              g.save(); g.translate(-lw * 0.12, -lw * 0.2); piecePath(g, p);
+              g.strokeStyle = 'rgba(255,255,255,' + (0.6 + fl * 0.4).toFixed(3) + ')'; g.lineWidth = lw * 0.22; g.stroke(); g.restore();
+              // tail cap: outlined round button
               trackAt(p, p.s, pt);
-              g.fillStyle = U.shade(col, -0.2);
-              g.beginPath(); g.arc(pt[0], pt[1], lw * 0.62, 0, Math.PI * 2); g.fill();
-              // arrow head
+              g.beginPath(); g.arc(pt[0], pt[1], lw * 0.7, 0, Math.PI * 2);
+              g.fillStyle = U.shade(col, -0.15); g.fill(); olStroke(g, ow * 0.8);
+              g.fillStyle = 'rgba(255,255,255,0.6)'; g.beginPath(); g.arc(pt[0] - lw * 0.2, pt[1] - lw * 0.22, lw * 0.2, 0, Math.PI * 2); g.fill();
+              // arrow head: chunky outlined triangle with a gloss
               const hi = headInfo(p);
               const a = Math.atan2(DY[hi[2]], DX[hi[2]]);
               const hs = cell * 0.3 * (1 + fl * 0.25);
               g.save(); g.translate(hi[0], hi[1]); g.rotate(a);
-              g.fillStyle = col; g.globalAlpha = alpha * 0.25;
-              g.beginPath(); g.moveTo(hs * 1.35, 0); g.lineTo(-hs * 0.55, -hs * 1.15); g.lineTo(-hs * 0.55, hs * 1.15); g.closePath(); g.fill();
-              g.globalAlpha = alpha;
-              g.beginPath(); g.moveTo(hs * 1.05, 0); g.lineTo(-hs * 0.4, -hs * 0.85); g.lineTo(-hs * 0.15, 0); g.lineTo(-hs * 0.4, hs * 0.85); g.closePath();
-              g.fillStyle = fl > 0 ? '#ffffff' : U.shade(col, 0.35); g.fill();
+              g.beginPath(); g.moveTo(hs * 1.15, 0); g.lineTo(-hs * 0.5, -hs * 0.95); g.lineTo(-hs * 0.28, 0); g.lineTo(-hs * 0.5, hs * 0.95); g.closePath();
+              g.fillStyle = fl > 0 ? '#ffffff' : U.shade(col, 0.15); g.fill(); g.lineWidth = ow; g.strokeStyle = OL; g.lineJoin = 'round'; g.stroke();
+              g.beginPath(); g.moveTo(hs * 0.6, -hs * 0.12); g.lineTo(-hs * 0.3, -hs * 0.66); g.lineTo(-hs * 0.18, -hs * 0.3); g.closePath();
+              g.fillStyle = 'rgba(255,255,255,0.55)'; g.fill();
               g.restore();
               g.restore();
             }
@@ -406,18 +458,18 @@
           g.globalAlpha = 1;
           g.restore();
           // HUD
-          g.fillStyle = 'rgba(255,255,255,0.08)';
-          U.rr(g, 10, 9, 10 + maxHearts * 34, 32, 16); g.fill();
+          U.rr(g, 10, 9, 10 + maxHearts * 34, 32, 16);
+          g.fillStyle = 'rgba(42,26,20,0.72)'; g.fill(); olStroke(g, 2.5);
           for (let i = 0; i < maxHearts; i++) {
             const hx = 32 + i * 34, hy = 25;
             const s = (i === hearts && heartPop > 0) ? 1 + heartPop * 0.5 : 1;
             g.save(); g.translate(hx, hy); g.scale(s, s);
-            drawHeart(g, 0, 0, 11, i < hearts ? '#ff4d7a' : 'rgba(255,255,255,0.22)');
+            drawHeart(g, 0, 0, 11, i < hearts ? '#ff4d7a' : '#6a5a55');
             g.restore();
           }
-          g.fillStyle = 'rgba(255,255,255,0.08)';
-          U.rr(g, W - 100, 9, 90, 32, 16); g.fill();
-          U.text(g, '➜ ' + remaining(), W - 55, 26, 17, '#e9e4ff', 'center', 800);
+          U.rr(g, W - 100, 9, 90, 32, 16);
+          g.fillStyle = 'rgba(42,26,20,0.72)'; g.fill(); olStroke(g, 2.5);
+          otext(g, '➜ ' + remaining(), W - 55, 26, 18, '#ffffff');
         },
         down(x, y) { tap(x, y); },
         _test: {
@@ -432,7 +484,9 @@
         g.moveTo(x, y + r * 0.9);
         g.bezierCurveTo(x - r * 1.5, y - r * 0.1, x - r * 0.7, y - r * 1.2, x, y - r * 0.4);
         g.bezierCurveTo(x + r * 0.7, y - r * 1.2, x + r * 1.5, y - r * 0.1, x, y + r * 0.9);
-        g.fill();
+        g.fill(); olStroke(g, 2);
+        g.fillStyle = 'rgba(255,255,255,0.55)';
+        g.beginPath(); g.ellipse(x - r * 0.45, y - r * 0.35, r * 0.25, r * 0.16, -0.6, 0, Math.PI * 2); g.fill();
       }
     },
   });

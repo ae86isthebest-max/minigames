@@ -201,75 +201,132 @@
         g.setTransform(dpr, 0, 0, dpr, 0, 0);
         paintBg(g);
       }
+      // ---------- cartoon helpers (卡通 Q 版) ----------
+      const OL = '#2a1a14';
+      function olStroke(g, lw) { g.lineWidth = lw; g.strokeStyle = OL; g.lineJoin = 'round'; g.stroke(); }
+      function blob(g, x, y, rx, ry, fill, lw) {
+        g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); g.fillStyle = fill; g.fill();
+        if (lw !== 0) olStroke(g, lw || 2);
+      }
+      function otext(g, str, x, y, size, color) {
+        g.font = '900 ' + size + 'px -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif';
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.lineWidth = Math.max(2.5, size * 0.22); g.strokeStyle = OL; g.lineJoin = 'round';
+        g.strokeText(str, x, y); g.fillStyle = color; g.fillText(str, x, y);
+      }
+      function drawHouse(g, x, y, w, h, roof, wall) {
+        // toy house seen from above-front: wall block + pitched roof + door/window
+        g.fillStyle = 'rgba(0,0,0,0.18)'; U.rr(g, x - w / 2 + 3, y - h * 0.1 + 4, w, h * 0.75, 4); g.fill();
+        U.rr(g, x - w / 2, y, w, h * 0.55, 3); g.fillStyle = wall; g.fill(); olStroke(g, 2.2);
+        g.beginPath(); g.moveTo(x - w / 2 - 3, y + 2); g.lineTo(x - w * 0.3, y - h * 0.42); g.lineTo(x + w * 0.3, y - h * 0.42); g.lineTo(x + w / 2 + 3, y + 2); g.closePath();
+        g.fillStyle = roof; g.fill(); olStroke(g, 2.2);
+        g.fillStyle = 'rgba(255,255,255,0.3)';
+        g.beginPath(); g.moveTo(x - w * 0.26, y - h * 0.36); g.lineTo(x + w * 0.1, y - h * 0.36); g.lineTo(x + w * 0.02, y - h * 0.26); g.lineTo(x - w * 0.32, y - h * 0.26); g.closePath(); g.fill();
+        U.rr(g, x - w * 0.1, y + h * 0.22, w * 0.2, h * 0.33, 2); g.fillStyle = '#8a5a3a'; g.fill(); olStroke(g, 1.6);
+        U.rr(g, x + w * 0.2, y + h * 0.12, w * 0.18, h * 0.18, 2); g.fillStyle = '#ffe9a0'; g.fill(); olStroke(g, 1.6);
+        U.rr(g, x - w * 0.38, y + h * 0.12, w * 0.18, h * 0.18, 2); g.fill(); olStroke(g, 1.6);
+      }
+
       function paintBg(g) {
         const { W, H, cell, road, curb, lotX, lotY, lotW, lotH } = lay;
         let gr = g.createLinearGradient(0, 0, 0, H);
-        gr.addColorStop(0, '#7fd36a'); gr.addColorStop(1, '#4fae4f');
+        gr.addColorStop(0, '#9ce07c'); gr.addColorStop(1, '#68bf5a');
         g.fillStyle = gr; g.fillRect(0, 0, W, H);
-        g.fillStyle = 'rgba(255,255,255,0.06)';
+        g.fillStyle = 'rgba(40,110,40,0.12)';
         for (let i = 0; i < 40; i++) {
           const s = treeSeeds[i % 60];
           g.beginPath(); g.ellipse(s[0] * W, s[1] * H, 10 + s[2] * 18, 4 + s[3] * 6, 0, 0, Math.PI * 2); g.fill();
         }
-        // roads (full-length streets)
+        // roads (full-length streets): dark outline, light curb, asphalt, yellow dashes
         const rT = lotY - curb - road, rB = lotY + lotH + curb, rL = lotX - curb - road, rR = lotX + lotW + curb;
-        g.fillStyle = '#c9ccd6';
-        g.fillRect(0, rT - 4, W, road + 8); g.fillRect(0, rB - 4, W, road + 8);
-        g.fillRect(rL - 4, 0, road + 8, H); g.fillRect(rR - 4, 0, road + 8, H);
-        g.fillStyle = '#545a68';
-        g.fillRect(0, rT, W, road); g.fillRect(0, rB, W, road);
-        g.fillRect(rL, 0, road, H); g.fillRect(rR, 0, road, H);
-        g.strokeStyle = 'rgba(255,214,80,0.85)'; g.lineWidth = Math.max(2, cell * 0.05);
+        const roads = (e) => {
+          g.fillRect(0, rT - e, W, road + e * 2); g.fillRect(0, rB - e, W, road + e * 2);
+          g.fillRect(rL - e, 0, road + e * 2, H); g.fillRect(rR - e, 0, road + e * 2, H);
+        };
+        g.fillStyle = OL; roads(6);
+        g.fillStyle = '#eef0e6'; roads(4);
+        g.fillStyle = '#4e5465'; roads(0);
+        // zebra crossings at the four junctions
+        g.fillStyle = 'rgba(255,255,255,0.5)';
+        for (const [cx, cy] of [[rL, rT], [rR, rT], [rL, rB], [rR, rB]]) {
+          for (let k = 0; k < 5; k++) {
+            g.fillRect(cx + road * (0.1 + k * 0.17), cy - road * 0.32, road * 0.09, road * 0.24);
+            g.fillRect(cx + road * (0.1 + k * 0.17), cy + road * 1.08, road * 0.09, road * 0.24);
+          }
+        }
+        g.strokeStyle = '#ffd95a'; g.lineWidth = Math.max(2.5, cell * 0.06); g.lineCap = 'round';
         g.setLineDash([cell * 0.3, cell * 0.25]);
         g.beginPath();
         g.moveTo(0, rT + road / 2); g.lineTo(W, rT + road / 2);
         g.moveTo(0, rB + road / 2); g.lineTo(W, rB + road / 2);
         g.moveTo(rL + road / 2, 0); g.lineTo(rL + road / 2, H);
         g.moveTo(rR + road / 2, 0); g.lineTo(rR + road / 2, H);
-        g.stroke(); g.setLineDash([]);
-        // curb + lot
-        g.fillStyle = '#d9dce4';
-        U.rr(g, lotX - curb, lotY - curb, lotW + curb * 2, lotH + curb * 2, curb * 1.4); g.fill();
+        g.stroke(); g.setLineDash([]); g.lineCap = 'butt';
+        // curb + lot: chunky outlined pad
+        g.fillStyle = 'rgba(0,0,0,0.2)';
+        U.rr(g, lotX - curb + 3, lotY - curb + 5, lotW + curb * 2, lotH + curb * 2, curb * 1.4); g.fill();
+        g.fillStyle = '#ece6d2';
+        U.rr(g, lotX - curb, lotY - curb, lotW + curb * 2, lotH + curb * 2, curb * 1.4); g.fill(); olStroke(g, 3);
         gr = g.createLinearGradient(0, lotY, 0, lotY + lotH);
-        gr.addColorStop(0, '#6a7182'); gr.addColorStop(1, '#5a6070');
+        gr.addColorStop(0, '#687088'); gr.addColorStop(1, '#575e74');
         g.fillStyle = gr;
-        U.rr(g, lotX, lotY, lotW, lotH, curb); g.fill();
+        U.rr(g, lotX, lotY, lotW, lotH, curb); g.fill(); olStroke(g, 2);
         // painted stall lines
-        g.strokeStyle = 'rgba(255,255,255,0.32)'; g.lineWidth = Math.max(1.5, cell * 0.035);
+        g.strokeStyle = 'rgba(255,255,255,0.38)'; g.lineWidth = Math.max(2, cell * 0.04); g.lineCap = 'round';
         g.beginPath();
         for (let i = 1; i < cols; i++) { g.moveTo(lotX + i * cell, lotY + cell * 0.12); g.lineTo(lotX + i * cell, lotY + lotH - cell * 0.12); }
         for (let j = 1; j < rows; j++) for (let i = 0; i < cols; i++) {
           g.moveTo(lotX + i * cell + cell * 0.3, lotY + j * cell); g.lineTo(lotX + i * cell + cell * 0.7, lotY + j * cell);
         }
-        g.stroke();
-        // trees on grass
+        g.stroke(); g.lineCap = 'butt';
+        // toy houses, trees and flowers on the grass blocks
+        const placed = [];
+        const free = (x, y, r) => {
+          const inRoadH = (y + r > rT - 8 && y - r < rT + road + 8) || (y + r > rB - 8 && y - r < rB + road + 8);
+          const inRoadV = (x + r > rL - 8 && x - r < rL + road + 8) || (x + r > rR - 8 && x - r < rR + road + 8);
+          const inLot = x + r > lotX - curb - 4 && x - r < lotX + lotW + curb + 4 && y + r > lotY - curb - 4 && y - r < lotY + lotH + curb + 4;
+          if (inRoadH || inRoadV || inLot || y - r < lay.hud * 0.9) return false;
+          for (const p of placed) if (Math.hypot(p[0] - x, p[1] - y) < p[2] + r) return false;
+          return true;
+        };
+        const roofs = ['#ff6b57', '#4c9bff', '#ffb547', '#a77bff', '#3fcf8f'];
         for (let i = 0; i < 60; i++) {
           const s = treeSeeds[i];
-          const x = s[0] * W, y = s[1] * H, r = cell * (0.22 + s[2] * 0.16);
-          const inRoadH = (y + r > rT - 6 && y - r < rT + road + 6) || (y + r > rB - 6 && y - r < rB + road + 6);
-          const inRoadV = (x + r > rL - 6 && x - r < rL + road + 6) || (x + r > rR - 6 && x - r < rR + road + 6);
-          const inLot = x + r > lotX - curb && x - r < lotX + lotW + curb && y + r > lotY - curb && y - r < lotY + lotH + curb;
-          if (inRoadH || inRoadV || inLot || y - r < lay.hud * 0.9) continue;
-          g.fillStyle = 'rgba(0,0,0,0.18)';
-          g.beginPath(); g.arc(x + r * 0.2, y + r * 0.3, r, 0, Math.PI * 2); g.fill();
-          g.fillStyle = s[3] < 0.5 ? '#2f8f3e' : '#3a9e46';
-          g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
-          g.fillStyle = 'rgba(255,255,255,0.18)';
-          g.beginPath(); g.arc(x - r * 0.3, y - r * 0.3, r * 0.45, 0, Math.PI * 2); g.fill();
-          if (s[2] > 0.7) {
-            g.fillStyle = '#ff7ac8';
-            g.beginPath(); g.arc(x + r * 0.35, y - r * 0.1, r * 0.13, 0, Math.PI * 2); g.fill();
+          const x = s[0] * W, y = s[1] * H;
+          if (s[3] > 0.72) {
+            const w = cell * (0.75 + s[2] * 0.3), r = w * 0.62;
+            if (!free(x, y, r)) continue;
+            placed.push([x, y, r]);
+            drawHouse(g, x, y, w, w * 0.9, roofs[Math.floor(s[2] * 5)], '#fff3dc');
+            continue;
           }
+          const r = cell * (0.22 + s[2] * 0.16);
+          if (!free(x, y, r)) continue;
+          placed.push([x, y, r]);
+          if (s[3] < 0.12) {
+            const pc = ['#ff7aa8', '#ffd34d', '#ffffff'][Math.floor(s[2] * 3)];
+            for (let k = 0; k < 5; k++) { const a = k * 1.2566; blob(g, x + Math.cos(a) * 3.2, y + Math.sin(a) * 3.2, 2.6, 2.6, pc, 1.2); }
+            blob(g, x, y, 2, 2, '#ff9a3a', 1.2);
+            continue;
+          }
+          g.fillStyle = 'rgba(0,0,0,0.18)';
+          g.beginPath(); g.ellipse(x + r * 0.2, y + r * 0.45, r * 1.05, r * 0.6, 0, 0, Math.PI * 2); g.fill();
+          blob(g, x, y, r, r, s[3] < 0.45 ? '#2f9444' : '#3fa64a', 2.5);
+          blob(g, x - r * 0.22, y - r * 0.2, r * 0.55, r * 0.5, '#5cc45a', 0);
+          g.fillStyle = 'rgba(255,255,255,0.35)';
+          g.beginPath(); g.ellipse(x - r * 0.35, y - r * 0.42, r * 0.25, r * 0.14, -0.4, 0, Math.PI * 2); g.fill();
+          if (s[2] > 0.7) blob(g, x + r * 0.35, y - r * 0.05, r * 0.15, r * 0.15, '#ff7ac8', 1.2);
         }
       }
 
       // ---------- car sprites (nose to +x) ----------
+      const SPAD = 6;
       function buildSprites() {
         const { cell } = lay;
         for (const c of cars) {
           const Lp = c.len * cell - cell * 0.2, Wd = cell * 0.68;
           c.Lp = Lp; c.Wd = Wd;
-          const pad = 4;
+          const pad = SPAD;
           const cv = newCanvas(Math.ceil((Lp + pad * 2) * dpr), Math.ceil((Wd + pad * 2) * dpr));
           c.spr = cv;
           if (!cv) continue;
@@ -280,67 +337,71 @@
         }
       }
       function paintCar(g, c, Lp, Wd) {
-        const col = c.color, dark = U.shade(col, -0.35), light = U.shade(col, 0.35);
-        const r = Wd * 0.36;
+        // chubby toy car from above: thick outline, flat fill + darker belly, gloss strip, headlight eyes
+        const col = c.color, dark = U.shade(col, -0.3), light = U.shade(col, 0.4);
+        const r = Wd * 0.4, lw = Math.max(2, Math.min(3.2, Wd * 0.075));
         // wheels
-        g.fillStyle = '#23252c';
-        const wl = Math.min(Lp * 0.2, Wd * 0.42), ww = Wd * 0.16;
+        const wl = Math.min(Lp * 0.2, Wd * 0.42), ww = Wd * 0.2;
         for (const wx of [Lp * 0.5 - Lp * 0.2, -Lp * 0.5 + Lp * 0.2]) for (const s of [-1, 1]) {
-          U.rr(g, wx - wl / 2, s * (Wd / 2) - ww / 2 - s * 1, wl, ww, ww / 2); g.fill();
+          U.rr(g, wx - wl / 2, s * (Wd / 2) - ww / 2 - s * 1, wl, ww, ww / 2);
+          g.fillStyle = '#34303a'; g.fill(); olStroke(g, lw * 0.75);
         }
         // body
-        let gr = g.createLinearGradient(0, -Wd / 2, 0, Wd / 2);
-        gr.addColorStop(0, light); gr.addColorStop(0.45, col); gr.addColorStop(1, dark);
-        g.fillStyle = gr;
-        U.rr(g, -Lp / 2, -Wd / 2 + 1, Lp, Wd - 2, r); g.fill();
-        g.lineWidth = 1.5; g.strokeStyle = dark; g.stroke();
+        U.rr(g, -Lp / 2, -Wd / 2 + 1, Lp, Wd - 2, r);
+        g.fillStyle = col; g.fill();
+        g.save(); g.clip();
+        g.fillStyle = dark; g.globalAlpha = 0.5; g.fillRect(-Lp / 2, Wd * 0.26, Lp, Wd * 0.3); g.globalAlpha = 1;
+        g.restore();
+        U.rr(g, -Lp / 2, -Wd / 2 + 1, Lp, Wd - 2, r); olStroke(g, lw);
         const truck = c.len >= 3;
         if (truck) {
           // cargo box behind the cab
-          const bx = -Lp / 2 + 2, bw = Lp * 0.62;
-          g.fillStyle = U.shade(col, 0.55);
-          U.rr(g, bx, -Wd / 2 + 3, bw, Wd - 6, r * 0.6); g.fill();
-          g.strokeStyle = U.shade(col, -0.15); g.lineWidth = 1.2;
+          const bx = -Lp / 2 + lw, bw = Lp * 0.6;
+          U.rr(g, bx, -Wd / 2 + 4, bw, Wd - 8, r * 0.45);
+          g.fillStyle = U.shade(col, 0.6); g.fill(); olStroke(g, lw * 0.8);
+          g.strokeStyle = U.shade(col, -0.05); g.lineWidth = Math.max(1.2, lw * 0.5); g.lineCap = 'round';
           g.beginPath();
-          for (let i = 1; i < 5; i++) { g.moveTo(bx + bw * i / 5, -Wd / 2 + 6); g.lineTo(bx + bw * i / 5, Wd / 2 - 6); }
-          g.stroke();
+          for (let i = 1; i < 5; i++) { g.moveTo(bx + bw * i / 5, -Wd / 2 + 8); g.lineTo(bx + bw * i / 5, Wd / 2 - 8); }
+          g.stroke(); g.lineCap = 'butt';
+          U.rr(g, bx + 3, -Wd / 2 + 6, bw - 6, Wd * 0.1, Wd * 0.05); g.fillStyle = 'rgba(255,255,255,0.6)'; g.fill();
           // windshield
           const wx = Lp / 2 - Lp * 0.2;
-          g.fillStyle = '#26364f';
-          U.rr(g, wx - Lp * 0.07, -Wd * 0.36, Lp * 0.09, Wd * 0.72, 3); g.fill();
-          g.fillStyle = 'rgba(160,220,255,0.55)';
-          U.rr(g, wx - Lp * 0.055, -Wd * 0.3, Lp * 0.03, Wd * 0.4, 2); g.fill();
+          U.rr(g, wx - Lp * 0.075, -Wd * 0.34, Lp * 0.1, Wd * 0.68, Wd * 0.12);
+          g.fillStyle = '#bfe8ff'; g.fill(); olStroke(g, lw * 0.7);
+          U.rr(g, wx - Lp * 0.055, -Wd * 0.28, Lp * 0.03, Wd * 0.3, 2); g.fillStyle = '#ffffff'; g.fill();
         } else {
-          // windshield (front) and rear window, roof
-          g.fillStyle = '#26364f';
+          // windshield (front), rear window, rounded roof
           g.beginPath();
-          g.moveTo(Lp * 0.16, -Wd * 0.38); g.lineTo(Lp * 0.3, -Wd * 0.32); g.lineTo(Lp * 0.3, Wd * 0.32); g.lineTo(Lp * 0.16, Wd * 0.38);
-          g.closePath(); g.fill();
+          g.moveTo(Lp * 0.15, -Wd * 0.36); g.lineTo(Lp * 0.31, -Wd * 0.3); g.lineTo(Lp * 0.31, Wd * 0.3); g.lineTo(Lp * 0.15, Wd * 0.36);
+          g.closePath(); g.fillStyle = '#bfe8ff'; g.fill(); olStroke(g, lw * 0.7);
           g.beginPath();
-          g.moveTo(-Lp * 0.24, -Wd * 0.36); g.lineTo(-Lp * 0.33, -Wd * 0.3); g.lineTo(-Lp * 0.33, Wd * 0.3); g.lineTo(-Lp * 0.24, Wd * 0.36);
-          g.closePath(); g.fill();
-          g.fillStyle = 'rgba(160,220,255,0.5)';
-          g.beginPath(); g.moveTo(Lp * 0.2, -Wd * 0.3); g.lineTo(Lp * 0.25, -Wd * 0.27); g.lineTo(Lp * 0.25, -Wd * 0.05); g.lineTo(Lp * 0.2, -Wd * 0.05); g.closePath(); g.fill();
-          gr = g.createLinearGradient(0, -Wd / 2, 0, Wd / 2);
-          gr.addColorStop(0, U.shade(col, 0.5)); gr.addColorStop(1, U.shade(col, 0.05));
-          g.fillStyle = gr;
-          U.rr(g, -Lp * 0.24, -Wd * 0.36, Lp * 0.4, Wd * 0.72, Wd * 0.18); g.fill();
+          g.moveTo(-Lp * 0.24, -Wd * 0.34); g.lineTo(-Lp * 0.35, -Wd * 0.28); g.lineTo(-Lp * 0.35, Wd * 0.28); g.lineTo(-Lp * 0.24, Wd * 0.34);
+          g.closePath(); g.fill(); olStroke(g, lw * 0.7);
+          g.fillStyle = '#ffffff';
+          g.beginPath(); g.moveTo(Lp * 0.2, -Wd * 0.28); g.lineTo(Lp * 0.26, -Wd * 0.25); g.lineTo(Lp * 0.26, -Wd * 0.08); g.lineTo(Lp * 0.2, -Wd * 0.08); g.closePath(); g.fill();
+          U.rr(g, -Lp * 0.24, -Wd * 0.36, Lp * 0.4, Wd * 0.72, Wd * 0.2);
+          g.fillStyle = light; g.fill(); olStroke(g, lw * 0.7);
         }
-        // lights
-        g.fillStyle = '#fff6b0';
-        g.beginPath(); g.ellipse(Lp / 2 - 3, -Wd * 0.3, 2.6, 3.4, 0, 0, Math.PI * 2); g.fill();
-        g.beginPath(); g.ellipse(Lp / 2 - 3, Wd * 0.3, 2.6, 3.4, 0, 0, Math.PI * 2); g.fill();
-        g.fillStyle = '#ff3b4a';
-        U.rr(g, -Lp / 2 + 1, -Wd * 0.38, 3, Wd * 0.18, 1.5); g.fill();
-        U.rr(g, -Lp / 2 + 1, Wd * 0.2, 3, Wd * 0.18, 1.5); g.fill();
-        // drive arrow (white with dark rim) on the roof
+        // gloss strip along the upper flank
+        U.rr(g, -Lp / 2 + Lp * 0.1, -Wd / 2 + Wd * 0.09, Lp * 0.5, Wd * 0.08, Wd * 0.04);
+        g.fillStyle = 'rgba(255,255,255,0.6)'; g.fill();
+        // headlight eyes (face) + tail lights
+        const er = Math.max(2.4, Math.min(Wd * 0.16, Lp * 0.085));
+        for (const sy of [-1, 1]) {
+          blob(g, Lp / 2 - er * 1.1, sy * Wd * 0.27, er, er * 1.1, '#fffbe8', lw * 0.6);
+          g.fillStyle = OL; g.beginPath(); g.arc(Lp / 2 - er * 0.8, sy * Wd * 0.27, er * 0.55, 0, Math.PI * 2); g.fill();
+          g.fillStyle = '#fff'; g.beginPath(); g.arc(Lp / 2 - er * 0.95, sy * Wd * 0.27 - er * 0.32, er * 0.22, 0, Math.PI * 2); g.fill();
+        }
+        U.rr(g, -Lp / 2 - 0.5, -Wd * 0.38, 3.5, Wd * 0.18, 1.5); g.fillStyle = '#ff4256'; g.fill(); olStroke(g, lw * 0.45);
+        U.rr(g, -Lp / 2 - 0.5, Wd * 0.2, 3.5, Wd * 0.18, 1.5); g.fill(); olStroke(g, lw * 0.45);
+        // drive arrow (white with dark outline) on the roof
         const s = c.rev ? -1 : 1, ax = truck ? -Lp * 0.12 : -Lp * 0.04, al = Math.min(Lp * 0.36, Wd * 0.75), aw = Wd * 0.26;
         g.save(); g.translate(ax, 0); g.scale(s, 1);
         g.beginPath();
         g.moveTo(al / 2, 0); g.lineTo(al / 2 - aw * 1.1, -aw); g.lineTo(al / 2 - aw * 1.1, -aw * 0.4);
         g.lineTo(-al / 2, -aw * 0.4); g.lineTo(-al / 2, aw * 0.4); g.lineTo(al / 2 - aw * 1.1, aw * 0.4); g.lineTo(al / 2 - aw * 1.1, aw);
         g.closePath();
-        g.lineJoin = 'round'; g.lineWidth = 3; g.strokeStyle = 'rgba(0,0,0,0.45)'; g.stroke();
+        g.lineJoin = 'round'; g.lineWidth = lw * 1.1; g.strokeStyle = OL; g.stroke();
         g.fillStyle = '#ffffff'; g.fill();
         g.restore();
       }
@@ -492,15 +553,7 @@
           obs.forEach((o, i) => {
             const x = lay.lotX + (o[0] + 0.5) * cell + Math.sin(time * 60) * 3 * obsShake[i], y = lay.lotY + (o[1] + 0.5) * cell;
             const r = cell * 0.3;
-            g.fillStyle = 'rgba(0,0,0,0.25)';
-            g.beginPath(); g.ellipse(x + 2, y + 4, r, r * 0.7, 0, 0, Math.PI * 2); g.fill();
-            g.fillStyle = '#e8eaf0'; U.rr(g, x - r, y - r, r * 2, r * 2, r * 0.3); g.fill();
-            g.fillStyle = '#ff7a1a';
-            g.beginPath(); g.arc(x, y, r * 0.8, 0, Math.PI * 2); g.fill();
-            g.fillStyle = '#fff';
-            g.beginPath(); g.arc(x, y, r * 0.5, 0, Math.PI * 2); g.fill();
-            g.fillStyle = '#ff7a1a';
-            g.beginPath(); g.arc(x, y, r * 0.28, 0, Math.PI * 2); g.fill();
+            drawCone(g, x, y, r);
           });
           // cars: parked first, exiting on top
           for (let pass = 0; pass < 2; pass++) {
@@ -532,7 +585,7 @@
               g.save(); g.translate(x, y); g.rotate(a); g.scale(pop, pop);
               g.fillStyle = 'rgba(0,0,0,0.28)';
               U.rr(g, -c.Lp / 2 + 2, -c.Wd / 2 + 4, c.Lp, c.Wd, c.Wd * 0.36); g.fill();
-              if (c.spr && c.spr.getContext) g.drawImage(c.spr, -c.Lp / 2 - 4, -c.Wd / 2 - 4, c.Lp + 8, c.Wd + 8);
+              if (c.spr && c.spr.getContext) g.drawImage(c.spr, -c.Lp / 2 - SPAD, -c.Wd / 2 - SPAD, c.Lp + SPAD * 2, c.Wd + SPAD * 2);
               else paintCar(g, c, c.Lp, c.Wd);
               if (c.flash > 0) {
                 g.fillStyle = 'rgba(255,255,255,' + (c.flash * 0.45).toFixed(3) + ')';
@@ -551,8 +604,8 @@
           g.globalAlpha = 1;
           g.restore();
           // HUD: hearts
-          g.fillStyle = 'rgba(0,0,0,0.22)';
-          U.rr(g, 10, 8, 10 + maxHearts * 34, 32, 16); g.fill();
+          U.rr(g, 10, 8, 10 + maxHearts * 34, 32, 16);
+          g.fillStyle = 'rgba(42,26,20,0.72)'; g.fill(); olStroke(g, 2.5);
           for (let i = 0; i < maxHearts; i++) {
             const hx = 32 + i * 34, hy = 24;
             const s = (i === hearts && heartPop > 0) ? 1 + heartPop * 0.5 : 1;
@@ -561,9 +614,10 @@
             g.restore();
           }
           const left = remaining();
-          g.fillStyle = 'rgba(0,0,0,0.22)';
-          U.rr(g, W - 100, 8, 90, 32, 16); g.fill();
-          U.text(g, '🚗 ' + left, W - 55, 25, 17, '#fff', 'center', 800);
+          U.rr(g, W - 100, 8, 90, 32, 16);
+          g.fillStyle = 'rgba(42,26,20,0.72)'; g.fill(); olStroke(g, 2.5);
+          U.text(g, '🚗', W - 74, 25, 16, '#fff', 'center', 800);
+          otext(g, String(left), W - 42, 25, 19, '#ffffff');
         },
         down(x, y) { tap(x, y); },
         _test: {
@@ -578,7 +632,21 @@
         g.moveTo(x, y + r * 0.9);
         g.bezierCurveTo(x - r * 1.5, y - r * 0.1, x - r * 0.7, y - r * 1.2, x, y - r * 0.4);
         g.bezierCurveTo(x + r * 0.7, y - r * 1.2, x + r * 1.5, y - r * 0.1, x, y + r * 0.9);
-        g.fill();
+        g.fill(); olStroke(g, 2);
+        g.fillStyle = 'rgba(255,255,255,0.55)';
+        g.beginPath(); g.ellipse(x - r * 0.45, y - r * 0.35, r * 0.25, r * 0.16, -0.6, 0, Math.PI * 2); g.fill();
+      }
+      function drawCone(g, x, y, r) {
+        // cartoon traffic cone on a square base (seen from above-front)
+        g.fillStyle = 'rgba(0,0,0,0.25)';
+        g.beginPath(); g.ellipse(x + 2, y + r * 0.75, r * 1.05, r * 0.4, 0, 0, Math.PI * 2); g.fill();
+        U.rr(g, x - r, y + r * 0.3, r * 2, r * 0.6, r * 0.2); g.fillStyle = '#ff7a1a'; g.fill(); olStroke(g, 2.2);
+        g.beginPath(); g.moveTo(x - r * 0.72, y + r * 0.5); g.lineTo(x - r * 0.18, y - r * 1.05); g.quadraticCurveTo(x, y - r * 1.2, x + r * 0.18, y - r * 1.05); g.lineTo(x + r * 0.72, y + r * 0.5); g.closePath();
+        g.fillStyle = '#ff8a2a'; g.fill(); olStroke(g, 2.2);
+        g.save(); g.clip();
+        g.fillStyle = '#ffffff'; g.fillRect(x - r, y - r * 0.45, r * 2, r * 0.32); g.fillRect(x - r, y + r * 0.05, r * 2, r * 0.22);
+        g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(x - r * 0.4, y - r, r * 0.16, r * 1.4);
+        g.restore();
       }
     },
   });

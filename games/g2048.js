@@ -121,42 +121,121 @@
     return -1;
   }
 
-  // ---------- drawing (swap for a restyle) ----------
-  function drawBackground(g, W, H, time) {
-    const gr = g.createLinearGradient(0, 0, 0, H);
-    gr.addColorStop(0, '#ffe7c7'); gr.addColorStop(1, '#ffc9a3');
-    g.fillStyle = gr; g.fillRect(0, 0, W, H);
-    g.fillStyle = 'rgba(255,255,255,0.35)';
-    for (let i = 0; i < 12; i++) {
-      const x = ((i * 83 + 11) % 100) / 100 * W, y = ((i * 47 + 23) % 100) / 100 * H, s = 14 + (i * 7) % 20;
-      MG.util.rr(g, x - s / 2, y - s / 2 + Math.sin(time * 0.6 + i) * 6, s, s, s * 0.25); g.fill();
+  // ---------- drawing — v4 卡通 Q 版: chunky outlined tiles with cute faces in a toy playroom ----------
+  const OL = '#2a1a14';
+  const FONT = 'px -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif';
+  function ink(g, lw) { g.lineWidth = lw; g.strokeStyle = OL; g.lineJoin = 'round'; g.lineCap = 'round'; g.stroke(); }
+  function oText(g, s, x, y, size, col, lw) {
+    g.font = '900 ' + size + FONT; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.lineJoin = 'round'; g.lineWidth = lw || Math.max(2.5, size * 0.2); g.strokeStyle = OL; g.strokeText(s, x, y);
+    g.fillStyle = col; g.fillText(s, x, y);
+  }
+  let room = null, roomKey = '';
+  function paintRoom(g, W, H) {
+    // striped wallpaper with polka dots
+    g.fillStyle = '#ffe3c4'; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#ffd5ad';
+    for (let x = 0; x < W; x += 44) g.fillRect(x, 0, 22, H);
+    g.fillStyle = 'rgba(255,255,255,0.55)';
+    for (let y = 18, r = 0; y < H; y += 40, r++) for (let x = (r % 2) * 22 + 11; x < W; x += 44) { g.beginPath(); g.arc(x, y, 3.5, 0, 6.283); g.fill(); }
+    // window with sky (top-right) and a toy shelf (top-left) peek out above/below the board
+    const fy = H * 0.9;
+    // wooden floor
+    g.beginPath(); g.rect(-5, fy, W + 10, H - fy + 5); g.fillStyle = '#c98a4e'; g.fill(); ink(g, 3);
+    g.strokeStyle = 'rgba(90,45,20,0.4)'; g.lineWidth = 2;
+    for (let x = 30; x < W; x += 70) { g.beginPath(); g.moveTo(x, fy); g.lineTo(x - 20, H); g.stroke(); }
+    g.beginPath(); g.rect(-5, fy - 10, W + 10, 10); g.fillStyle = '#fff6e6'; g.fill(); ink(g, 2.5);
+    // toy blocks + ball on the floor
+    const toys = [[W * 0.1, '#ff5d6c', 'A'], [W * 0.88, '#4c9bff', 'B']];
+    for (const [x, col, ch] of toys) {
+      const s = 26;
+      g.beginPath(); g.rect(x - s / 2, fy + 8, s, s); g.fillStyle = col; g.fill(); ink(g, 2.5);
+      g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(x - s / 2 + 3, fy + 11, s - 6, 4);
+      oText(g, ch, x, fy + 8 + s / 2 + 1, 15, '#ffffff', 3);
     }
+    g.beginPath(); g.arc(W * 0.78, fy + 22, 11, 0, 6.283); g.fillStyle = '#ffcc4d'; g.fill(); ink(g, 2.5);
+    g.beginPath(); g.arc(W * 0.78, fy + 22, 11, -1.2, 1.2); g.strokeStyle = '#ff5d6c'; g.lineWidth = 4; g.stroke();
+    g.beginPath(); g.arc(W * 0.78, fy + 22, 11, 0, 6.283); ink(g, 2.5);
+  }
+  function drawBackground(g, W, H, time) {
+    const dpr = Math.min(3, (typeof window !== 'undefined' && window.devicePixelRatio) || 1);
+    const key = W + 'x' + H + '@' + dpr;
+    if (key !== roomKey) {
+      roomKey = key; room = null;
+      try {
+        const cv = document.createElement('canvas');
+        cv.width = Math.max(1, Math.round(W * dpr)); cv.height = Math.max(1, Math.round(H * dpr));
+        const c2 = cv.getContext('2d'); c2.setTransform(dpr, 0, 0, dpr, 0, 0);
+        paintRoom(c2, W, H); room = cv;
+      } catch (e) { room = null; }
+    }
+    if (room) g.drawImage(room, 0, 0, W, H); else paintRoom(g, W, H);
+    // floating outlined mini blocks (living detail)
+    const cols = ['#ffbe73', '#ff7a7a', '#a8ec6a', '#6fb2ff', '#b58cff', '#ffe06b'];
+    for (let i = 0; i < 6; i++) {
+      const x = ((i * 83 + 11) % 100) / 100 * W, y = ((i * 47 + 23) % 90) / 100 * H, s = 14 + (i * 7) % 12;
+      g.save(); g.translate(x, y + Math.sin(time * 0.6 + i) * 6); g.rotate(Math.sin(time * 0.4 + i * 2) * 0.25);
+      g.globalAlpha = 0.6;
+      MG.util.rr(g, -s / 2, -s / 2, s, s, s * 0.25); g.fillStyle = cols[i]; g.fill(); ink(g, 2);
+      g.restore();
+    }
+    g.globalAlpha = 1;
+  }
+  function tileFace(g, s, v, light) {
+    const fy = s * 0.3, ex = s * 0.12, lw = Math.max(1.3, s * 0.025);
+    g.fillStyle = 'rgba(255,90,120,0.45)';
+    g.beginPath(); g.ellipse(-s * 0.27, fy + s * 0.03, s * 0.06, s * 0.035, 0, 0, 6.283); g.ellipse(s * 0.27, fy + s * 0.03, s * 0.06, s * 0.035, 0, 0, 6.283); g.fill();
+    if (v <= 2) {
+      g.beginPath(); g.moveTo(-ex - s * 0.04, fy); g.quadraticCurveTo(-ex, fy + s * 0.03, -ex + s * 0.04, fy);
+      g.moveTo(ex - s * 0.04, fy); g.quadraticCurveTo(ex, fy + s * 0.03, ex + s * 0.04, fy); ink(g, lw);
+    } else if (v >= 128) {
+      for (const e of [-1, 1]) {
+        const cx = e * ex, rr2 = s * 0.045;
+        g.beginPath();
+        for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4 - Math.PI / 2, d = k % 2 ? rr2 * 0.45 : rr2; if (k) g.lineTo(cx + Math.cos(a) * d, fy + Math.sin(a) * d); else g.moveTo(cx + Math.cos(a) * d, fy + Math.sin(a) * d); }
+        g.closePath(); g.fillStyle = '#ffffff'; g.fill(); ink(g, lw * 0.8);
+      }
+    } else {
+      g.fillStyle = OL; g.beginPath(); g.ellipse(-ex, fy, s * 0.034, s * 0.046, 0, 0, 6.283); g.ellipse(ex, fy, s * 0.034, s * 0.046, 0, 0, 6.283); g.fill();
+      g.fillStyle = '#ffffff'; g.beginPath(); g.arc(-ex - s * 0.01, fy - s * 0.015, s * 0.012, 0, 6.283); g.arc(ex - s * 0.01, fy - s * 0.015, s * 0.012, 0, 6.283); g.fill();
+    }
+    g.beginPath();
+    if (v >= 64) { g.moveTo(-s * 0.05, fy + s * 0.04); g.quadraticCurveTo(0, fy + s * 0.12, s * 0.05, fy + s * 0.04); g.closePath(); g.fillStyle = '#c2405a'; g.fill(); ink(g, lw); }
+    else { g.arc(0, fy + s * 0.02, s * 0.035, 0.2, Math.PI - 0.2); ink(g, lw); }
   }
   function drawTile(g, U, x, y, s, v, scale) {
     const c = TILE[v] || BIG;
-    const r = s * 0.16;
+    const r = s * 0.2, lw = Math.max(2.5, s * 0.045), lip = s * 0.08;
     g.save(); g.translate(x + s / 2, y + s / 2); g.scale(scale, scale);
-    g.fillStyle = 'rgba(120,70,30,0.25)'; U.rr(g, -s / 2, -s / 2 + s * 0.06, s, s, r); g.fill();
-    const gr = g.createLinearGradient(0, -s / 2, 0, s / 2);
-    gr.addColorStop(0, c[0]); gr.addColorStop(1, c[1]);
-    g.fillStyle = gr; U.rr(g, -s / 2, -s / 2, s, s, r); g.fill();
-    g.fillStyle = 'rgba(255,255,255,0.35)'; U.rr(g, -s / 2 + s * 0.08, -s / 2 + s * 0.06, s * 0.84, s * 0.16, s * 0.08); g.fill();
-    if (v >= 128) { g.strokeStyle = 'rgba(255,255,255,0.7)'; g.lineWidth = Math.max(1.5, s * 0.03); U.rr(g, -s / 2 + 1, -s / 2 + 1, s - 2, s - 2, r); g.stroke(); }
+    g.fillStyle = 'rgba(80,40,20,0.25)'; U.rr(g, -s / 2 + 1, -s / 2 + lip * 0.8, s, s, r); g.fill();
+    U.rr(g, -s / 2, -s / 2, s, s, r); g.fillStyle = U.shade(c[1], -0.18); g.fill();
+    U.rr(g, -s / 2, -s / 2, s, s - lip, r); g.fillStyle = c[0]; g.fill();
+    g.fillStyle = c[1]; g.globalAlpha = 0.45; U.rr(g, -s / 2, -s / 2 + s * 0.45, s, s * 0.47 - lip, r * 0.7); g.fill(); g.globalAlpha = 1;
+    g.fillStyle = 'rgba(255,255,255,0.55)'; U.rr(g, -s / 2 + s * 0.12, -s / 2 + s * 0.07, s * 0.76, s * 0.12, s * 0.06); g.fill();
+    U.rr(g, -s / 2, -s / 2, s, s, r); ink(g, lw);
+    if (v >= 2048) {
+      // little crown on the top edge
+      const cw = s * 0.3, cy = -s / 2 - s * 0.02;
+      g.beginPath(); g.moveTo(-cw / 2, cy); g.lineTo(-cw / 2, cy - s * 0.12); g.lineTo(-cw / 4, cy - s * 0.05); g.lineTo(0, cy - s * 0.15); g.lineTo(cw / 4, cy - s * 0.05); g.lineTo(cw / 2, cy - s * 0.12); g.lineTo(cw / 2, cy); g.closePath();
+      g.fillStyle = '#ffd34a'; g.fill(); ink(g, lw * 0.7);
+    }
     const str = String(v), digits = str.length;
-    const fs = s * (digits <= 2 ? 0.46 : digits === 3 ? 0.38 : digits === 4 ? 0.3 : 0.24);
-    if (c[2] === '#fff') U.text(g, str, 1, 2, fs, 'rgba(0,0,0,0.18)', 'center', 900);
-    U.text(g, str, 0, 1, fs, c[2], 'center', 900);
+    const fs = s * (digits <= 2 ? 0.42 : digits === 3 ? 0.34 : digits === 4 ? 0.27 : 0.22);
+    oText(g, str, 0, -s * 0.07, fs, '#ffffff', Math.max(3, fs * 0.2));
+    if (s >= 34) tileFace(g, s, v, c[2] !== '#fff');
     g.restore();
   }
   function drawStone(g, U, x, y, s) {
-    const gr = g.createLinearGradient(x, y, x + s, y + s);
-    gr.addColorStop(0, '#a7a2a8'); gr.addColorStop(1, '#5d5761');
-    g.fillStyle = 'rgba(0,0,0,0.25)'; U.rr(g, x, y + s * 0.06, s, s, s * 0.16); g.fill();
-    g.fillStyle = gr; U.rr(g, x, y, s, s, s * 0.16); g.fill();
-    g.strokeStyle = 'rgba(30,25,35,0.5)'; g.lineWidth = Math.max(1.5, s * 0.03);
-    g.beginPath(); g.moveTo(x + s * 0.3, y + s * 0.15); g.lineTo(x + s * 0.45, y + s * 0.45); g.lineTo(x + s * 0.3, y + s * 0.7);
-    g.moveTo(x + s * 0.45, y + s * 0.45); g.lineTo(x + s * 0.75, y + s * 0.55); g.stroke();
-    g.fillStyle = 'rgba(255,255,255,0.25)'; U.rr(g, x + s * 0.1, y + s * 0.08, s * 0.5, s * 0.12, s * 0.06); g.fill();
+    const r = s * 0.2, lw = Math.max(2.5, s * 0.045);
+    g.fillStyle = 'rgba(0,0,0,0.25)'; U.rr(g, x + 1, y + s * 0.07, s, s, r); g.fill();
+    U.rr(g, x, y, s, s, r); g.fillStyle = '#6f6874'; g.fill();
+    U.rr(g, x, y, s, s - s * 0.08, r); g.fillStyle = '#9d97a3'; g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.3)'; U.rr(g, x + s * 0.12, y + s * 0.07, s * 0.5, s * 0.1, s * 0.05); g.fill();
+    g.fillStyle = 'rgba(60,50,70,0.35)';
+    g.beginPath(); g.arc(x + s * 0.72, y + s * 0.3, s * 0.07, 0, 6.283); g.arc(x + s * 0.25, y + s * 0.7, s * 0.05, 0, 6.283); g.fill();
+    g.beginPath(); g.moveTo(x + s * 0.3, y + s * 0.18); g.lineTo(x + s * 0.45, y + s * 0.42); g.lineTo(x + s * 0.32, y + s * 0.6);
+    g.moveTo(x + s * 0.45, y + s * 0.42); g.lineTo(x + s * 0.7, y + s * 0.5); ink(g, Math.max(1.5, s * 0.03));
+    U.rr(g, x, y, s, s, r); ink(g, lw);
   }
 
   MG.register({
@@ -299,10 +378,12 @@
         // header cards
         const cw = Math.min(110, (W - 48) / 3);
         const card = (x, label, val, col) => {
-          g.fillStyle = 'rgba(120,70,40,0.18)'; U.rr(g, x, 16, cw, 54, 14); g.fill();
-          g.fillStyle = '#8a5a3c'; U.rr(g, x, 12, cw, 54, 14); g.fill();
-          U.text(g, label, x + cw / 2, 26, 11, 'rgba(255,240,220,0.85)', 'center', 800);
-          U.text(g, String(val), x + cw / 2, 47, val > 99999 ? 15 : 19, col || '#fff', 'center', 900);
+          g.fillStyle = 'rgba(120,70,40,0.25)'; U.rr(g, x + 1, 16, cw, 54, 14); g.fill();
+          U.rr(g, x, 12, cw, 54, 14); g.fillStyle = '#8a5a3c'; g.fill();
+          g.fillStyle = 'rgba(255,255,255,0.18)'; U.rr(g, x + 8, 15, cw - 16, 8, 4); g.fill();
+          U.rr(g, x, 12, cw, 54, 14); ink(g, 3);
+          U.text(g, label, x + cw / 2, 27, 11, 'rgba(255,240,220,0.9)', 'center', 800);
+          oText(g, String(val), x + cw / 2, 48, val > 99999 ? 15 : 19, col || '#fff');
         };
         const x0 = (W - cw * 3 - 16) / 2;
         card(x0, '分數', score);
@@ -313,12 +394,15 @@
         // board
         const sx = shake > 0 ? Math.sin(time * 90) * shake * 30 : 0;
         g.save(); g.translate(sx, 0);
-        g.fillStyle = 'rgba(120,70,40,0.25)'; U.rr(g, bx, by + 6, boardS, boardS, 16); g.fill();
-        g.fillStyle = '#b98b68'; U.rr(g, bx, by, boardS, boardS, 16); g.fill();
+        g.fillStyle = 'rgba(120,70,40,0.3)'; U.rr(g, bx + 2, by + 7, boardS, boardS, 18); g.fill();
+        U.rr(g, bx, by, boardS, boardS, 18); g.fillStyle = '#b07a4c'; g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.22)'; U.rr(g, bx + 14, by + 3, boardS - 28, Math.max(3, gap * 0.45), 2); g.fill();
+        U.rr(g, bx, by, boardS, boardS, 18); ink(g, 3.5);
         for (let i = 0; i < N * N; i++) {
           const [x, y] = cellXY(i);
           if (grid[i] === -1) continue;
-          g.fillStyle = 'rgba(255,240,225,0.35)'; U.rr(g, x, y, cell, cell, cell * 0.16); g.fill();
+          U.rr(g, x, y, cell, cell, cell * 0.2); g.fillStyle = '#d9ab7c'; g.fill();
+          g.fillStyle = 'rgba(90,45,20,0.25)'; U.rr(g, x, y, cell, cell * 0.14, cell * 0.07); g.fill();
         }
         for (let i = 0; i < N * N; i++) if (grid[i] === -1) { const [x, y] = cellXY(i); drawStone(g, U, x, y, cell); }
         const ease = (t) => 1 - Math.pow(1 - t, 3);
@@ -336,9 +420,9 @@
         for (const t of tiles) if (t.dying) drawT(t);
         for (const t of tiles) if (!t.dying) drawT(t);
         g.restore();
-        for (const p of parts) { g.globalAlpha = Math.max(0, p.life / p.max); g.fillStyle = p.col; g.beginPath(); g.arc(p.x, p.y, p.s, 0, Math.PI * 2); g.fill(); }
+        for (const p of parts) { g.globalAlpha = Math.max(0, p.life / p.max); g.fillStyle = p.col; g.beginPath(); g.arc(p.x, p.y, p.s, 0, Math.PI * 2); g.fill(); if (p.s > 2.5) ink(g, 1.2); }
         g.globalAlpha = 1;
-        for (const p of pops) { g.globalAlpha = Math.min(1, p.life * 2); U.text(g, p.txt, p.x, p.y, 16, '#c0562a', 'center', 900); }
+        for (const p of pops) { g.globalAlpha = Math.min(1, p.life * 2); oText(g, p.txt, p.x, p.y, 16, '#ffe14a'); }
         g.globalAlpha = 1;
         if (!diff && !endless && api.level === 1 && moves < 2) {
           const t = (time * 1.2) % 1;
@@ -348,8 +432,8 @@
         }
         if (ending && ending.won) {
           g.globalAlpha = Math.min(1, ending.t * 3) * 0.9;
-          g.fillStyle = 'rgba(255,230,120,0.35)'; U.rr(g, bx, by, boardS, boardS, 16); g.fill();
-          U.text(g, P.target + '！', bx + boardS / 2, by + boardS / 2, Math.min(64, boardS * 0.18), '#fff', 'center', 900);
+          g.fillStyle = 'rgba(255,230,120,0.35)'; U.rr(g, bx, by, boardS, boardS, 18); g.fill();
+          oText(g, P.target + '！', bx + boardS / 2, by + boardS / 2, Math.min(64, boardS * 0.18), '#ffe14a', 8);
           g.globalAlpha = 1;
         }
       }

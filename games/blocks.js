@@ -244,40 +244,52 @@
     c.width = Math.max(1, Math.ceil(w)); c.height = Math.max(1, Math.ceil(h));
     return c;
   }
+  // 卡通 Q 版: outlined jelly-candy blocks
+  const OL = '#2a1a14';
   function blockSprite(util, color, size) {
     const d = DPR();
     const cv = makeCanvas(size * d, size * d);
     const g = cv.getContext('2d');
     g.scale(d, d);
-    const s = size, r = s * 0.16, b = s * 0.14;
-    util.rr(g, 0, 0, s, s, r); g.fillStyle = util.shade(color, -0.38); g.fill();
-    util.rr(g, 0, 0, s, s - b * 0.75, r); g.fillStyle = util.shade(color, 0.38); g.fill();
-    util.rr(g, b * 0.5, b * 0.45, s - b, s - b * 1.25, r * 0.7);
-    const gr = g.createLinearGradient(0, b * 0.45, 0, s - b * 0.8);
-    gr.addColorStop(0, util.shade(color, 0.16)); gr.addColorStop(1, util.shade(color, -0.1));
-    g.fillStyle = gr; g.fill();
-    g.globalAlpha = 0.42; g.fillStyle = '#fff';
-    util.rr(g, b * 0.85, b * 0.75, s * 0.42, s * 0.13, s * 0.065); g.fill();
-    g.globalAlpha = 0.28;
-    g.beginPath(); g.arc(s * 0.74, s * 0.28, s * 0.05, 0, Math.PI * 2); g.fill();
-    g.globalAlpha = 1;
+    const s = size, lw = Math.max(1.5, Math.min(3, s * 0.065)), r = s * 0.22, i = lw / 2 + 0.5;
+    g.lineJoin = 'round';
+    // body with darker bottom lip
+    util.rr(g, i, i, s - i * 2, s - i * 2, r);
+    g.fillStyle = util.shade(color, -0.3); g.fill();
+    util.rr(g, i, i, s - i * 2, s - i * 2 - s * 0.12, r);
+    g.fillStyle = color; g.fill();
+    util.rr(g, i, i, s - i * 2, s - i * 2, r);
+    g.lineWidth = lw; g.strokeStyle = OL; g.stroke();
+    // soft inner light
+    util.rr(g, s * 0.2, s * 0.2, s * 0.6, s * 0.46, r * 0.6);
+    g.fillStyle = util.shade(color, 0.22); g.fill();
+    // gloss strip + sparkle
+    g.fillStyle = 'rgba(255,255,255,0.85)';
+    util.rr(g, s * 0.18, s * 0.13, s * 0.42, Math.max(2, s * 0.1), s * 0.05); g.fill();
+    g.beginPath(); g.arc(s * 0.72, s * 0.18, Math.max(1, s * 0.05), 0, Math.PI * 2); g.fill();
     return cv;
   }
   function drawGem(g, cx, cy, s, t) {
     const w = s * 0.34, h = s * 0.36;
     g.save(); g.translate(cx, cy + Math.sin(t * 3 + cx) * s * 0.02);
+    g.lineJoin = 'round';
     g.beginPath();
     g.moveTo(-w, -h * 0.3); g.lineTo(-w * 0.55, -h * 0.75); g.lineTo(w * 0.55, -h * 0.75); g.lineTo(w, -h * 0.3); g.lineTo(0, h);
     g.closePath();
-    const gr = g.createLinearGradient(0, -h, 0, h);
-    gr.addColorStop(0, '#e9fdff'); gr.addColorStop(0.45, '#5fe3ff'); gr.addColorStop(1, '#1d7fd8');
-    g.fillStyle = gr; g.fill();
-    g.lineWidth = Math.max(1, s * 0.035); g.strokeStyle = '#0d4f9c'; g.stroke();
+    g.fillStyle = '#5fe3ff'; g.fill();
+    g.lineWidth = Math.max(1.5, s * 0.06); g.strokeStyle = OL; g.stroke();
+    g.fillStyle = '#c9f6ff';
+    g.beginPath(); g.moveTo(-w, -h * 0.3); g.lineTo(-w * 0.55, -h * 0.75); g.lineTo(w * 0.55, -h * 0.75); g.lineTo(w, -h * 0.3); g.closePath(); g.fill();
+    g.fillStyle = '#2aa8e8';
+    g.beginPath(); g.moveTo(w * 0.25, -h * 0.3); g.lineTo(w, -h * 0.3); g.lineTo(0, h); g.closePath(); g.fill();
     g.beginPath(); g.moveTo(-w, -h * 0.3); g.lineTo(w, -h * 0.3);
     g.moveTo(-w * 0.55, -h * 0.75); g.lineTo(-w * 0.25, -h * 0.3); g.lineTo(0, h);
     g.moveTo(w * 0.55, -h * 0.75); g.lineTo(w * 0.25, -h * 0.3); g.lineTo(0, h);
-    g.lineWidth = Math.max(0.8, s * 0.02); g.strokeStyle = 'rgba(13,79,156,0.55)'; g.stroke();
-    g.fillStyle = 'rgba(255,255,255,0.85)';
+    g.lineWidth = Math.max(0.8, s * 0.025); g.strokeStyle = 'rgba(42,26,20,0.55)'; g.stroke();
+    g.beginPath();
+    g.moveTo(-w, -h * 0.3); g.lineTo(-w * 0.55, -h * 0.75); g.lineTo(w * 0.55, -h * 0.75); g.lineTo(w, -h * 0.3); g.lineTo(0, h);
+    g.closePath(); g.lineWidth = Math.max(1.5, s * 0.06); g.strokeStyle = OL; g.stroke();
+    g.fillStyle = '#fff';
     g.beginPath(); g.moveTo(-w * 0.5, -h * 0.55); g.lineTo(-w * 0.3, -h * 0.68); g.lineTo(-w * 0.2, -h * 0.4); g.closePath(); g.fill();
     g.restore();
   }
@@ -326,34 +338,76 @@
         sprites = COLORS.map((c) => blockSprite(U, c, Math.max(8, Math.round(cs))));
         buildBg();
       }
+      // candy-land background: cotton-candy sky, gumdrop hills, lollipops, waffle board
+      function lollipop(g, x, y, r, stick, c1, c2) {
+        g.lineJoin = 'round';
+        U.rr(g, x - 3, y, 6, stick, 3); g.fillStyle = '#fff6ea'; g.fill(); g.lineWidth = 2.5; g.strokeStyle = OL; g.stroke();
+        g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fillStyle = c1; g.fill();
+        g.save(); g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.clip();
+        g.strokeStyle = c2; g.lineWidth = r * 0.28;
+        g.beginPath();
+        for (let a = 0; a < Math.PI * 6; a += 0.2) { const rr = r * a / (Math.PI * 6); const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr; if (a === 0) g.moveTo(px, py); else g.lineTo(px, py); }
+        g.stroke(); g.restore();
+        g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.lineWidth = 2.5; g.strokeStyle = OL; g.stroke();
+        g.fillStyle = 'rgba(255,255,255,0.6)'; g.beginPath(); g.ellipse(x - r * 0.4, y - r * 0.45, r * 0.25, r * 0.13, -0.6, 0, Math.PI * 2); g.fill();
+      }
+      function puff(g, x, y, s, col) {
+        g.beginPath();
+        g.arc(x - 18 * s, y + 3 * s, 12 * s, Math.PI * 0.5, Math.PI * 1.5);
+        g.arc(x - 4 * s, y - 7 * s, 14 * s, Math.PI, Math.PI * 1.9);
+        g.arc(x + 13 * s, y - 1 * s, 11 * s, Math.PI * 1.2, Math.PI * 0.1);
+        g.arc(x + 21 * s, y + 5 * s, 8 * s, Math.PI * 1.5, Math.PI * 0.5);
+        g.closePath();
+        g.fillStyle = col; g.fill(); g.lineWidth = 2.5; g.strokeStyle = OL; g.stroke();
+      }
       function buildBg() {
         const d = DPR();
         bgCache = makeCanvas(L.W * d, L.H * d);
         const g = bgCache.getContext('2d');
         g.scale(d, d);
-        const gr = g.createLinearGradient(0, 0, 0, L.H);
-        gr.addColorStop(0, '#4a5bd6'); gr.addColorStop(0.55, '#3241a8'); gr.addColorStop(1, '#232d7c');
-        g.fillStyle = gr; g.fillRect(0, 0, L.W, L.H);
-        g.globalAlpha = 0.07; g.fillStyle = '#fff';
-        for (let k = -2; k < 8; k++) {
-          g.beginPath();
-          const x = k * L.W * 0.22;
-          g.moveTo(x, 0); g.lineTo(x + L.W * 0.1, 0); g.lineTo(x + L.W * 0.45, L.H); g.lineTo(x + L.W * 0.35, L.H); g.closePath(); g.fill();
+        g.lineJoin = 'round';
+        const W = L.W, H = L.H;
+        const gr = g.createLinearGradient(0, 0, 0, H);
+        gr.addColorStop(0, '#ffc6e6'); gr.addColorStop(0.5, '#d9b8ff'); gr.addColorStop(1, '#a98cf0');
+        g.fillStyle = gr; g.fillRect(0, 0, W, H);
+        g.fillStyle = 'rgba(255,255,255,0.35)';
+        for (let k = 0; k < 24; k++) { const x = ((k * 97) % 101) / 101 * W, y = ((k * 61) % 89) / 89 * H; g.beginPath(); g.arc(x, y, 1.5 + (k % 3), 0, Math.PI * 2); g.fill(); }
+        puff(g, 46, L.hdr * 0.3, 0.8, '#fff0f8'); puff(g, W - 50, L.hdr * 0.55, 0.7, '#f3e6ff');
+        const hy = L.by + L.bs * 0.5;
+        // candy floor
+        const fy = hy;
+        g.fillStyle = '#ffe2ef'; g.fillRect(0, fy, W, H - fy);
+        g.strokeStyle = OL; g.lineWidth = 3; g.beginPath(); g.moveTo(0, fy); g.lineTo(W, fy); g.stroke();
+        g.fillStyle = 'rgba(255,120,170,0.25)';
+        for (let x = -40; x < W + 40; x += 40) { g.beginPath(); g.moveTo(x, fy); g.lineTo(x + 20, fy); g.lineTo(x - 20, H); g.lineTo(x - 40, H); g.closePath(); g.fill(); }
+        // lollipops peeking at the sides of the header
+        if (L.bx > 0) {
+          lollipop(g, 26, L.hdr * 0.62, 17, 60, '#ff5d8c', '#fff');
+          lollipop(g, W - 26, L.hdr * 0.5, 14, 70, '#4cc9ff', '#fff');
         }
-        g.globalAlpha = 1;
-        const p = 8;
-        g.fillStyle = 'rgba(10,14,50,0.35)';
-        U.rr(g, L.bx - p, L.by - p + 5, L.bs + p * 2, L.bs + p * 2, 16); g.fill();
-        const pg = g.createLinearGradient(0, L.by - p, 0, L.by + L.bs + p);
-        pg.addColorStop(0, '#1f2766'); pg.addColorStop(1, '#161c4e');
-        g.fillStyle = pg; U.rr(g, L.bx - p, L.by - p, L.bs + p * 2, L.bs + p * 2, 16); g.fill();
-        g.strokeStyle = 'rgba(140,160,255,0.35)'; g.lineWidth = 2; g.stroke();
+        // waffle board
+        const p = 9;
+        U.rr(g, L.bx - p, L.by - p + 6, L.bs + p * 2, L.bs + p * 2, 18);
+        g.fillStyle = '#8a4f2a'; g.fill(); g.lineWidth = 3.5; g.strokeStyle = OL; g.stroke();
+        U.rr(g, L.bx - p, L.by - p, L.bs + p * 2, L.bs + p * 2, 18);
+        g.fillStyle = '#e9a75e'; g.fill(); g.stroke();
+        g.fillStyle = 'rgba(255,255,255,0.4)';
+        U.rr(g, L.bx + 10, L.by - p + 3, L.bs - 20, 3.5, 2); g.fill();
         for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
-          g.fillStyle = (r + c) % 2 ? '#262f78' : '#2a3482';
-          U.rr(g, L.bx + c * L.cs + 1.5, L.by + r * L.cs + 1.5, L.cs - 3, L.cs - 3, L.cs * 0.14); g.fill();
+          U.rr(g, L.bx + c * L.cs + 1.5, L.by + r * L.cs + 1.5, L.cs - 3, L.cs - 3, L.cs * 0.18);
+          g.fillStyle = (r + c) % 2 ? '#c27a3f' : '#cb8548'; g.fill();
+          g.lineWidth = 1.5; g.strokeStyle = 'rgba(42,26,20,0.45)'; g.stroke();
         }
-        g.fillStyle = 'rgba(10,14,50,0.25)';
-        U.rr(g, 10, L.trayY - L.trayH / 2, L.W - 20, L.trayH, 18); g.fill();
+        // tray: a frosted candy plate
+        U.rr(g, 10, L.trayY - L.trayH / 2 + 5, L.W - 20, L.trayH, 20);
+        g.fillStyle = '#d58bb0'; g.fill(); g.lineWidth = 3; g.strokeStyle = OL; g.stroke();
+        U.rr(g, 10, L.trayY - L.trayH / 2, L.W - 20, L.trayH, 20);
+        g.fillStyle = '#fff4fa'; g.fill(); g.stroke();
+        g.fillStyle = 'rgba(255,150,200,0.25)';
+        for (let k = 0; k < 14; k++) {
+          const x = 24 + ((k * 53) % 97) / 97 * (L.W - 48), y = L.trayY - L.trayH / 2 + 8 + ((k * 31) % 41) / 41 * (L.trayH - 16);
+          U.rr(g, x, y, 7, 3, 1.5); g.fill();
+        }
       }
       layout();
 
@@ -499,6 +553,12 @@
         }
       }
 
+      function stroked(g, str, x, y, size, col, lw) {
+        g.font = '900 ' + size + 'px -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif';
+        g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+        g.lineWidth = lw || Math.max(3, size * 0.22); g.strokeStyle = OL;
+        g.strokeText(str, x, y); g.fillStyle = col; g.fillText(str, x, y);
+      }
       function drawPiece(g, p, tlx, tly, cs, alpha) {
         g.globalAlpha = alpha;
         for (const q of p.s.cells) g.drawImage(sprites[p.col], tlx + q[1] * cs, tly + q[0] * cs, cs, cs);
@@ -511,7 +571,7 @@
         g.drawImage(bgCache, 0, 0, L.W, L.H);
         // header
         const hc = L.W / 2;
-        U.text(g, String(Math.floor(shownScore)), hc, L.hdr * 0.38, Math.round(L.hdr * 0.38), '#fff', 'center', 900);
+        stroked(g, String(Math.floor(shownScore)), hc, L.hdr * 0.38, Math.round(L.hdr * 0.38), '#fff', 6);
         const bw = Math.min(L.W * 0.62, 320), bh = 14, bx0 = hc - bw / 2, by0 = L.hdr * 0.74;
         let prog, label;
         if (lvData.type === 'endless') {
@@ -520,15 +580,16 @@
           label = rec ? '新紀錄！' : '最高 ' + best;
         } else if (lvData.type === 'gems') { prog = 1 - gemsLeft / Math.max(1, lvData.gemsNeed); label = (lvData.gemsNeed - gemsLeft) + ' / ' + lvData.gemsNeed; }
         else { prog = Math.min(1, shownScore / lvData.target); label = '目標 ' + lvData.target; }
-        g.fillStyle = 'rgba(10,14,50,0.45)'; U.rr(g, bx0, by0 - bh / 2, bw, bh, bh / 2); g.fill();
+        g.fillStyle = '#7a4a8c'; U.rr(g, bx0, by0 - bh / 2, bw, bh, bh / 2); g.fill();
         if (prog > 0) {
           const pg = g.createLinearGradient(bx0, 0, bx0 + bw, 0);
           pg.addColorStop(0, '#ffb422'); pg.addColorStop(1, '#ffe66b');
           g.fillStyle = pg; U.rr(g, bx0, by0 - bh / 2, Math.max(bh, bw * prog), bh, bh / 2); g.fill();
-          g.fillStyle = 'rgba(255,255,255,0.35)'; U.rr(g, bx0 + 3, by0 - bh / 2 + 2, Math.max(bh, bw * prog) - 6, 4, 2); g.fill();
+          g.fillStyle = 'rgba(255,255,255,0.45)'; U.rr(g, bx0 + 3, by0 - bh / 2 + 2, Math.max(bh, bw * prog) - 6, 4, 2); g.fill();
         }
+        g.lineWidth = 2.5; g.strokeStyle = OL; U.rr(g, bx0, by0 - bh / 2, bw, bh, bh / 2); g.stroke();
         if (lvData.type === 'gems') drawGem(g, bx0 - 16, by0, 28, time);
-        U.text(g, label, hc, by0 + 16, 12, '#ffe9a8', 'center', 800);
+        stroked(g, label, hc, by0 + 17, 13, '#fff', 3.5);
 
         // board blocks
         const gm = dragGeom();
@@ -580,7 +641,7 @@
         }
         if (gm) {
           const p = pieces[drag.i];
-          g.fillStyle = 'rgba(0,0,0,0.18)';
+          g.fillStyle = 'rgba(42,26,20,0.22)';
           for (const q of p.s.cells) { U.rr(g, gm.tlx + q[1] * gm.cs + 4, gm.tly + q[0] * gm.cs + 8, gm.cs, gm.cs, gm.cs * 0.16); g.fill(); }
           drawPiece(g, p, gm.tlx, gm.tly, gm.cs, 1);
         }
@@ -591,6 +652,7 @@
           g.fillStyle = p.c;
           g.save(); g.translate(p.x, p.y); g.rotate(p.rot);
           g.fillRect(-p.s / 2, -p.s / 2, p.s, p.s);
+          g.lineWidth = 1.2; g.strokeStyle = OL; g.strokeRect(-p.s / 2, -p.s / 2, p.s, p.s);
           g.restore();
         }
         g.globalAlpha = 1;
@@ -601,7 +663,7 @@
           g.globalAlpha = k > 0.7 ? (1 - k) / 0.3 : 1;
           const y = t.y - k * 40;
           g.save(); g.translate(t.x, y); g.scale(sc, sc);
-          g.lineWidth = 6; g.strokeStyle = 'rgba(30,20,80,0.75)'; g.lineJoin = 'round';
+          g.lineWidth = 7; g.strokeStyle = OL; g.lineJoin = 'round';
           g.font = '900 ' + t.size + 'px -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif';
           g.textAlign = 'center'; g.textBaseline = 'middle';
           g.strokeText(t.str, 0, 0);
@@ -615,12 +677,13 @@
           const x = slotX(1), y = U.lerp(L.trayY, L.by + L.bs * 0.6, U.easeOutCubic(Math.min(1, k * 1.3)));
           g.globalAlpha = Math.sin(k * Math.PI);
           g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, 14, 0, Math.PI * 2); g.fill();
-          g.strokeStyle = 'rgba(255,255,255,0.6)'; g.lineWidth = 3; g.beginPath(); g.arc(x, y, 22, 0, Math.PI * 2); g.stroke();
+          g.strokeStyle = OL; g.lineWidth = 3; g.stroke();
+          g.strokeStyle = 'rgba(255,255,255,0.8)'; g.lineWidth = 3; g.beginPath(); g.arc(x, y, 22, 0, Math.PI * 2); g.stroke();
           g.globalAlpha = 1;
         }
         if (endT >= 0 && !endWin) {
-          g.fillStyle = 'rgba(10,10,40,0.35)'; g.fillRect(0, 0, L.W, L.H);
-          U.text(g, '沒有空間了！', L.W / 2, L.by + L.bs / 2, 34, '#ffd2d8', 'center', 900);
+          g.fillStyle = 'rgba(40,10,40,0.35)'; g.fillRect(0, 0, L.W, L.H);
+          stroked(g, '沒有空間了！', L.W / 2, L.by + L.bs / 2, 34, '#ffd2d8', 7);
         }
         g.restore();
       }

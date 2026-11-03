@@ -8,38 +8,72 @@
   const COLS = ['#3de0e0', '#ff5d6c', '#ffcc4d', '#b26bff', '#4cd986', '#ff8f3d', '#ff7ac8', '#4c9bff', '#8a5a3c'];
   const NAMES = ['你', '紅莓', '檸檬', '葡萄', '薄荷', '橘子', '桃桃', '藍莓', '可可'];
 
-  // ---------- drawing ----------
-  function drawBackground(g, W, H, ox, oy, cs, GW, GH, t) {
-    const gr = g.createLinearGradient(0, 0, 0, H);
-    gr.addColorStop(0, '#2a2f5a'); gr.addColorStop(1, '#1b1f3b');
-    g.fillStyle = gr; g.fillRect(0, 0, W, H);
-    // the board
-    const bx = ox, by = oy, bw = GW * cs, bh = GH * cs;
-    g.fillStyle = 'rgba(0,0,0,0.35)'; U.rr(g, bx - 6, by - 2, bw + 12, bh + 14, 10); g.fill();
-    g.fillStyle = '#eef1f8'; g.fillRect(bx, by, bw, bh);
-    g.strokeStyle = 'rgba(120,130,170,0.18)'; g.lineWidth = 1;
-    g.beginPath();
-    const c0 = Math.max(0, Math.floor(-ox / cs)), c1 = Math.min(GW, Math.ceil((W - ox) / cs));
-    const r0 = Math.max(0, Math.floor(-oy / cs)), r1 = Math.min(GH, Math.ceil((H - oy) / cs));
-    for (let c = c0; c <= c1; c++) { g.moveTo(ox + c * cs, Math.max(by, 0)); g.lineTo(ox + c * cs, Math.min(by + bh, H)); }
-    for (let r = r0; r <= r1; r++) { g.moveTo(Math.max(bx, 0), oy + r * cs); g.lineTo(Math.min(bx + bw, W), oy + r * cs); }
-    g.stroke();
-    g.strokeStyle = '#5560c8'; g.lineWidth = 4; g.strokeRect(bx - 2, by - 2, bw + 4, bh + 4);
+  // ---------- drawing (卡通 Q 版: thick outlines, chibi heads, meadow island in a cartoon sea) ----------
+  const OL = '#2a1a14';
+  let grassPat = null, grassCs = 0, grassCtx = null;
+  function grassPattern(g, cs) {
+    if (grassPat && grassCs === cs && grassCtx === g) return grassPat;
+    const c = document.createElement('canvas');
+    const n = Math.max(2, Math.round(cs * 2));
+    c.width = n; c.height = n;
+    const x = c.getContext('2d');
+    x.fillStyle = '#b8e88a'; x.fillRect(0, 0, n, n);
+    x.fillStyle = '#a8de78'; x.fillRect(0, 0, n / 2, n / 2); x.fillRect(n / 2, n / 2, n / 2, n / 2);
+    x.strokeStyle = 'rgba(60,120,40,0.35)'; x.lineWidth = 1.2;
+    x.beginPath(); x.moveTo(n * 0.7, n * 0.3); x.lineTo(n * 0.68, n * 0.2); x.moveTo(n * 0.74, n * 0.3); x.lineTo(n * 0.77, n * 0.21); x.stroke();
+    grassPat = g.createPattern(c, 'repeat'); grassCs = cs; grassCtx = g;
+    return grassPat;
   }
+  function drawBackground(g, W, H, ox, oy, cs, GW, GH, t) {
+    // cartoon sea with drifting wave marks
+    g.fillStyle = '#5cc8f0'; g.fillRect(0, 0, W, H);
+    g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 3; g.lineCap = 'round';
+    const sp = 70, offx = ((ox * 0.5 + t * 8) % sp + sp) % sp, offy = ((oy * 0.5) % sp + sp) % sp;
+    g.beginPath();
+    for (let y = -sp + offy; y < H + sp; y += sp) for (let x = -sp + offx + ((Math.round((y - offy) / sp) & 1) ? sp / 2 : 0); x < W + sp; x += sp) {
+      g.moveTo(x - 10, y); g.quadraticCurveTo(x - 5, y - 5, x, y); g.quadraticCurveTo(x + 5, y - 5, x + 10, y);
+    }
+    g.stroke();
+    const bx = ox, by = oy, bw = GW * cs, bh = GH * cs;
+    // sandy beach rim + shadow, then the meadow board
+    g.fillStyle = 'rgba(20,60,90,0.3)'; U.rr(g, bx - 10, by - 4, bw + 20, bh + 22, 16); g.fill();
+    U.rr(g, bx - 12, by - 12, bw + 24, bh + 24, 16); g.fillStyle = '#ffe2a0'; g.fill(); g.lineWidth = 4; g.strokeStyle = OL; g.stroke();
+    g.save(); g.translate(ox, oy); g.fillStyle = grassPattern(g, cs); g.fillRect(0, 0, bw, bh); g.restore();
+    g.lineWidth = 3; g.strokeStyle = OL; g.strokeRect(bx, by, bw, bh);
+  }
+  // chibi player: big round head with coloured hood, tiny body, eyes look where it is heading
   function drawHead(g, e, x, y, cs, t) {
-    const s = cs * 1.1;
+    const s = cs * 1.55;
     const sq = 1 + Math.sin(t * 14 + e.id) * 0.04;
-    g.fillStyle = 'rgba(0,0,0,0.25)'; U.rr(g, x - s / 2 + 2, y - s / 2 + 4, s, s, s * 0.28); g.fill();
-    g.fillStyle = U.shade(e.col, -0.3); U.rr(g, x - s / 2, y - s / 2 + 3, s, s, s * 0.28); g.fill();
-    const gr = g.createLinearGradient(x, y - s / 2, x, y + s / 2);
-    gr.addColorStop(0, U.shade(e.col, 0.25)); gr.addColorStop(1, e.col);
-    g.fillStyle = gr; U.rr(g, x - s / 2 * sq, y - s / 2 / sq, s * sq, s / sq, s * 0.28); g.fill();
-    g.fillStyle = 'rgba(255,255,255,0.35)'; U.rr(g, x - s * 0.36, y - s * 0.42, s * 0.5, s * 0.16, s * 0.08); g.fill();
-    const ex = DX[e.dir] * s * 0.14, ey = DY[e.dir] * s * 0.14;
+    const lw = Math.max(1.8, s * 0.1);
+    g.lineWidth = lw; g.strokeStyle = OL; g.lineJoin = 'round';
+    g.fillStyle = 'rgba(42,26,20,0.3)'; g.beginPath(); g.ellipse(x + 1, y + s * 0.5, s * 0.5, s * 0.17, 0, 0, 6.283); g.fill();
+    // body + feet
+    const step = Math.sin(t * 16 + e.id) * s * 0.06;
+    g.fillStyle = U.shade(e.col, -0.35);
+    g.beginPath(); g.ellipse(x - s * 0.15, y + s * 0.42 + step, s * 0.12, s * 0.09, 0, 0, 6.283); g.fill(); g.stroke();
+    g.beginPath(); g.ellipse(x + s * 0.15, y + s * 0.42 - step, s * 0.12, s * 0.09, 0, 0, 6.283); g.fill(); g.stroke();
+    U.rr(g, x - s * 0.26, y + s * 0.05, s * 0.52, s * 0.36, s * 0.14); g.fillStyle = e.col; g.fill(); g.stroke();
+    // head (hood in player colour, face in skin)
+    const hx = x, hy = y - s * 0.12;
+    g.beginPath(); g.ellipse(hx, hy, s * 0.5 * sq, s * 0.46 / sq, 0, 0, 6.283); g.fillStyle = e.col; g.fill(); g.stroke();
+    g.beginPath(); g.ellipse(hx, hy + s * 0.06, s * 0.36, s * 0.3, 0, 0, 6.283); g.fillStyle = '#ffe0bd'; g.fill(); g.lineWidth = lw * 0.7; g.stroke();
+    // little ears on the hood
+    g.lineWidth = lw;
+    for (let sd = -1; sd <= 1; sd += 2) { g.beginPath(); g.ellipse(hx + sd * s * 0.32, hy - s * 0.4, s * 0.12, s * 0.14, sd * 0.4, 0, 6.283); g.fillStyle = e.col; g.fill(); g.stroke(); }
+    g.fillStyle = 'rgba(255,255,255,0.55)'; g.beginPath(); g.ellipse(hx - s * 0.22, hy - s * 0.3, s * 0.1, s * 0.05, -0.5, 0, 6.283); g.fill();
+    const ex = DX[e.dir] * s * 0.07, ey = DY[e.dir] * s * 0.05;
+    g.fillStyle = OL;
+    g.beginPath(); g.ellipse(hx - s * 0.13 + ex, hy + s * 0.04 + ey, s * 0.06, s * 0.08, 0, 0, 6.283); g.ellipse(hx + s * 0.13 + ex, hy + s * 0.04 + ey, s * 0.06, s * 0.08, 0, 0, 6.283); g.fill();
     g.fillStyle = '#fff';
-    g.beginPath(); g.arc(x - s * 0.18 + ex, y - s * 0.04 + ey, s * 0.15, 0, 6.283); g.arc(x + s * 0.18 + ex, y - s * 0.04 + ey, s * 0.15, 0, 6.283); g.fill();
-    g.fillStyle = '#1a1030';
-    g.beginPath(); g.arc(x - s * 0.18 + ex * 1.5, y - s * 0.04 + ey * 1.5, s * 0.075, 0, 6.283); g.arc(x + s * 0.18 + ex * 1.5, y - s * 0.04 + ey * 1.5, s * 0.075, 0, 6.283); g.fill();
+    g.beginPath(); g.arc(hx - s * 0.11 + ex, hy + s * 0.01 + ey, s * 0.025, 0, 6.283); g.arc(hx + s * 0.15 + ex, hy + s * 0.01 + ey, s * 0.025, 0, 6.283); g.fill();
+    g.fillStyle = 'rgba(255,100,120,0.5)';
+    g.beginPath(); g.ellipse(hx - s * 0.24, hy + s * 0.16, s * 0.06, s * 0.035, 0, 0, 6.283); g.ellipse(hx + s * 0.24, hy + s * 0.16, s * 0.06, s * 0.035, 0, 0, 6.283); g.fill();
+  }
+  function olText(g, str, x, y, size, col, lw, align) {
+    g.font = '900 ' + size + 'px ' + FONT; g.textAlign = align || 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+    g.lineWidth = lw || Math.max(3, size * 0.22); g.strokeStyle = OL; g.strokeText(str, x, y);
+    g.fillStyle = col; g.fillText(str, x, y);
   }
 
   function params(L, diff, endless) {
@@ -497,7 +531,13 @@
       function draw(g) {
         const sx = (Math.random() - 0.5) * shake, sy = (Math.random() - 0.5) * shake;
         const viewTop = 54;
-        const ox = Math.round(W / 2 - cam.x * cs + sx), oy = Math.round(viewTop + (H - viewTop) * 0.5 - cam.y * cs + sy);
+        // camera: follow the player but keep the island filling the view (≤ 40px of sea);
+        // centre the board on an axis where it is smaller than the view
+        const SEA = 40, bwPx = GW * cs, bhPx = GH * cs, vh = H - viewTop;
+        let cx0 = W / 2 - cam.x * cs, cy0 = viewTop + vh * 0.5 - cam.y * cs;
+        if (bwPx + SEA * 2 <= W) cx0 = (W - bwPx) / 2; else cx0 = U.clamp(cx0, W - bwPx - SEA, SEA);
+        if (bhPx + SEA * 2 <= vh) cy0 = viewTop + (vh - bhPx) / 2; else cy0 = U.clamp(cy0, viewTop + vh - bhPx - SEA, viewTop + SEA);
+        const ox = Math.round(cx0 + sx), oy = Math.round(cy0 + sy);
         drawBackground(g, W, H, ox, oy, cs, GW, GH, anim);
         const c0 = Math.max(0, Math.floor(-ox / cs) - 1), c1 = Math.min(GW - 1, Math.ceil((W - ox) / cs) + 1);
         const r0 = Math.max(0, Math.floor(-oy / cs) - 1), r1 = Math.min(GH - 1, Math.ceil((H - oy) / cs) + 1);
@@ -521,6 +561,17 @@
             if (below !== o) { g.fillStyle = U.shade(COLS[(o - 1) % COLS.length], -0.35); g.fillRect(ox + c2 * cs, oy + (r + 1) * cs, cs + 0.5, ext); }
           }
         }
+        // thick cartoon outline around every territory
+        g.beginPath();
+        for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+          const o = owner[r * GW + c]; if (!o) continue;
+          const x = ox + c * cs, y = oy + r * cs;
+          if (r === 0 || owner[(r - 1) * GW + c] !== o) { g.moveTo(x, y); g.lineTo(x + cs, y); }
+          if (r === GH - 1 || owner[(r + 1) * GW + c] !== o) { const yb = y + cs + (r === GH - 1 || owner[(r + 1) * GW + c] === 0 ? ext : 0); g.moveTo(x, yb); g.lineTo(x + cs, yb); }
+          if (c === 0 || owner[r * GW + c - 1] !== o) { g.moveTo(x, y); g.lineTo(x, y + cs); }
+          if (c === GW - 1 || owner[r * GW + c + 1] !== o) { g.moveTo(x + cs, y); g.lineTo(x + cs, y + cs); }
+        }
+        g.strokeStyle = OL; g.lineWidth = Math.max(2, cs * 0.12); g.lineCap = 'round'; g.stroke();
         for (let k = 0; k < fades.length; k++) {
           const f = fades[k];
           g.globalAlpha = Math.max(0, 1 - f.t / 0.7) * 0.8; g.fillStyle = f.col;
@@ -535,18 +586,17 @@
         // trails
         for (let k = 0; k < S.ents.length; k++) {
           const e = S.ents[k]; if (!e.alive || !e.trail.length) continue;
-          g.fillStyle = U.shade(e.col, 0.35); g.globalAlpha = 0.85;
-          const ins = cs * 0.14;
+          // the trail is a contiguous path of cells: draw it as one outlined ribbon up to the head
+          g.beginPath();
           for (let j = 0; j < e.trail.length; j++) {
             const i = e.trail[j], x = i % GW, y = (i - x) / GW;
-            if (x < c0 || x > c1 || y < r0 || y > r1) continue;
-            g.fillRect(ox + x * cs + ins, oy + y * cs + ins, cs - ins * 2, cs - ins * 2);
+            if (j === 0) g.moveTo(ox + (x + 0.5) * cs, oy + (y + 0.5) * cs); else g.lineTo(ox + (x + 0.5) * cs, oy + (y + 0.5) * cs);
           }
-          g.globalAlpha = 1;
-          // connect trail with the head
-          const last = e.trail[e.trail.length - 1], lx = last % GW, ly = (last - lx) / GW;
-          g.strokeStyle = U.shade(e.col, 0.35); g.lineWidth = cs - ins * 2; g.lineCap = 'butt';
-          g.beginPath(); g.moveTo(ox + (lx + 0.5) * cs, oy + (ly + 0.5) * cs); g.lineTo(ox + (e.x + 0.5 + DX[e.dir] * e.prog) * cs, oy + (e.y + 0.5 + DY[e.dir] * e.prog) * cs); g.stroke();
+          g.lineTo(ox + (e.x + 0.5 + DX[e.dir] * e.prog) * cs, oy + (e.y + 0.5 + DY[e.dir] * e.prog) * cs);
+          g.lineCap = 'round'; g.lineJoin = 'round';
+          g.strokeStyle = OL; g.lineWidth = cs * 0.62 + 4; g.stroke();
+          g.strokeStyle = U.shade(e.col, 0.3); g.lineWidth = cs * 0.62; g.stroke();
+          g.strokeStyle = 'rgba(255,255,255,0.45)'; g.lineWidth = Math.max(1.5, cs * 0.12); g.setLineDash([cs * 0.3, cs * 0.5]); g.stroke(); g.setLineDash([]);
         }
         // heads
         for (let k = S.ents.length - 1; k >= 0; k--) {
@@ -562,7 +612,7 @@
           g.save(); g.translate(x, y); g.scale(sc, sc);
           drawHead(g, e, 0, 0, cs, anim);
           g.restore(); g.globalAlpha = 1;
-          U.text(g, e.name, x, y - cs * 1.1, Math.max(10, cs * 0.55), e.me ? '#1b1f3b' : U.shade(e.col, -0.45), 'center', 900);
+          olText(g, e.name, x, y - cs * 1.6, Math.max(11, cs * 0.6), e.me ? '#ffffff' : U.shade(e.col, 0.35), 3);
         }
         for (let i = 0; i < parts.length; i++) {
           const p = parts[i]; if (!p.on) continue;
@@ -575,9 +625,7 @@
           const t = texts[i]; if (!t.on) continue;
           const k = t.t / t.max;
           g.globalAlpha = k > 0.6 ? (1 - k) / 0.4 : 1;
-          g.font = '900 ' + t.size + 'px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle';
-          g.lineWidth = 4; g.strokeStyle = 'rgba(20,20,50,0.85)';
-          g.strokeText(t.s, ox + t.x * cs, oy + t.y * cs); g.fillStyle = t.col; g.fillText(t.s, ox + t.x * cs, oy + t.y * cs);
+          olText(g, t.s, ox + t.x * cs, oy + t.y * cs, t.size, t.col, 5);
         }
         g.globalAlpha = 1;
         // off-screen enemy arrows
@@ -588,8 +636,9 @@
           const a = Math.atan2(y - H / 2, x - W / 2);
           const ex = U.clamp(x, 16, W - 16), ey = U.clamp(y, viewTop + 16, H - 16);
           g.save(); g.translate(ex, ey); g.rotate(a);
-          g.fillStyle = e.col; g.globalAlpha = e.trail.length ? 1 : 0.55;
-          g.beginPath(); g.moveTo(10, 0); g.lineTo(-6, -7); g.lineTo(-6, 7); g.closePath(); g.fill();
+          g.fillStyle = e.col; g.globalAlpha = e.trail.length ? 1 : 0.6;
+          g.beginPath(); g.moveTo(11, 0); g.lineTo(-7, -8); g.lineTo(-7, 8); g.closePath(); g.fill();
+          g.lineWidth = 2.5; g.strokeStyle = OL; g.lineJoin = 'round'; g.stroke();
           g.restore(); g.globalAlpha = 1;
         }
         if (flash > 0) { g.fillStyle = 'rgba(255,60,80,' + flash * 0.6 + ')'; g.fillRect(0, 0, W, H); }
@@ -599,41 +648,42 @@
           const k = Math.min(1, b.t / 0.35), s = U.easeOutBack(k);
           g.globalAlpha = b.t > 1.2 ? Math.max(0, 1 - (b.t - 1.2) / 0.3) : 1;
           const fs = Math.min(b.size, W / 9) * s;
-          g.font = '900 ' + fs + 'px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle';
-          g.lineWidth = 6; g.lineJoin = 'round'; g.strokeStyle = 'rgba(20,10,30,0.85)';
-          g.strokeText(b.text, W / 2, H * 0.3 + i * 46); g.fillStyle = b.col; g.fillText(b.text, W / 2, H * 0.3 + i * 46);
+          olText(g, b.text, W / 2, H * 0.3 + i * 46, fs, b.col, 7);
         }
         g.globalAlpha = 1;
         if (hintT > 0 && !api.ended) {
           g.globalAlpha = Math.min(1, hintT) * (0.6 + 0.4 * Math.sin(anim * 5));
           const k = (anim % 2) / 2;
           U.text(g, '👆', W / 2 - 50 + k * 100, H * 0.78, 30, '#fff');
-          U.text(g, '上下左右滑動轉彎', W / 2, H * 0.78 + 40, 16, '#1b1f3b', 'center', 900);
+          olText(g, '上下左右滑動轉彎', W / 2, H * 0.78 + 40, 17, '#ffffff', 4);
           g.globalAlpha = 1;
         }
       }
       function drawHud(g, top) {
-        g.fillStyle = 'rgba(15,12,35,0.78)'; g.fillRect(0, 0, W, top);
+        g.fillStyle = '#fff4dc'; g.fillRect(0, 0, W, top);
+        g.fillStyle = 'rgba(255,255,255,0.6)'; g.fillRect(0, 0, W, 5);
+        g.strokeStyle = OL; g.lineWidth = 3; g.beginPath(); g.moveTo(0, top - 1.5); g.lineTo(W, top - 1.5); g.stroke();
         const pct = counts[1] / N;
-        const bw = Math.min(W - 150, 220), bx = 12, by = 10;
-        g.fillStyle = 'rgba(255,255,255,0.12)'; U.rr(g, bx, by, bw, 16, 8); g.fill();
-        g.fillStyle = COLS[0]; U.rr(g, bx, by, Math.max(8, bw * Math.min(1, ENDLESS ? pct / 0.5 : pct / P.target)), 16, 8); g.fill();
-        if (!ENDLESS) { g.fillStyle = '#fff'; g.fillRect(bx + bw - 2, by - 2, 3, 20); }
-        U.text(g, (pct * 100).toFixed(1) + '%' + (ENDLESS ? '' : ' / ' + Math.round(P.target * 100) + '%'), bx + bw / 2, by + 8.5, 11, '#1b1f3b', 'center', 900);
-        if (ENDLESS) U.text(g, '分數 ' + S.score + ' · 最高 ' + Math.max(api.best || 0, S.score) + ' · 擊殺 ' + S.kills, bx, by + 31, 12, '#ffe27a', 'left', 900);
+        const bw = Math.min(W - 150, 220), bx = 12, by = 9;
+        U.rr(g, bx, by, bw, 18, 9); g.fillStyle = '#e8d6b8'; g.fill();
+        g.fillStyle = COLS[0]; U.rr(g, bx, by, Math.max(9, bw * Math.min(1, ENDLESS ? pct / 0.5 : pct / P.target)), 18, 9); g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.45)'; U.rr(g, bx + 4, by + 3, Math.max(1, bw * Math.min(1, ENDLESS ? pct / 0.5 : pct / P.target) - 8), 4, 2); g.fill();
+        U.rr(g, bx, by, bw, 18, 9); g.lineWidth = 2.5; g.strokeStyle = OL; g.stroke();
+        olText(g, (pct * 100).toFixed(1) + '%' + (ENDLESS ? '' : ' / ' + Math.round(P.target * 100) + '%'), bx + bw / 2, by + 9.5, 12, '#ffffff', 3);
+        if (ENDLESS) U.text(g, '分數 ' + S.score + ' · 最高 ' + Math.max(api.best || 0, S.score) + ' · 擊殺 ' + S.kills, bx, by + 33, 12, '#8a4a10', 'left', 900);
         else {
           const tl = Math.max(0, Math.ceil(S.timeLeft));
           const urgent = S.timeLeft < 15;
-          U.text(g, '⏱ ' + Math.floor(tl / 60) + ':' + String(tl % 60).padStart(2, '0') + '　' + '❤️'.repeat(Math.max(0, S.lives)) + '　擊殺 ' + S.kills, bx, by + 31, 12, urgent ? '#ff8a95' : '#ffffff', 'left', 900);
+          U.text(g, '⏱ ' + Math.floor(tl / 60) + ':' + String(tl % 60).padStart(2, '0') + '　' + '❤️'.repeat(Math.max(0, S.lives)) + '　擊殺 ' + S.kills, bx, by + 33, 12, urgent ? '#e0303f' : '#4a2a14', 'left', 900);
         }
         // mini leaderboard
         const order = S.ents.filter((e) => e.alive).sort((a, b) => counts[b.id] - counts[a.id]).slice(0, 3);
         for (let i = 0; i < order.length; i++) {
           const e = order[i];
           const y = 9 + i * 14, x = W - 118;
-          g.fillStyle = e.col; U.rr(g, x, y, 10, 10, 3); g.fill();
-          U.text(g, (i + 1) + '. ' + e.name, x + 15, y + 5.5, 11, e.me ? '#7dffa8' : '#ffffff', 'left', 800);
-          U.text(g, (counts[e.id] / N * 100).toFixed(1) + '%', W - 10, y + 5.5, 11, '#ffffff', 'right', 800);
+          g.fillStyle = e.col; U.rr(g, x, y, 10, 10, 3); g.fill(); g.lineWidth = 1.5; g.strokeStyle = OL; g.stroke();
+          U.text(g, (i + 1) + '. ' + e.name, x + 15, y + 5.5, 11, e.me ? '#1f9a50' : '#4a2a14', 'left', 900);
+          U.text(g, (counts[e.id] / N * 100).toFixed(1) + '%', W - 10, y + 5.5, 11, '#4a2a14', 'right', 800);
         }
       }
 
