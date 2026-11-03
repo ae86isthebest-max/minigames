@@ -269,7 +269,7 @@
   function loop(now) {
     raf = requestAnimationFrame(loop);
     if (!cur || !cur.inst) return;
-    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now;
     const inst = cur.inst;
     try {
       if (inst.update) inst.update(dt);
