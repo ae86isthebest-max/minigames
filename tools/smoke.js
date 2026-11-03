@@ -1,5 +1,5 @@
 // Headless smoke test: node tools/smoke.js <gameId> [levels=30] [frames=600]
-// Loads core.js + games/<id>.js with a stub DOM/canvas, then for each level
+// Loads core.js + games/<id>.js with a stub DOM/canvas, then for each mode (簡單/普通/困難, +無盡) and level
 // creates the game and feeds random taps/drags. Fails on any thrown error,
 // NaN sizes, or a level that ends by itself without input.
 'use strict';
@@ -60,10 +60,14 @@ if (!def) { console.error('game not registered with id', id); process.exit(1); }
 for (const k of ['name', 'icon', 'color', 'create']) if (!def[k]) { console.error('missing def.' + k); process.exit(1); }
 
 let wins = 0, losses = 0, selfEnded = 0;
-for (let lv = 1; lv <= LEVELS; lv++) {
+const modes = def.endless ? [0, 1, 2, 3] : [0, 1, 2];
+for (const mode of modes)
+for (let lv = 1; lv <= (mode === 3 ? 3 : LEVELS); lv++) {
   let ended = null;
   const api = {
-    W, H, level: lv, rng: MG.mulberry32(lv * 7919 + id.length * 104729 + id.charCodeAt(0)),
+    W, H, level: mode === 3 ? 1 : lv, rng: MG.mulberry32(lv * 7919 + id.length * 104729 + id.charCodeAt(0) + mode * 15485863),
+    diff: mode === 3 ? 2 : mode, endless: mode === 3, best: 0,
+    score(n) { if (typeof n !== 'number' || !isFinite(n)) throw new Error('api.score got ' + n); },
     util: MG.util, sfx() {}, info() {},
     get ended() { return ended !== null; },
     win() { if (ended === null) ended = 'win'; }, lose() { if (ended === null) ended = 'lose'; },
@@ -89,4 +93,4 @@ for (let lv = 1; lv <= LEVELS; lv++) {
   if (ended === 'win') wins++; else if (ended === 'lose') losses++;
 }
 if (selfEnded) { console.error('FAIL: ' + selfEnded + ' level(s) ended before any input'); process.exit(1); }
-console.log('OK ' + id + ': ' + LEVELS + ' levels ran without errors (random-tap wins=' + wins + ', losses=' + losses + ')');
+console.log('OK ' + id + ': modes ' + modes.join('/') + ' x ' + LEVELS + ' levels ran without errors (random-tap wins=' + wins + ', losses=' + losses + ')');

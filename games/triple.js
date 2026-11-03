@@ -13,7 +13,24 @@
       return o;
     });
   }
-  function config(lv) {
+  // diff: 0 簡單 (original), 1 普通, 2 困難
+  function config(lvIn, diff) {
+    diff = diff || 0;
+    const lv = diff === 0 ? lvIn : diff === 1 ? lvIn + 12 : lvIn + 30;
+    const cf = baseConfig(lv);
+    if (diff === 1) cf.kinds = Math.min(18, cf.kinds + 1);
+    if (diff === 2) {
+      cf.kinds = Math.min(22, cf.kinds + 4);
+      cf.trayLimit = 5;
+      cf.stackDepth = Math.min(9, cf.stackDepth + 2);
+      cf.groups = Math.min(45, cf.groups + 3);
+    }
+    cf.timeLimit = diff === 2 ? Math.round(cf.groups * 3 * 1.35 + 20) : 0;
+    cf.boosters = diff === 2 ? [0, 1] : [0, 1, 2];
+    cf.hideDeep = diff === 2;
+    return cf;
+  }
+  function baseConfig(lv) {
     const groups = lv === 1 ? 3 : lv === 2 ? 5 : Math.min(40, 4 + Math.round(lv * 0.7));
     const stackDepth = lv >= 10 ? Math.min(7, 2 + Math.floor((lv - 10) / 8)) : 0;
     const C = lv <= 2 ? 4 : lv < 6 ? 5 : lv < 14 ? 6 : 7;
@@ -25,8 +42,8 @@
   }
   function shuffle(rng, a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
 
-  function genLevel(lv, rng) {
-    const cf = config(lv);
+  function genLevel(lv, rng, diff) {
+    const cf = config(lv, diff);
     const N = cf.groups * 3;
     const tiles = [];
     let need = N - cf.stackDepth * 2;
@@ -139,25 +156,35 @@
     _logic: LOGIC,
     create(api) {
       const U = api.util;
-      const lvd = genLevel(api.level, api.rng);
+      const lvd = genLevel(api.level, api.rng, api.diff);
+      const cf = lvd.cf;
+      let timeLeft = cf.timeLimit;
       const tiles = lvd.tiles.map((t, i) => ({ x: t.x, y: t.y, z: t.z, icon: t.icon, alive: true, i, flip: 0, ret: -1, rx: 0, ry: 0, shake: 0 }));
       const above = computeAbove(lvd.tiles);
       const drawOrder = tiles.slice().sort((a, b) => a.z - b.z || a.y - b.y || a.x - b.x);
       const tray = [];
       const shelf = [];
-      const boosters = [{ name: '撤銷', used: false }, { name: '移出', used: false }, { name: '洗牌', used: false }];
+      const BN = ['撤銷', '移出', '洗牌'];
+      const boosters = cf.boosters.map((k) => ({ name: BN[k], used: false, kind: k }));
       let lastMove = null;
       let time = 0, ended = false, endT = -1, endWin = false, shake = 0;
       const parts = [];
       let L = {};
       let spr = {}, sprDark = {}, bg = null;
       let boardLeft = tiles.length;
-      let hint = api.level === 1 ? 0 : -1;
+      let hint = api.level === 1 && api.diff === 0 ? 0 : -1;
       const covered = new Uint8Array(tiles.length);
-      function refreshCover() { for (let i = 0; i < tiles.length; i++) covered[i] = above[i].some((j) => tiles[j].alive) ? 1 : 0; }
+      function refreshCover() {
+        for (let i = 0; i < tiles.length; i++) {
+          let n = 0;
+          for (const j of above[i]) if (tiles[j].alive) n++;
+          covered[i] = n === 0 ? 0 : n >= 2 && cf.hideDeep ? 2 : 1;
+        }
+      }
       refreshCover();
 
-      if (api.level === 1) api.info('點擊沒被蓋住的圖塊，湊齊 3 個相同就會消除');
+      if (api.level === 1 && api.diff === 0) api.info('點擊沒被蓋住的圖塊，湊齊 3 個相同就會消除');
+      else if (cf.timeLimit) api.info('限時 ' + cf.timeLimit + ' 秒 · 壓在深處的圖塊看不見');
       else api.info('清空所有圖塊即過關 · 收集欄滿 7 格就失敗');
 
       function layout() {
@@ -198,6 +225,7 @@
         g.fillStyle = 'rgba(255,255,255,0.8)'; U.rr(g, w * 0.12, h * 0.06, w * 0.76, h * 0.07, h * 0.035); g.fill();
         g.font = Math.round(w * 0.62) + 'px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
         g.textAlign = 'center'; g.textBaseline = 'middle';
+        if (icon === '?') { g.font = '900 ' + Math.round(w * 0.5) + 'px sans-serif'; g.fillStyle = '#b08850'; }
         g.fillText(icon, w / 2, h * 0.54);
         if (dark) { g.fillStyle = 'rgba(40,25,10,0.5)'; U.rr(g, 0, 0, w, h + thick, r); g.fill(); }
         return cv;
@@ -210,6 +238,7 @@
           spr[ic] = tileSprite(ic, L.ts, L.th, L.thick, false);
           sprDark[ic] = tileSprite(ic, L.ts, L.th, L.thick, true);
         });
+        sprDark['?'] = tileSprite('?', L.ts, L.th, L.thick, true);
       }
       function buildBg() {
         const d = DPR();
@@ -256,7 +285,7 @@
       }
       function boosterPos(i) {
         const r = Math.min(26, L.boostH * 0.36);
-        return [L.W / 2 + (i - 1) * Math.min(110, L.W * 0.28), L.H - L.boostH / 2 - 12, r];
+        return [L.W / 2 + (i - (boosters.length - 1) / 2) * Math.min(110, L.W * 0.28), L.H - L.boostH / 2 - 12, r];
       }
 
       function liveCount() { return tray.filter((e) => !e.m).length; }
@@ -331,6 +360,10 @@
           if (p.t > p.life) parts.splice(i, 1);
         }
         shelf.forEach((e) => { const f = Math.min(1, dt * 12); e.t = Math.min(1, e.t + dt * 4); e.x += (e.tx - e.x) * f; e.y += (e.ty - e.y) * f; e.w += (e.tw - e.w) * f; e.h += (e.th - e.h) * f; });
+        if (!ended && cf.timeLimit && endT < 0) {
+          timeLeft -= dt;
+          if (timeLeft <= 0) { timeLeft = 0; ended = true; shake = 0.3; api.sfx('bad'); api.lose('時間到了'); }
+        }
         if (!ended) {
           if (endT >= 0 && !endWin && tray.every((e) => e.t >= 1)) {
             endT += dt;
@@ -381,18 +414,27 @@
         const pillW = 112;
         g.fillStyle = 'rgba(120,50,10,0.28)'; U.rr(g, L.W / 2 - pillW / 2, 8, pillW, 28, 14); g.fill();
         U.text(g, '剩餘 ' + (boardLeft + shelf.length) + ' 張', L.W / 2, 22, 15, '#fff', 'center', 800);
+        if (cf.timeLimit) {
+          const tl = Math.max(0, Math.ceil(timeLeft));
+          const low = tl <= 15;
+          const tx = L.W - 62;
+          g.fillStyle = low ? 'rgba(220,30,40,' + (0.6 + 0.3 * Math.sin(time * 10)) + ')' : 'rgba(120,50,10,0.28)';
+          U.rr(g, tx - 44, 8, 88, 28, 14); g.fill();
+          U.text(g, '⏱ ' + Math.floor(tl / 60) + ':' + String(tl % 60).padStart(2, '0'), tx, 22, 15, '#fff', 'center', 800);
+        }
         // board
         for (const t of drawOrder) {
           if (!t.alive) continue;
           let [x, y] = tileXY(t);
           if (t.shake > 0) x += Math.sin(t.shake * 60) * 5 * t.shake / 0.3;
           if (t.ret >= 0) { const k = U.easeOutCubic(t.ret); x = U.lerp(t.rx, x, k); y = U.lerp(t.ry, y, k); }
-          const dark = covered[t.i] === 1;
+          const dark = covered[t.i] > 0;
+          const ic = covered[t.i] === 2 ? '?' : t.icon;
           if (t.flip > 0) {
             const sx = Math.abs(Math.cos((1 - t.flip) * Math.PI * 2));
             g.save(); g.translate(x + L.ts / 2, y + L.th / 2); g.scale(Math.max(0.05, sx), 1);
-            drawTile(g, t.icon, -L.ts / 2, -L.th / 2, L.ts, L.th, dark, 1); g.restore();
-          } else drawTile(g, t.icon, x, y, L.ts, L.th, dark, 1);
+            drawTile(g, ic, -L.ts / 2, -L.th / 2, L.ts, L.th, dark, 1); g.restore();
+          } else drawTile(g, ic, x, y, L.ts, L.th, dark, 1);
         }
         // level-1 hint ring on a free tile
         if (hint >= 0 && hint < 8) {
@@ -431,11 +473,11 @@
           const on = !b.used;
           g.fillStyle = 'rgba(80,30,0,0.3)'; g.beginPath(); g.arc(x, y + 4, r, 0, Math.PI * 2); g.fill();
           const gr = g.createLinearGradient(0, y - r, 0, y + r);
-          if (on) { gr.addColorStop(0, ['#5ec8ff', '#7ee07a', '#c58bff'][i]); gr.addColorStop(1, ['#2a83e0', '#2fa64a', '#8a4fe0'][i]); }
+          if (on) { gr.addColorStop(0, ['#5ec8ff', '#7ee07a', '#c58bff'][b.kind]); gr.addColorStop(1, ['#2a83e0', '#2fa64a', '#8a4fe0'][b.kind]); }
           else { gr.addColorStop(0, '#c9bfb5'); gr.addColorStop(1, '#9d938a'); }
           g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
           g.strokeStyle = 'rgba(255,255,255,0.8)'; g.lineWidth = 2.5; g.stroke();
-          drawBoosterIcon(g, i, x, y - 1, r, on);
+          drawBoosterIcon(g, b.kind, x, y - 1, r, on);
           U.text(g, b.name, x, y + r + 10, 12, '#5a2a0a', 'center', 800);
           g.fillStyle = on ? '#ff4d5e' : '#8a8078'; g.beginPath(); g.arc(x + r * 0.75, y - r * 0.75, 9, 0, Math.PI * 2); g.fill();
           U.text(g, on ? '1' : '0', x + r * 0.75, y - r * 0.75 + 0.5, 11, '#fff', 'center', 900);
@@ -455,11 +497,12 @@
       }
 
       function hitBooster(x, y) {
-        for (let i = 0; i < 3; i++) { const [bx, by, r] = boosterPos(i); if (Math.hypot(x - bx, y - by) < Math.max(r + 8, 26)) return i; }
+        for (let i = 0; i < boosters.length; i++) { const [bx, by, r] = boosterPos(i); if (Math.hypot(x - bx, y - by) < Math.max(r + 8, 26)) return i; }
         return -1;
       }
-      function useBooster(i) {
-        const b = boosters[i];
+      function useBooster(bi) {
+        const b = boosters[bi];
+        const i = b.kind;
         if (b.used) { api.sfx('bad'); return; }
         if (i === 0) {
           const e = lastMove;

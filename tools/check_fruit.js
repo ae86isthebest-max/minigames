@@ -2,13 +2,15 @@
 // (same generator, same rng drop sequence, fixed dt = 1/120, same drop cooldown) and must reach
 // the level goal without losing. For each drop it tries several x positions in a cloned world,
 // simulates ~1 s and keeps the best (merge points, low stack, same fruits together).
-// node tools/check_fruit.js [from=1] [to=60]
+// Modes 簡單/普通/困難, levels 1-40 each. On 困難 a held fruit auto-drops after 5 s, so a
+// player who does nothing (fruit keeps falling in the middle) is also simulated and must lose.
+// node tools/check_fruit.js [from=1] [to=40]
 'use strict';
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const FROM = parseInt(process.argv[2] || '1', 10), TO = parseInt(process.argv[3] || '60', 10);
+const FROM = parseInt(process.argv[2] || '1', 10), TO = parseInt(process.argv[3] || '40', 10);
 const el = () => ({ classList: { add() {}, remove() {}, toggle() {} }, style: {}, appendChild() {}, addEventListener() {}, getBoundingClientRect: () => ({ left: 0, top: 0, width: 390, height: 700 }), getContext: () => ({}) });
 const sandbox = { console, Math, location: { search: '?mute', protocol: 'file:' }, URLSearchParams, navigator: {}, localStorage: { getItem: () => null, setItem() {} }, document: { getElementById: el, createElement: el, addEventListener() {} }, addEventListener() {}, performance: { now: () => 0 }, setTimeout: () => 0, clearTimeout() {}, requestAnimationFrame: () => 0, cancelAnimationFrame() {} };
 sandbox.window = sandbox;
@@ -20,7 +22,7 @@ const MG = sandbox.MG;
 const F = MG.games.find((d) => d.id === 'fruit')._logic;
 
 function clone(w) {
-  return { fr: w.fr.map((f) => Object.assign({}, f)), score: w.score, maxT: w.maxT, overT: w.overT, lost: w.lost, nid: w.nid, events: [] };
+  return { fr: w.fr.map((f) => Object.assign({}, f)), score: w.score, maxT: w.maxT, overT: w.overT, lost: w.lost, nid: w.nid, events: [], k: w.k };
 }
 function run(w, steps) { for (let i = 0; i < steps && !w.lost; i++) { F.step(w, F.DT); w.events.length = 0; } }
 function evaluate(w, before) {
@@ -44,16 +46,33 @@ function evaluate(w, before) {
   return v;
 }
 
-function playLevel(lv) {
-  const rng = MG.mulberry32(lv * 7919 + 'fruit'.length * 104729 + 'fruit'.charCodeAt(0));
-  const d = F.genLevel(lv, rng);
+function seedRng(lv, mode) { return MG.mulberry32(lv * 7919 + 'fruit'.length * 104729 + 'fruit'.charCodeAt(0) + mode * 15485863); }
+// idle player: every fruit auto-drops in the middle after the hold limit
+function playLazy(lv, mode) {
+  const rng = seedRng(lv, mode);
+  const d = F.genLevel(lv, rng, mode, false);
+  const w = d.world;
+  let cur = d.first, drops = 0;
+  const per = Math.round((F.DROP_COOLDOWN + F.dropLimit(mode, false, 0)) / F.DT);
+  while (drops < 900) {
+    if (F.goalMet(d.goal, w)) return 'win';
+    if (w.lost) return 'lose';
+    F.addFruit(w, cur, 0.5, F.SPAWN_Y); drops++;
+    cur = F.randType(rng);
+    run(w, per);
+  }
+  return 'timeout';
+}
+function playLevel(lv, mode) {
+  const rng = seedRng(lv, mode);
+  const d = F.genLevel(lv, rng, mode, false);
   const w = d.world;
   let cur = d.first, next = d.next, drops = 0;
   const cdSteps = Math.round(F.DROP_COOLDOWN / F.DT);
   while (drops < 900) {
     if (F.goalMet(d.goal, w)) return { ok: true, drops, w, d };
     if (w.lost) return { ok: false, drops, w, d };
-    const r = F.RAD[cur];
+    const r = F.RAD[cur] * w.k;
     let best = null;
     const K = 15;
     for (let k = 0; k < K; k++) {
@@ -75,11 +94,20 @@ function playLevel(lv) {
 
 let fails = 0;
 const t0 = Date.now();
-for (let lv = FROM; lv <= TO; lv++) {
-  const r = playLevel(lv);
-  const goal = r.d.goal.kind === 'fruit' ? 'make ' + F.NAMES[r.d.goal.t] : 'score ' + r.d.goal.target;
-  console.log('L' + lv + ' ' + goal + ' -> ' + (r.ok ? 'WIN' : 'FAIL') + ' after ' + r.drops + ' drops (score ' + r.w.score + ', biggest ' + F.NAMES[Math.max(0, r.w.maxT)] + ', fruits ' + r.w.fr.length + ')');
-  if (!r.ok) fails++;
+const MN = ['簡單', '普通', '困難'];
+for (let mode = 0; mode < 3; mode++) {
+  let mf = 0, dropsTot = 0, lazyWins = 0;
+  for (let lv = FROM; lv <= TO; lv++) {
+    const r = playLevel(lv, mode);
+    const goal = r.d.goal.kind === 'fruit' ? 'make ' + F.NAMES[r.d.goal.t] : 'score ' + r.d.goal.target;
+    let lazy = '';
+    if (mode === 2) { lazy = playLazy(lv, mode); if (lazy === 'win') lazyWins++; lazy = ' | idle player: ' + lazy; }
+    console.log(MN[mode] + ' L' + lv + ' ' + goal + ' -> ' + (r.ok ? 'WIN' : 'FAIL') + ' after ' + r.drops + ' drops (score ' + r.w.score + ', biggest ' + F.NAMES[Math.max(0, r.w.maxT)] + ', fruits ' + r.w.fr.length + ')' + lazy);
+    if (!r.ok) { fails++; mf++; }
+    dropsTot += r.drops;
+  }
+  if (mode === 2 && lazyWins) { fails += lazyWins; }
+  console.log('== ' + MN[mode] + ': ' + (TO - FROM + 1 - mf) + '/' + (TO - FROM + 1) + ' won by bot, avg ' + (dropsTot / (TO - FROM + 1)).toFixed(0) + ' drops' + (mode === 2 ? ', idle player won ' + lazyWins : ''));
 }
-console.log(fails ? 'FAIL: ' + fails + ' level(s) not won' : 'OK fruit: levels ' + FROM + '-' + TO + ' all won by bot (' + ((Date.now() - t0) / 1000).toFixed(1) + 's)');
+console.log(fails ? 'FAIL: ' + fails + ' problem(s)' : 'OK fruit: 簡單/普通/困難 levels ' + FROM + '-' + TO + ' all won by bot; idle player loses every 困難 level (' + ((Date.now() - t0) / 1000).toFixed(1) + 's)');
 process.exit(fails ? 1 : 0);

@@ -8,17 +8,32 @@
   const GROW = 0.05;        // growth per perfect drop once the streak is >= 3
   const CO = Math.cos(Math.PI / 6), SI = 0.5;
 
-  function targetOf(level) { return Math.min(50, 10 + 2 * (level - 1)); }
-  function speedOf(level, height) { return Math.min(2.2, 1.15 + 0.022 * (level - 1) + 0.006 * height); }
+  // diff: 0 簡單 (original), 1 普通, 2 困難; endless = 無盡 (no target, speed keeps ramping)
+  function targetOf(level, diff, endless) {
+    if (endless) return Infinity;
+    if (diff === 1) return Math.min(60, 20 + 2 * (level - 1));
+    if (diff === 2) return Math.min(70, 30 + 2 * (level - 1));
+    return Math.min(50, 10 + 2 * (level - 1));
+  }
+  function speedOf(level, height, diff, endless) {
+    if (endless) return Math.min(3.4, 1.7 + 0.015 * height);
+    if (diff === 1) return Math.min(2.6, 1.6 + 0.03 * (level - 1) + 0.008 * height);
+    if (diff === 2) return Math.min(3.0, 2.0 + 0.035 * (level - 1) + 0.01 * height);
+    return Math.min(2.2, 1.15 + 0.022 * (level - 1) + 0.006 * height);
+  }
+  function perfectOf(diff, endless) { return endless ? 0.036 : diff === 1 ? 0.042 : diff === 2 ? 0.034 : PERFECT; }
 
   function hsl(h, s, l) { return 'hsl(' + ((h % 360 + 360) % 360).toFixed(0) + ',' + s + '%,' + l + '%)'; }
 
   MG.register({
     id: 'stack', name: '疊高塔', icon: '🏗️', color: '#b26bff',
-    _targetOf: targetOf, _speedOf: speedOf, _PERFECT: PERFECT,
+    _targetOf: targetOf, _speedOf: speedOf, _perfectOf: perfectOf,
+    endless: true,
     create(api) {
       const U = api.util;
-      const target = targetOf(api.level);
+      const diff = api.diff || 0, endless = !!api.endless;
+      const target = targetOf(api.level, diff, endless);
+      const tol = perfectOf(diff, endless);
       const hue0 = Math.floor(api.rng() * 360);
       const slabs = [];
       let s = 100, cx = 0, baseY = 0;
@@ -55,12 +70,13 @@
         const start = -RANGE;
         cur = { x: t.x, z: t.z, w: t.w, d: t.d, y: topY(), id: ++slabId, col: colorsFor(slabs.length) };
         if (axis === 'x') cur.x = t.x + start; else cur.z = t.z + start;
-        cur.speed = speedOf(api.level, placed);
+        cur.speed = speedOf(api.level, placed, diff, endless);
       }
       spawn();
 
       function info() {
-        if (api.level === 1 && placed < 2) api.info('看準時機點一下，放下方塊！');
+        if (endless) api.info('無盡模式　高度 ' + placed + '　最高 ' + Math.max(api.best || 0, placed));
+        else if (!diff && api.level === 1 && placed < 2) api.info('看準時機點一下，放下方塊！');
         else api.info('高度 ' + placed + ' / ' + target + (streak >= 2 ? '　連續完美 ×' + streak : ''));
       }
       info();
@@ -95,7 +111,7 @@
         const delta = isX ? cur.x - t.x : cur.z - t.z;
         const ad = Math.abs(delta);
         const y = cur.y;
-        if (ad <= PERFECT) {
+        if (ad <= tol) {
           streak++;
           let w = t.w, d = t.d;
           if (streak >= 3) { if (isX) w = Math.min(1, w + GROW); else d = Math.min(1, d + GROW); }
@@ -131,6 +147,7 @@
           shake = Math.max(shake, 2);
         }
         placed++;
+        if (api.score) api.score(placed);
         scorePop = 1;
         if (placed >= target) {
           cur = null; done = 'win'; doneT = 0;
@@ -256,7 +273,7 @@
           const ty = target * HH;
           const sy = baseY - (ty - camY) * k;
           const hudBottom = api.H * 0.11 + 78;
-          if (target - placed <= 6 && sy - 0.6 * k > hudBottom && sy < api.H) {
+          if (!endless && target - placed <= 6 && sy - 0.6 * k > hudBottom && sy < api.H) {
             const p0 = proj(-0.5, ty, -0.5); const ax = p0[0], ay = p0[1];
             const p1 = proj(0.5, ty, -0.5); const bx = p1[0], by = p1[1];
             const p2 = proj(0.5, ty, 0.5); const c2x = p2[0], c2y = p2[1];
@@ -300,14 +317,14 @@
         g.shadowColor = 'rgba(0,0,0,0.18)'; g.shadowBlur = 6;
         U.text(g, String(placed), 0, 0, 54, '#ffffff', 'center', 900);
         g.restore();
-        U.text(g, '目標 ' + target, api.W / 2, api.H * 0.11 + 38, 15, 'rgba(255,255,255,0.9)', 'center', 700);
+        U.text(g, endless ? '最高 ' + Math.max(api.best || 0, placed) : '目標 ' + target, api.W / 2, api.H * 0.11 + 38, 15, 'rgba(255,255,255,0.9)', 'center', 700);
         if (streak >= 2 && !done) {
           const a = 0.6 + 0.4 * Math.sin(time * 8);
           g.globalAlpha = a;
           U.text(g, '完美 ×' + streak, api.W / 2, api.H * 0.11 + 62, 16, '#fff7a8', 'center', 900);
           g.globalAlpha = 1;
         }
-        if (api.level <= 2 && placed === 0 && !done) {
+        if (!diff && !endless && api.level <= 2 && placed === 0 && !done) {
           const a = 0.55 + 0.45 * Math.sin(time * 5);
           g.globalAlpha = a;
           U.text(g, '點擊螢幕放下', api.W / 2, api.H * 0.86, 18, '#fff', 'center', 800);

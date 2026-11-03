@@ -58,13 +58,18 @@
     return { cols, rows, minL: 2, maxL: Math.min(6, 3 + Math.floor(level / 6)) };
   }
 
-  function gen(level, rng) {
-    const P = params(level);
+  // diff 0 簡單 = original ladder; 1 普通 starts near old level 12; 2 困難 = big dense boards, long chains
+  function gen(level, rng, diff) {
+    diff = diff || 0;
+    const hard = diff === 2;
+    const e = diff === 1 ? Math.round(11 + level * 1.5) : hard ? 30 + level * 2 : level;
+    const P = params(e);
+    if (hard) { P.maxL = 6; P.minL = 3; }
     const { cols, rows } = P;
     const N = cols * rows;
-    const wantDepth = level < 3 ? 1 : Math.min(12, 2 + Math.floor(level / 3));
+    const wantDepth = hard ? Math.min(20, 14 + Math.floor(level / 5)) : e < 3 ? 1 : Math.min(12, 2 + Math.floor(e / 3));
     let best = null, bestScore = -1;
-    for (let tries = 0; tries < 10; tries++) {
+    for (let tries = 0; tries < (hard ? 24 : 10); tries++) {
       let pieces = [];
       for (let round = 0; round < 5; round++) {
         const grid = buildGrid({ cols, rows, pieces });
@@ -140,7 +145,8 @@
     gen, solve, probe, buildGrid,
     create(api) {
       const U = api.util;
-      const L = gen(api.level, api.rng);
+      const L = gen(api.level, api.rng, api.diff || 0);
+      const maxHearts = [3, 2, 1][api.diff || 0];
       const { cols, rows } = L;
       const cr = MG.mulberry32(api.level * 977 + 3);
       const pcs = L.pieces.map((p, i) => {
@@ -165,7 +171,7 @@
           if (free.length) p.color = free[Math.floor(cr() * free.length)];
         }
       }
-      let hearts = 3, heartPop = 0, shake = 0, time = 0, endT = -1, endWin = false;
+      let hearts = maxHearts, heartPop = 0, shake = 0, time = 0, endT = -1, endWin = false;
       const parts = [];
       let lay = null;
       const dpr = Math.min(3, (typeof window !== 'undefined' && window.devicePixelRatio) || 1);
@@ -173,7 +179,7 @@
 
       function remaining() { return pcs.filter((p) => p.state === 'idle' || p.state === 'bump').length; }
       function setInfo() {
-        if (api.level === 1 && remaining() === pcs.length) api.info('點箭頭，它會往箭頭方向滑出去');
+        if (api.level === 1 && !api.diff && remaining() === pcs.length) api.info('點箭頭，它會往箭頭方向滑出去');
         else api.info('剩 ' + remaining() + ' 條箭頭');
       }
 
@@ -341,6 +347,7 @@
         },
         draw(g) {
           if (!lay) return;
+          if (api.W !== lay.W || api.H !== lay.H) layout();
           const { W, H, cell, bx, by, bw, bh } = lay;
           g.fillStyle = '#151b3a'; g.fillRect(0, 0, W, H);
           g.save();
@@ -400,8 +407,8 @@
           g.restore();
           // HUD
           g.fillStyle = 'rgba(255,255,255,0.08)';
-          U.rr(g, 10, 9, 112, 32, 16); g.fill();
-          for (let i = 0; i < 3; i++) {
+          U.rr(g, 10, 9, 10 + maxHearts * 34, 32, 16); g.fill();
+          for (let i = 0; i < maxHearts; i++) {
             const hx = 32 + i * 34, hy = 25;
             const s = (i === hearts && heartPop > 0) ? 1 + heartPop * 0.5 : 1;
             g.save(); g.translate(hx, hy); g.scale(s, s);
@@ -415,7 +422,7 @@
         down(x, y) { tap(x, y); },
         _test: {
           cellXY: (cx, cy) => [lay.bx + (cx + 0.5) * lay.cell, lay.by + (cy + 0.5) * lay.cell],
-          hearts: () => hearts,
+          hearts: () => hearts, maxHearts,
         },
         resize() { layout(); },
       };

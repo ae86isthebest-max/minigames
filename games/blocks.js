@@ -156,7 +156,11 @@
     return false;
   }
   // fair piece generation: bias to fitting / line-clearing pieces when crowded, triple must be placeable
-  function genTriplet(b, rng) {
+  // nasty 0..1: 0 = friendly (簡單), 1 = no line-clear help and more big awkward pieces (困難)
+  // nasty > 1 (無盡 only, grows with score): some triples are no longer guaranteed placeable together
+  function genTriplet(b, rng, nastyIn) {
+    const relax = Math.min(14, Math.max(0, Math.floor(((nastyIn || 0) - 1) * 12)));
+    const nasty = Math.min(1, nastyIn || 0);
     let filled = 0; for (let i = 0; i < N * N; i++) if (b[i]) filled++;
     const fill = filled / (N * N);
     const all = SHAPES.map((s, i) => i);
@@ -165,21 +169,38 @@
     if (fill > 0.2) fitting.forEach((i) => { if (clearsLine(b, SHAPES[i])) helpful[i] = 1; });
     for (let attempt = 0; attempt < 40; attempt++) {
       const pool = (fill > 0.38 || attempt > 8) ? fitting : all;
-      const w = (i) => SHAPES[i].wt * (helpful[i] ? 2.4 : 1) * (fill > 0.55 && SHAPES[i].n >= 6 ? 0.4 : 1);
+      const w = (i) => SHAPES[i].wt * (helpful[i] ? 2.4 - 1.4 * nasty : 1) * (SHAPES[i].n >= 5 ? 1 + 0.7 * nasty : 1) * (fill > 0.55 && SHAPES[i].n >= 6 ? 0.4 + 0.6 * nasty : 1);
       const t = [pickWeighted(rng, pool, w), pickWeighted(rng, pool, w), pickWeighted(rng, pool, w)];
+      if (attempt < relax) {
+        if (t.every((i) => anyFit(b, SHAPES[i]))) return t;
+        continue;
+      }
       if (canPlaceAll(b, t)) return t;
     }
     const small = fitting.filter((i) => SHAPES[i].n <= 2);
     const p = small.length ? small : [0];
     return [p[Math.floor(rng() * p.length)], 0, p[Math.floor(rng() * p.length)]];
   }
-  function genLevel(lv, rng) {
+  function scoreTarget(e) { return e === 1 ? 300 : Math.round((300 + (e - 1) * 95 + Math.pow(e, 1.35) * 4) / 10) * 10; }
+  // diff: 0 簡單 (original), 1 普通, 2 困難
+  function genLevel(lv, rng, diff) {
+    diff = diff || 0;
     const b = new Array(N * N).fill(0), gems = new Array(N * N).fill(0);
     let type = 'score', density = 0;
-    if (lv >= 4 && lv % 4 === 0) type = 'gems';
-    if (type === 'gems') density = Math.min(0.42, 0.24 + lv * 0.003);
-    else if (lv >= 6 && lv % 4 === 2) density = Math.min(0.4, 0.18 + lv * 0.003);
-    else if (lv >= 15 && lv % 4 === 3) density = Math.min(0.34, 0.12 + lv * 0.002);
+    const e = diff === 0 ? lv : diff === 1 ? lv + 11 : lv + 28;
+    if (diff === 0) {
+      if (lv >= 4 && lv % 4 === 0) type = 'gems';
+      if (type === 'gems') density = Math.min(0.42, 0.24 + lv * 0.003);
+      else if (lv >= 6 && lv % 4 === 2) density = Math.min(0.4, 0.18 + lv * 0.003);
+      else if (lv >= 15 && lv % 4 === 3) density = Math.min(0.34, 0.12 + lv * 0.002);
+    } else if (diff === 1) {
+      if (lv % 3 === 0) type = 'gems';
+      if (type === 'gems') density = Math.min(0.44, 0.3 + lv * 0.004);
+      else if (lv % 3 === 2) density = Math.min(0.4, 0.2 + lv * 0.004);
+    } else {
+      if (lv % 3 === 0) type = 'gems';
+      density = type === 'gems' ? Math.min(0.48, 0.36 + lv * 0.004) : Math.min(0.42, 0.26 + lv * 0.004);
+    }
     if (density > 0) {
       const want = Math.round(density * N * N);
       let cnt = 0, guard = 0;
@@ -204,13 +225,13 @@
     let target = 0, gemsNeed = 0;
     if (type === 'gems') {
       const filledIdx = []; for (let i = 0; i < N * N; i++) if (b[i]) filledIdx.push(i);
-      gemsNeed = Math.min(filledIdx.length, Math.min(12, 3 + Math.floor(lv / 6)));
+      gemsNeed = Math.min(filledIdx.length, Math.min(diff === 2 ? 15 : 12, 3 + Math.floor(e / 6)));
       shuffleR(rng, filledIdx);
       for (let k = 0; k < gemsNeed; k++) gems[filledIdx[k]] = 1;
     } else {
-      target = lv === 1 ? 300 : Math.round((300 + (lv - 1) * 95 + Math.pow(lv, 1.35) * 4) / 10) * 10;
+      target = diff === 0 ? scoreTarget(lv) : Math.round(scoreTarget(e) * (diff === 1 ? 1.15 : 1.5) / 10) * 10;
     }
-    return { type, target, gemsNeed, board: b, gems };
+    return { type, target, gemsNeed, board: b, gems, nasty: [0, 0.5, 1][diff] };
   }
   function shuffleR(rng, a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
 
@@ -263,10 +284,14 @@
 
   MG.register({
     id: 'blocks', name: '方塊消除', icon: '🧱', color: '#5560c8',
+    endless: true,
     _logic: LOGIC,
     create(api) {
       const U = api.util;
-      const lvData = genLevel(api.level, api.rng);
+      const lvData = api.endless
+        ? { type: 'endless', target: 0, gemsNeed: 0, board: new Array(N * N).fill(0), gems: new Array(N * N).fill(0), nasty: 0.6 }
+        : genLevel(api.level, api.rng, api.diff);
+      const best = api.best || 0;
       const board = lvData.board.slice();
       const gems = lvData.gems.slice();
       let gemsLeft = lvData.gemsNeed;
@@ -282,7 +307,7 @@
       let L = {};
       let sprites = [];
       let bgCache = null;
-      let hintT = api.level === 1 ? 0 : -1;
+      let hintT = api.level === 1 && api.diff === 0 && !api.endless ? 0 : -1;
 
       function cellCol(i) { return COLORS[(board[i] - 1 + COLORS.length) % COLORS.length]; }
 
@@ -334,7 +359,7 @@
 
       function slotX(i) { return L.W * (i * 2 + 1) / 6; }
       function newPieces() {
-        const t = genTriplet(board, api.rng);
+        const t = genTriplet(board, api.rng, api.endless ? 0.6 + score / 3000 : lvData.nasty);
         pieces = t.map((si, i) => ({
           s: SHAPES[si], col: Math.floor(api.rng() * COLORS.length), used: false,
           appear: -i * 0.07, fits: true,
@@ -345,7 +370,8 @@
       newPieces();
 
       function setInfo() {
-        if (api.level === 1) api.info('拖曳方塊到棋盤，填滿整行或整列即可消除');
+        if (api.endless) api.info('無盡模式：方塊放不下就結束，撐越久分數越高');
+        else if (api.level === 1 && api.diff === 0) api.info('拖曳方塊到棋盤，填滿整行或整列即可消除');
         else if (lvData.type === 'gems') api.info('消除寶石所在的行列，收集全部 ' + lvData.gemsNeed + ' 顆寶石');
         else api.info('目標 ' + lvData.target + ' 分');
       }
@@ -425,12 +451,13 @@
           sinceClear++;
           if (sinceClear >= 3) combo = 0;
         }
+        api.score(score);
         if (pieces.every((q) => q.used)) newPieces(); else refreshFits();
         checkEnd();
       }
       function checkEnd() {
         if (endT >= 0) return;
-        const won = lvData.type === 'gems' ? gemsLeft <= 0 : score >= lvData.target;
+        const won = lvData.type === 'endless' ? false : lvData.type === 'gems' ? gemsLeft <= 0 : score >= lvData.target;
         if (won) {
           endT = time + 0.9; endWin = true;
           for (let k = 0; k < 60; k++) burst(L.W / 2 + (Math.random() - 0.5) * L.bs, L.by + Math.random() * L.bs * 0.5, COLORS[k % COLORS.length], 1, 420);
@@ -468,7 +495,7 @@
         if (endT >= 0 && !ended && time >= endT) {
           ended = true;
           if (endWin) api.win(lvData.type === 'gems' ? '寶石全部收集完成！' : '得分 ' + score + '！');
-          else api.lose('沒有空間放方塊了');
+          else api.lose(api.endless ? '沒有空間了' : '沒有空間放方塊了');
         }
       }
 
@@ -487,7 +514,11 @@
         U.text(g, String(Math.floor(shownScore)), hc, L.hdr * 0.38, Math.round(L.hdr * 0.38), '#fff', 'center', 900);
         const bw = Math.min(L.W * 0.62, 320), bh = 14, bx0 = hc - bw / 2, by0 = L.hdr * 0.74;
         let prog, label;
-        if (lvData.type === 'gems') { prog = 1 - gemsLeft / Math.max(1, lvData.gemsNeed); label = (lvData.gemsNeed - gemsLeft) + ' / ' + lvData.gemsNeed; }
+        if (lvData.type === 'endless') {
+          const rec = Math.floor(shownScore) > best && best > 0;
+          prog = best > 0 ? Math.min(1, shownScore / best) : 0;
+          label = rec ? '新紀錄！' : '最高 ' + best;
+        } else if (lvData.type === 'gems') { prog = 1 - gemsLeft / Math.max(1, lvData.gemsNeed); label = (lvData.gemsNeed - gemsLeft) + ' / ' + lvData.gemsNeed; }
         else { prog = Math.min(1, shownScore / lvData.target); label = '目標 ' + lvData.target; }
         g.fillStyle = 'rgba(10,14,50,0.45)'; U.rr(g, bx0, by0 - bh / 2, bw, bh, bh / 2); g.fill();
         if (prog > 0) {

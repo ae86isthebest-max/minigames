@@ -63,7 +63,7 @@ html, body {
 }
 @keyframes pop { from { transform: scale(.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 #ovTitle { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
-#ovText { color: var(--muted); margin-bottom: 18px; font-size: 15px; }
+#ovText { color: var(--muted); margin-bottom: 18px; font-size: 15px; white-space: pre-line; }
 .btns { display: flex; gap: 10px; }
 .btn {
   flex: 1; border: 0; border-radius: 14px; padding: 13px 0; font: inherit; font-weight: 800; font-size: 17px;
@@ -71,3 +71,31 @@ html, body {
 }
 .btn.ghost { background: #3a4078; color: #fff; }
 .btn:active { transform: translateY(2px); box-shadow: none; }
+
+.btn.small { flex: 0 0 52px; }
+
+/* difficulty picker */
+#picker {
+  position: fixed; inset: 0; z-index: 20; background: rgba(10,12,30,.65);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.sheet {
+  position: relative; width: min(440px, 100%); background: var(--bg2);
+  border-radius: 26px 26px 0 0; padding: 22px 16px calc(22px + env(safe-area-inset-bottom));
+  text-align: center; animation: up .22s ease-out;
+}
+@keyframes up { from { transform: translateY(40%); opacity: 0; } to { transform: none; opacity: 1; } }
+.pk-x { position: absolute; right: 14px; top: 14px; width: 36px; height: 36px; font-size: 22px; background: #3a4078; }
+#pkIcon { font-size: 48px; line-height: 1.1; }
+#pkName { font-size: 22px; font-weight: 800; margin: 4px 0 14px; }
+#pkModes { display: flex; flex-direction: column; gap: 10px; }
+.mode {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px;
+  border: 0; border-radius: 16px; padding: 14px 16px; font: inherit; color: #fff; cursor: pointer;
+  background: #31376a; box-shadow: inset 5px 0 0 var(--mc), 0 3px 0 rgba(0,0,0,.25); text-align: left;
+}
+.mode.sel { background: #3d4482; }
+.mode:active { transform: translateY(2px); box-shadow: inset 5px 0 0 var(--mc); }
+.mode .mn { font-size: 19px; font-weight: 800; color: var(--mc); min-width: 44px; }
+.mode .ms { font-size: 13px; color: var(--muted); }
+.mode .mr { font-size: 14px; font-weight: 700; }

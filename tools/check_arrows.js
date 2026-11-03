@@ -5,7 +5,9 @@
 // every cell in its head's straight line to the edge is empty).
 'use strict';
 const fs = require('fs'), path = require('path'), vm = require('vm');
-const N = parseInt(process.argv[2] || '60', 10);
+const N = parseInt(process.argv[2] || '40', 10);
+const MODE_NAMES = ['簡單', '普通', '困難'];
+const seedOf = (lv, mode) => lv * 7919 + id.length * 104729 + id.charCodeAt(0) + mode * 15485863;
 function anyObj() {
   const fn = function () { return anyObj(); };
   return new Proxy(fn, {
@@ -34,10 +36,10 @@ const MG = sb.MG, id = 'arrows', def = MG.games.find((d) => d.id === id);
 const D = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 
 // live play: tap the real game instance in the solver's order; must win with all 3 hearts
-function livePlay(lv, taps) {
+function livePlay(lv, mode, taps) {
   let ended = null;
   const api = {
-    W: 390, H: 700, level: lv, rng: MG.mulberry32(lv * 7919 + id.length * 104729 + id.charCodeAt(0)), util: MG.util, sfx() {}, info() {},
+    W: 390, H: 700, level: lv, diff: mode, endless: false, best: 0, score() {}, rng: MG.mulberry32(seedOf(lv, mode)), util: MG.util, sfx() {}, info() {},
     get ended() { return ended !== null; },
     win() { if (ended === null) ended = 'win'; }, lose() { if (ended === null) ended = 'lose'; },
   };
@@ -49,12 +51,13 @@ function livePlay(lv, taps) {
     if (f % 30 === 0) inst.draw(ctx);
     if (f % 6 === 0 && k < taps.length) { const [x, y] = inst._test.cellXY(taps[k][0], taps[k][1]); inst.down(x, y); k++; }
   }
-  return ended === 'win' && inst._test.hearts() === 3 ? 'win' : (ended || 'timeout');
+  return ended === 'win' && inst._test.hearts() === inst._test.maxHearts ? 'win' : (ended || 'timeout');
 }
 let fail = 0;
+for (let mode = 0; mode < 3; mode++)
 for (let lv = 1; lv <= N; lv++) {
-  const rng = MG.mulberry32(lv * 7919 + id.length * 104729 + id.charCodeAt(0));
-  const L = def.gen(lv, rng);
+  const rng = MG.mulberry32(seedOf(lv, mode));
+  const L = def.gen(lv, rng, mode);
   const { cols, rows, pieces } = L;
   const occ = new Array(cols * rows).fill(-1);
   let bad = '';
@@ -89,12 +92,12 @@ for (let lv = 1; lv <= N; lv++) {
     for (const i of free) { taps.push(pieces[i].cells[0]); for (const c of pieces[i].cells) occ[c[1] * cols + c[0]] = -1; left.delete(i); }
   }
   const fill = pieces.reduce((s, p) => s + p.cells.length, 0) / (cols * rows);
-  const live = livePlay(lv, taps);
+  const live = livePlay(lv, mode, taps);
   const ok = !bad && left.size === 0 && pieces.length > 0 && live === 'win';
   if (!ok) fail++;
   const lens = pieces.map((p) => p.cells.length);
-  console.log((ok ? 'ok  ' : 'FAIL ' + bad) + ' L' + lv + ' ' + cols + 'x' + rows + ' pieces=' + pieces.length +
+  console.log((ok ? 'ok  ' : 'FAIL ' + bad) + ' ' + MODE_NAMES[mode] + ' L' + lv + ' ' + cols + 'x' + rows + ' pieces=' + pieces.length +
     ' len=' + Math.min(...lens) + '-' + Math.max(...lens) + ' fill=' + Math.round(fill * 100) + '% depth=' + rounds + ' live=' + live);
 }
-console.log(fail ? 'FAIL: ' + fail + ' bad level(s)' : 'OK arrows: levels 1-' + N + ' all solvable (solver + live play)');
+console.log(fail ? 'FAIL: ' + fail + ' bad level(s)' : 'OK arrows: 簡單/普通/困難 levels 1-' + N + ' all solvable (solver + live play)');
 process.exit(fail ? 1 : 0);

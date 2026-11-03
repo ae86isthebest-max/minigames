@@ -63,22 +63,34 @@
 
   // Level generator: a DPS model tracks what the squad can do if it collects the good gates,
   // and zombie / gate HP are sized from it, so every level is beatable and upgrades scale with it.
-  function genLevel(L, rng) {
-    const waves = Math.min(6, 3 + Math.floor((L - 1) / 6));
-    const WL = 13 + Math.min(3.5, L * 0.07);
+  // diff: 0 簡單 (original tuning), 1 普通, 2 困難; endless = 無盡 (waves forever, boss every 5th wave)
+  function genLevel(L, rng, diff, endless) {
+    diff = diff || 0;
+    const off = [0, 12, 30][diff];
+    const Le = L + off;
+    const hard = diff === 2;
+    const BADHP = [1.4, 1.7, 2.2][diff];
+    const waves = endless ? 150 : Math.min(6, 3 + Math.floor((L - 1) / 6) + (diff ? 1 : 0));
+    const WL = endless ? 12 : 13 + Math.min(3.5, Le * 0.07) - [0, 1, 2.5][diff];
     const t0 = 2.2;
-    const gs = 0.85 + Math.min(0.35, L * 0.006);
-    const zs = 0.28 + Math.min(0.06, L * 0.001);
+    const gs = (0.85 + Math.min(0.35, Le * 0.006)) * (hard ? 1.1 : 1);
+    const zs = (0.28 + Math.min(0.06, Le * 0.001)) * [1, 1.3, 1.5][diff];
     const st = { n: 1, w: 0, rm: 1, dm: 1 };
     const tl = [[0, dpsModel(st)]];
-    const dpsAt = (t) => { let v = tl[0][1]; for (let i = 0; i < tl.length; i++) if (tl[i][0] <= t) v = tl[i][1]; return v; };
+    let tlI = 0;
+    const dpsAt = (t) => {
+      if (tlI > 0 && tl[tlI][0] > t) tlI = 0;
+      while (tlI + 1 < tl.length && tl[tlI + 1][0] <= t) tlI++;
+      return tl[tlI][1];
+    };
     const ev = [];
     const gateEnd = t0 + (waves - 1) * WL + 1.5;
-    const gap = 3.2 - Math.min(0.3, L * 0.006);
+    const gap = 3.2 - Math.min(0.3, Le * 0.006);
     const G = Math.max(4, Math.floor((gateEnd - 0.3) / gap) + 1);
-    const wu = Math.min(5, 2 + Math.floor(L / 4));
+    const wu = endless ? 5 : Math.min(5, 2 + Math.floor(Le / 4));
+    const wspan = endless ? 22 : G * 0.8;
     const wpos = {};
-    for (let k = 0; k < wu; k++) wpos[Math.round(1 + k * (G * 0.8 - 1) / wu)] = k + 1;
+    for (let k = 0; k < wu; k++) wpos[Math.round(1 + k * (wspan - 1) / wu)] = k + 1;
     let side = rng() < 0.5 ? -1 : 1;
     for (let i = 0; i < G; i++) {
       const t = 0.3 + i * gap;
@@ -88,16 +100,16 @@
       else if (wpos[i]) { kind = 'wpn'; val = Math.max(st.w + 1, wpos[i]); if (val > 5) { kind = 'dmg'; val = 50; } }
       else {
         const r = rng();
-        if (r < 0.42) { kind = 'men'; val = L < 4 ? 1 + (rng() < 0.3 ? 1 : 0) : 1 + Math.floor(rng() * 3); }
+        if (r < 0.42) { kind = 'men'; val = Le < 4 ? 1 + (rng() < 0.3 ? 1 : 0) : 1 + Math.floor(rng() * 3); }
         else if (r < 0.71) { kind = 'rate'; val = 20 + 10 * Math.floor(rng() * 3); }
         else { kind = 'dmg'; val = 25 + 5 * Math.floor(rng() * 5); }
       }
       const hp = Math.max(2, Math.round(d * gs * (0.85 + 0.3 * rng())));
       ev.push({ t, type: 'gate', side, kind, val, hp, good: true });
-      const pairP = L >= 3 ? 0.22 + Math.min(0.2, L * 0.004) : 0;
+      const pairP = Le >= 3 ? 0.22 + Math.min(0.2, Le * 0.004) : 0;
       if (i > 0 && rng() < pairP) {
         let k2, v2, good2 = true;
-        if (L >= 5 && i > 2 && rng() < 0.5) {
+        if (Le >= 5 && i > 2 && rng() < (hard ? 0.65 : 0.5)) {
           const rb = rng(); good2 = false;
           if (rb < 0.4) { k2 = 'lose'; v2 = 1 + Math.floor(rng() * 2); }
           else if (rb < 0.7) { k2 = 'slow'; v2 = 30; }
@@ -105,38 +117,40 @@
         } else {
           k2 = kind === 'men' ? 'rate' : 'men'; v2 = k2 === 'men' ? 1 + Math.floor(rng() * 2) : 30;
         }
-        ev.push({ t, type: 'gate', side: -side, kind: k2, val: v2, hp: good2 ? Math.max(2, Math.round(d * gs)) : Math.max(8, Math.round(d * gs * 1.4)), good: good2 });
-      } else if (L >= 6 && i > 1 && rng() < 0.12 + Math.min(0.12, L * 0.002)) {
+        ev.push({ t, type: 'gate', side: -side, kind: k2, val: v2, hp: good2 ? Math.max(2, Math.round(d * gs)) : Math.max(8, Math.round(d * gs * BADHP)), good: good2 });
+      } else if (Le >= 6 && i > 1 && rng() < 0.12 + Math.min(0.12, Le * 0.002)) {
         const bk = rng() < 0.5 ? 'lose' : 'weak';
-        ev.push({ t: t + gap * 0.5, type: 'gate', side: rng() < 0.5 ? -1 : 1, kind: bk, val: bk === 'lose' ? 1 + Math.floor(rng() * 2) : 30, hp: Math.max(8, Math.round(d * gs * 1.4)), good: false });
+        ev.push({ t: t + gap * 0.5, type: 'gate', side: rng() < 0.5 ? -1 : 1, kind: bk, val: bk === 'lose' ? 1 + Math.floor(rng() * 2) : 30, hp: Math.max(8, Math.round(d * gs * BADHP)), good: false });
       }
       applyTo(st, kind, val);
       tl.push([t + 6, dpsModel(st)]);
       side = rng() < 0.75 ? -side : side;
     }
-    const spread = 0.38 + Math.min(0.1, L * 0.003);
-    const spdBase = 4.3 + Math.min(1.6, L * 0.03);
+    const spread = 0.38 + Math.min(0.1, Le * 0.003);
+    const spdBase = (4.3 + Math.min(1.6, Le * 0.03)) * [1, 1.08, 1.3][diff];
+    const damp = Math.max(0.6, 1 - Le * 0.008);
     for (let w = 0; w < waves; w++) {
       const tw = t0 + w * WL;
-      const last = w === waves - 1;
-      let nz = Math.min(16, Math.round(4 + 1.2 * w + L * 0.13));
-      if (last) nz = Math.max(3, Math.round(nz * 0.6));
+      const bossWave = endless ? w % 5 === 4 : w === waves - 1;
+      const grow = endless ? 1 + 0.1 * w + 0.004 * w * w : 1;
+      let nz = Math.min(endless ? 20 : 16 + [0, 2, 5][diff], Math.round(4 + 1.2 * (endless ? Math.min(w, 8) : w) + Le * 0.13));
+      if (bossWave) nz = Math.max(3, Math.round(nz * 0.6));
       let k = 0;
       while (k < nz) {
-        const ts = tw + (k / nz) * WL * (last ? 0.5 : 0.8) + rng() * 0.6;
-        const horde = (L >= 2 && rng() < 0.3) ? 3 + Math.floor(rng() * Math.min(4, 1 + L / 6)) : 1;
+        const ts = tw + (k / nz) * WL * (bossWave ? 0.5 : 0.8) + rng() * 0.6;
+        const horde = (Le >= 2 && rng() < 0.3) ? 3 + Math.floor(rng() * Math.min(4, 1 + Le / 6)) : 1;
         const cu = (rng() * 2 - 1) * spread;
         for (let h = 0; h < horde && k < nz; h++, k++) {
-          const tough = L >= 4 && rng() < 0.12 + Math.min(0.12, L * 0.003);
-          const d = dpsAt(ts + 1.5) * Math.max(0.6, 1 - L * 0.008);
-          let hp = Math.max(1, Math.round(d * zs * (0.75 + 0.5 * rng()) * (tough ? 2.6 : 1) * (1 + 0.06 * w)));
-          ev.push({ t: ts + h * 0.18, type: 'z', u: Math.max(-0.56, Math.min(0.56, cu + (h ? (rng() * 2 - 1) * 0.18 : 0))), hp, spd: spdBase * (tough ? 0.8 : 1) * (0.9 + 0.2 * rng()), r: tough ? 0.13 : 0.1, tough, wave: w });
+          const tough = Le >= 4 && rng() < 0.12 + Math.min(0.12, Le * 0.003);
+          const d = dpsAt(ts + 1.5) * damp;
+          let hp = Math.max(1, Math.round(d * zs * (0.75 + 0.5 * rng()) * (tough ? 2.6 : 1) * (1 + 0.06 * (endless ? Math.min(w, 5) : w)) * grow));
+          ev.push({ t: ts + h * 0.18, type: 'z', u: Math.max(-0.56, Math.min(0.56, cu + (h ? (rng() * 2 - 1) * 0.18 : 0))), hp, spd: spdBase * (tough ? 0.8 : 1) * (0.9 + 0.2 * rng()) * (endless ? 1 + Math.min(0.5, w * 0.01) : 1), r: tough ? 0.13 : 0.1, tough, wave: w });
         }
       }
-      if (last) {
+      if (bossWave) {
         const tb = tw + WL * 0.25;
-        const bhp = Math.max(25, Math.round(dpsAt(tb + 3) * Math.max(0.6, 1 - L * 0.008) * (4.2 + Math.min(2, L * 0.03))));
-        ev.push({ t: tb, type: 'z', u: 0, hp: bhp, spd: 2.5, r: 0.27, boss: true, wave: w });
+        const bhp = Math.max(25, Math.round(dpsAt(tb + 3) * damp * (4.2 + Math.min(2, Le * 0.03)) * (hard ? 1.2 : 1) * grow));
+        ev.push({ t: tb, type: 'z', u: 0, hp: bhp, spd: 2.5 * (hard ? 1.15 : 1), r: 0.27, boss: true, wave: w });
       }
     }
     ev.sort((a, b) => a.t - b.t);
@@ -144,10 +158,11 @@
   }
 
   MG.register({
-    id: 'zombie', name: '喪屍射門', icon: '🧟', color: '#2f9e5a',
+    id: 'zombie', name: '喪屍射門', icon: '🧟', color: '#2f9e5a', endless: true,
     create(api) {
       const U = api.util, L = api.level, rng = api.rng;
-      const plan = genLevel(L, rng);
+      const DIFF = api.diff || 0, ENDLESS = !!api.endless;
+      const plan = genLevel(L, rng, DIFF, ENDLESS);
       let W, H, cx, hy, py, rw, cache = null, cacheDpr = 1;
       function layout() {
         W = api.W; H = api.H; cx = W / 2;
@@ -235,7 +250,7 @@
         S.men.splice(idx, 1);
         shake = Math.max(shake, 10);
         api.sfx('bad');
-        if (S.men.length === 0) { S.over = true; api.lose('被喪屍攻破了！'); }
+        if (S.men.length === 0) { S.over = true; api.lose(ENDLESS ? '撐到第 ' + (S.wave + 1) + ' 波，擊殺 ' + S.kills + ' 隻' : '被喪屍攻破了！'); }
       }
 
       function spawn(e) {
@@ -281,7 +296,7 @@
         if (hitSnd <= 0) { api.sfx('hit'); hitSnd = 0.07; }
         if (Math.random() < 0.35) { proj(z.u, z.z); addPart(PX + (Math.random() - 0.5) * 10 * PS, PY - z.r * rw * PS * 2.2, (Math.random() - 0.5) * 120, -Math.random() * 120, 0.35, '#5fbf3f', 3 * PS + 1, 300); }
         if (z.hp <= 0 && !z.dead) {
-          z.dead = true; S.kills++;
+          z.dead = true; S.kills++; api.score(S.kills);
           proj(z.u, z.z);
           const R = z.r * rw * PS;
           burst(PX, PY - R * 1.8, z.boss ? 60 : 14, '#6fd14a', z.boss ? 420 : 200, z.boss ? 8 : 4 * PS + 2, 500);
@@ -376,8 +391,10 @@
           gt.z -= GV * dt; gt.flash -= dt; gt.pop = Math.max(0, gt.pop - dt * 3);
           if (gt.dead || gt.z < -1.5) gs.splice(i, 1);
         }
-        const info = '第 ' + (S.wave + 1) + '/' + plan.waves + ' 波' + (L === 1 && S.T < 12 ? ' · 拖曳左右移動，射爆藍色閘門拿升級' : ' · 擊殺 ' + S.kills);
+        const info = ENDLESS ? '無盡模式 · 第 ' + (S.wave + 1) + ' 波 · 每 5 波一隻 BOSS'
+          : '第 ' + (S.wave + 1) + '/' + plan.waves + ' 波' + (L === 1 && DIFF === 0 && S.T < 12 ? ' · 拖曳左右移動，射爆藍色閘門拿升級' : ' · 擊殺 ' + S.kills);
         if (info !== lastInfo) { lastInfo = info; api.info(info); }
+        if (S.evI >= plan.ev.length && zs.length === 0 && ENDLESS) { S.over = true; api.lose('撐過全部 ' + plan.waves + ' 波！擊殺 ' + S.kills); return; }
         if (S.evI >= plan.ev.length && zs.length === 0) {
           S.over = true;
           for (let i = 0; i < 60; i++) addPart(Math.random() * W, -10, (Math.random() - 0.5) * 200, Math.random() * 200, 2 + Math.random(), U.PALETTE[i % 8], 6, 300, true);
@@ -444,12 +461,6 @@
         x.moveTo(cx - rw * sF, hy + (py - hy) * sF); x.lineTo(cx + rw * sF, hy + (py - hy) * sF);
         x.lineTo(cx + rw * sB, H); x.lineTo(cx - rw * sB, H); x.closePath(); x.fill();
         quad(-1.0, -0.975, '#f2d14a'); quad(0.975, 1.0, '#f2d14a');
-        x.fillStyle = 'rgba(0,0,0,0.12)';
-        const r3 = MG.mulberry32(3);
-        for (let i = 0; i < 26; i++) {
-          const zz = r3() * 50, uu = (r3() * 2 - 1) * 0.9, s = DPT / (DPT + zz);
-          x.beginPath(); x.ellipse(cx + uu * rw * s, hy + (py - hy) * s, 14 * s + 3, 4 * s + 1, 0, 0, Math.PI * 2); x.fill();
-        }
         gr = x.createLinearGradient(0, hy, 0, hy + (py - hy) * 0.22);
         gr.addColorStop(0, 'rgba(255,154,92,0.75)'); gr.addColorStop(1, 'rgba(255,154,92,0)');
         x.fillStyle = gr; x.fillRect(0, hy, W, (py - hy) * 0.22);
@@ -459,7 +470,17 @@
         cache = c; cacheDpr = dpr;
       }
 
+      const STAINS = [];
+      { const r3 = MG.mulberry32(3); for (let i = 0; i < 18; i++) STAINS.push(r3() * 72, (r3() * 2 - 1) * 0.9, 0.6 + r3() * 1.2, r3() < 0.3 ? 1 : 0); }
       function roadDecor(g) {
+        const scroll = S.T * GV;
+        for (let i = 0; i < STAINS.length; i += 4) {
+          let z = (STAINS[i] - scroll) % 72; if (z < 0) z += 72; z -= 4;
+          if (z > ZF) continue;
+          proj(STAINS[i + 1], z);
+          g.fillStyle = STAINS[i + 3] ? 'rgba(120,20,20,0.22)' : 'rgba(0,0,0,0.14)';
+          g.beginPath(); g.ellipse(PX, PY, (16 * STAINS[i + 2]) * PS + 2, (4.5 * STAINS[i + 2]) * PS + 1, 0, 0, Math.PI * 2); g.fill();
+        }
         const off = (S.T * GV) % 5;
         g.fillStyle = 'rgba(255,255,255,0.55)';
         for (let k = 0; k < 14; k++) {
@@ -607,12 +628,19 @@
         proj(m.u, m.z);
         const x = PX, s = PS;
         const R = 0.085 * rw * s * (1 + m.pop * 0.5 * Math.sin(m.pop * Math.PI));
-        const y = PY + Math.sin(anim * 9 + m.bob) * R * 0.04;
+        const wph = anim * 11 + m.bob;
+        const step = Math.sin(wph);
+        const y0 = PY;
+        const y = PY - Math.abs(Math.cos(wph)) * R * 0.12;
         g.fillStyle = 'rgba(0,0,0,0.3)';
-        g.beginPath(); g.ellipse(x, y, R * 0.75, R * 0.25, 0, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.ellipse(x, y0, R * 0.75, R * 0.25, 0, 0, Math.PI * 2); g.fill();
         g.fillStyle = '#2c3a24';
-        U.rr(g, x - R * 0.42, y - R * 0.75, R * 0.32, R * 0.75, R * 0.1); g.fill();
-        U.rr(g, x + R * 0.1, y - R * 0.75, R * 0.32, R * 0.75, R * 0.1); g.fill();
+        const la = Math.max(0, step) * R * 0.3, lb = Math.max(0, -step) * R * 0.3;
+        U.rr(g, x - R * 0.42, y - R * 0.75 - la * 0.4, R * 0.32, R * 0.75 - la * 0.6, R * 0.1); g.fill();
+        U.rr(g, x + R * 0.1, y - R * 0.75 - lb * 0.4, R * 0.32, R * 0.75 - lb * 0.6, R * 0.1); g.fill();
+        g.fillStyle = '#1c2416';
+        U.rr(g, x - R * 0.46, y - R * 0.18 - la, R * 0.4, R * 0.2, R * 0.08); g.fill();
+        U.rr(g, x + R * 0.06, y - R * 0.18 - lb, R * 0.4, R * 0.2, R * 0.08); g.fill();
         g.fillStyle = i === 0 ? '#3e6fd8' : '#56753a';
         U.rr(g, x - R * 0.6, y - R * 1.75, R * 1.2, R * 1.1, R * 0.35); g.fill();
         g.fillStyle = i === 0 ? '#2b4f9e' : '#3e5a2a';
@@ -667,7 +695,15 @@
         U.rr(g, W - pad - 84, pad, 84, 34, 17); g.fill();
         U.text(g, '👥 ×' + S.men.length, W - pad - 42, pad + 17, 16, '#ffffff', 'center', 900);
         const bw = Math.min(150, W - 260);
-        if (bw > 40) {
+        if (ENDLESS) {
+          g.fillStyle = 'rgba(15,12,35,0.55)';
+          const sw = Math.min(150, W - 240);
+          if (sw > 60) {
+            U.rr(g, cx - sw / 2, pad, sw, 34, 17); g.fill();
+            U.text(g, '💀 ' + S.kills, cx, pad + 11, 15, '#ffffff', 'center', 900);
+            U.text(g, '最高 ' + Math.max(api.best || 0, S.kills) + ' · 第 ' + (S.wave + 1) + ' 波', cx, pad + 26, 10, '#ffe27a', 'center', 800);
+          }
+        } else if (bw > 40) {
           const bx = cx - bw / 2, by = pad + 12;
           for (let w = 0; w < plan.waves; w++) {
             const sw = bw / plan.waves;

@@ -15,9 +15,10 @@
   const SPAWN_W = [0.3, 0.27, 0.21, 0.14, 0.08];
 
   // ---------- pure physics (shared with tools/check_fruit.js) ----------
-  function newWorld() { return { fr: [], score: 0, maxT: -1, overT: 0, lost: false, nid: 1, events: [] }; }
+  // k = fruit size factor (bigger fruit = effectively a smaller box)
+  function newWorld(k) { return { fr: [], score: 0, maxT: -1, overT: 0, lost: false, nid: 1, events: [], k: k || 1 }; }
   function addFruit(w, t, x, y) {
-    const r = RAD[t];
+    const r = RAD[t] * w.k;
     const f = { id: w.nid++, t, x: Math.min(1 - r, Math.max(r, x)), y, px: 0, py: 0, vx: 0, vy: 0, r, age: 0, ang: 0, av: 0, pop: 0, contact: 0 };
     w.fr.push(f);
     return f;
@@ -32,7 +33,7 @@
     const fr = w.fr, n = fr.length;
     for (let i = 0; i < n; i++) {
       const f = fr[i];
-      const R = RAD[f.t];
+      const R = RAD[f.t] * w.k;
       if (f.r < R) f.r = Math.min(R, f.r + R * dt / 0.12);
       f.vy += G * dt;
       f.px = f.x; f.py = f.y;
@@ -118,18 +119,37 @@
     w.overT = over ? w.overT + dt : 0;
     if (w.overT > 2) w.lost = true;
   }
-  function goalFor(lv) {
+  // diff: 0 簡單 (original), 1 普通, 2 困難; endless has no goal
+  const SIZE_K = [1, 1.05, 1.12];
+  function goalFor(lvIn, diff) {
+    diff = diff || 0;
+    if (diff === 0) return goalFor0(lvIn);
+    const lv = lvIn + (diff === 1 ? 12 : 30);
+    if (lvIn % 3 === 2) return { kind: 'score', target: Math.round((60 + lv * 26 + Math.pow(lv, 1.5) * 1.6) * (diff === 2 ? 1.1 : 1) / 10) * 10 };
+    return { kind: 'fruit', t: Math.min(9, 3 + Math.floor(lv / 5)) };
+  }
+  function goalFor0(lv) {
     if (lv === 1) return { kind: 'fruit', t: 3 };
     if (lv % 3 === 2) return { kind: 'score', target: Math.round((60 + lv * 26 + Math.pow(lv, 1.5) * 1.6) / 10) * 10 };
     return { kind: 'fruit', t: Math.min(9, 3 + Math.floor(lv / 5)) };
   }
-  function prefillCount(lv) { return lv >= 12 ? Math.min(10, 2 + Math.floor((lv - 12) / 5)) : 0; }
+  function prefillCount(lv, diff) {
+    if (diff === 1) return Math.min(10, 2 + Math.floor(lv / 4));
+    if (diff === 2) return Math.min(13, 5 + Math.floor(lv / 4));
+    return lv >= 12 ? Math.min(10, 2 + Math.floor((lv - 12) / 5)) : 0;
+  }
+  // seconds the player may hold a fruit before it auto-drops (0 = no limit)
+  function dropLimit(diff, endless, score) {
+    if (endless) return Math.max(2.5, 5 - score / 800);
+    return diff === 2 ? 5 : 0;
+  }
   // builds the starting world (pre-placed fruits settle deterministically)
-  function genLevel(lv, rng) {
-    const w = newWorld();
-    const n = prefillCount(lv);
+  function genLevel(lv, rng, diff, endless) {
+    diff = diff || 0;
+    const w = newWorld(endless ? 1.06 : SIZE_K[diff]);
+    const n = endless ? 0 : prefillCount(lv, diff);
     for (let k = 0; k < n; k++) {
-      const t = Math.floor(rng() * 5) + (rng() < 0.3 ? 1 : 0);
+      const t = Math.floor(rng() * 5) + (rng() < (diff === 2 ? 0.5 : 0.3) ? 1 : 0);
       const f = addFruit(w, t, 0.1 + rng() * 0.8, HC - 0.1 - rng() * 0.4);
       f.age = 2;
     }
@@ -137,10 +157,10 @@
     w.events.length = 0; w.score = 0; w.overT = 0; w.lost = false;
     w.maxT = -1;
     w.fr.forEach((f) => { f.age = 2; f.vx = 0; f.vy = 0; f.av = 0; });
-    return { world: w, goal: goalFor(lv), first: randType(rng), next: randType(rng) };
+    return { world: w, goal: endless ? { kind: 'endless' } : goalFor(lv, diff), first: randType(rng), next: randType(rng) };
   }
-  function goalMet(goal, w) { return goal.kind === 'fruit' ? w.maxT >= goal.t : w.score >= goal.target; }
-  const LOGIC = { NAMES, RAD, HC, LINE, SPAWN_Y, DT, DROP_COOLDOWN, newWorld, addFruit, randType, step, goalFor, genLevel, goalMet, mergePts };
+  function goalMet(goal, w) { return goal.kind === 'fruit' ? w.maxT >= goal.t : goal.kind === 'score' ? w.score >= goal.target : false; }
+  const LOGIC = { NAMES, RAD, HC, LINE, SPAWN_Y, DT, DROP_COOLDOWN, dropLimit, newWorld, addFruit, randType, step, goalFor, genLevel, goalMet, mergePts };
 
   // ---------- drawing ----------
   const DPR = () => Math.min(3, (typeof window !== 'undefined' && window.devicePixelRatio) || 1);
@@ -288,10 +308,14 @@
 
   MG.register({
     id: 'fruit', name: '合成水果', icon: '🍉', color: '#2f9e5a',
+    endless: true,
     _logic: LOGIC,
     create(api) {
       const U = api.util;
-      const lvd = genLevel(api.level, api.rng);
+      const lvd = genLevel(api.level, api.rng, api.diff, api.endless);
+      const K = lvd.world.k;
+      const best = api.best || 0;
+      let dropT = 0;
       const w = lvd.world;
       const goal = lvd.goal;
       let cur = lvd.first, next = lvd.next;
@@ -301,11 +325,12 @@
       let shownScore = 0;
       const parts = [], rings = [], texts = [];
       let L = {}, spr = [], bg = null;
-      let hint = api.level === 1 ? 0 : -1;
+      let hint = api.level === 1 && api.diff === 0 && !api.endless ? 0 : -1;
 
-      if (api.level === 1) api.info('左右拖曳瞄準，放開投下；相同水果相碰會合成');
-      else if (goal.kind === 'fruit') api.info('目標：合成' + NAMES[goal.t]);
-      else api.info('目標：得到 ' + goal.target + ' 分');
+      if (api.endless) api.info('無盡模式：水果越大分數越高，不放手也會自動落下');
+      else if (api.level === 1 && api.diff === 0) api.info('左右拖曳瞄準，放開投下；相同水果相碰會合成');
+      else if (goal.kind === 'fruit') api.info('目標：合成' + NAMES[goal.t] + (api.diff === 2 ? ' · 5 秒內要放下水果' : ''));
+      else api.info('目標：得到 ' + goal.target + ' 分' + (api.diff === 2 ? ' · 5 秒內要放下水果' : ''));
 
       function layout() {
         const W = api.W, H = api.H;
@@ -316,7 +341,7 @@
         L = { W, H, S, ox, oy, hud, evo };
         const d = DPR();
         spr = RAD.map((r, t) => {
-          const rp = r * S, size = rp * 2.9;
+          const rp = r * S * K, size = rp * 2.9;
           const cv = makeCanvas(size * d, size * d);
           const g = cv.getContext('2d');
           g.scale(d, d); g.translate(size / 2, size / 2);
@@ -368,18 +393,18 @@
           const a = Math.random() * Math.PI * 2, v = (60 + Math.random() * 220) * (big ? 1.4 : 1);
           parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 80, t: 0, life: 0.45 + Math.random() * 0.4, c: k % 4 === 0 ? '#ffffff' : c, s: 2 + Math.random() * 4 });
         }
-        rings.push({ x, y, r: RAD[Math.min(t, RAD.length - 1)] * L.S, t: 0, c });
+        rings.push({ x, y, r: RAD[Math.min(t, RAD.length - 1)] * K * L.S, t: 0, c });
       }
 
       function drop() {
         if (ended || endT >= 0) return;
         if (cooldown > 0) { pending = true; return; }
         pending = false;
-        const r = RAD[cur];
+        const r = RAD[cur] * K;
         addFruit(w, cur, U.clamp(aimX, r, 1 - r), SPAWN_Y);
         api.sfx('drop');
         cur = next; next = randType(api.rng);
-        cooldown = DROP_COOLDOWN; curPop = 0;
+        cooldown = DROP_COOLDOWN; curPop = 0; dropT = 0;
         hint = -1;
       }
 
@@ -390,6 +415,10 @@
         shownScore += (w.score - shownScore) * Math.min(1, dt * 10);
         if (!ended && endT < 0) {
           if (cooldown > 0) { cooldown -= dt; if (cooldown <= 0 && pending) drop(); }
+          else {
+            const lim = dropLimit(api.diff, api.endless, w.score);
+            if (lim > 0) { dropT += dt; if (dropT >= lim) { holding = false; drop(); } }
+          }
           curPop = Math.min(1, curPop + dt * 4);
           acc += dt;
           let steps = 0;
@@ -402,6 +431,7 @@
             if (e.t >= 5) { shake = Math.min(0.3, 0.05 * (e.t - 3)); api.sfx('good'); } else api.sfx('pop');
             if (e.type === 'merge' && goal.kind === 'fruit' && e.t === goal.t) texts.push({ str: NAMES[e.t] + '！', x: L.W / 2, y: L.oy + L.S * 0.5, t: 0, big: 1 });
           }
+          if (w.events.length) api.score(w.score);
           w.events.length = 0;
           if (goalMet(goal, w)) {
             endT = 0; endWin = true;
@@ -409,7 +439,7 @@
           } else if (w.lost) { endT = 0; endWin = false; shake = 0.3; api.sfx('bad'); }
         } else if (endT >= 0 && !ended) {
           endT += dt;
-          if (endT > 0.8) { ended = true; if (endWin) api.win(goal.kind === 'fruit' ? '成功合成' + NAMES[goal.t] + '！' : '得分 ' + w.score + '！'); else api.lose('水果超過警戒線了'); }
+          if (endT > 0.8) { ended = true; if (endWin) api.win(goal.kind === 'fruit' ? '成功合成' + NAMES[goal.t] + '！' : '得分 ' + w.score + '！'); else { api.score(w.score); api.lose('水果超過警戒線了'); } }
         }
         dispX += (aimX - dispX) * Math.min(1, dt * 18);
         for (let i = parts.length - 1; i >= 0; i--) { const p = parts[i]; p.t += dt; p.vy += 700 * dt; p.x += p.vx * dt; p.y += p.vy * dt; if (p.t > p.life) parts.splice(i, 1); }
@@ -430,17 +460,21 @@
         const gw = Math.min(150, L.W - 230);
         g.fillStyle = 'rgba(255,255,255,0.75)'; U.rr(g, L.W / 2 - gw / 2, hy - 22, gw, 44, 14); g.fill();
         if (goal.kind === 'fruit') {
-          const sc = 15 / (RAD[goal.t] * S);
+          const sc = 15 / (RAD[goal.t] * S * K);
           drawSpr(g, goal.t, L.W / 2 - gw / 2 + 24, hy + 2, sc, 0);
           U.text(g, '目標', L.W / 2 + 12, hy - 9, 11, '#a0602a', 'center', 800);
           U.text(g, NAMES[goal.t], L.W / 2 + 12, hy + 9, 16, '#8a3d10', 'center', 900);
+        } else if (goal.kind === 'endless') {
+          const rec = best > 0 && w.score > best;
+          U.text(g, rec ? '新紀錄！' : '最高', L.W / 2, hy - 9, 11, rec ? '#e0402a' : '#a0602a', 'center', 800);
+          U.text(g, String(Math.max(best, w.score)), L.W / 2, hy + 9, 17, '#8a3d10', 'center', 900);
         } else {
           U.text(g, '目標分數', L.W / 2, hy - 9, 11, '#a0602a', 'center', 800);
           U.text(g, String(goal.target), L.W / 2, hy + 9, 17, '#8a3d10', 'center', 900);
         }
         g.fillStyle = 'rgba(255,255,255,0.55)'; U.rr(g, L.W - 102, hy - 22, 92, 44, 14); g.fill();
         U.text(g, '下一個', L.W - 74, hy, 12, '#3f7d38', 'center', 800);
-        drawSpr(g, next, L.W - 32, hy + 2, Math.min(1, 15 / (RAD[next] * S)), 0);
+        drawSpr(g, next, L.W - 32, hy + 2, Math.min(1, 15 / (RAD[next] * S * K)), 0);
         // danger line
         const ly = oy + LINE * S;
         const warn = w.overT > 0;
@@ -449,19 +483,25 @@
         g.setLineDash([10, 8]); g.beginPath(); g.moveTo(ox + 4, ly); g.lineTo(ox + S - 4, ly); g.stroke(); g.setLineDash([]);
         // aim guide + hanging fruit
         if (endT < 0) {
-          const r = RAD[cur];
+          const r = RAD[cur] * K;
           const ax = ox + U.clamp(dispX, r, 1 - r) * S;
           g.strokeStyle = 'rgba(255,255,255,' + (holding ? 0.85 : 0.5) + ')'; g.lineWidth = 2;
           g.setLineDash([6, 8]); g.beginPath(); g.moveTo(ax, oy + SPAWN_Y * S + r * S); g.lineTo(ax, oy + HC * S - 4); g.stroke(); g.setLineDash([]);
           if (cooldown <= 0.3) {
             const sc = cooldown > 0 ? 0.6 : U.easeOutBack(Math.min(1, curPop));
             drawSpr(g, cur, ax, oy + SPAWN_Y * S + Math.sin(time * 3) * 2, Math.max(0.05, sc), 0);
+            const lim = dropLimit(api.diff, api.endless, w.score);
+            if (lim > 0 && cooldown <= 0) {
+              const left = Math.max(0, 1 - dropT / lim);
+              g.strokeStyle = left < 0.35 ? '#ff3b3b' : 'rgba(255,255,255,0.9)'; g.lineWidth = 4; g.lineCap = 'round';
+              g.beginPath(); g.arc(ax, oy + SPAWN_Y * S, r * S + 7, -Math.PI / 2, -Math.PI / 2 + left * Math.PI * 2); g.stroke();
+            }
           }
         }
         // fruits
         for (const f of w.fr) {
           const [x, y] = toPx(f.x, f.y);
-          const sc = (f.r / RAD[f.t]) * (f.pop > 0 ? 1 + Math.sin((1 - f.pop / 0.3) * Math.PI) * 0.12 : 1);
+          const sc = (f.r / (RAD[f.t] * K)) * (f.pop > 0 ? 1 + Math.sin((1 - f.pop / 0.3) * Math.PI) * 0.12 : 1);
           drawSpr(g, f.t, x, y, sc, f.ang);
         }
         // rings, particles, texts
@@ -494,7 +534,7 @@
           const x = L.W / 2 - stp * n / 2 + stp * (t + 0.5);
           const reached = t <= w.maxT;
           g.globalAlpha = reached ? 1 : 0.45;
-          drawSpr(g, t, x, ey, (stp * 0.4) / (RAD[t] * S), 0);
+          drawSpr(g, t, x, ey, (stp * 0.4) / (RAD[t] * S * K), 0);
           if (goal.kind === 'fruit' && t === goal.t) {
             g.globalAlpha = 1; g.strokeStyle = '#ff5a3c'; g.lineWidth = 2.5;
             g.beginPath(); g.arc(x, ey, stp * 0.5, 0, Math.PI * 2); g.stroke();

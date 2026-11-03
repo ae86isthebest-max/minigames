@@ -62,3 +62,27 @@ Anything else (undo, boosters, extra slot) is drawn by the game inside its canva
 3. `node tools/check_<id>.js` → solvability / winnability for levels 1–60.
 Do NOT use any browser tool — the lead tests visually in the browser afterwards.
 Edit carefully: no greedy regex replacements on code, no `//` comments in the middle of a line of code.
+
+## v2: difficulty, endless, records (core.js updated — read it again)
+
+Tapping a game now opens a picker: 簡單 / 普通 / 困難 (and 無盡 if the def has `endless: true`).
+Each mode has its own level progress and records; the shell saves them.
+
+New `api` fields:
+- `api.diff` — 0 簡單, 1 普通, 2 困難. Each mode is its own endless level ladder starting at level 1.
+- `api.endless` — true in 無盡 mode (`api.diff` is 2 then, `api.level` is 1). Play never "wins": it keeps ramping
+  forever until the player fails; call `api.score(n)` whenever the score changes and `api.lose(text)` at the end.
+  The shell compares with the best and shows 新紀錄. Show the live score and `api.best` (best so far) in the canvas.
+- `api.score(n)` — report current score (integer). Score games (blocks, fruit, stack…) should report it in every mode.
+- `api.rng` in endless is seeded from the clock (different every run).
+
+What the difficulties mean (the user said: what you built so far feels like 簡單; they want 困難 to be
+"really hard, really thrilling"):
+- 簡單 = the current game exactly as it is now (keep it; do not make it harder).
+- 普通 = clearly harder from level 1: think of current level ~10–15 at level 1 and ramping faster.
+- 困難 = genuinely tense from level 1: think beyond the current level 30 at level 1, tighter limits
+  (fewer bays/slots/hearts/undos/boosters, more colours, faster enemies, time pressure where it fits,
+  hidden info), ramps quickly. Still always winnable — the check scripts must prove 簡單/普通/困難 levels 1–40
+  winnable (bot / solver), and that a lazy/no-input player loses on 困難 where that applies.
+- Real-time games on 困難: faster, more enemies, less margin — the player should feel pressure in seconds.
+- Seeds differ per mode, so levels differ between modes.

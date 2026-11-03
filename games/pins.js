@@ -53,9 +53,25 @@
   }
 
   // which template + variation a level uses
-  function levelPlan(level, rng) {
-    let idx, mirror = false, scale = 1;
-    if (level <= TPL.length) idx = level - 1;
+  // 普通: trickier templates from level 1; 困難: only the hardest ones, decoy lava pins, higher targets
+  const NORMAL_SEQ = [5, 8, 6, 11, 9, 19, 12, 14, 18, 13, 21, 22];
+  const NORMAL_POOL = [5, 6, 8, 9, 10, 11, 12, 13, 14, 17, 18, 19, 20, 21, 22, 23];
+  const HARD_POOL = [11, 12, 14, 17, 19, 20, 21, 22, 23, 5, 8, 13];
+  function levelPlan(level, rng, diff) {
+    let idx, mirror = false, scale = 1, decoy = false, needAdd = 0;
+    if (diff === 1) {
+      idx = level <= NORMAL_SEQ.length ? NORMAL_SEQ[level - 1] : NORMAL_POOL[Math.floor(rng() * NORMAL_POOL.length)];
+      mirror = level > 1 && rng() < 0.5;
+      scale = 1 + Math.floor(rng() * 3) * 0.08;
+      decoy = level > 2 && rng() < 0.5;
+      needAdd = 0.05;
+    } else if (diff === 2) {
+      idx = HARD_POOL[Math.floor(rng() * HARD_POOL.length)];
+      mirror = rng() < 0.5;
+      scale = 1.08 + Math.floor(rng() * 3) * 0.08;
+      decoy = true;
+      needAdd = 0.08;
+    } else if (level <= TPL.length) idx = level - 1;
     else {
       idx = 6 + Math.floor(rng() * (TPL.length - 6));
       mirror = rng() < 0.5;
@@ -63,7 +79,24 @@
     }
     const colors = CANDY.slice();
     for (let i = colors.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = colors[i]; colors[i] = colors[j]; colors[j] = t; }
-    return { idx, mirror, scale, colors };
+    return { idx, mirror, scale, colors, decoy, needAdd };
+  }
+
+  // add a decoy lava chamber (with its own pin) on top of a tube whose top chamber holds colour/grey
+  function withDecoy(tpl) {
+    if (tpl.lay === 'R') return null;
+    const tops = tpl.lay === 'C' ? 2 : tpl.cols.length;
+    let cc = -1;
+    for (let c = 0; c < tops; c++) { const t = tpl.cols[c][0][0]; if (t === 'c' || t === 'g') { cc = c; break; } }
+    if (cc < 0) return null;
+    let start = 0;
+    for (let c = 0; c < cc; c++) start += tpl.cols[c].length;
+    const map = (q) => (q >= start ? q + 1 : q);
+    const cols = tpl.cols.map((col, c) => (c === cc ? ['k10'].concat(col) : col.slice()));
+    const wrong = (tpl.wrong || []).map((w) => w.map(map));
+    const order = tpl.order.map(map);
+    wrong.push([start].concat(order));
+    return { lay: tpl.lay, cols, order, wrong, need: tpl.need, decoyPin: start };
   }
 
   // build geometry for a template; returns null if it does not fit
@@ -138,12 +171,20 @@
     return L;
   }
 
-  function makeLevel(level, rng) {
-    const plan = levelPlan(level, rng);
-    const tpl = TPL[plan.idx];
-    let L = buildLayout(tpl, plan.scale, plan.mirror, plan.colors, rng);
+  function makeLevel(level, rng, diff) {
+    const plan = levelPlan(level, rng, diff || 0);
+    let tpl = TPL[plan.idx];
+    let L = null;
+    if (plan.decoy) {
+      const d = withDecoy(tpl);
+      if (d) {
+        L = buildLayout(d, plan.scale, plan.mirror, plan.colors, rng) || buildLayout(d, 1, plan.mirror, plan.colors, rng);
+        if (L) tpl = d;
+      }
+    }
+    if (!L) L = buildLayout(tpl, plan.scale, plan.mirror, plan.colors, rng);
     if (!L) L = buildLayout(tpl, 1, plan.mirror, plan.colors, rng);
-    L.tplIndex = plan.idx; L.tpl = tpl; L.need = tpl.need || 0;
+    L.tplIndex = plan.idx; L.tpl = tpl; L.need = tpl.need ? Math.min(0.95, tpl.need + plan.needAdd) : 0;
     return L;
   }
 
@@ -367,7 +408,7 @@
     _TPL: TPL, _makeLevel: makeLevel,
     create(api) {
       const U = api.util;
-      const L = makeLevel(api.level, api.rng);
+      const L = makeLevel(api.level, api.rng, api.diff || 0);
       const world = World(L, api.rng);
       const { X, Y, RAD, TY, CI, ALIVE, pins } = world;
       const kind = L.kind;
@@ -397,7 +438,7 @@
       function setInfo() {
         if (kind === 'cup') {
           const s = world.stats();
-          if (api.level === 1 && sincePull > 50) api.info('點金針把它拔出來，讓彩球掉進杯子！');
+          if (!api.diff && api.level === 1 && sincePull > 50) api.info('點金針把它拔出來，讓彩球掉進杯子！');
           else api.info('目標 ' + need + ' 顆彩球進杯' + (world.TY.indexOf(T_G) >= 0 ? '・灰球碰彩球會上色' : ''));
         } else {
           if (!monster.alive) api.info(walkT > 0 ? '快走！' : '怪物倒了！拔掉門閂救人（小心岩漿）');
@@ -733,7 +774,7 @@
           g.beginPath(); g.arc(hx, hy, 8, Math.PI * 1.1, Math.PI * 1.6); g.stroke();
           if (p.door) { U.text(g, '🚪', bx, by + 18, 9, '#fff'); }
           g.globalAlpha = 1;
-          if (!p.pulled && i === hintPin && api.level <= 2 && pins.every((q) => !q.pulled)) {
+          if (!p.pulled && i === hintPin && !api.diff && api.level <= 2 && pins.every((q) => !q.pulled)) {
             const t = (time * 1.4) % 1;
             g.strokeStyle = 'rgba(255,90,90,' + (1 - t) + ')'; g.lineWidth = 2.5;
             g.beginPath(); g.arc(hx, hy, 10 + t * 16, 0, Math.PI * 2); g.stroke();

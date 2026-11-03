@@ -54,17 +54,21 @@
     return { order, stuck, depth };
   }
 
-  function gen(level, rng) {
+  // diff 0 簡單 = original ladder; 1 普通 starts near old level 12; 2 困難 = full dense lots, many cones, deep chains
+  function gen(level, rng, diff) {
+    diff = diff || 0;
+    const hard = diff === 2;
+    level = diff === 1 ? Math.round(11 + level * 1.5) : hard ? 40 + level * 2 : level;
     const cols = Math.min(7, 4 + Math.floor((level + 1) / 4));
     const rows = Math.min(10, 5 + Math.floor(level / 3));
     const N = cols * rows;
-    const density = Math.min(0.88, 0.42 + level * 0.035);
-    const nObs = level < 6 ? 0 : Math.min(4, 1 + Math.floor((level - 6) / 6));
-    const truckP = level < 3 ? 0 : Math.min(0.3, 0.08 + level * 0.012);
-    const revP = level < 2 ? 0 : 0.3;
-    const wantDepth = level < 3 ? 1 : Math.min(7, 2 + Math.floor(level / 4));
+    const density = hard ? 0.93 : Math.min(0.88, 0.42 + level * 0.035);
+    const nObs = hard ? Math.min(6, 3 + Math.floor((level - 40) / 16)) : level < 6 ? 0 : Math.min(4, 1 + Math.floor((level - 6) / 6));
+    const truckP = hard ? 0.34 : level < 3 ? 0 : Math.min(0.3, 0.08 + level * 0.012);
+    const revP = level < 2 ? 0 : hard ? 0.4 : 0.3;
+    const wantDepth = hard ? Math.min(12, 8 + Math.floor((level - 40) / 12)) : level < 3 ? 1 : Math.min(7, 2 + Math.floor(level / 4));
     let best = null, bestScore = -1;
-    for (let tries = 0; tries < 14; tries++) {
+    for (let tries = 0; tries < (hard ? 40 : 14); tries++) {
       const obs = [];
       for (let i = 0; i < nObs; i++) {
         const x = 1 + Math.floor(rng() * (cols - 2)), y = 1 + Math.floor(rng() * (rows - 2));
@@ -151,12 +155,13 @@
     gen, solve, cellsOf, probe, buildGrid,
     create(api) {
       const U = api.util;
-      const L = gen(api.level, api.rng);
+      const L = gen(api.level, api.rng, api.diff || 0);
+      const maxHearts = [3, 2, 1][api.diff || 0];
       const { cols, rows, obs } = L;
       const cars = L.cars.map((c, i) => Object.assign({}, c, { id: i, state: 'park', off: 0, t: 0, shake: 0, flash: 0, d: 0, v: 0, hit: false }));
       let grid = buildGrid(cols, rows, obs, cars);
       const obsShake = obs.map(() => 0);
-      let hearts = 3, shake = 0, endT = -1, endWin = false, time = 0, heartPop = 0, hintT = 0;
+      let hearts = maxHearts, shake = 0, endT = -1, endWin = false, time = 0, heartPop = 0, hintT = 0;
       const parts = [];
       let lay = null;
       const tmp = [0, 0], tmp2 = [0, 0];
@@ -167,7 +172,7 @@
 
       function remaining() { return cars.filter((c) => c.state === 'park' || c.state === 'bump').length; }
       function setInfo() {
-        if (api.level === 1 && remaining() === cars.length) api.info('點車子，它會照箭頭方向開走');
+        if (api.level === 1 && !api.diff && remaining() === cars.length) api.info('點車子，它會照箭頭方向開走');
         else api.info('剩 ' + remaining() + ' 台車');
       }
 
@@ -477,6 +482,7 @@
         },
         draw(g) {
           if (!lay) return;
+          if (api.W !== lay.W || api.H !== lay.H) layout();
           const { W, H, cell } = lay;
           g.fillStyle = '#4fae4f'; g.fillRect(0, 0, W, H);
           g.save();
@@ -546,8 +552,8 @@
           g.restore();
           // HUD: hearts
           g.fillStyle = 'rgba(0,0,0,0.22)';
-          U.rr(g, 10, 8, 112, 32, 16); g.fill();
-          for (let i = 0; i < 3; i++) {
+          U.rr(g, 10, 8, 10 + maxHearts * 34, 32, 16); g.fill();
+          for (let i = 0; i < maxHearts; i++) {
             const hx = 32 + i * 34, hy = 24;
             const s = (i === hearts && heartPop > 0) ? 1 + heartPop * 0.5 : 1;
             g.save(); g.translate(hx, hy); g.scale(s, s);
@@ -562,7 +568,7 @@
         down(x, y) { tap(x, y); },
         _test: {
           cellXY: (cx, cy) => [lay.lotX + (cx + 0.5) * lay.cell, lay.lotY + (cy + 0.5) * lay.cell],
-          hearts: () => hearts,
+          hearts: () => hearts, maxHearts,
         },
         resize() { layout(); },
       };

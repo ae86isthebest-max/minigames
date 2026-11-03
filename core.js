@@ -1,4 +1,4 @@
-// 小遊戲合集 — shared shell: menu, canvas loop, levels, overlay, sound.
+// 小遊戲合集 — shared shell: menu, difficulty picker, canvas loop, levels, records, overlay, sound.
 (function () {
   'use strict';
 
@@ -6,12 +6,33 @@
   const SAVE_KEY = 'mg_save_v1';
   const params = new URLSearchParams(location.search);
 
+  // modes: 0 簡單, 1 普通, 2 困難, 3 無盡 (only for games with def.endless)
+  const MODES = [
+    { key: 'e', name: '簡單', color: '#4cd986' },
+    { key: 'n', name: '普通', color: '#ffcc4d' },
+    { key: 'h', name: '困難', color: '#ff5d6c' },
+    { key: 'x', name: '無盡', color: '#b26bff' },
+  ];
+
   // ---------- storage ----------
+  // save.p[gameId][modeKey] = { lv: next level to play, top: highest level cleared, best: best endless score }
   let save = {};
   try { save = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}') || {}; } catch (e) { save = {}; }
+  save.p = save.p || {};
+  if (save.lv) {
+    for (const id in save.lv) {
+      const rec = rec_(id, 0);
+      rec.lv = Math.max(rec.lv, save.lv[id]); rec.top = Math.max(rec.top, save.lv[id] - 1);
+    }
+    delete save.lv;
+  }
   function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
-  function levelOf(id) { return (save.lv && save.lv[id]) || 1; }
-  function setLevel(id, n) { save.lv = save.lv || {}; save.lv[id] = n; persist(); }
+  function rec_(id, mode) {
+    const g = save.p[id] = save.p[id] || {};
+    const k = MODES[mode].key;
+    return g[k] = g[k] || { lv: 1, top: 0, best: 0 };
+  }
+  function lastMode(id) { return (save.last && save.last[id]) || 0; }
 
   // ---------- seeded rng ----------
   function mulberry32(a) {
@@ -99,17 +120,49 @@
 
   function register(def) { games.push(def); }
 
+  function tileRecord(def) {
+    const p = save.p[def.id] || {};
+    const parts = [];
+    for (let m = 0; m < 3; m++) { const r = p[MODES[m].key]; if (r && r.top > 0) parts.push(MODES[m].name[0] + r.top); }
+    if (def.endless && p.x && p.x.best > 0) parts.push('🏆' + p.x.best);
+    return parts.length ? parts.join(' · ') : '未開始';
+  }
+
   function buildMenu() {
     const grid = $('grid'); grid.innerHTML = '';
     games.forEach((def) => {
       const b = document.createElement('button');
       b.className = 'tile';
       b.style.background = 'linear-gradient(160deg,' + util.shade(def.color, 0.15) + ',' + util.shade(def.color, -0.25) + ')';
-      b.innerHTML = '<div class="ic">' + def.icon + '</div><div class="nm">' + def.name + '</div><div class="lv">第 ' + levelOf(def.id) + ' 關</div>';
-      b.onclick = () => { sfx('tap'); openGame(def.id); };
+      b.innerHTML = '<div class="ic">' + def.icon + '</div><div class="nm">' + def.name + '</div><div class="lv">' + tileRecord(def) + '</div>';
+      b.onclick = () => { sfx('tap'); openPicker(def.id); };
       grid.appendChild(b);
     });
   }
+
+  // ---------- difficulty picker ----------
+  function openPicker(id) {
+    const def = games.find((d) => d.id === id); if (!def) return;
+    $('pkIcon').textContent = def.icon;
+    $('pkName').textContent = def.name;
+    const box = $('pkModes'); box.innerHTML = '';
+    const n = def.endless ? 4 : 3;
+    for (let m = 0; m < n; m++) {
+      const r = rec_(id, m), M = MODES[m];
+      const b = document.createElement('button');
+      b.className = 'mode' + (m === lastMode(id) ? ' sel' : '');
+      b.style.setProperty('--mc', M.color);
+      const sub = m === 3
+        ? (r.best > 0 ? '最高分 ' + r.best : '撐得越久分數越高')
+        : (r.top > 0 ? '最高 第 ' + r.top + ' 關' : '從第 1 關開始');
+      const right = m === 3 ? '開始' : '第 ' + r.lv + ' 關';
+      b.innerHTML = '<span class="mn">' + M.name + '</span><span class="ms">' + sub + '</span><span class="mr">' + right + ' ›</span>';
+      b.onclick = () => { sfx('tap'); closePicker(); openGame(id, m); };
+      box.appendChild(b);
+    }
+    $('picker').classList.remove('hidden');
+  }
+  function closePicker() { $('picker').classList.add('hidden'); }
 
   function sizeCanvas() {
     const r = stage.getBoundingClientRect();
@@ -118,12 +171,21 @@
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
   }
 
-  function openGame(id, lv) {
+  function openGame(id, mode, lv) {
     const def = games.find((d) => d.id === id); if (!def) return;
+    mode = mode || 0;
+    if (mode === 3 && !def.endless) mode = 2;
+    save.last = save.last || {}; save.last[id] = mode; persist();
     $('menu').classList.add('hidden'); $('play').classList.remove('hidden');
     $('gTitle').textContent = def.name;
-    cur = { def, level: lv || levelOf(id), inst: null, ended: false };
+    cur = { def, mode, level: mode === 3 ? 1 : (lv || rec_(id, mode).lv), inst: null, ended: false };
     startLevel();
+  }
+
+  function headerText() {
+    const M = MODES[cur.mode];
+    if (cur.mode === 3) return M.name + ' · 最高分 ' + rec_(cur.def.id, 3).best;
+    return M.name + ' · 第 ' + cur.level + ' 關';
   }
 
   function startLevel() {
@@ -132,18 +194,26 @@
     if (cur.inst && cur.inst.destroy) try { cur.inst.destroy(); } catch (e) {}
     sizeCanvas();
     cur.ended = false;
-    $('gLevel').textContent = '第 ' + cur.level + ' 關';
+    cur.score = 0;
+    $('gLevel').textContent = headerText();
+    $('gLevel').style.color = MODES[cur.mode].color;
     $('info').textContent = '';
-    const lv = cur.level;
+    const lv = cur.level, mode = cur.mode;
     const token = {};
     cur.token = token;
+    const endless = mode === 3;
+    const seed = endless ? (Date.now() & 0x7fffffff) : lv * 7919 + cur.def.id.length * 104729 + cur.def.id.charCodeAt(0) + mode * 15485863;
     const api = {
       get W() { return W; }, get H() { return H; },
       level: lv,
-      rng: mulberry32(lv * 7919 + cur.def.id.length * 104729 + cur.def.id.charCodeAt(0)),
+      diff: endless ? 2 : mode,       // 0 簡單, 1 普通, 2 困難 (endless plays at 困難 rules and keeps ramping)
+      endless,
+      best: endless ? rec_(cur.def.id, 3).best : 0,
+      rng: mulberry32(seed),
       util, sfx,
       info: (t) => { if (cur && cur.token === token) $('info').textContent = t; },
       get ended() { return !cur || cur.token !== token || cur.ended; },
+      score: (n) => { if (cur && cur.token === token) cur.score = Math.max(0, Math.floor(n)); },
       win: (t) => finish(token, true, t),
       lose: (t) => finish(token, false, t),
     };
@@ -156,14 +226,33 @@
   function finish(token, won, text) {
     if (!cur || cur.token !== token || cur.ended) return;
     cur.ended = true;
-    if (won) { sfx('win'); if (cur.level >= levelOf(cur.def.id)) setLevel(cur.def.id, cur.level + 1); }
-    else sfx('lose');
+    const id = cur.def.id;
+    let title, body, isRecord = false;
+    if (cur.mode === 3) {
+      const r = rec_(id, 3);
+      if (cur.score > r.best) { r.best = cur.score; isRecord = true; }
+      persist();
+      title = isRecord ? '新紀錄！' : '結束';
+      body = (text ? text + '\n' : '') + '得分 ' + cur.score + '　最高 ' + r.best;
+      sfx(isRecord ? 'win' : 'lose');
+    } else {
+      const r = rec_(id, cur.mode);
+      if (won) {
+        if (cur.level > r.top) { r.top = cur.level; isRecord = true; }
+        if (cur.level >= r.lv) r.lv = cur.level + 1;
+        persist();
+        sfx('win');
+      } else sfx('lose');
+      title = won ? '過關！' : '失敗了';
+      body = text || (won ? '做得好！' : '再試一次吧');
+    }
     setTimeout(() => {
       if (!cur || cur.token !== token) return;
-      $('ovTitle').textContent = won ? '過關！' : '失敗了';
-      $('ovTitle').style.color = won ? 'var(--good)' : 'var(--bad)';
-      $('ovText').textContent = text || (won ? '做得好！' : '再試一次吧');
-      $('ovNext').classList.toggle('hidden', !won);
+      $('ovTitle').textContent = title;
+      $('ovTitle').style.color = (won || isRecord) ? 'var(--good)' : (cur.mode === 3 ? 'var(--accent)' : 'var(--bad)');
+      $('ovText').textContent = body;
+      $('ovNext').classList.toggle('hidden', !(won && cur.mode !== 3));
+      $('ovRetry').textContent = cur.mode === 3 ? '再玩一次' : '重來';
       $('overlay').classList.remove('hidden');
     }, 700);
   }
@@ -219,6 +308,9 @@
     $('restartBtn').onclick = () => { sfx('tap'); startLevel(); };
     $('ovRetry').onclick = () => { sfx('tap'); startLevel(); };
     $('ovNext').onclick = () => { sfx('tap'); cur.level++; startLevel(); };
+    $('ovMenu').onclick = () => { sfx('tap'); closeGame(); };
+    $('pkClose').onclick = () => { sfx('tap'); closePicker(); };
+    $('picker').onclick = (e) => { if (e.target.id === 'picker') closePicker(); };
     const mb = $('muteBtn');
     const showMute = () => { mb.textContent = muted ? '🔇' : '🔊'; };
     showMute();
@@ -233,10 +325,10 @@
       }, 150);
     });
     buildMenu();
-    if (params.get('game')) openGame(params.get('game'), parseInt(params.get('level'), 10) || undefined);
+    if (params.get('game')) openGame(params.get('game'), parseInt(params.get('mode'), 10) || 0, parseInt(params.get('level'), 10) || undefined);
     if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 
   // exposed for games and for testing
-  window.MG = { register, start, util, get cur() { return cur; }, games, mulberry32 };
+  window.MG = { register, start, util, get cur() { return cur; }, games, mulberry32, MODES };
 })();

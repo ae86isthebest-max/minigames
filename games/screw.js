@@ -8,8 +8,13 @@
   const SCOLS = ['#ff4d5e', '#3d8bff', '#3ed67a', '#ffcc33', '#b26bff', '#ff8f3d', '#2fd8e0', '#ff7ac8'];
   const PCOLS = ['#f6c886', '#9ad0ff', '#c7a8ff', '#a6e3a1', '#ffb4c4', '#ffe28a', '#9fe7e0', '#f0b27a', '#d0d6e6', '#b8f0c8'];
 
-  function params(lv) {
+  // diff 0 簡單 (original), 1 普通, 2 困難 (3-hole buffer, no booster)
+  const ALLK = ['bar', 'rect', 'circle', 'L', 'bar'];
+  function params(lv, diff) {
+    if (diff === 1) return { plates: Math.min(18, 7 + Math.floor(lv * 0.4)), colors: Math.min(8, 5 + Math.floor(lv / 6)), simCap: 4, buf: 4, boost: true, kinds: ALLK };
+    if (diff === 2) return { plates: Math.min(22, 11 + Math.floor(lv * 0.4)), colors: lv < 4 ? 7 : 8, simCap: 3, buf: 3, boost: false, kinds: ALLK };
     return {
+      buf: BUF, boost: true,
       plates: Math.min(18, 2 + Math.floor((lv - 1) * 0.42)),
       colors: Math.min(8, 2 + Math.floor((lv - 1) / 4)),
       simCap: lv <= 8 ? 3 : lv <= 20 ? 4 : 5,
@@ -189,10 +194,11 @@
     return plates;
   }
 
-  function gen(level, rng) {
-    const P = params(level);
-    for (let attempt = 0; attempt < 80; attempt++) {
-      const simCap = attempt < 40 ? P.simCap : BUF;
+  function gen(level, rng, diff) {
+    diff = diff || 0;
+    const P = params(level, diff);
+    for (let attempt = 0; attempt < 400; attempt++) {
+      const simCap = attempt < 40 ? P.simCap : P.buf;
       const plates = placePlates(rng, P);
       let N = plates.reduce((a, p) => a + p.hw.length, 0);
       while (N % 3 !== 0 || N < 6) {
@@ -253,7 +259,7 @@
         sol.push(si);
       }
       if (!isWon(L, st)) continue;
-      L.queue = queue; L.sol = sol; L.simCap = simCap; L.attempts = attempt + 1;
+      L.queue = queue; L.sol = sol; L.simCap = simCap; L.attempts = attempt + 1; L.buf = P.buf; L.boost = P.boost;
       return L;
     }
     return null;
@@ -264,8 +270,8 @@
     gen, newState, tap, startBoxes, isWon, greedyPick, coveredBy, BUF,
     create(api) {
       const U = api.util;
-      const L = gen(api.level, api.rng);
-      const st = newState(L, BUF);
+      const L = gen(api.level, api.rng, api.diff || 0);
+      const st = newState(L, L.buf);
       const total = L.screws.length;
       const colOf = (c) => SCOLS[L.pal[c]];
       let time = 0, winT = -1, shake = 0, boostUsed = false, trayShake = 0, ended = false;
@@ -282,7 +288,7 @@
         boxY = 10; boxH = Math.min(66, H * 0.09);
         boxW = Math.min(170, (W - 40) / 2);
         trayY = boxY + boxH + 14; trayH = 54;
-        const top = trayY + trayH + 14, bottom = 76;
+        const top = trayY + trayH + 14, bottom = L.boost ? 76 : 14;
         s = Math.min((W - 20) / BW, (H - top - bottom) / BH);
         bx0 = (W - BW * s) / 2; by0 = top + (H - top - bottom - BH * s) / 2;
         boostBtn.w = 150; boostBtn.h = 50; boostBtn.x = W / 2 - 75; boostBtn.y = H - 62;
@@ -323,7 +329,8 @@
       }
 
       function updInfo() {
-        if (api.level === 1) api.info('點沒被擋住的螺絲，收進同色盒子');
+        if (api.level === 1 && !api.diff) api.info('點沒被擋住的螺絲，收進同色盒子');
+        else if (api.level === 1 && api.diff === 2) api.info('困難：暫存只有 3 格，沒有道具');
         else api.info('剩 ' + (total - st.done * 3 - st.buf.filter((b) => b >= 0).length) + ' 顆螺絲在板上');
       }
 
@@ -390,7 +397,7 @@
 
       function down(x, y) {
         if (api.ended || ended) return;
-        if (x >= boostBtn.x && x <= boostBtn.x + boostBtn.w && y >= boostBtn.y - 4 && y <= boostBtn.y + boostBtn.h + 4) {
+        if (L.boost && x >= boostBtn.x && x <= boostBtn.x + boostBtn.w && y >= boostBtn.y - 4 && y <= boostBtn.y + boostBtn.h + 4) {
           if (boostUsed) { boostBtn.p = -1; api.sfx('bad'); return; }
           boostUsed = true; st.buf.push(-1); boostBtn.p = 1; api.sfx('good');
           trayHole(st.buf.length - 1, TP); burst(TP.x, TP.y, '#fff3a0', 14, 120, true);
@@ -700,7 +707,11 @@
           } else { g.beginPath(); g.arc(p.x, p.y, p.s, 0, Math.PI * 2); g.fill(); }
         }
         g.globalAlpha = 1;
-        // booster
+        if (L.boost) drawBoost(g);
+        g.restore();
+      }
+
+      function drawBoost(g) {
         const b = boostBtn;
         const bs = 1 + (b.p > 0 ? b.p * 0.08 : 0), bo = b.p < 0 ? Math.sin(time * 50) * 4 * -b.p : 0;
         g.save();
@@ -712,7 +723,6 @@
         g.fillStyle = bg2; U.rr(g, -b.w / 2, -b.h / 2, b.w, b.h, b.h / 2); g.fill();
         g.fillStyle = 'rgba(255,255,255,0.25)'; U.rr(g, -b.w / 2 + 8, -b.h / 2 + 4, b.w - 16, b.h * 0.35, b.h * 0.2); g.fill();
         U.text(g, '＋1 暫存格', 0, 1, 18, boostUsed ? '#c9cbd8' : '#fff', 'center', 900);
-        g.restore();
         g.restore();
       }
 

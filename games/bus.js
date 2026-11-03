@@ -54,8 +54,27 @@
     return { order, ok: order.length === buses.length, depth };
   }
 
-  function params(level) {
+  // diff 0 簡單 (original ladder), 1 普通 (starts around old level 12), 2 困難 (big lots, 8 colours,
+  // only 4 bays with zero slack, hidden-colour buses, a countdown)
+  function params(level, diff) {
+    if (diff === 1) {
+      const e = Math.round(11 + level * 1.5);
+      return {
+        cols: Math.min(7, 4 + Math.floor(e / 4)), rows: Math.min(8, 4 + Math.floor(e / 3)),
+        nC: Math.min(COLORS.length, 5 + Math.floor(level / 6)), bays: 4, win: level < 6 ? 3 : 4,
+        density: Math.min(0.88, 0.5 + e * 0.03), maxBus: 99, longP: 0.35, hidden: 0,
+        wantDepth: Math.min(7, 4 + Math.floor(level / 8)), time: 0,
+      };
+    }
+    if (diff === 2) {
+      return {
+        cols: 7, rows: Math.min(9, 8 + Math.floor(level / 8)), nC: COLORS.length, bays: 4, win: level < 10 ? 3 : 4,
+        density: 0.9, maxBus: 99, longP: 0.38, hidden: Math.min(0.5, 0.25 + level * 0.01),
+        wantDepth: Math.min(9, 6 + Math.floor(level / 8)), time: 1,
+      };
+    }
     return {
+      hidden: 0, time: 0, wantDepth: Math.min(6, 1 + Math.floor(level / 3)),
       cols: Math.min(7, 4 + Math.floor(level / 4)),
       rows: Math.min(8, 4 + Math.floor(level / 3)),
       nC: level === 1 ? 2 : Math.min(COLORS.length, 3 + Math.floor(level / 4)),
@@ -67,8 +86,8 @@
     };
   }
 
-  function gen(level, rng) {
-    const P = params(level);
+  function gen(level, rng, diff) {
+    const P = params(level, diff || 0);
     const { cols, rows } = P;
     const N = cols * rows;
     let buses = [];
@@ -98,7 +117,7 @@
       const res = exitOrder(cols, rows, buses, null);
       if (!res.ok || !buses.length) continue;
       if (res.depth > bestDepth) { bestDepth = res.depth; best = buses; }
-      if (res.depth >= Math.min(6, 1 + Math.floor(level / 3))) break;
+      if (res.depth >= P.wantDepth) break;
     }
     buses = best || [{ x: 0, y: 0, len: 2, h: true, dir: 2 }];
     // colours: every colour used at least once (when possible), rest random
@@ -106,7 +125,7 @@
     const cols4 = [];
     for (let i = 0; i < buses.length; i++) cols4.push(i < nC ? i : Math.floor(rng() * nC));
     for (let i = cols4.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = cols4[i]; cols4[i] = cols4[j]; cols4[j] = t; }
-    buses.forEach((b, i) => { b.color = cols4[i]; b.cap = b.len === 3 ? 6 : 4; });
+    buses.forEach((b, i) => { b.color = cols4[i]; b.cap = b.len === 3 ? 6 : 4; b.hidden = rng() < P.hidden; });
     // a valid exit order, then a passenger queue that this order serves with `win` bays
     const order = exitOrder(cols, rows, buses, rng).order;
     const rem = buses.map((b) => b.cap);
@@ -124,7 +143,7 @@
       rem[tgt]--;
       if (rem[tgt] === 0) active.splice(active.indexOf(tgt), 1);
     }
-    return { cols, rows, buses, queue, bays: P.bays, order, nC };
+    return { cols, rows, buses, queue, bays: P.bays, order, nC, timeLimit: P.time ? Math.round(30 + queue.length * 1.3) : 0 };
   }
 
   // ---------- path helpers ----------
@@ -172,7 +191,7 @@
     gen, exitOrder, cellsOf, probe, buildGrid,
     create(api) {
       const U = api.util;
-      const LV = gen(api.level, api.rng);
+      const LV = gen(api.level, api.rng, api.diff || 0);
       const { cols, rows } = LV;
       const NB = LV.bays;
       const buses = LV.buses.map((b, i) => Object.assign({}, b, {
@@ -186,21 +205,23 @@
       for (let i = 0; i < NB; i++) bays.push({ bus: -1, flash: 0 });
       const walkers = [];
       const parts = [];
+      const timeLimit = LV.timeLimit || 0;
+      let timeLeft = timeLimit, lastSec = -1;
       let rankN = 0, boardCD = 0.3, qShift = 0, time = 0, shake = 0, endT = -1, endWin = false, fullFlash = 0, delivered = 0;
       let lay = null;
       const dpr = Math.min(3, (typeof window !== 'undefined' && window.devicePixelRatio) || 1);
       const tmp = [0, 0], tmp2 = [0, 0];
 
       function setInfo() {
-        if (api.level === 1 && delivered === 0 && rankN === 0) api.info('點巴士開到車站，同色乘客會自動上車');
-        else api.info('乘客 ' + delivered + ' / ' + total);
+        if (api.level === 1 && !api.diff && delivered === 0 && rankN === 0) api.info('點巴士開到車站，同色乘客會自動上車');
+        else api.info('乘客 ' + delivered + ' / ' + total + (timeLimit ? '　⏱ ' + Math.ceil(timeLeft) + ' 秒' : ''));
       }
 
       // ---------- layout ----------
       function layout() {
         const W = api.W, H = api.H;
         const qH = 64;
-        const bayW = Math.min(86, (W - 20) / NB);
+        const bayW = Math.min(86, (W - 20) / NB, H * 0.12);
         const bayLen = bayW * 1.32;
         const bayY0 = qH + 6;
         const bayCy = bayY0 + bayLen / 2;
@@ -363,8 +384,10 @@
       }
 
       // ---------- drawing ----------
-      function drawBus(g, b, x, y, a, Lp, Wd, alphaSeats) {
-        const col = b.col, dark = U.shade(col, -0.38), light = U.shade(col, 0.4);
+      function drawBus(g, b, x, y, a, Lp, Wd, inLot) {
+        const alphaSeats = 1;
+        const masked = b.hidden && !b.revealed;
+        const col = masked ? '#8d93a3' : b.col, dark = U.shade(col, -0.38), light = U.shade(col, 0.4);
         g.save(); g.translate(x, y); g.rotate(a);
         g.fillStyle = 'rgba(0,0,0,0.28)';
         U.rr(g, -Lp / 2 + 2, -Wd / 2 + 4, Lp, Wd, Wd * 0.22); g.fill();
@@ -397,7 +420,7 @@
         g.fillRect(-Lp / 2 + 1, -Wd * 0.4, 2.5, Wd * 0.16); g.fillRect(-Lp / 2 + 1, Wd * 0.24, 2.5, Wd * 0.16);
         // seats
         const sr = Math.max(1.8, Math.min(Wd * 0.13, Lp * 0.3 / b.cap * 1.4));
-        for (let i = 0; i < b.cap; i++) {
+        for (let i = 0; i < b.cap && !masked; i++) {
           seatLocal(b, i, Lp, Wd, tmp2);
           if (i < b.filled) {
             g.fillStyle = col;
@@ -408,6 +431,26 @@
             g.fillStyle = 'rgba(0,0,0,' + (0.22 * alphaSeats).toFixed(3) + ')';
             g.beginPath(); g.arc(tmp2[0], tmp2[1], sr, 0, Math.PI * 2); g.fill();
           }
+        }
+        if (inLot) {
+          // white direction arrow on the roof, pointing at the nose
+          const al = masked ? Math.min(Lp * 0.34, Wd * 0.9) : Math.min(Lp * 0.42, Wd * 1.1), aw = Wd * 0.24, ax = masked ? Lp * 0.2 : Lp * 0.08;
+          g.beginPath();
+          g.moveTo(ax + al / 2, 0); g.lineTo(ax + al / 2 - aw * 1.2, -aw); g.lineTo(ax + al / 2 - aw * 1.2, -aw * 0.38);
+          g.lineTo(ax - al / 2, -aw * 0.38); g.lineTo(ax - al / 2, aw * 0.38); g.lineTo(ax + al / 2 - aw * 1.2, aw * 0.38); g.lineTo(ax + al / 2 - aw * 1.2, aw);
+          g.closePath();
+          g.lineJoin = 'round'; g.lineWidth = 2.5; g.strokeStyle = 'rgba(0,0,0,0.4)'; g.stroke();
+          g.fillStyle = '#ffffff'; g.fill();
+        }
+        if (masked) {
+          // round "?" badge on the rear half of the roof, clear of the arrow
+          const br = Math.min(Wd * 0.34, Lp * 0.17), bx = -Lp * 0.24;
+          g.fillStyle = 'rgba(38,42,58,0.9)';
+          g.beginPath(); g.arc(bx, 0, br, 0, Math.PI * 2); g.fill();
+          g.lineWidth = 1.5; g.strokeStyle = 'rgba(255,255,255,0.85)'; g.stroke();
+          g.save(); g.translate(bx, 0); g.rotate(-a);
+          U.text(g, '?', 0, 1, Math.max(10, br * 1.45), '#ffffff', 'center', 900);
+          g.restore();
         }
         if (b.flash > 0) {
           g.fillStyle = 'rgba(255,255,255,' + (b.flash * 0.5).toFixed(3) + ')';
@@ -489,6 +532,11 @@
           return;
         }
         api.sfx('pop');
+        if (b.hidden && !b.revealed) {
+          b.revealed = true;
+          lotCenter(b, tmp);
+          burst(tmp[0], tmp[1], 16, b.col, 160, 0.55, 4.5);
+        }
         bays[bi].bus = b.id;
         b.bay = bi; b.lastBay = bi; b.rank = rankN++;
         b.state = 'drive'; b.d = 0; b.v = 120; b.path = drivePath(b);
@@ -609,6 +657,15 @@
           if (!p.grav) { p.vx *= 0.95; p.vy *= 0.95; }
         }
         // end conditions
+        if (timeLimit && endT < 0 && !api.ended) {
+          timeLeft = Math.max(0, timeLeft - dt);
+          const sec = Math.ceil(timeLeft);
+          if (sec !== lastSec) {
+            lastSec = sec; setInfo();
+            if (sec <= 10 && sec > 0) api.sfx('tap');
+          }
+          if (timeLeft <= 0) { endT = 0.4; endWin = false; api.info('時間到了！'); }
+        }
         if (endT < 0 && !api.ended) {
           if (!queue.length && !walkers.length) {
             if (buses.every((b) => b.state === 'leave' || b.state === 'gone')) { endT = 0.9; endWin = true; }
@@ -630,12 +687,13 @@
                 parts.push({ x: api.W * Math.random(), y: -10, vx: (Math.random() - 0.5) * 120, vy: 80 + Math.random() * 160, life: 2.4, max: 2.4, size: 4 + Math.random() * 3, color: COLORS[i % COLORS.length], grav: 120, conf: true });
               }
               api.win('所有乘客都上車了！');
-            } else api.lose('車站塞滿了');
+            } else api.lose(timeLimit && timeLeft <= 0 ? '時間到了' : '車站塞滿了');
           }
         }
       }
 
       function draw(g) {
+        if (api.W !== lay.W || api.H !== lay.H) relayout();
         const { W, H, qH, sp, bayW, bayLen, bayY0 } = lay;
         g.fillStyle = '#6cc463'; g.fillRect(0, 0, W, H);
         g.save();
@@ -652,18 +710,18 @@
         for (const b of buses) {
           if (b.state !== 'lot' && b.state !== 'bump') continue;
           busWorld(b, bw);
-          drawBus(g, b, bw[0], bw[1], bw[2], bw[3], bw[4], 1);
+          drawBus(g, b, bw[0], bw[1], bw[2], bw[3], bw[4], true);
         }
         for (const b of buses) {
           if (b.state !== 'bay') continue;
           busWorld(b, bw);
-          drawBus(g, b, bw[0], bw[1], bw[2], bw[3], bw[4], 1);
+          drawBus(g, b, bw[0], bw[1], bw[2], bw[3], bw[4], false);
           if (b.filled >= b.cap) U.text(g, '滿', bw[0], bw[1] - bw[3] * 0.62, 13, '#fff', 'center', 900);
         }
         for (const b of buses) {
           if (b.state !== 'drive' && b.state !== 'leave') continue;
           busWorld(b, bw);
-          drawBus(g, b, bw[0], bw[1], bw[2], bw[3], bw[4], 1);
+          drawBus(g, b, bw[0], bw[1], bw[2], bw[3], bw[4], false);
         }
         // walkers
         for (const w of walkers) {
@@ -701,7 +759,21 @@
         }
         g.globalAlpha = 1;
         g.restore();
+        if (timeLimit) {
+          const k = timeLeft / timeLimit, low = timeLeft < 15;
+          g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(0, 0, W, 6);
+          g.fillStyle = low ? (Math.sin(time * 14) > 0 ? '#ff2d3d' : '#ffd34d') : '#3fcf6f';
+          g.fillRect(0, 0, W * k, 6);
+        }
         if (fullFlash > 0) U.text(g, '車站滿了！', W / 2, bayY0 + bayLen / 2, 22, 'rgba(255,255,255,' + Math.min(1, fullFlash * 1.5).toFixed(3) + ')', 'center', 900);
+      }
+
+      function relayout() {
+        layout();
+        for (const b of buses) {
+          if (b.state === 'drive') { const k = b.d / (b.path.len || 1); b.path = drivePath(b); b.d = k * b.path.len; }
+          if (b.state === 'leave') { const k = b.d / (b.lp.path.len || 1); b.lp = leavePath(b); b.d = k * b.lp.path.len; }
+        }
       }
 
       layout();
@@ -714,13 +786,7 @@
           cellXY: (cx, cy) => [lay.lotX + (cx + 0.5) * lay.cell, lay.lotY + (cy + 0.5) * lay.cell],
           busState: (i) => buses[i].state,
         },
-        resize() {
-          layout();
-          for (const b of buses) {
-            if (b.state === 'drive') { const k = b.d / (b.path.len || 1); b.path = drivePath(b); b.d = k * b.path.len; }
-            if (b.state === 'leave') { const k = b.d / (b.lp.path.len || 1); b.lp = leavePath(b); b.d = k * b.lp.path.len; }
-          }
-        },
+        resize() { relayout(); },
       };
     },
   });

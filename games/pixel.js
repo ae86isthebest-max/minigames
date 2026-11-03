@@ -75,24 +75,28 @@
     return ammo;
   }
 
-  function params(lv) {
+  // diff 0 簡單 (original), 1 普通 (4 slots), 2 困難 (3 slots, big pictures, tiny ammo, misleading order)
+  function params(lv, diff) {
+    if (diff === 1) return { cols: lv <= 6 ? 3 : 4, pick: 'random', caps: [5, 8, 10, 12, 15, 20], big: Math.min(1, lv / 12), bigAll: 16, slots: 4 };
+    if (diff === 2) return { cols: lv <= 5 ? 4 : 5, pick: 'small', caps: [5, 6, 8, 10, 12], big: Math.min(1, 0.5 + lv / 10), bigAll: 14, slots: 3 };
     return {
       cols: lv <= 3 ? 2 : lv <= 12 ? 3 : 4,
-      greedy: lv <= 5,
+      pick: lv <= 5 ? 'greedy' : 'random',
       caps: lv <= 3 ? [99] : lv <= 10 ? [10, 15, 20, 25, 30] : [5, 8, 10, 12, 15, 20, 25],
       big: lv <= 20 ? 0 : Math.min(1, (lv - 18) / 14),
+      bigAll: 34, slots: SLOTS,
     };
   }
 
   // picture + scale for a level; consecutive levels never repeat a picture inside the same pool
-  function choosePic(lv, rng) {
-    if (lv === 1) return { pic: PICS[0], scale: 1 };
+  function choosePic(lv, rng, diff) {
+    if (lv === 1 && !diff) return { pic: PICS[0], scale: 1 };
     const order = PICS.slice().sort((a, b) => a.cells - b.cells || (a.name < b.name ? -1 : 1));
-    const P = params(lv);
+    const P = params(lv, diff);
     const big = rng() < P.big;
     let pool;
-    if (big) pool = lv < 34 ? order.filter((p) => p.cells <= 60) : order.filter((p) => Math.max(p.R, p.C) <= 13);
-    else if (lv <= 8) pool = order.slice(0, 12);
+    if (big) pool = lv < P.bigAll ? order.filter((p) => p.cells <= 60) : order.filter((p) => Math.max(p.R, p.C) <= 13);
+    else if (lv <= 8 && !diff) pool = order.slice(0, 12);
     else pool = order.slice(6);
     return { pic: pool[(lv * 5 + 3) % pool.length], scale: big ? 2 : 1 };
   }
@@ -101,9 +105,10 @@
   // give its shooter exactly as much ammo as it will use on one lap, so sending the shooters
   // in creation order clears the picture with no parking at all. Then deal them into columns
   // keeping that order (each next shooter is always at the front of its column).
-  function gen(level, rng) {
-    const P = params(level);
-    const ch0 = choosePic(level, rng);
+  function gen(level, rng, diff) {
+    diff = diff || 0;
+    const P = params(level, diff);
+    const ch0 = choosePic(level, rng, diff);
     const pic = ch0.pic, sc = ch0.scale;
     const R = pic.R * sc, C = pic.C * sc;
     const keys = [];
@@ -133,9 +138,15 @@
         if (h > bh) { bh = h; best = c; }
       }
       let pick = best;
-      if (!P.greedy) {
+      if (P.pick === 'random') {
         let x = rng() * sum;
         for (let c = 0; c < keys.length; c++) { x -= hits[c]; if (x < 0 && hits[c] > 0) { pick = c; break; } }
+      } else if (P.pick === 'small') {
+        let isum = 0, minH = 1;
+        for (let c = 0; c < keys.length; c++) if (hits[c] >= 4) minH = 4;
+        for (let c = 0; c < keys.length; c++) if (hits[c] >= minH) isum += 1 / hits[c];
+        let x = rng() * isum;
+        for (let c = 0; c < keys.length; c++) { if (hits[c] >= minH) { x -= 1 / hits[c]; if (x < 0) { pick = c; break; } } }
       }
       const cap = P.caps[Math.floor(rng() * P.caps.length)];
       const ammo = Math.min(hits[pick], cap);
@@ -154,15 +165,16 @@
     }
     // keep creation order inside every column so the creation order is always playable
     for (const col of cols) col.sort((a, b) => a.id - b.id);
-    return { pic, R, C, grid, colors, cols: cols.filter((c) => c.length), seq, total, lanes };
+    return { pic, R, C, grid, colors, cols: cols.filter((c) => c.length), seq, total, lanes, slots: P.slots };
   }
 
   MG.register({
     id: 'pixel', name: '像素射擊', icon: '🎨', color: '#ff7ac8',
-    gen, makeLanes, laneTarget, runLap, SLOTS, PICS,
+    gen, makeLanes, laneTarget, runLap, SLOTS, PICS, params,
     create(api) {
       const U = api.util;
-      const LV = gen(api.level, api.rng);
+      const LV = gen(api.level, api.rng, api.diff || 0);
+      const NS = LV.slots;
       const R = LV.R, C = LV.C, colors = LV.colors, lanes = LV.lanes;
       const grid = Int8Array.from(LV.grid);
       const vis = new Uint8Array(R * C);
@@ -170,7 +182,7 @@
       let left = LV.total;
       const columns = LV.cols.map((col) => col.map((s) => ({ c: s.c, ammo: s.a, st: 'col', x: 0, y: 0, dx: 0, dy: 0, s: 0, li: 0, t: 0, fx: 0, fy: 0, rec: 0, slot: -1, pop: 0, wait: false, flash: 0 })));
       const slots = [];
-      for (let i = 0; i < SLOTS; i++) slots.push(null);
+      for (let i = 0; i < NS; i++) slots.push(null);
       const belt = [], movers = [], dying = [], bullets = [], parts = [], pops = [];
       let time = 0, winT = -1, ended = false, shake = 0, lastShoot = 0, lastPop = 0;
       let cs = 20, px = 0, py = 0, m = 24, bx = 0, by = 0, bw = 0, bh = 0, PL = 0, slotY = 0, colTop = 0, colW = 80, sr = 15;
@@ -211,7 +223,7 @@
         return out;
       }
       const PP = { x: 0, y: 0, d: 0 };
-      function slotPos(i, out) { const gap = Math.min(66, (api.W - 30) / SLOTS); out.x = api.W / 2 + (i - (SLOTS - 1) / 2) * gap; out.y = slotY; return out; }
+      function slotPos(i, out) { const gap = Math.min(66, (api.W - 30) / NS); out.x = api.W / 2 + (i - (NS - 1) / 2) * gap; out.y = slotY; return out; }
       function colPos(ci, k, out) {
         out.x = api.W / 2 + (ci - (columns.length - 1) / 2) * colW;
         out.y = colTop + sr * 1.5 + k * sr * 2.5;
@@ -225,7 +237,8 @@
       layout();
 
       function updInfo() {
-        if (api.level === 1) api.info('點下面的小砲手，牠會繞一圈打掉同色像素');
+        if (api.level === 1 && !api.diff) api.info('點下面的小砲手，牠會繞一圈打掉同色像素');
+        else if (api.level === 1 && api.diff === 2 && left === LV.total) api.info('困難：等待區只有 3 格，順序很重要');
         else api.info(LV.pic.name + '・剩 ' + left + ' 格');
       }
       updInfo();
@@ -250,7 +263,7 @@
       function down(x, y) {
         if (api.ended || ended) return;
         // waiting slots
-        for (let i = 0; i < SLOTS; i++) {
+        for (let i = 0; i < NS; i++) {
           const s = slots[i];
           slotPos(i, TP);
           if (Math.abs(x - TP.x) < 30 && Math.abs(y - TP.y) < 30) {
@@ -414,7 +427,7 @@
         g.fillStyle = '#ffd23f';
         g.beginPath(); g.arc(bx, by + bh, m * 0.32, 0, Math.PI * 2); g.fill();
         // slots
-        for (let i = 0; i < SLOTS; i++) {
+        for (let i = 0; i < NS; i++) {
           slotPos(i, TP);
           g.fillStyle = 'rgba(0,0,0,0.3)';
           g.beginPath(); g.arc(TP.x, TP.y + 3, sr * 1.25, 0, Math.PI * 2); g.fill();
@@ -554,7 +567,7 @@
         // slot counter
         let used = 0;
         for (const s of slots) if (s) used++;
-        U.text(g, '等待區 ' + used + '/' + SLOTS, W - 10, slotY - sr * 1.25 - 9, 11, used >= SLOTS - 1 ? '#ff8fa0' : 'rgba(255,255,255,0.6)', 'right', 800);
+        U.text(g, '等待區 ' + used + '/' + NS, W - 10, slotY - sr * 1.25 - 9, 11, used >= NS - 1 ? '#ff8fa0' : 'rgba(255,255,255,0.6)', 'right', 800);
         g.restore();
       }
 

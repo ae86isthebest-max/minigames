@@ -9,7 +9,8 @@
 //     the buses in that order whenever a bay is free; it must reach api.win().
 'use strict';
 const fs = require('fs'), path = require('path'), vm = require('vm');
-const N = parseInt(process.argv[2] || '60', 10);
+const N = parseInt(process.argv[2] || '40', 10);
+const MODE_NAMES = ['簡單', '普通', '困難'];
 const id = 'bus';
 
 function anyObj() {
@@ -39,7 +40,7 @@ vm.runInContext(fs.readFileSync(path.join(root, 'core.js'), 'utf8'), sb);
 vm.runInContext(fs.readFileSync(path.join(root, 'games', id + '.js'), 'utf8'), sb);
 const MG = sb.MG, def = MG.games.find((d) => d.id === id);
 const D = [[1, 0], [0, 1], [-1, 0], [0, -1]];
-const seed = (lv) => MG.mulberry32(lv * 7919 + id.length * 104729 + id.charCodeAt(0));
+const seed = (lv, mode) => MG.mulberry32(lv * 7919 + id.length * 104729 + id.charCodeAt(0) + mode * 15485863);
 
 function modelCheck(L) {
   const { cols, rows, buses, queue, order } = L;
@@ -81,10 +82,10 @@ function modelCheck(L) {
   return '';
 }
 
-function livePlay(lv, L) {
+function livePlay(lv, mode, L, idle) {
   let ended = null;
   const api = {
-    W, H, level: lv, rng: seed(lv), util: MG.util, sfx() {}, info() {},
+    W, H, level: lv, diff: mode, endless: false, best: 0, score() {}, rng: seed(lv, mode), util: MG.util, sfx() {}, info() {},
     get ended() { return ended !== null; },
     win() { if (ended === null) ended = 'win'; }, lose() { if (ended === null) ended = 'lose'; },
   };
@@ -95,7 +96,7 @@ function livePlay(lv, L) {
     inst.update(1 / 60);
     if (f % 30 === 0) inst.draw(ctx);
     t += 1 / 60;
-    if (next < L.order.length && t > 0.12) {
+    if (!idle && next < L.order.length && t > 0.12) {
       const i = L.order[next], b = L.buses[i];
       const [x, y] = inst._test.cellXY(b.x, b.y);
       inst.down(x, y);
@@ -107,15 +108,18 @@ function livePlay(lv, L) {
 }
 
 let fail = 0;
+for (let mode = 0; mode < 3; mode++)
 for (let lv = 1; lv <= N; lv++) {
-  const L = def.gen(lv, seed(lv));
+  const L = def.gen(lv, seed(lv, mode), mode);
   const err = modelCheck(L);
-  const live = livePlay(lv, L);
-  const ok = !err && live === 'win';
+  const live = livePlay(lv, mode, L, false);
+  // 困難 has a countdown: a player who never taps must lose
+  const idle = mode === 2 ? livePlay(lv, mode, L, true) : '-';
+  const ok = !err && live === 'win' && (mode !== 2 || idle === 'lose');
   if (!ok) fail++;
   const nLong = L.buses.filter((b) => b.len === 3).length;
-  console.log((ok ? 'ok  ' : 'FAIL ' + (err || live)) + ' L' + lv + ' lot ' + L.cols + 'x' + L.rows + ' buses=' + L.buses.length +
-    ' (long ' + nLong + ') colours=' + new Set(L.buses.map((b) => b.color)).size + ' bays=' + L.bays + ' passengers=' + L.queue.length + ' live=' + live);
+  console.log((ok ? 'ok  ' : 'FAIL ' + (err || live)) + ' ' + MODE_NAMES[mode] + ' L' + lv + ' lot ' + L.cols + 'x' + L.rows + ' buses=' + L.buses.length +
+    ' (long ' + nLong + ') colours=' + new Set(L.buses.map((b) => b.color)).size + ' bays=' + L.bays + ' passengers=' + L.queue.length + ' hidden=' + L.buses.filter((b) => b.hidden).length + (L.timeLimit ? ' time=' + L.timeLimit + 's' : '') + ' live=' + live + (mode === 2 ? ' idle=' + idle : ''));
 }
-console.log(fail ? 'FAIL: ' + fail + ' level(s)' : 'OK bus: levels 1-' + N + ' winnable (model + live play)');
+console.log(fail ? 'FAIL: ' + fail + ' level(s)' : 'OK bus: 簡單/普通/困難 levels 1-' + N + ' winnable (model + live play); 困難 idle player loses');
 process.exit(fail ? 1 : 0);

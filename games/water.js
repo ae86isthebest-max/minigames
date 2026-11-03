@@ -8,10 +8,14 @@
     '#18dcff', '#ff6bcb', '#9c6644', '#f1f2f6', '#14833b', '#3c40c6'];
   const HID_COL = '#474c6e';
 
-  function params(level) {
+  // diff 0 簡單 (original), 1 普通, 2 困難
+  function params(level, diff) {
+    if (diff === 1) return { n: Math.min(12, 6 + Math.floor((level - 1) / 2)), hid: Math.min(0.5, 0.25 + level * 0.008), spare: 2, undo: 3 };
+    if (diff === 2) return { n: Math.min(12, 8 + Math.floor((level - 1) / 2)), hid: Math.min(0.6, 0.42 + level * 0.006), spare: 1, undo: 2 };
     return {
       n: Math.min(12, 3 + Math.floor((level - 1) / 2.5)),
       hid: level >= 8 ? Math.min(0.5, 0.2 + (level - 8) * 0.012) : 0,
+      spare: 2, undo: UNDO_MAX,
     };
   }
 
@@ -96,13 +100,31 @@
   }
 
   // Level generator: random fill, kept only if the DFS solver proves it solvable with the
-  // 2 starting empty tubes (the 加管 bonus is NOT counted). Otherwise retry with next rng values.
-  function gen(level, rng) {
-    const p = params(level);
+  // starting empty tubes (the 加管 bonus is NOT counted). Otherwise retry with next rng values.
+  // 困難 has only 1 spare tube; random fills are almost never solvable then, so it scrambles a
+  // solved set by random cell swaps, keeping each swap only while the solver still proves it.
+  function gen(level, rng, diff) {
+    diff = diff || 0;
+    const p = params(level, diff);
     const n = p.n;
     const pal = shuffle(rng, COLORS.map((_, i) => i)).slice(0, n);
     let tubes = null, sol = null, tries = 0;
-    while (!sol && tries < 500) {
+    if (p.spare === 1) {
+      tubes = [];
+      for (let c = 0; c < n; c++) tubes.push([c, c, c, c]);
+      const iters = 70 + n * 12;
+      for (let it = 0; it < iters || (tubes.some(tubeDone) && it < iters * 4); it++) {
+        tries++;
+        const i = Math.floor(rng() * n), j = Math.floor(rng() * n), a = Math.floor(rng() * CAP), b = Math.floor(rng() * CAP);
+        if (tubes[i][a] === tubes[j][b]) continue;
+        let t = tubes[i][a]; tubes[i][a] = tubes[j][b]; tubes[j][b] = t;
+        const s2 = solve(tubes.concat([[]]), 20000);
+        if (!s2) { t = tubes[i][a]; tubes[i][a] = tubes[j][b]; tubes[j][b] = t; }
+      }
+      tubes.push([]);
+      sol = tubes.slice(0, n).some(tubeDone) ? null : solve(tubes, 200000);
+    }
+    while (!sol && tries < 5000) {
       tries++;
       const balls = [];
       for (let c = 0; c < n; c++) for (let k = 0; k < CAP; k++) balls.push(c);
@@ -110,11 +132,11 @@
       tubes = [];
       for (let i = 0; i < n; i++) tubes.push(balls.slice(i * CAP, i * CAP + CAP));
       if (tubes.some(tubeDone)) continue;
-      tubes.push([], []);
+      for (let k = 0; k < p.spare; k++) tubes.push([]);
       sol = solve(tubes, 60000);
     }
     const hidden = tubes.map((t) => t.map((c, i) => p.hid > 0 && i < t.length - 1 && rng() < p.hid));
-    return { n, tubes, hidden, sol, pal, tries };
+    return { n, tubes, hidden, sol, pal, tries, spare: p.spare, undo: p.undo };
   }
 
   // area of polygon pts (flat x,y list) clipped to y >= L
@@ -154,14 +176,14 @@
     gen, solve, params, CAP,
     create(api) {
       const U = api.util;
-      const L = gen(api.level, api.rng);
+      const L = gen(api.level, api.rng, api.diff || 0);
       const tubes = L.tubes.map((t, ti) => ({
         cells: t.map((c, i) => ({ k: c, h: L.hidden[ti][i], rv: -1 })),
         hx: 0, hy: 0, lift: 0, shake: 0, cork: -1, pop: 0, born: 1, wig: 0,
       }));
       let sel = -1, anim = null, pending = null;
       const history = [];
-      let undoLeft = UNDO_MAX, addUsed = false;
+      let undoLeft = L.undo, addUsed = false;
       let winT = -1, time = 0, flash = 0;
       const parts = [];
       let tw = 40, cellH = 36, TH = 160, slot = 60, rowsY = [], rowSpan = [];
@@ -236,8 +258,9 @@
         return n;
       }
       function updInfo() {
-        if (api.level === 1) api.info('點一支試管，再點另一支，把同色倒在一起');
-        else if (api.level === 8) api.info('新挑戰：「?」要露出到最上面才會揭曉');
+        if (api.level === 1 && !api.diff) api.info('點一支試管，再點另一支，把同色倒在一起');
+        else if (api.level === 1 && api.diff === 2) api.info('困難：只有 1 支空試管，「?」藏很多');
+        else if (api.level === 8 && !api.diff) api.info('新挑戰：「?」要露出到最上面才會揭曉');
         else api.info('已完成 ' + doneCount() + ' / ' + L.n + ' 色');
       }
       updInfo();

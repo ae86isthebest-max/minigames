@@ -1,8 +1,8 @@
-// Winnability check for 像素射擊: node tools/check_pixel.js [from=1] [to=60]
+// Winnability check for 像素射擊: node tools/check_pixel.js [from=1] [to=40]  (簡單/普通/困難)
 // 1) validates every bitmap, 2) regenerates each level with the shell's seed, checks that
 // ammo per colour == cells per colour, 3) plays the generator's order (always a column front)
 // one shooter at a time with the real lane rules and requires the picture to be cleared with
-// zero parking, 4) runs a solution-blind greedy player with the 5 waiting slots for information.
+// zero parking, 4) runs a solution-blind greedy player with the mode's waiting slots (5/4/3) for information.
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -44,7 +44,7 @@ function greedyPlay(L) {
       probe.set(grid);
       const rest = def.runLap(probe, L.R, L.C, L.lanes, o.s.c, o.s.a);
       const used = o.s.a - rest;
-      const canPark = rest === 0 || slots.length - (o.from === 'slot' ? 1 : 0) < def.SLOTS;
+      const canPark = rest === 0 || slots.length - (o.from === 'slot' ? 1 : 0) < L.slots;
       if (!canPark) continue;
       const sc = used * 2 + (rest === 0 ? 100 : 0) - (used === 0 ? 1000 : 0);
       if (sc > bs) { bs = sc; best = o; }
@@ -54,19 +54,21 @@ function greedyPlay(L) {
     const rest = def.runLap(grid, L.R, L.C, L.lanes, best.s.c, best.s.a);
     left -= best.s.a - rest;
     best.s.a = rest;
-    if (rest > 0) { if (slots.length >= def.SLOTS) return false; slots.push(best.s); }
+    if (rest > 0) { if (slots.length >= L.slots) return false; slots.push(best.s); }
   }
   return left === 0;
 }
 
-const from = parseInt(process.argv[2] || '1', 10), to = parseInt(process.argv[3] || '60', 10);
+const from = parseInt(process.argv[2] || '1', 10), to = parseInt(process.argv[3] || '40', 10);
+const DN = ['簡單', '普通', '困難'];
 let gwins = 0;
 const t0 = Date.now();
+for (let diff = 0; diff < 3; diff++)
 for (let lv = from; lv <= to; lv++) {
   const id = 'pixel';
-  const rng = MG.mulberry32(lv * 7919 + id.length * 104729 + id.charCodeAt(0));
-  const L = def.gen(lv, rng);
-  let ok = true, why = '';
+  const rng = MG.mulberry32(lv * 7919 + id.length * 104729 + id.charCodeAt(0) + diff * 15485863);
+  const L = def.gen(lv, rng, diff);
+  let ok = L.slots === [5, 4, 3][diff], why = ok ? '' : 'wrong slot count';
   const cells = {}, ammo = {};
   for (const v of L.grid) if (v >= 0) cells[v] = (cells[v] || 0) + 1;
   let shooters = 0;
@@ -85,11 +87,11 @@ for (let lv = from; lv <= to; lv++) {
   if (ok && grid.some((v) => v >= 0)) { ok = false; why = 'picture not cleared'; }
   const gw = greedyPlay(L);
   if (gw) gwins++;
-  console.log((ok ? 'ok  ' : 'FAIL') + ' L' + String(lv).padStart(2) + '  ' + (L.pic.name + '      ').slice(0, 5) + ' ' + L.C + 'x' + L.R +
+  console.log((ok ? 'ok  ' : 'FAIL') + ' ' + DN[diff] + ' L' + String(lv).padStart(2) + '  ' + (L.pic.name + '      ').slice(0, 5) + ' ' + L.C + 'x' + L.R +
     '  cells=' + String(L.total).padStart(3) + '  colours=' + L.colors.length + '  shooters=' + String(shooters).padStart(2) +
-    '  columns=' + L.cols.length + '  blindGreedy=' + (gw ? 'win' : 'lose') + (why ? '  ' + why : ''));
+    '  columns=' + L.cols.length + '  slots=' + L.slots + '  blindGreedy=' + (gw ? 'win' : 'lose') + (why ? '  ' + why : ''));
   if (!ok) fail++;
 }
-console.log('solution-blind greedy player wins ' + gwins + '/' + (to - from + 1));
-console.log(fail ? 'FAILED ' + fail : 'ALL ' + (to - from + 1) + ' LEVELS WINNABLE (' + (Date.now() - t0) + ' ms)');
+console.log('solution-blind greedy player wins ' + gwins + '/' + 3 * (to - from + 1));
+console.log(fail ? 'FAILED ' + fail : 'ALL ' + 3 * (to - from + 1) + ' LEVELS WINNABLE (簡單/普通/困難 ' + from + '-' + to + ', ' + (Date.now() - t0) + ' ms)');
 process.exit(fail ? 1 : 0);

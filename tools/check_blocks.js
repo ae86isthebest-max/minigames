@@ -1,12 +1,13 @@
 // Winnability check for 方塊消除: a simple bot plays each level with the game's own
 // logic (same generator, same rng order, same scoring) and must reach the goal.
-// node tools/check_blocks.js [from=1] [to=60]
+// Modes 簡單/普通/困難, levels 1-40 each (+ an informational 無盡 run).
+// node tools/check_blocks.js [from=1] [to=40]
 'use strict';
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const FROM = parseInt(process.argv[2] || '1', 10), TO = parseInt(process.argv[3] || '60', 10);
+const FROM = parseInt(process.argv[2] || '1', 10), TO = parseInt(process.argv[3] || '40', 10);
 const el = () => ({ classList: { add() {}, remove() {}, toggle() {} }, style: {}, appendChild() {}, addEventListener() {}, getBoundingClientRect: () => ({ left: 0, top: 0, width: 390, height: 700 }), getContext: () => ({}) });
 const sandbox = { console, Math, location: { search: '?mute', protocol: 'file:' }, URLSearchParams, navigator: {}, localStorage: { getItem: () => null, setItem() {} }, document: { getElementById: el, createElement: el, addEventListener() {} }, addEventListener() {}, performance: { now: () => 0 }, setTimeout: () => 0, clearTimeout() {}, requestAnimationFrame: () => 0, cancelAnimationFrame() {} };
 sandbox.window = sandbox;
@@ -19,14 +20,14 @@ const def = MG.games.find((d) => d.id === 'blocks');
 const Lg = def._logic;
 const { N, SHAPES } = Lg;
 
-function playLevel(lv) {
-  const rng = MG.mulberry32(lv * 7919 + 'blocks'.length * 104729 + 'blocks'.charCodeAt(0));
-  const d = Lg.genLevel(lv, rng);
+function playLevel(lv, mode, endlessSeed) {
+  const rng = MG.mulberry32(endlessSeed || (lv * 7919 + 'blocks'.length * 104729 + 'blocks'.charCodeAt(0) + mode * 15485863));
+  const d = endlessSeed ? { type: 'endless', target: 1e12, gemsNeed: 0, board: new Array(64).fill(0), gems: new Array(64).fill(0), nasty: 0.6 } : Lg.genLevel(lv, rng, mode);
   const b = d.board.slice(), gems = d.gems.slice();
   let gemsLeft = d.gemsNeed, score = 0, combo = 0, since = 0, moves = 0;
   const won = () => (d.type === 'gems' ? gemsLeft <= 0 : score >= d.target);
   while (moves < 6000) {
-    const t = Lg.genTriplet(b, rng);
+    const t = Lg.genTriplet(b, rng, endlessSeed ? 0.6 + score / 3000 : d.nasty);
     rng(); rng(); rng();
     // choose the best order with greedy placement
     let best = null;
@@ -62,12 +63,21 @@ function playLevel(lv) {
 
 let fails = 0;
 const t0 = Date.now();
-for (let lv = FROM; lv <= TO; lv++) {
-  const r = playLevel(lv);
-  const goal = r.d.type === 'gems' ? 'gems ' + r.d.gemsNeed : 'score ' + r.d.target;
-  const pre = r.d.board.filter((x) => x).length;
-  console.log('L' + lv + ' ' + goal + (pre ? ' prefill ' + pre : '') + ' -> ' + (r.ok ? 'WIN' : 'FAIL') + ' in ' + r.moves + ' pieces (score ' + r.score + ')');
-  if (!r.ok) fails++;
+const MN = ['簡單', '普通', '困難'];
+for (let mode = 0; mode < 3; mode++) {
+  let mf = 0, piecesTot = 0;
+  for (let lv = FROM; lv <= TO; lv++) {
+    const r = playLevel(lv, mode);
+    const goal = r.d.type === 'gems' ? 'gems ' + r.d.gemsNeed : 'score ' + r.d.target;
+    const pre = r.d.board.filter((x) => x).length;
+    console.log(MN[mode] + ' L' + lv + ' ' + goal + (pre ? ' prefill ' + pre : '') + ' -> ' + (r.ok ? 'WIN' : 'FAIL') + ' in ' + r.moves + ' pieces (score ' + r.score + ')');
+    if (!r.ok) { fails++; mf++; }
+    piecesTot += r.moves;
+  }
+  console.log('== ' + MN[mode] + ': ' + (TO - FROM + 1 - mf) + '/' + (TO - FROM + 1) + ' won, avg ' + (piecesTot / (TO - FROM + 1)).toFixed(0) + ' pieces');
 }
-console.log(fails ? 'FAIL: ' + fails + ' level(s) not won' : 'OK blocks: levels ' + FROM + '-' + TO + ' all won by bot (' + ((Date.now() - t0) / 1000).toFixed(1) + 's)');
+const es = [];
+for (let k = 1; k <= 5; k++) es.push(playLevel(1, 3, 1000 + k).score);
+console.log('無盡 (bot, 5 runs, info only): scores ' + es.join(', '));
+console.log(fails ? 'FAIL: ' + fails + ' level(s) not won' : 'OK blocks: 簡單/普通/困難 levels ' + FROM + '-' + TO + ' all won by bot (' + ((Date.now() - t0) / 1000).toFixed(1) + 's)');
 process.exit(fails ? 1 : 0);
