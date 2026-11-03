@@ -1,0 +1,727 @@
+// 巴士逃脫 — Bus Escape: tap buses out of the jammed lot to the station bays; passengers board by colour.
+(function () {
+  'use strict';
+  const DX = [1, 0, -1, 0], DY = [0, 1, 0, -1];
+  const ANG = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
+  const COLORS = ['#ff4f5e', '#3d8bff', '#3fcf6f', '#ffc63a', '#a35cff', '#ff8a2a', '#22d3d3', '#ff6fc0'];
+
+  // ---------- level model (shared with tools/check_bus.js) ----------
+  function cellsOf(c) {
+    const out = [];
+    for (let i = 0; i < c.len; i++) out.push(c.h ? [c.x + i, c.y] : [c.x, c.y + i]);
+    return out;
+  }
+  function frontCell(c) {
+    if (c.dir === 0) return [c.x + c.len, c.y];
+    if (c.dir === 2) return [c.x - 1, c.y];
+    if (c.dir === 1) return [c.x, c.y + c.len];
+    return [c.x, c.y - 1];
+  }
+  function buildGrid(cols, rows, buses) {
+    const grid = new Array(cols * rows).fill(-1);
+    buses.forEach((c, i) => { if (!c.dead) for (const p of cellsOf(c)) grid[p[1] * cols + p[0]] = i; });
+    return grid;
+  }
+  function probe(grid, cols, rows, c) {
+    let [x, y] = frontCell(c);
+    let gap = 0;
+    while (x >= 0 && y >= 0 && x < cols && y < rows) {
+      const v = grid[y * cols + x];
+      if (v !== -1) return { free: false, gap, hit: v };
+      gap++; x += DX[c.dir]; y += DY[c.dir];
+    }
+    return { free: true, gap };
+  }
+  // random greedy exit order (removing a bus never blocks another, so any greedy run is exact)
+  function exitOrder(cols, rows, buses, rng) {
+    const bs = buses.map((b) => Object.assign({}, b, { dead: false }));
+    const grid = buildGrid(cols, rows, bs);
+    const order = [];
+    let depth = 0;
+    for (;;) {
+      const free = [];
+      bs.forEach((b, i) => { if (!b.dead && probe(grid, cols, rows, b).free) free.push(i); });
+      if (!free.length) break;
+      depth++;
+      if (rng) {
+        const i = free[Math.floor(rng() * free.length)];
+        bs[i].dead = true; order.push(i);
+        for (const p of cellsOf(bs[i])) grid[p[1] * cols + p[0]] = -1;
+      } else {
+        for (const i of free) { bs[i].dead = true; order.push(i); for (const p of cellsOf(bs[i])) grid[p[1] * cols + p[0]] = -1; }
+      }
+    }
+    return { order, ok: order.length === buses.length, depth };
+  }
+
+  function params(level) {
+    return {
+      cols: Math.min(7, 4 + Math.floor(level / 4)),
+      rows: Math.min(8, 4 + Math.floor(level / 3)),
+      nC: level === 1 ? 2 : Math.min(COLORS.length, 3 + Math.floor(level / 4)),
+      bays: level < 12 ? 4 : 5,
+      win: level === 1 ? 1 : level < 5 ? 2 : level < 12 ? 3 : level < 25 ? 4 : 5,
+      density: Math.min(0.86, 0.5 + level * 0.03),
+      maxBus: level === 1 ? 3 : level === 2 ? 5 : level === 3 ? 7 : 99,
+      longP: level < 3 ? 0.2 : 0.35,
+    };
+  }
+
+  function gen(level, rng) {
+    const P = params(level);
+    const { cols, rows } = P;
+    const N = cols * rows;
+    let buses = [];
+    let bestDepth = -1, best = null;
+    for (let tries = 0; tries < 8; tries++) {
+      buses = [];
+      for (let round = 0; round < 6; round++) {
+        const grid = buildGrid(cols, rows, buses);
+        let filled = buses.reduce((s, b) => s + b.len, 0), att = 0;
+        while (filled < P.density * N && buses.length < P.maxBus && att++ < 500) {
+          const len = rng() < P.longP ? 3 : 2;
+          const h = rng() < 0.5;
+          const x = Math.floor(rng() * (h ? cols - len + 1 : cols));
+          const y = Math.floor(rng() * (h ? rows : rows - len + 1));
+          const b = { x, y, len, h, dir: h ? (rng() < 0.5 ? 0 : 2) : (rng() < 0.5 ? 1 : 3) };
+          if (cellsOf(b).some((p) => grid[p[1] * cols + p[0]] !== -1)) continue;
+          buses.push(b);
+          for (const p of cellsOf(b)) grid[p[1] * cols + p[0]] = buses.length - 1;
+          filled += len;
+        }
+        // prune buses that can never leave
+        const res = exitOrder(cols, rows, buses, null);
+        if (res.ok) break;
+        const gone = new Set(res.order);
+        buses = buses.filter((b, i) => gone.has(i));
+      }
+      const res = exitOrder(cols, rows, buses, null);
+      if (!res.ok || !buses.length) continue;
+      if (res.depth > bestDepth) { bestDepth = res.depth; best = buses; }
+      if (res.depth >= Math.min(6, 1 + Math.floor(level / 3))) break;
+    }
+    buses = best || [{ x: 0, y: 0, len: 2, h: true, dir: 2 }];
+    // colours: every colour used at least once (when possible), rest random
+    const nC = Math.min(P.nC, buses.length);
+    const cols4 = [];
+    for (let i = 0; i < buses.length; i++) cols4.push(i < nC ? i : Math.floor(rng() * nC));
+    for (let i = cols4.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = cols4[i]; cols4[i] = cols4[j]; cols4[j] = t; }
+    buses.forEach((b, i) => { b.color = cols4[i]; b.cap = b.len === 3 ? 6 : 4; });
+    // a valid exit order, then a passenger queue that this order serves with `win` bays
+    const order = exitOrder(cols, rows, buses, rng).order;
+    const rem = buses.map((b) => b.cap);
+    const active = [];
+    const queue = [];
+    let next = 0;
+    const k = Math.min(P.win, P.bays);
+    for (;;) {
+      while (active.length < k && next < order.length) active.push(order[next++]);
+      if (!active.length) break;
+      const pick = active[Math.floor(rng() * active.length)];
+      const c = buses[pick].color;
+      const tgt = active.find((i) => buses[i].color === c && rem[i] > 0);
+      queue.push(c);
+      rem[tgt]--;
+      if (rem[tgt] === 0) active.splice(active.indexOf(tgt), 1);
+    }
+    return { cols, rows, buses, queue, bays: P.bays, order, nC };
+  }
+
+  // ---------- path helpers ----------
+  function roundCorners(pts, r) {
+    const out = [pts[0]];
+    for (let i = 1; i < pts.length - 1; i++) {
+      const a = pts[i - 1], p = pts[i], b = pts[i + 1];
+      const la = Math.hypot(p[0] - a[0], p[1] - a[1]), lb = Math.hypot(b[0] - p[0], b[1] - p[1]);
+      if (la < 0.5 || lb < 0.5) { out.push(p); continue; }
+      const ra = Math.min(r, la / 2, lb / 2);
+      const p1 = [p[0] - (p[0] - a[0]) / la * ra, p[1] - (p[1] - a[1]) / la * ra];
+      const p2 = [p[0] + (b[0] - p[0]) / lb * ra, p[1] + (b[1] - p[1]) / lb * ra];
+      for (let k = 0; k <= 10; k++) {
+        const t = k / 10, u = 1 - t;
+        out.push([u * u * p1[0] + 2 * u * t * p[0] + t * t * p2[0], u * u * p1[1] + 2 * u * t * p[1] + t * t * p2[1]]);
+      }
+    }
+    out.push(pts[pts.length - 1]);
+    return out;
+  }
+  function makePath(pts) {
+    const cum = [0];
+    for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    return { pts, cum, len: cum[cum.length - 1] };
+  }
+  function at(path, d, out) {
+    const { pts, cum } = path;
+    d = Math.max(0, Math.min(path.len, d));
+    let i = 1;
+    while (i < pts.length - 1 && cum[i] < d) i++;
+    const seg = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / seg;
+    out[0] = pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t;
+    out[1] = pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t;
+    return out;
+  }
+  function lerpAng(a, b, t) {
+    let d = b - a;
+    while (d > Math.PI) d -= Math.PI * 2;
+    while (d < -Math.PI) d += Math.PI * 2;
+    return a + d * t;
+  }
+
+  MG.register({
+    id: 'bus', name: '巴士逃脫', icon: '🚌', color: '#ff8f3d',
+    gen, exitOrder, cellsOf, probe, buildGrid,
+    create(api) {
+      const U = api.util;
+      const LV = gen(api.level, api.rng);
+      const { cols, rows } = LV;
+      const NB = LV.bays;
+      const buses = LV.buses.map((b, i) => Object.assign({}, b, {
+        id: i, col: COLORS[b.color], state: 'lot', off: 0, t: 0, shake: 0, flash: 0, d: 0, v: 0,
+        filled: 0, incoming: 0, rank: -1, bay: -1, hit: false, wait: 0,
+      }));
+      const grid = buildGrid(cols, rows, buses);
+      const queue = LV.queue.slice();
+      const total = queue.length;
+      const bays = [];
+      for (let i = 0; i < NB; i++) bays.push({ bus: -1, flash: 0 });
+      const walkers = [];
+      const parts = [];
+      let rankN = 0, boardCD = 0.3, qShift = 0, time = 0, shake = 0, endT = -1, endWin = false, fullFlash = 0, delivered = 0;
+      let lay = null;
+      const dpr = Math.min(3, (typeof window !== 'undefined' && window.devicePixelRatio) || 1);
+      const tmp = [0, 0], tmp2 = [0, 0];
+
+      function setInfo() {
+        if (api.level === 1 && delivered === 0 && rankN === 0) api.info('點巴士開到車站，同色乘客會自動上車');
+        else api.info('乘客 ' + delivered + ' / ' + total);
+      }
+
+      // ---------- layout ----------
+      function layout() {
+        const W = api.W, H = api.H;
+        const qH = 64;
+        const bayW = Math.min(86, (W - 20) / NB);
+        const bayLen = bayW * 1.32;
+        const bayY0 = qH + 6;
+        const bayCy = bayY0 + bayLen / 2;
+        const road = Math.max(28, Math.min(44, W * 0.085));
+        const T = bayY0 + bayLen + road / 2;
+        const gap = 10;
+        const lotTop = T + road / 2 + gap;
+        const availH = H - lotTop - road - gap - 6;
+        const cell = Math.max(10, Math.min((W - 2 * (road + gap + 6)) / cols, availH / rows, 66));
+        const lotW = cols * cell, lotH = rows * cell;
+        const lotX = (W - lotW) / 2, lotY = lotTop + Math.max(0, (availH - lotH) / 2);
+        const bx0 = (W - NB * bayW) / 2;
+        const bayX = [];
+        for (let i = 0; i < NB; i++) bayX.push(bx0 + (i + 0.5) * bayW);
+        const L = Math.max(road / 2, Math.min(lotX - gap - road / 2, bayX[0])), R = Math.min(W - road / 2, Math.max(lotX + lotW + gap + road / 2, bayX[NB - 1]));
+        const B = lotY + lotH + gap + road / 2;
+        lay = { W, H, qH, bayW, bayLen, bayY0, bayCy, road, T, gap, cell, lotX, lotY, lotW, lotH, bayX, L, R, B };
+        lay.sp = Math.max(15, Math.min(24, W / 18));
+        for (const b of buses) {
+          b.lotLp = b.len * cell - cell * 0.16; b.lotWd = cell * 0.72;
+          b.bayLp = b.len === 3 ? bayLen * 0.92 : bayLen * 0.7; b.bayWd = bayW * 0.56;
+        }
+        let cv = null;
+        try { cv = document.createElement('canvas'); cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); } catch (e) { cv = null; }
+        lay.bg = cv;
+        if (cv && cv.getContext) { const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); paintBg(g); }
+      }
+
+      function paintBg(g) {
+        const { W, H, qH, bayW, bayLen, bayY0, road, T, L, R, B, lotX, lotY, lotW, lotH, cell, bayX, gap } = lay;
+        // grass
+        let gr = g.createLinearGradient(0, 0, 0, H);
+        gr.addColorStop(0, '#8fdc72'); gr.addColorStop(1, '#5cb85a');
+        g.fillStyle = gr; g.fillRect(0, 0, W, H);
+        // station platform
+        gr = g.createLinearGradient(0, 0, 0, qH);
+        gr.addColorStop(0, '#fff3dc'); gr.addColorStop(1, '#f2dcb4');
+        g.fillStyle = gr; g.fillRect(0, 0, W, qH);
+        g.strokeStyle = 'rgba(160,120,70,0.18)'; g.lineWidth = 1;
+        g.beginPath();
+        for (let x = 0; x < W; x += 26) { g.moveTo(x, 0); g.lineTo(x, qH); }
+        g.moveTo(0, qH * 0.5); g.lineTo(W, qH * 0.5);
+        g.stroke();
+        g.fillStyle = '#e0573a'; g.fillRect(0, 0, W, 5);
+        g.fillStyle = '#c9b48f'; g.fillRect(0, qH - 4, W, 4);
+        g.fillStyle = '#ffd34d'; g.fillRect(0, qH - 1.5, W, 3);
+        // bay apron
+        g.fillStyle = '#5a6070';
+        g.fillRect(0, bayY0 - 2, W, bayLen + 4);
+        for (let i = 0; i < NB; i++) {
+          const x = bayX[i] - bayW / 2;
+          g.fillStyle = 'rgba(255,255,255,0.05)';
+          g.fillRect(x + 4, bayY0 + 2, bayW - 8, bayLen - 4);
+          g.strokeStyle = 'rgba(255,255,255,0.75)'; g.lineWidth = 2.5;
+          g.beginPath();
+          g.moveTo(x + 2, bayY0 + bayLen - 2); g.lineTo(x + 2, bayY0 + 2); g.lineTo(x + bayW - 2, bayY0 + 2); g.lineTo(x + bayW - 2, bayY0 + bayLen - 2);
+          g.stroke();
+          U.text(g, String(i + 1), bayX[i], bayY0 + bayLen * 0.5, Math.min(26, bayW * 0.34), 'rgba(255,255,255,0.13)', 'center', 900);
+        }
+        // ring road
+        g.fillStyle = '#d6d9e2';
+        g.fillRect(0, T - road / 2 - 3, W, road + 6);
+        g.fillRect(L - road / 2 - 3, T, road + 6, B - T + road / 2 + 3);
+        g.fillRect(R - road / 2 - 3, T, road + 6, B - T + road / 2 + 3);
+        g.fillRect(L - road / 2 - 3, B - road / 2 - 3, R - L + road + 6, road + 6);
+        g.fillStyle = '#4b505e';
+        g.fillRect(0, T - road / 2, W, road);
+        g.fillRect(L - road / 2, T, road, B - T + road / 2);
+        g.fillRect(R - road / 2, T, road, B - T + road / 2);
+        g.fillRect(L - road / 2, B - road / 2, R - L + road, road);
+        g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 2; g.setLineDash([10, 9]);
+        g.beginPath();
+        g.moveTo(0, T); g.lineTo(W, T);
+        g.moveTo(L, T); g.lineTo(L, B); g.lineTo(R, B); g.lineTo(R, T);
+        g.stroke(); g.setLineDash([]);
+        // lot
+        const pad = gap * 0.5;
+        g.fillStyle = 'rgba(0,0,0,0.18)';
+        U.rr(g, lotX - pad + 2, lotY - pad + 4, lotW + pad * 2, lotH + pad * 2, 12); g.fill();
+        g.fillStyle = '#c7cbd6';
+        U.rr(g, lotX - pad, lotY - pad, lotW + pad * 2, lotH + pad * 2, 12); g.fill();
+        gr = g.createLinearGradient(0, lotY, 0, lotY + lotH);
+        gr.addColorStop(0, '#6c7386'); gr.addColorStop(1, '#5b6172');
+        g.fillStyle = gr;
+        U.rr(g, lotX, lotY, lotW, lotH, 8); g.fill();
+        g.strokeStyle = 'rgba(255,255,255,0.22)'; g.lineWidth = 1.5;
+        g.beginPath();
+        for (let i = 1; i < cols; i++) { g.moveTo(lotX + i * cell, lotY + 4); g.lineTo(lotX + i * cell, lotY + lotH - 4); }
+        for (let j = 1; j < rows; j++) { g.moveTo(lotX + 4, lotY + j * cell); g.lineTo(lotX + lotW - 4, lotY + j * cell); }
+        g.stroke();
+        // shrubs between road and edges
+        const tr = MG.mulberry32(api.level * 13 + 5);
+        for (let i = 0; i < 40; i++) {
+          const x = tr() * W, y = T + road / 2 + tr() * (H - T - road / 2), r = 7 + tr() * 9;
+          const onRoad = (Math.abs(x - L) < road / 2 + r + 3 || Math.abs(x - R) < road / 2 + r + 3) ||
+            (Math.abs(y - B) < road / 2 + r + 3 && x > L - road && x < R + road) || (y - r < T + road / 2 + 3);
+          const inLot = x + r > lotX - gap && x - r < lotX + lotW + gap && y + r > lotY - gap && y - r < lotY + lotH + gap;
+          if (onRoad || inLot) continue;
+          g.fillStyle = 'rgba(0,0,0,0.15)'; g.beginPath(); g.arc(x + 2, y + 3, r, 0, Math.PI * 2); g.fill();
+          g.fillStyle = '#3c9a46'; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+          g.fillStyle = 'rgba(255,255,255,0.2)'; g.beginPath(); g.arc(x - r * 0.3, y - r * 0.3, r * 0.4, 0, Math.PI * 2); g.fill();
+        }
+      }
+
+      // ---------- geometry ----------
+      function lotCenter(b, out) {
+        const { cell, lotX, lotY } = lay;
+        const w = b.h ? b.len : 1, h = b.h ? 1 : b.len;
+        out[0] = lotX + (b.x + w / 2) * cell; out[1] = lotY + (b.y + h / 2) * cell;
+        return out;
+      }
+      function ringPos(x, y, side) {
+        const { L, R, T, B } = lay, w = R - L, h = B - T;
+        if (side === 0) return x - L;
+        if (side === 1) return w + (y - T);
+        if (side === 2) return w + h + (R - x);
+        return 2 * w + h + (B - y);
+      }
+      function drivePath(b) {
+        const { L, R, T, B, road } = lay;
+        const p0 = lotCenter(b, [0, 0]);
+        const E = p0.slice();
+        let side;
+        if (b.dir === 3) { E[1] = T; side = 0; } else if (b.dir === 0) { E[0] = R; side = 1; } else if (b.dir === 1) { E[1] = B; side = 2; } else { E[0] = L; side = 3; }
+        const bx = lay.bayX[b.bay];
+        const w = R - L, h = B - T, P = 2 * (w + h);
+        const pE = ringPos(E[0], E[1], side), pT = ringPos(bx, T, 0);
+        const corners = [[L, T, 0], [R, T, w], [R, B, w + h], [L, B, 2 * w + h]];
+        const mod = (v) => ((v % P) + P) % P;
+        const cw = mod(pT - pE), ccw = mod(pE - pT);
+        const pts = [p0, E];
+        if (cw <= ccw) {
+          corners.map((c) => [c, mod(c[2] - pE)]).filter((c) => c[1] > 0.5 && c[1] < cw - 0.5).sort((a, b2) => a[1] - b2[1]).forEach((c) => pts.push([c[0][0], c[0][1]]));
+        } else {
+          corners.map((c) => [c, mod(pE - c[2])]).filter((c) => c[1] > 0.5 && c[1] < ccw - 0.5).sort((a, b2) => a[1] - b2[1]).forEach((c) => pts.push([c[0][0], c[0][1]]));
+        }
+        pts.push([bx, T]);
+        pts.push([bx, lay.bayCy]);
+        const clean = [pts[0]];
+        for (let i = 1; i < pts.length; i++) {
+          const q = clean[clean.length - 1];
+          if (Math.hypot(pts[i][0] - q[0], pts[i][1] - q[1]) > 0.5) clean.push(pts[i]);
+        }
+        return makePath(roundCorners(clean, road * 0.8));
+      }
+      function leavePath(b) {
+        const { T, road, W } = lay;
+        const bx = lay.bayX[b.lastBay];
+        const p0 = [bx, lay.bayCy], p1 = [bx, T + road * 0.18], p2 = [W + 160, T + road * 0.18];
+        const path = makePath(roundCorners([p0, p1, p2], road * 0.7));
+        const straight = p1[1] - p0[1];
+        return { path, c0: Math.max(0, straight - road * 0.7), c1: straight + road * 0.4 };
+      }
+      function seatLocal(b, i, Lp, Wd, out) {
+        const n = b.cap / 2, col = Math.floor(i / 2), row = i % 2;
+        const span = Lp * 0.6, x0 = -Lp / 2 + Lp * 0.1;
+        out[0] = x0 + (n - 1 - col + 0.5) * span / n;
+        out[1] = (row ? 1 : -1) * Wd * 0.19;
+        return out;
+      }
+
+      // ---------- drawing ----------
+      function drawBus(g, b, x, y, a, Lp, Wd, alphaSeats) {
+        const col = b.col, dark = U.shade(col, -0.38), light = U.shade(col, 0.4);
+        g.save(); g.translate(x, y); g.rotate(a);
+        g.fillStyle = 'rgba(0,0,0,0.28)';
+        U.rr(g, -Lp / 2 + 2, -Wd / 2 + 4, Lp, Wd, Wd * 0.22); g.fill();
+        // mirrors
+        g.fillStyle = dark;
+        U.rr(g, Lp / 2 - Lp * 0.1, -Wd / 2 - Wd * 0.1, Wd * 0.12, Wd * 0.14, 2); g.fill();
+        U.rr(g, Lp / 2 - Lp * 0.1, Wd / 2 - Wd * 0.04, Wd * 0.12, Wd * 0.14, 2); g.fill();
+        // body
+        g.fillStyle = dark;
+        U.rr(g, -Lp / 2, -Wd / 2, Lp, Wd, Wd * 0.22); g.fill();
+        g.fillStyle = col;
+        U.rr(g, -Lp / 2 + 1.5, -Wd / 2 + 1.5, Lp - 3, Wd - 3, Wd * 0.2); g.fill();
+        // side windows strips
+        g.fillStyle = '#2b3a55';
+        U.rr(g, -Lp / 2 + Lp * 0.06, -Wd / 2 + Wd * 0.07, Lp * 0.76, Wd * 0.13, 2); g.fill();
+        U.rr(g, -Lp / 2 + Lp * 0.06, Wd / 2 - Wd * 0.2, Lp * 0.76, Wd * 0.13, 2); g.fill();
+        // roof
+        g.fillStyle = light;
+        U.rr(g, -Lp / 2 + Lp * 0.05, -Wd * 0.28, Lp * 0.78, Wd * 0.56, Wd * 0.14); g.fill();
+        // windshield
+        g.fillStyle = '#25324a';
+        U.rr(g, Lp / 2 - Lp * 0.13, -Wd / 2 + Wd * 0.1, Lp * 0.1, Wd * 0.8, Wd * 0.12); g.fill();
+        g.fillStyle = 'rgba(170,225,255,0.6)';
+        U.rr(g, Lp / 2 - Lp * 0.115, -Wd / 2 + Wd * 0.17, Lp * 0.03, Wd * 0.34, 2); g.fill();
+        // headlights / tail lights
+        g.fillStyle = '#fff4a8';
+        g.beginPath(); g.arc(Lp / 2 - 2, -Wd * 0.34, Math.max(1.5, Wd * 0.07), 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.arc(Lp / 2 - 2, Wd * 0.34, Math.max(1.5, Wd * 0.07), 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#ff3346';
+        g.fillRect(-Lp / 2 + 1, -Wd * 0.4, 2.5, Wd * 0.16); g.fillRect(-Lp / 2 + 1, Wd * 0.24, 2.5, Wd * 0.16);
+        // seats
+        const sr = Math.max(1.8, Math.min(Wd * 0.13, Lp * 0.3 / b.cap * 1.4));
+        for (let i = 0; i < b.cap; i++) {
+          seatLocal(b, i, Lp, Wd, tmp2);
+          if (i < b.filled) {
+            g.fillStyle = col;
+            g.beginPath(); g.arc(tmp2[0], tmp2[1], sr * 1.15, 0, Math.PI * 2); g.fill();
+            g.fillStyle = '#ffdcb8';
+            g.beginPath(); g.arc(tmp2[0], tmp2[1], sr * 0.75, 0, Math.PI * 2); g.fill();
+          } else {
+            g.fillStyle = 'rgba(0,0,0,' + (0.22 * alphaSeats).toFixed(3) + ')';
+            g.beginPath(); g.arc(tmp2[0], tmp2[1], sr, 0, Math.PI * 2); g.fill();
+          }
+        }
+        if (b.flash > 0) {
+          g.fillStyle = 'rgba(255,255,255,' + (b.flash * 0.5).toFixed(3) + ')';
+          U.rr(g, -Lp / 2, -Wd / 2, Lp, Wd, Wd * 0.22); g.fill();
+        }
+        g.restore();
+      }
+      function drawPerson(g, x, y, s, col, step) {
+        const sw = Math.sin(step) * 2.2 * s;
+        g.strokeStyle = '#3a3340'; g.lineWidth = 2 * s; g.lineCap = 'round';
+        g.beginPath();
+        g.moveTo(x - 1.5 * s, y + 4 * s); g.lineTo(x - 2 * s + sw, y + 10 * s);
+        g.moveTo(x + 1.5 * s, y + 4 * s); g.lineTo(x + 2 * s - sw, y + 10 * s);
+        g.stroke();
+        g.fillStyle = col;
+        U.rr(g, x - 4.2 * s, y - 5 * s, 8.4 * s, 10 * s, 3.5 * s); g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.3)';
+        U.rr(g, x - 3 * s, y - 4 * s, 2.5 * s, 6 * s, 1.2 * s); g.fill();
+        g.fillStyle = '#ffd9b3';
+        g.beginPath(); g.arc(x, y - 8.5 * s, 4 * s, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#4a3428';
+        g.beginPath(); g.arc(x, y - 9.6 * s, 4 * s, Math.PI * 1.05, Math.PI * 1.95); g.fill();
+      }
+
+      function burst(x, y, n, colr, spd, life, size) {
+        for (let i = 0; i < n; i++) {
+          const a = Math.random() * Math.PI * 2, v = spd * (0.3 + Math.random() * 0.9);
+          parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life, max: life, size: size * (0.6 + Math.random() * 0.7), color: colr, grav: 0 });
+        }
+      }
+
+      // ---------- game logic ----------
+      function freeBay() {
+        for (let i = 0; i < NB; i++) if (bays[i].bus < 0) return i;
+        return -1;
+      }
+      function candidateFor(c) {
+        let best = null;
+        for (const b of buses) {
+          if (b.color !== c || (b.state !== 'drive' && b.state !== 'bay')) continue;
+          if (b.filled + b.incoming >= b.cap) continue;
+          if (!best || b.rank < best.rank) best = b;
+        }
+        return best;
+      }
+      function tap(x, y) {
+        if (api.ended || endT >= 0) return;
+        const { cell, lotX, lotY } = lay;
+        const gx = Math.floor((x - lotX) / cell), gy = Math.floor((y - lotY) / cell);
+        let id = -1;
+        if (gx >= 0 && gy >= 0 && gx < cols && gy < rows) id = grid[gy * cols + gx];
+        if (id < 0) {
+          let best = cell * 0.7;
+          for (const b of buses) {
+            if (b.state !== 'lot') continue;
+            for (const p of cellsOf(b)) {
+              const d = Math.hypot(x - (lotX + (p[0] + 0.5) * cell), y - (lotY + (p[1] + 0.5) * cell));
+              if (d < best) { best = d; id = b.id; }
+            }
+          }
+        }
+        if (id < 0) return;
+        const b = buses[id];
+        if (b.state !== 'lot') return;
+        b.flash = 1;
+        const pr = probe(grid, cols, rows, b);
+        if (!pr.free) {
+          api.sfx('tap');
+          b.state = 'bump'; b.t = 0; b.hit = false;
+          b.reach = pr.gap * cell + cell * 0.1; b.blk = pr.hit;
+          return;
+        }
+        const bi = freeBay();
+        if (bi < 0) {
+          api.sfx('bad');
+          b.shake = 1; fullFlash = 1;
+          for (const bb of bays) bb.flash = 1;
+          api.info('車站滿了！等巴士載滿開走');
+          return;
+        }
+        api.sfx('pop');
+        bays[bi].bus = b.id;
+        b.bay = bi; b.lastBay = bi; b.rank = rankN++;
+        b.state = 'drive'; b.d = 0; b.v = 120; b.path = drivePath(b);
+        for (const p of cellsOf(b)) grid[p[1] * cols + p[0]] = -1;
+        lotCenter(b, tmp);
+        burst(tmp[0] - DX[b.dir] * b.lotLp / 2, tmp[1] - DY[b.dir] * b.lotLp / 2, 8, 'rgba(235,235,245,0.85)', 60, 0.5, 5);
+        setInfo();
+      }
+
+      function busWorld(b, out) {
+        // current world position + angle + size of a bus (for drawing and walker targets)
+        let x, y, a, Lp, Wd;
+        if (b.state === 'lot' || b.state === 'bump') {
+          lotCenter(b, out);
+          x = out[0] + DX[b.dir] * b.off; y = out[1] + DY[b.dir] * b.off; a = ANG[b.dir]; Lp = b.lotLp; Wd = b.lotWd;
+          if (b.shake > 0) { const s = Math.sin(time * 70) * b.shake * lay.cell * 0.07; if (b.h) y += s; else x += s; }
+        } else if (b.state === 'drive') {
+          at(b.path, b.d, tmp); at(b.path, b.d + 4, tmp2);
+          x = tmp[0]; y = tmp[1];
+          a = b.d >= b.path.len - 4 ? -Math.PI / 2 : Math.atan2(tmp2[1] - tmp[1], tmp2[0] - tmp[0]);
+          const k = U.clamp(b.d / b.path.len, 0, 1), e = k * k * (3 - 2 * k);
+          Lp = U.lerp(b.lotLp, b.bayLp, e); Wd = U.lerp(b.lotWd, b.bayWd, e);
+        } else if (b.state === 'bay') {
+          x = lay.bayX[b.bay]; y = lay.bayCy + Math.sin(Math.min(1, b.t * 3) * Math.PI) * -3; a = -Math.PI / 2; Lp = b.bayLp; Wd = b.bayWd;
+          if (b.shake > 0) x += Math.sin(time * 70) * b.shake * 3;
+        } else {
+          const lp = b.lp;
+          at(lp.path, b.d, tmp);
+          x = tmp[0]; y = tmp[1];
+          if (b.d < lp.c0) a = -Math.PI / 2;
+          else if (b.d > lp.c1) a = 0;
+          else a = lerpAng(-Math.PI / 2, 0, (b.d - lp.c0) / (lp.c1 - lp.c0));
+          Lp = b.bayLp; Wd = b.bayWd;
+        }
+        out[0] = x; out[1] = y; out[2] = a; out[3] = Lp; out[4] = Wd;
+        return out;
+      }
+
+      const bw = [0, 0, 0, 0, 0];
+      function update(dt) {
+        time += dt;
+        shake = Math.max(0, shake - dt * 3);
+        fullFlash = Math.max(0, fullFlash - dt * 2);
+        qShift = Math.max(0, qShift - dt * lay.sp * 9);
+        for (const bb of bays) bb.flash = Math.max(0, bb.flash - dt * 2);
+        for (const b of buses) {
+          b.flash = Math.max(0, b.flash - dt * 3);
+          b.shake = Math.max(0, b.shake - dt * 2.5);
+          if (b.state === 'bump') {
+            b.t += dt;
+            const T1 = 0.08 + Math.min(0.2, b.reach / lay.cell * 0.05), T2 = T1 + 0.32;
+            if (b.t < T1) { const k = b.t / T1; b.off = b.reach * k * k; }
+            else {
+              if (!b.hit) {
+                b.hit = true; api.sfx('bad'); shake = 0.7;
+                if (b.blk >= 0) buses[b.blk].shake = 1;
+                lotCenter(b, tmp);
+                burst(tmp[0] + DX[b.dir] * (b.lotLp / 2 + b.reach), tmp[1] + DY[b.dir] * (b.lotLp / 2 + b.reach), 9, '#ffd34d', 150, 0.35, 3.5);
+              }
+              const k = Math.min(1, (b.t - T1) / (T2 - T1));
+              b.off = b.reach * (1 - U.easeOutCubic(k)) - Math.sin(k * Math.PI) * lay.cell * 0.05;
+              if (b.t >= T2) { b.off = 0; b.state = 'lot'; }
+            }
+          } else if (b.state === 'drive') {
+            const remain = b.path.len - b.d;
+            const vmax = Math.max(lay.W, 500) * 2.2;
+            b.v = remain < 90 ? Math.max(160, Math.min(b.v, remain * 6)) : Math.min(vmax, b.v + vmax * 2.2 * dt);
+            b.d += b.v * dt;
+            if (b.d >= b.path.len) { b.d = b.path.len; b.state = 'bay'; b.t = 0; api.sfx('drop'); boardCD = Math.min(boardCD, 0.15); }
+          } else if (b.state === 'bay') {
+            b.t += dt;
+            if (b.filled >= b.cap && b.incoming === 0) {
+              b.wait += dt;
+              if (b.wait > 0.35) {
+                b.state = 'leave'; b.d = 0; b.v = 60; b.lp = leavePath(b); api.sfx('good');
+                burst(lay.bayX[b.bay], lay.bayCy, 14, b.col, 140, 0.6, 4);
+              }
+            }
+          } else if (b.state === 'leave') {
+            const reversing = b.d < b.lp.c0;
+            b.v = reversing ? Math.min(260, b.v + 900 * dt) : Math.min(1100, b.v + 1800 * dt);
+            b.d += b.v * dt;
+            if (b.bay >= 0 && b.d > b.lp.c0) { bays[b.bay].bus = -1; b.bay = -1; }
+            if (b.d >= b.lp.path.len) b.state = 'gone';
+          }
+        }
+        // boarding: front passenger walks to the earliest-arrived bus of its colour
+        boardCD -= dt;
+        if (boardCD <= 0 && queue.length && endT < 0) {
+          const c = queue[0];
+          const b = candidateFor(c);
+          if (b && b.state === 'bay' && b.t > 0.15) {
+            queue.shift();
+            const seat = b.filled + b.incoming;
+            b.incoming++;
+            walkers.push({ x0: lay.sp * 1.2 + qShift, y0: lay.qH * 0.56, bus: b, seat, t: 0, color: c });
+            qShift += lay.sp;
+            boardCD = 0.11;
+            api.sfx('tap');
+          } else boardCD = 0.05;
+        }
+        for (let i = walkers.length - 1; i >= 0; i--) {
+          const w = walkers[i];
+          w.t += dt / 0.3;
+          if (w.t >= 1) {
+            const b = w.bus;
+            b.incoming--; b.filled++; delivered++;
+            busWorld(b, bw);
+            burst(bw[0], bw[1], 4, U.shade(COLORS[w.color], 0.3), 50, 0.3, 3);
+            walkers.splice(i, 1);
+            setInfo();
+          }
+        }
+        for (let i = parts.length - 1; i >= 0; i--) {
+          const p = parts[i];
+          p.life -= dt; if (p.life <= 0) { parts.splice(i, 1); continue; }
+          p.x += p.vx * dt; p.y += p.vy * dt; p.vy += p.grav * dt;
+          if (!p.grav) { p.vx *= 0.95; p.vy *= 0.95; }
+        }
+        // end conditions
+        if (endT < 0 && !api.ended) {
+          if (!queue.length && !walkers.length) {
+            if (buses.every((b) => b.state === 'leave' || b.state === 'gone')) { endT = 0.9; endWin = true; }
+          } else if (queue.length && !walkers.length) {
+            const busy = buses.some((b) => b.state === 'drive' || b.state === 'leave' || b.state === 'bump' || (b.state === 'bay' && b.filled >= b.cap));
+            const allFull = bays.every((bb) => bb.bus >= 0 && buses[bb.bus].state === 'bay');
+            if (!busy && allFull && !candidateFor(queue[0])) {
+              endT = 0.6; endWin = false;
+              for (const bb of bays) bb.flash = 1;
+              api.info('車站塞滿了，沒有對應顏色的巴士');
+            }
+          }
+        }
+        if (endT >= 0 && !api.ended) {
+          endT -= dt;
+          if (endT < 0) {
+            if (endWin) {
+              for (let i = 0; i < 80; i++) {
+                parts.push({ x: api.W * Math.random(), y: -10, vx: (Math.random() - 0.5) * 120, vy: 80 + Math.random() * 160, life: 2.4, max: 2.4, size: 4 + Math.random() * 3, color: COLORS[i % COLORS.length], grav: 120, conf: true });
+              }
+              api.win('所有乘客都上車了！');
+            } else api.lose('車站塞滿了');
+          }
+        }
+      }
+
+      function draw(g) {
+        const { W, H, qH, sp, bayW, bayLen, bayY0 } = lay;
+        g.fillStyle = '#6cc463'; g.fillRect(0, 0, W, H);
+        g.save();
+        if (shake > 0) g.translate((Math.random() - 0.5) * 6 * shake, (Math.random() - 0.5) * 6 * shake);
+        if (lay.bg && lay.bg.getContext) g.drawImage(lay.bg, 0, 0, W, H); else paintBg(g);
+        // bay warning flash
+        for (let i = 0; i < NB; i++) {
+          if (bays[i].flash > 0) {
+            g.fillStyle = 'rgba(255,60,60,' + (bays[i].flash * 0.35).toFixed(3) + ')';
+            g.fillRect(lay.bayX[i] - bayW / 2 + 3, bayY0 + 3, bayW - 6, bayLen - 6);
+          }
+        }
+        // lot buses, then buses on the road / in bays
+        for (const b of buses) {
+          if (b.state !== 'lot' && b.state !== 'bump') continue;
+          busWorld(b, bw);
+          drawBus(g, b, bw[0], bw[1], bw[2], bw[3], bw[4], 1);
+        }
+        for (const b of buses) {
+          if (b.state !== 'bay') continue;
+          busWorld(b, bw);
+          drawBus(g, b, bw[0], bw[1], bw[2], bw[3], bw[4], 1);
+          if (b.filled >= b.cap) U.text(g, '滿', bw[0], bw[1] - bw[3] * 0.62, 13, '#fff', 'center', 900);
+        }
+        for (const b of buses) {
+          if (b.state !== 'drive' && b.state !== 'leave') continue;
+          busWorld(b, bw);
+          drawBus(g, b, bw[0], bw[1], bw[2], bw[3], bw[4], 1);
+        }
+        // walkers
+        for (const w of walkers) {
+          const b = w.bus;
+          busWorld(b, bw);
+          seatLocal(b, w.seat, bw[3], bw[4], tmp);
+          const ca = Math.cos(bw[2]), sa = Math.sin(bw[2]);
+          const tx = bw[0] + tmp[0] * ca - tmp[1] * sa, ty = bw[1] + tmp[0] * sa + tmp[1] * ca;
+          const k = U.easeOutCubic(Math.min(1, w.t));
+          const x = U.lerp(w.x0, tx, k), y = U.lerp(w.y0, ty, k) - Math.sin(k * Math.PI) * 14;
+          drawPerson(g, x, y, 1 - k * 0.45, COLORS[w.color], time * 18);
+        }
+        // queue
+        const vis = Math.max(4, Math.floor((W - 64) / sp));
+        const qy = qH * 0.56;
+        for (let i = Math.min(queue.length, vis) - 1; i >= 0; i--) {
+          const x = sp * 1.2 + i * sp + qShift;
+          const moving = qShift > 0.5;
+          drawPerson(g, x, qy, 1, COLORS[queue[i]], moving ? time * 16 + i : 0);
+        }
+        if (queue.length) {
+          const bob = Math.sin(time * 6) * 2;
+          const fx = sp * 1.2 + qShift;
+          g.fillStyle = '#ff5a3c';
+          g.beginPath(); g.moveTo(fx - 5, 6 + bob); g.lineTo(fx + 5, 6 + bob); g.lineTo(fx, 12 + bob); g.closePath(); g.fill();
+        }
+        g.fillStyle = 'rgba(60,40,20,0.55)';
+        U.rr(g, W - 58, qy - 13, 50, 26, 13); g.fill();
+        U.text(g, String(queue.length), W - 33, qy + 1, 15, '#fff', 'center', 900);
+        for (const p of parts) {
+          const al = Math.max(0, p.life / p.max);
+          g.globalAlpha = al; g.fillStyle = p.color;
+          if (p.conf) { g.save(); g.translate(p.x, p.y); g.rotate(p.life * 6); g.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2); g.restore(); }
+          else { g.beginPath(); g.arc(p.x, p.y, p.size * (0.5 + al * 0.5), 0, Math.PI * 2); g.fill(); }
+        }
+        g.globalAlpha = 1;
+        g.restore();
+        if (fullFlash > 0) U.text(g, '車站滿了！', W / 2, bayY0 + bayLen / 2, 22, 'rgba(255,255,255,' + Math.min(1, fullFlash * 1.5).toFixed(3) + ')', 'center', 900);
+      }
+
+      layout();
+      setInfo();
+      return {
+        update,
+        draw,
+        down(x, y) { tap(x, y); },
+        _test: {
+          cellXY: (cx, cy) => [lay.lotX + (cx + 0.5) * lay.cell, lay.lotY + (cy + 0.5) * lay.cell],
+          busState: (i) => buses[i].state,
+        },
+        resize() {
+          layout();
+          for (const b of buses) {
+            if (b.state === 'drive') { const k = b.d / (b.path.len || 1); b.path = drivePath(b); b.d = k * b.path.len; }
+            if (b.state === 'leave') { const k = b.d / (b.lp.path.len || 1); b.lp = leavePath(b); b.d = k * b.lp.path.len; }
+          }
+        },
+      };
+    },
+  });
+})();

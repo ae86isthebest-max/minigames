@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="小遊戲">
+<meta name="theme-color" content="#1b1f3b">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="style.css">
+<title>小遊戲合集</title>
+</head>
+<body>
+<div id="menu" class="screen">
+  <header class="menu-head">
+    <h1>小遊戲合集</h1>
+    <button id="muteBtn" class="round" aria-label="聲音">🔊</button>
+  </header>
+  <div id="grid"></div>
+</div>
+
+<div id="play" class="screen hidden">
+  <div class="topbar">
+    <button id="backBtn" class="round" aria-label="返回">‹</button>
+    <div class="title"><div id="gTitle"></div><div id="gLevel"></div></div>
+    <button id="restartBtn" class="round" aria-label="重來">↻</button>
+  </div>
+  <div id="info"></div>
+  <div id="stage"><canvas id="cv"></canvas></div>
+  <div id="overlay" class="hidden">
+    <div class="card">
+      <div id="ovTitle"></div>
+      <div id="ovText"></div>
+      <div class="btns">
+        <button id="ovRetry" class="btn ghost">重來</button>
+        <button id="ovNext" class="btn">下一關</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="core.js"></script>
+<script src="games/bus.js"></script>
+<script src="games/water.js"></script>
+<script src="games/zombie.js"></script>
+<script src="games/crowd.js"></script>
+<script src="games/parking.js"></script>
+<script src="games/screw.js"></script>
+<script src="games/blocks.js"></script>
+<script src="games/arrows.js"></script>
+<script src="games/triple.js"></script>
+<script src="games/pins.js"></script>
+<script src="games/pixel.js"></script>
+<script src="games/fruit.js"></script>
+<script src="games/stack.js"></script>
+<script src="games/tangle.js"></script>
+<script src="games/bricks.js"></script>
+<script>MG.start();</script>
+</body>
+</html>

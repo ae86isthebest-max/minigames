@@ -1,0 +1,355 @@
+// 解繩結 — Untangle: drag pegs until no ropes cross (planar graph puzzle).
+(function () {
+  'use strict';
+
+  function nodesFor(level) { return Math.min(30, Math.round(6 + (level - 1) * 0.45)); }
+
+  // proper segment intersection (shared endpoints don't count)
+  function cross(ax, ay, bx, by, cx, cy, dx, dy) {
+    const d1 = (dx - cx) * (ay - cy) - (dy - cy) * (ax - cx);
+    const d2 = (dx - cx) * (by - cy) - (dy - cy) * (bx - cx);
+    const d3 = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+    const d4 = (bx - ax) * (dy - ay) - (by - ay) * (dx - ax);
+    return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0));
+  }
+  function segPointDist(px, py, ax, ay, bx, by) {
+    const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+    let t = l2 > 0 ? ((px - ax) * dx + (py - ay) * dy) / l2 : 0;
+    t = t < 0 ? 0 : t > 1 ? 1 : t;
+    return Math.hypot(px - (ax + dx * t), py - (ay + dy * t));
+  }
+
+  // count crossings for positions xs/ys (normalised 0..1) and edges; flags[] per edge (optional)
+  // touch = how close a foreign peg may come to a rope (normalised units)
+  function countCrossings(xs, ys, edges, flags, touch) {
+    let c = 0;
+    if (flags) flags.fill(0);
+    for (let i = 0; i < edges.length; i++) {
+      const a = edges[i][0], b = edges[i][1];
+      for (let j = i + 1; j < edges.length; j++) {
+        const p = edges[j][0], q = edges[j][1];
+        if (p === a || p === b || q === a || q === b) continue;
+        if (cross(xs[a], ys[a], xs[b], ys[b], xs[p], ys[p], xs[q], ys[q])) { c++; if (flags) { flags[i] = 1; flags[j] = 1; } }
+      }
+      if (touch > 0) {
+        for (let k = 0; k < xs.length; k++) {
+          if (k === a || k === b) continue;
+          if (segPointDist(xs[k], ys[k], xs[a], ys[a], xs[b], ys[b]) < touch) { c++; if (flags) flags[i] = 1; }
+        }
+      }
+    }
+    return c;
+  }
+
+  const TOUCH = 0.035;
+
+  // Planar generator: random well-spaced points, greedy shortest-edge triangulation (never adds a
+  // crossing edge, never passes close to a foreign point), then thin edges out keeping the graph
+  // connected and every node at degree >= 2. The original point set is kept as the proof layout.
+  function generate(level, rng) {
+    const n = nodesFor(level);
+    const xs = [], ys = [];
+    const minD = Math.max(0.1, 0.42 / Math.sqrt(n));
+    let guard = 0;
+    while (xs.length < n && guard++ < 20000) {
+      const x = 0.06 + rng() * 0.88, y = 0.06 + rng() * 0.88;
+      let ok = true;
+      for (let i = 0; i < xs.length; i++) if (Math.hypot(x - xs[i], y - ys[i]) < minD) { ok = false; break; }
+      if (ok) { xs.push(x); ys.push(y); }
+    }
+    const pairs = [];
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) pairs.push([i, j, Math.hypot(xs[i] - xs[j], ys[i] - ys[j])]);
+    pairs.sort((a, b) => a[2] - b[2]);
+    const edges = [];
+    for (const [a, b] of pairs) {
+      let ok = true;
+      for (const e of edges) {
+        if (e[0] === a || e[0] === b || e[1] === a || e[1] === b) continue;
+        if (cross(xs[a], ys[a], xs[b], ys[b], xs[e[0]], ys[e[0]], xs[e[1]], ys[e[1]])) { ok = false; break; }
+      }
+      if (!ok) continue;
+      for (let k = 0; k < n && ok; k++) {
+        if (k === a || k === b) continue;
+        if (segPointDist(xs[k], ys[k], xs[a], ys[a], xs[b], ys[b]) < TOUCH * 1.6) ok = false;
+      }
+      if (ok) edges.push([a, b]);
+    }
+    // thin out: density rises with level (≈1.35n edges early → ≈2.1n later)
+    const want = Math.round(n * Math.min(2.1, 1.3 + level * 0.025));
+    const deg = new Array(n).fill(0);
+    edges.forEach((e) => { deg[e[0]]++; deg[e[1]]++; });
+    const order = edges.map((_, i) => i);
+    for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = order[i]; order[i] = order[j]; order[j] = t; }
+    const alive = edges.map(() => true);
+    let count = edges.length;
+    function connected() {
+      const seen = new Array(n).fill(false), st = [0]; seen[0] = true; let c = 1;
+      while (st.length) {
+        const v = st.pop();
+        for (let i = 0; i < edges.length; i++) {
+          if (!alive[i]) continue;
+          const e = edges[i]; let w = -1;
+          if (e[0] === v) w = e[1]; else if (e[1] === v) w = e[0];
+          if (w >= 0 && !seen[w]) { seen[w] = true; c++; st.push(w); }
+        }
+      }
+      return c === n;
+    }
+    for (const i of order) {
+      if (count <= want) break;
+      const e = edges[i];
+      if (deg[e[0]] <= 2 || deg[e[1]] <= 2) continue;
+      alive[i] = false;
+      if (!connected()) { alive[i] = true; continue; }
+      deg[e[0]]--; deg[e[1]]--; count--;
+    }
+    const finalEdges = edges.filter((_, i) => alive[i]);
+    // scramble onto a circle in random order until there are plenty of crossings
+    const perm = [];
+    for (let i = 0; i < n; i++) perm.push(i);
+    let sx = null, sy = null, best = -1, bestScore = 1e9;
+    const lo = level === 1 ? 2 : level === 2 ? 3 : Math.max(4, Math.round(n * 0.6));
+    const hi = level === 1 ? 3 : level === 2 ? 5 : 1e9;
+    for (let tries = 0; tries < 60; tries++) {
+      for (let i = n - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = perm[i]; perm[i] = perm[j]; perm[j] = t; }
+      const cx = [], cy = [];
+      const rot = rng() * Math.PI * 2;
+      for (let i = 0; i < n; i++) {
+        const a = rot + (perm[i] / n) * Math.PI * 2;
+        cx[i] = 0.5 + Math.cos(a) * 0.42; cy[i] = 0.5 + Math.sin(a) * 0.42;
+      }
+      const c = countCrossings(cx, cy, finalEdges, null, TOUCH);
+      const score = c < 1 ? 1e8 : c < lo ? lo - c : c > hi ? c - hi : 0;
+      if (score < bestScore) { bestScore = score; best = c; sx = cx; sy = cy; }
+      if (score === 0) break;
+    }
+    return { n, edges: finalEdges, solX: xs, solY: ys, startX: sx, startY: sy, startCross: best };
+  }
+
+  const ROPE = ['#ff6b6b', '#ffb84d', '#ffe066', '#69db7c', '#4dabf7', '#9775fa', '#f783ac', '#38d9a9'];
+
+  MG.register({
+    id: 'tangle', name: '解繩結', icon: '🪢', color: '#ff7ac8',
+    _generate: generate, _countCrossings: countCrossings, _TOUCH: TOUCH, _nodesFor: nodesFor,
+    create(api) {
+      const U = api.util;
+      const G = generate(api.level, api.rng);
+      const n = G.n, edges = G.edges;
+      const xs = G.startX.slice(), ys = G.startY.slice();   // logical (normalised) positions
+      const dxs = xs.slice(), dys = ys.slice();              // displayed (smoothed) positions
+      const flags = new Uint8Array(edges.length);
+      const prevFlags = new Uint8Array(edges.length);
+      const flash = new Float32Array(edges.length);
+      const pegCol = [];
+      for (let i = 0; i < n; i++) pegCol.push(ROPE[i % ROPE.length]);
+      let crossings = countCrossings(xs, ys, edges, flags, TOUCH);
+      prevFlags.set(flags);
+      let ax = 0, ay = 0, aw = 1, ah = 1, pegR = 14;
+      let drag = -1, grabDX = 0, grabDY = 0, moves = 0;
+      let time = 0, won = false, winT = 0, pulse = new Float32Array(n);
+      const parts = [];
+      let bgCache = null, bgW = 0, bgH = 0;
+
+      function layout() {
+        const W = api.W, H = api.H;
+        const side = Math.min(W - 36, H - 120);
+        aw = side; ah = Math.min(H - 110, side * 1.25);
+        ax = (W - aw) / 2; ay = (H - ah) / 2 + 22;
+        pegR = Math.max(12, Math.min(18, side / (n > 20 ? 26 : 20)));
+      }
+      layout();
+      const SX = (x) => ax + x * aw, SY = (y) => ay + y * ah;
+
+      function info() {
+        if (won) { api.info('解開了！'); return; }
+        if (api.level === 1 && moves === 0) api.info('拖動釘子，讓所有繩子不再交叉');
+        else api.info('交叉 ' + crossings + '　節點 ' + n);
+      }
+      info();
+
+      function recount() {
+        prevFlags.set(flags);
+        crossings = countCrossings(xs, ys, edges, flags, TOUCH);
+        for (let i = 0; i < edges.length; i++) if (prevFlags[i] && !flags[i]) flash[i] = 1;
+      }
+
+      function celebrate() {
+        won = true; winT = 0;
+        api.sfx('good');
+        for (let i = 0; i < 120 && parts.length < 300; i++) {
+          parts.push({ x: api.W / 2, y: api.H * 0.45, vx: (Math.random() - 0.5) * 520, vy: -150 - Math.random() * 420, life: 2, max: 2, col: ROPE[i % ROPE.length], sz: 3 + Math.random() * 3, rot: Math.random() * 6, conf: true });
+        }
+        for (let i = 0; i < n; i++) pulse[i] = 1 + i * 0.03;
+        info();
+      }
+
+      function down(x, y) {
+        if (api.ended || won) return;
+        let best = -1, bd = Math.max(26, pegR + 12);
+        for (let i = 0; i < n; i++) {
+          const d = Math.hypot(x - SX(dxs[i]), y - SY(dys[i]));
+          if (d < bd) { bd = d; best = i; }
+        }
+        if (best >= 0) {
+          drag = best; grabDX = SX(xs[best]) - x; grabDY = SY(ys[best]) - y;
+          pulse[best] = 1; api.sfx('tap');
+        }
+      }
+      function move(x, y) {
+        if (drag < 0 || won) return;
+        const nx = (x + grabDX - ax) / aw, ny = (y + grabDY - ay) / ah;
+        const mx = pegR / aw, my = pegR / ah;
+        xs[drag] = U.clamp(nx, mx * 0.5, 1 - mx * 0.5);
+        ys[drag] = U.clamp(ny, my * 0.5, 1 - my * 0.5);
+        const before = crossings;
+        recount();
+        if (crossings < before) api.sfx('pop');
+      }
+      function up() {
+        if (drag < 0) return;
+        drag = -1; moves++;
+        api.sfx('drop');
+        if (crossings === 0 && !won) celebrate();
+        info();
+      }
+
+      function update(dt) {
+        time += dt;
+        const k = Math.min(1, dt * 22);
+        for (let i = 0; i < n; i++) {
+          dxs[i] += (xs[i] - dxs[i]) * k; dys[i] += (ys[i] - dys[i]) * k;
+          if (pulse[i] > 0) pulse[i] = Math.max(0, pulse[i] - dt * 2.5);
+        }
+        for (let i = 0; i < edges.length; i++) if (flash[i] > 0) flash[i] = Math.max(0, flash[i] - dt * 2);
+        for (let i = parts.length - 1; i >= 0; i--) {
+          const p = parts[i]; p.life -= dt;
+          if (p.life <= 0) { parts[i] = parts[parts.length - 1]; parts.pop(); continue; }
+          p.vy += 520 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.99; p.rot += dt * 6;
+        }
+        if (won && !api.ended) { winT += dt; if (winT > 1.1) api.win('用了 ' + moves + ' 步'); }
+        if (!won) info();
+      }
+
+      function drawBg(g) {
+        const W = api.W, H = api.H;
+        if (!bgCache || bgW !== W || bgH !== H) {
+          bgW = W; bgH = H;
+          try { bgCache = document.createElement('canvas'); } catch (e) { bgCache = null; }
+          if (bgCache && bgCache.getContext) {
+            const dpr = Math.min(2, (typeof window !== 'undefined' && window.devicePixelRatio) || 1);
+            bgCache.width = Math.round(W * dpr); bgCache.height = Math.round(H * dpr);
+            const c = bgCache.getContext('2d');
+            c.setTransform(dpr, 0, 0, dpr, 0, 0);
+            paintBg(c, W, H);
+          }
+        }
+        if (bgCache && bgCache.getContext) g.drawImage(bgCache, 0, 0, W, H);
+        else paintBg(g, W, H);
+      }
+      function paintBg(c, W, H) {
+        const gr = c.createLinearGradient(0, 0, 0, H);
+        gr.addColorStop(0, '#2d8f8a'); gr.addColorStop(1, '#16525e');
+        c.fillStyle = gr; c.fillRect(0, 0, W, H);
+        // wooden board
+        const bx = ax - 12, by = ay - 12, bw = aw + 24, bh = ah + 24;
+        c.fillStyle = 'rgba(0,0,0,0.25)'; U.rr(c, bx + 2, by + 6, bw, bh, 22); c.fill();
+        const wg = c.createLinearGradient(bx, by, bx + bw, by + bh);
+        wg.addColorStop(0, '#f3d3a1'); wg.addColorStop(1, '#ddb27a');
+        c.fillStyle = wg; U.rr(c, bx, by, bw, bh, 22); c.fill();
+        c.strokeStyle = 'rgba(150,95,45,0.18)'; c.lineWidth = 2;
+        for (let i = 0; i < 16; i++) {
+          const yy = by + 14 + i * (bh - 28) / 15;
+          c.beginPath(); c.moveTo(bx + 10, yy);
+          c.bezierCurveTo(bx + bw * 0.3, yy + 5 * Math.sin(i), bx + bw * 0.6, yy - 6 * Math.cos(i * 1.7), bx + bw - 10, yy + 2);
+          c.stroke();
+        }
+        c.strokeStyle = 'rgba(255,255,255,0.45)'; c.lineWidth = 2;
+        U.rr(c, bx + 3, by + 3, bw - 6, bh - 6, 19); c.stroke();
+      }
+
+      const DASH = [5, 6];
+      const NODASH = [];
+      function rope(g, i) {
+        const e = edges[i];
+        const x1 = SX(dxs[e[0]]), y1 = SY(dys[e[0]]), x2 = SX(dxs[e[1]]), y2 = SY(dys[e[1]]);
+        const len = Math.hypot(x2 - x1, y2 - y1);
+        const sag = won ? 0 : Math.min(14, len * 0.05) * (1 + 0.08 * Math.sin(time * 2 + i));
+        const mx = (x1 + x2) / 2, my = (y1 + y2) / 2 + sag;
+        const bad = flags[i] === 1;
+        const base = won ? '#4cd986' : (bad ? '#ff4d5e' : '#43c97a');
+        const dark = won ? '#239b58' : (bad ? '#b8202f' : '#238a51');
+        const lw = Math.max(5, pegR * 0.52);
+        g.lineCap = 'round';
+        g.strokeStyle = 'rgba(0,0,0,0.22)'; g.lineWidth = lw + 2;
+        g.beginPath(); g.moveTo(x1 + 2, y1 + 5); g.quadraticCurveTo(mx + 2, my + 5, x2 + 2, y2 + 5); g.stroke();
+        g.strokeStyle = dark; g.lineWidth = lw + 2;
+        g.beginPath(); g.moveTo(x1, y1); g.quadraticCurveTo(mx, my, x2, y2); g.stroke();
+        g.strokeStyle = base; g.lineWidth = lw;
+        g.stroke();
+        g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = lw * 0.42;
+        g.setLineDash(DASH); g.lineDashOffset = i * 3;
+        g.stroke();
+        g.setLineDash(NODASH);
+        if (flash[i] > 0) {
+          g.strokeStyle = 'rgba(255,255,255,' + (flash[i] * 0.8).toFixed(3) + ')'; g.lineWidth = lw + 6 * flash[i];
+          g.stroke();
+        }
+      }
+
+      function peg(g, i) {
+        const x = SX(dxs[i]), y = SY(dys[i]);
+        const lift = i === drag ? 1 : 0;
+        const r = pegR * (1 + lift * 0.18 + pulse[i] * 0.15 * Math.sin(pulse[i] * 10));
+        g.fillStyle = 'rgba(0,0,0,' + (0.25 + lift * 0.1) + ')';
+        g.beginPath(); g.ellipse(x + 2 + lift * 4, y + 4 + lift * 8, r, r * 0.8, 0, 0, Math.PI * 2); g.fill();
+        const c = pegCol[i];
+        const gr = g.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
+        gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.35, U.shade(c, 0.25)); gr.addColorStop(1, U.shade(c, -0.3));
+        g.fillStyle = gr;
+        g.beginPath(); g.arc(x, y - lift * 4, r, 0, Math.PI * 2); g.fill();
+        g.fillStyle = U.shade(c, -0.45);
+        g.beginPath(); g.arc(x, y - lift * 4, r * 0.38, 0, Math.PI * 2); g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.8)';
+        g.beginPath(); g.ellipse(x - r * 0.35, y - lift * 4 - r * 0.45, r * 0.3, r * 0.17, -0.6, 0, Math.PI * 2); g.fill();
+      }
+
+      function draw(g) {
+        drawBg(g);
+        for (let i = 0; i < edges.length; i++) if (!flags[i]) rope(g, i);
+        for (let i = 0; i < edges.length; i++) if (flags[i]) rope(g, i);
+        for (let i = 0; i < n; i++) if (i !== drag) peg(g, i);
+        if (drag >= 0) peg(g, drag);
+        // header counter
+        const ok = crossings === 0;
+        g.fillStyle = ok ? 'rgba(46,190,100,0.95)' : 'rgba(255,255,255,0.92)';
+        U.rr(g, api.W / 2 - 64, 10, 128, 34, 17); g.fill();
+        U.text(g, ok ? '全部解開！' : '交叉 ' + crossings, api.W / 2, 27, 16, ok ? '#fff' : '#d6334a', 'center', 900);
+        if (api.level === 1 && moves === 0 && !won) {
+          const t = (time % 2) / 2;
+          const i0 = edges[0][0];
+          const px = SX(dxs[i0]), py = SY(dys[i0]);
+          g.globalAlpha = 0.9;
+          U.text(g, '👆', px + 16 + Math.sin(t * Math.PI * 2) * 18, py + 24, 26, '#fff');
+          g.globalAlpha = 1;
+        }
+        for (let i = 0; i < parts.length; i++) {
+          const p = parts[i];
+          g.globalAlpha = Math.min(1, p.life / p.max * 1.5);
+          g.fillStyle = p.col;
+          g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.fillRect(-p.sz, -p.sz / 2, p.sz * 2, p.sz); g.restore();
+        }
+        g.globalAlpha = 1;
+      }
+
+      return {
+        update, draw, down, move, up,
+        resize() { layout(); bgCache = null; },
+        _graph: G,
+        _pegScreen(i) { return [SX(dxs[i]), SY(dys[i])]; },
+        _toScreen(x, y) { return [SX(x), SY(y)]; },
+        get _drag() { return drag; },
+        get _crossings() { return crossings; },
+      };
+    },
+  });
+})();
