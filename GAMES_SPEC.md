@@ -86,3 +86,15 @@ What the difficulties mean (the user said: what you built so far feels like 簡�
   winnable (bot / solver), and that a lazy/no-input player loses on 困難 where that applies.
 - Real-time games on 困難: faster, more enemies, less margin — the player should feel pressure in seconds.
 - Seeds differ per mode, so levels differ between modes.
+
+## v3: 16 new games (same API as above, including the v2 difficulty / endless / records rules)
+
+- Every new game: 簡單/普通/困難 via api.diff (簡單 approachable, 困難 really hard and thrilling from level 1),
+  `endless: true` + 無盡 mode where the genre is naturally endless (runners, survival, arcade score chasers).
+- Report score with api.score() in score-based games; show score and 最高 (api.best) in endless.
+- Art: keep the current bright polished style for now. A cute Q-version (chibi cartoon) restyle comes later, so
+  put ALL character / enemy / hero drawing in clearly named functions (drawHero, drawEnemy, drawBackground …)
+  near the top of the file so it can be swapped without touching game logic.
+- Don't edit index.html, sw.js, core.js or style.css — the lead adds the script tags.
+- Tests as before: node --check, `node tools/smoke.js <id> 40`, `node tools/check_<id>.js` proving 簡單/普通/困難
+  levels 1–40 winnable (bot/solver), no-input loses where it applies, endless ends for a no-input player.

@@ -1,5 +1,5 @@
-// Solvability check for 解繩結: node tools/check_tangle.js [levels=60]
-// For every level: the generator keeps the original planar embedding; we verify it has zero
+// Solvability check for 解繩結: node tools/check_tangle.js [levels=40]
+// For every level of 簡單/普通/困難: the generator keeps the original planar embedding; we verify it has zero
 // crossings (and no peg lying on a foreign rope), the graph is connected with every node of
 // degree >= 2, and the scrambled start has > 0 crossings. Then we play the real game: drag every
 // peg to its embedding position with down/move/up and require the game to declare a win.
@@ -8,7 +8,8 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const LEVELS = parseInt(process.argv[2] || '60', 10);
+const LEVELS = parseInt(process.argv[2] || '40', 10);
+const DNAME = ['簡單', '普通', '困難'];
 
 function anyObj() {
   const fn = function () { return anyObj(); };
@@ -64,10 +65,12 @@ function crossings(X, Y, edges) {
 
 let fails = 0;
 const rows = [];
+for (const diff of [0, 1, 2])
 for (let lv = 1; lv <= LEVELS; lv++) {
   let ended = null;
   const api = {
-    W, H, level: lv, rng: MG.mulberry32(lv * 7919 + 'tangle'.length * 104729 + 'tangle'.charCodeAt(0)),
+    W, H, level: lv, rng: MG.mulberry32(lv * 7919 + 'tangle'.length * 104729 + 'tangle'.charCodeAt(0) + diff * 15485863),
+    diff, endless: false, best: 0, score() {},
     util: MG.util, sfx() {}, info() {},
     get ended() { return ended !== null; },
     win() { if (ended === null) ended = 'win'; }, lose() { if (ended === null) ended = 'lose'; },
@@ -115,8 +118,8 @@ for (let lv = 1; lv <= LEVELS; lv++) {
   for (let f = 0; f < 120 && !ended; f++) inst.update(1 / 60);
   if (ended !== 'win') errs.push('placing pegs on the embedding did not win (' + inst._crossings + ' crossings left)');
   if (errs.length) fails++;
-  rows.push('L' + lv + ' nodes ' + G.n + ' ropes ' + G.edges.length + ' start crossings ' + startC + (errs.length ? '  FAIL: ' + errs.join('; ') : '  ok'));
+  rows.push(DNAME[diff] + ' L' + lv + ' nodes ' + G.n + ' ropes ' + G.edges.length + ' start crossings ' + startC + (errs.length ? '  FAIL: ' + errs.join('; ') : '  ok'));
 }
-rows.forEach((r, i) => { if (r.includes('FAIL') || i < 3 || (i + 1) % 6 === 0) console.log(r); });
-console.log((fails ? 'FAILED ' + fails : 'ALL OK') + ': levels 1-' + LEVELS + ' planar embedding 0 crossings, scrambled start > 0, solved by real drags');
+rows.forEach((r, i) => { if (r.includes('FAIL') || i % LEVELS < 2 || (i % LEVELS + 1) % 10 === 0) console.log(r); });
+console.log((fails ? 'FAILED ' + fails : 'ALL OK') + ': 簡單/普通/困難 levels 1-' + LEVELS + ' planar embedding 0 crossings, scrambled start > 0, solved by real drags');
 process.exit(fails ? 1 : 0);

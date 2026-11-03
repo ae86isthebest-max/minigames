@@ -3,7 +3,9 @@
 //  (a) a simple bot: picks the better gate of each pair, steers the blob to the side of
 //      traps with the least overlap (predicting moving saws), otherwise stays put
 //  (b) "do nothing" (no input at all: runs straight down the middle)
-// Pass = bot wins every level and doing nothing loses every level.
+// Modes 簡單/普通/困難 (levels 1-40, 簡單 up to [to]) and 無盡 (3 fixed seeds).
+// Pass = bot wins every level of every difficulty, doing nothing loses every 困難 level,
+// and in 無盡 both runs end, the bot running at least 3x as far as no input.
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -49,10 +51,12 @@ vm.runInContext(fs.readFileSync(path.join(root, 'games', 'crowd.js'), 'utf8'), s
 const MG = sandbox.MG;
 const def = MG.games.find((d) => d.id === 'crowd');
 
-function makeApi(lv) {
+function makeApi(lv, mode, seed) {
+  mode = mode || 0;
   const api = {
-    W, H, level: lv, rng: MG.mulberry32(lv * 7919 + 'crowd'.length * 104729 + 'crowd'.charCodeAt(0)),
-    util: MG.util, sfx() {}, info() {}, result: null, text: '',
+    W, H, level: mode === 3 ? 1 : lv, diff: mode === 3 ? 2 : mode, endless: mode === 3, best: 0, scoreV: 0,
+    rng: MG.mulberry32(seed !== undefined ? seed : lv * 7919 + 'crowd'.length * 104729 + 'crowd'.charCodeAt(0) + mode * 15485863),
+    util: MG.util, sfx() {}, info() {}, result: null, text: '', score(n) { api.scoreV = n; },
     get ended() { return api.result !== null; },
     win(t) { if (api.result === null) { api.result = 'win'; api.text = t; } }, lose(t) { if (api.result === null) { api.result = 'lose'; api.text = t; } },
   };
@@ -104,37 +108,50 @@ function botTarget(inst) {
   return best;
 }
 
-function run(lv, useBot) {
-  const api = makeApi(lv);
+function run(lv, useBot, mode, seed) {
+  const api = makeApi(lv, mode, seed);
   const inst = def.create(api);
   const ctx = anyObj();
   const ppu = inst._k.pxPerUnit;
   const x0 = W / 2;
   if (useBot) inst.down(x0, H * 0.7);
   let f = 0;
-  for (; f < 60 * 240 && api.result === null; f++) {
+  const maxF = mode === 3 ? 60 * 1800 : 60 * 240;
+  for (; f < maxF && api.result === null; f++) {
     if (useBot) inst.move(x0 + botTarget(inst) * ppu / 1.1, H * 0.7);
     inst.update(1 / 60);
     if (f % 30 === 0) inst.draw(ctx);
   }
-  return { result: api.result || 'timeout', text: api.text, t: f / 60, army: inst._k.T.army, best: inst._k.T.best, count: inst._s.count, step: inst._s.step };
+  return { result: api.result || 'timeout', text: api.text, t: f / 60, army: inst._k.T.army, best: inst._k.T.best, count: inst._s.count, step: inst._s.step, score: api.scoreV };
 }
 
-let fails = 0, nothingWins = 0;
-const times = [];
-for (let lv = FROM; lv <= TO; lv++) {
-  const b = run(lv, true);
-  const z = run(lv, false);
-  times.push(b.t);
-  if (b.result !== 'win') fails++;
-  if (z.result !== 'lose') nothingWins++;
-  if (VERBOSE || b.result !== 'win' || z.result !== 'lose') {
-    console.log('L' + lv + ' bot=' + b.result + ' (' + b.text + ') t=' + b.t.toFixed(1) + 's army=' + b.army + ' planBest=' + b.best + ' step=' + b.step +
-      ' | nothing=' + z.result + ' (' + z.text + ')');
+const NAMES = ['簡單', '普通', '困難'];
+let bad = 0;
+for (let mode = 0; mode < 3; mode++) {
+  let fails = 0, nothingWins = 0;
+  const times = [];
+  const to = mode === 0 ? Math.max(TO, 40) : 40;
+  for (let lv = FROM; lv <= to; lv++) {
+    const b = run(lv, true, mode);
+    const z = run(lv, false, mode);
+    times.push(b.t);
+    if (b.result !== 'win') fails++;
+    if (z.result !== 'lose') nothingWins++;
+    if (VERBOSE || b.result !== 'win' || (mode === 2 && z.result !== 'lose')) {
+      console.log(NAMES[mode] + ' L' + lv + ' bot=' + b.result + ' (' + b.text + ') t=' + b.t.toFixed(1) + 's army=' + b.army + ' planBest=' + b.best + ' step=' + b.step +
+        ' | nothing=' + z.result + ' (' + z.text + ')');
+    }
   }
+  const n = to - FROM + 1;
+  console.log('crowd ' + NAMES[mode] + ' levels ' + FROM + '-' + to + ': bot wins ' + (n - fails) + '/' + n +
+    ', do-nothing loses ' + (n - nothingWins) + '/' + n + ', level time ' + Math.min(...times).toFixed(0) + '-' + Math.max(...times).toFixed(0) + 's');
+  bad += fails + (mode === 2 ? nothingWins : 0);
 }
-console.log('crowd levels ' + FROM + '-' + TO + ': bot wins ' + (TO - FROM + 1 - fails) + '/' + (TO - FROM + 1) +
-  ', do-nothing loses ' + (TO - FROM + 1 - nothingWins) + '/' + (TO - FROM + 1) +
-  ', level time ' + Math.min(...times).toFixed(0) + '-' + Math.max(...times).toFixed(0) + 's');
-if (fails || nothingWins) { console.log('FAIL'); process.exit(1); }
+for (let k = 0; k < 3; k++) {
+  const seed = 1000 + k * 777;
+  const b = run(1, true, 3, seed), z = run(1, false, 3, seed);
+  console.log('crowd 無盡 seed ' + seed + ': bot ' + b.result + ' after ' + b.t.toFixed(0) + 's distance=' + b.score + 'm | no-input ' + z.result + ' after ' + z.t.toFixed(0) + 's distance=' + z.score + 'm');
+  if (z.result !== 'lose' || b.result !== 'lose' || b.score < z.score * 3) bad++;
+}
+if (bad) { console.log('FAIL'); process.exit(1); }
 console.log('OK');

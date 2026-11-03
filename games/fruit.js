@@ -120,13 +120,13 @@
     if (w.overT > 2) w.lost = true;
   }
   // diff: 0 簡單 (original), 1 普通, 2 困難; endless has no goal
-  const SIZE_K = [1, 1.05, 1.12];
+  const SIZE_K = [1, 1.04, 1.08];
   function goalFor(lvIn, diff) {
     diff = diff || 0;
     if (diff === 0) return goalFor0(lvIn);
     const lv = lvIn + (diff === 1 ? 12 : 30);
     if (lvIn % 3 === 2) return { kind: 'score', target: Math.round((60 + lv * 26 + Math.pow(lv, 1.5) * 1.6) * (diff === 2 ? 1.1 : 1) / 10) * 10 };
-    return { kind: 'fruit', t: Math.min(9, 3 + Math.floor(lv / 5)) };
+    return { kind: 'fruit', t: Math.min(9, 3 + Math.floor((lvIn + (diff === 1 ? 12 : 24)) / 5)) };
   }
   function goalFor0(lv) {
     if (lv === 1) return { kind: 'fruit', t: 3 };
@@ -135,8 +135,14 @@
   }
   function prefillCount(lv, diff) {
     if (diff === 1) return Math.min(10, 2 + Math.floor(lv / 4));
-    if (diff === 2) return Math.min(13, 5 + Math.floor(lv / 4));
+    if (diff === 2) return Math.min(10, 5 + Math.floor(lv / 4));
     return lv >= 12 ? Math.min(10, 2 + Math.floor((lv - 12) / 5)) : 0;
+  }
+  // 困難/無盡: while untouched the hanging fruit sways left and right (st = {x, dir})
+  function sway(st, dt) {
+    st.x += st.dir * 0.22 * dt;
+    if (st.x > 0.9) { st.x = 0.9; st.dir = -1; }
+    if (st.x < 0.1) { st.x = 0.1; st.dir = 1; }
   }
   // seconds the player may hold a fruit before it auto-drops (0 = no limit)
   function dropLimit(diff, endless, score) {
@@ -160,7 +166,7 @@
     return { world: w, goal: endless ? { kind: 'endless' } : goalFor(lv, diff), first: randType(rng), next: randType(rng) };
   }
   function goalMet(goal, w) { return goal.kind === 'fruit' ? w.maxT >= goal.t : goal.kind === 'score' ? w.score >= goal.target : false; }
-  const LOGIC = { NAMES, RAD, HC, LINE, SPAWN_Y, DT, DROP_COOLDOWN, dropLimit, newWorld, addFruit, randType, step, goalFor, genLevel, goalMet, mergePts };
+  const LOGIC = { NAMES, RAD, HC, LINE, SPAWN_Y, DT, DROP_COOLDOWN, dropLimit, sway, newWorld, addFruit, randType, step, goalFor, genLevel, goalMet, mergePts };
 
   // ---------- drawing ----------
   const DPR = () => Math.min(3, (typeof window !== 'undefined' && window.devicePixelRatio) || 1);
@@ -315,7 +321,9 @@
       const lvd = genLevel(api.level, api.rng, api.diff, api.endless);
       const K = lvd.world.k;
       const best = api.best || 0;
-      let dropT = 0;
+      let dropT = 0, autoDrops = 0, loseMsg = '水果超過警戒線了';
+      const AUTO_MAX = 3;
+      const swaySt = { x: 0.5, dir: 1 };
       const w = lvd.world;
       const goal = lvd.goal;
       let cur = lvd.first, next = lvd.next;
@@ -397,6 +405,7 @@
       }
 
       function drop() {
+        if (dropT < dropLimit(api.diff, api.endless, w.score) - 0.01 || !dropLimit(api.diff, api.endless, w.score)) autoDrops = 0;
         if (ended || endT >= 0) return;
         if (cooldown > 0) { pending = true; return; }
         pending = false;
@@ -417,7 +426,15 @@
           if (cooldown > 0) { cooldown -= dt; if (cooldown <= 0 && pending) drop(); }
           else {
             const lim = dropLimit(api.diff, api.endless, w.score);
-            if (lim > 0) { dropT += dt; if (dropT >= lim) { holding = false; drop(); } }
+            if (lim > 0) {
+              dropT += dt;
+              if (dropT >= lim) {
+                holding = false; drop(); autoDrops++;
+                api.sfx('bad'); shake = 0.15;
+                texts.push({ str: '太慢了！' + autoDrops + '/' + AUTO_MAX, x: L.W / 2, y: L.oy + L.S * 0.35, t: 0, big: 1 });
+                if (autoDrops >= AUTO_MAX) { endT = 0; endWin = false; loseMsg = '太久沒有放水果'; }
+              }
+            }
           }
           curPop = Math.min(1, curPop + dt * 4);
           acc += dt;
@@ -439,8 +456,9 @@
           } else if (w.lost) { endT = 0; endWin = false; shake = 0.3; api.sfx('bad'); }
         } else if (endT >= 0 && !ended) {
           endT += dt;
-          if (endT > 0.8) { ended = true; if (endWin) api.win(goal.kind === 'fruit' ? '成功合成' + NAMES[goal.t] + '！' : '得分 ' + w.score + '！'); else { api.score(w.score); api.lose('水果超過警戒線了'); } }
+          if (endT > 0.8) { ended = true; if (endWin) api.win(goal.kind === 'fruit' ? '成功合成' + NAMES[goal.t] + '！' : '得分 ' + w.score + '！'); else { api.score(w.score); api.lose(loseMsg); } }
         }
+        if (!holding && endT < 0 && (api.diff === 2 || api.endless)) { swaySt.x = aimX; sway(swaySt, dt); aimX = swaySt.x; }
         dispX += (aimX - dispX) * Math.min(1, dt * 18);
         for (let i = parts.length - 1; i >= 0; i--) { const p = parts[i]; p.t += dt; p.vy += 700 * dt; p.x += p.vx * dt; p.y += p.vy * dt; if (p.t > p.life) parts.splice(i, 1); }
         for (let i = rings.length - 1; i >= 0; i--) { rings[i].t += dt; if (rings[i].t > 0.4) rings.splice(i, 1); }

@@ -2,7 +2,17 @@
 (function () {
   'use strict';
 
-  function nodesFor(level) { return Math.min(30, Math.round(6 + (level - 1) * 0.45)); }
+  // diff: 0 簡單 (original ramp 6→30), 1 普通 (12→36, denser), 2 困難 (18→40, densest)
+  function nodesFor(level, diff) {
+    if (diff === 1) return Math.min(36, 12 + Math.round((level - 1) * 0.6));
+    if (diff === 2) return Math.min(40, 18 + Math.round((level - 1) * 0.75));
+    return Math.min(30, Math.round(6 + (level - 1) * 0.45));
+  }
+  function densityOf(level, diff) {
+    if (diff === 1) return Math.min(2.3, 1.7 + level * 0.03);
+    if (diff === 2) return Math.min(2.45, 2.0 + level * 0.03);
+    return Math.min(2.1, 1.3 + level * 0.025);
+  }
 
   // proper segment intersection (shared endpoints don't count)
   function cross(ax, ay, bx, by, cx, cy, dx, dy) {
@@ -46,17 +56,19 @@
   // Planar generator: random well-spaced points, greedy shortest-edge triangulation (never adds a
   // crossing edge, never passes close to a foreign point), then thin edges out keeping the graph
   // connected and every node at degree >= 2. The original point set is kept as the proof layout.
-  function generate(level, rng) {
-    const n = nodesFor(level);
+  function generate(level, rng, diff) {
+    diff = diff || 0;
+    const want0 = nodesFor(level, diff);
     const xs = [], ys = [];
-    const minD = Math.max(0.1, 0.42 / Math.sqrt(n));
+    const minD = want0 <= 30 ? Math.max(0.1, 0.42 / Math.sqrt(want0)) : 0.088;
     let guard = 0;
-    while (xs.length < n && guard++ < 20000) {
+    while (xs.length < want0 && guard++ < 40000) {
       const x = 0.06 + rng() * 0.88, y = 0.06 + rng() * 0.88;
       let ok = true;
       for (let i = 0; i < xs.length; i++) if (Math.hypot(x - xs[i], y - ys[i]) < minD) { ok = false; break; }
       if (ok) { xs.push(x); ys.push(y); }
     }
+    const n = xs.length;
     const pairs = [];
     for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) pairs.push([i, j, Math.hypot(xs[i] - xs[j], ys[i] - ys[j])]);
     pairs.sort((a, b) => a[2] - b[2]);
@@ -75,7 +87,7 @@
       if (ok) edges.push([a, b]);
     }
     // thin out: density rises with level (≈1.35n edges early → ≈2.1n later)
-    const want = Math.round(n * Math.min(2.1, 1.3 + level * 0.025));
+    const want = Math.round(n * densityOf(level, diff));
     const deg = new Array(n).fill(0);
     edges.forEach((e) => { deg[e[0]]++; deg[e[1]]++; });
     const order = edges.map((_, i) => i);
@@ -108,8 +120,8 @@
     const perm = [];
     for (let i = 0; i < n; i++) perm.push(i);
     let sx = null, sy = null, best = -1, bestScore = 1e9;
-    const lo = level === 1 ? 2 : level === 2 ? 3 : Math.max(4, Math.round(n * 0.6));
-    const hi = level === 1 ? 3 : level === 2 ? 5 : 1e9;
+    const lo = diff ? Math.max(4, Math.round(n * 0.9)) : level === 1 ? 2 : level === 2 ? 3 : Math.max(4, Math.round(n * 0.6));
+    const hi = !diff && level === 1 ? 3 : !diff && level === 2 ? 5 : 1e9;
     for (let tries = 0; tries < 60; tries++) {
       for (let i = n - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = perm[i]; perm[i] = perm[j]; perm[j] = t; }
       const cx = [], cy = [];
@@ -133,7 +145,7 @@
     _generate: generate, _countCrossings: countCrossings, _TOUCH: TOUCH, _nodesFor: nodesFor,
     create(api) {
       const U = api.util;
-      const G = generate(api.level, api.rng);
+      const G = generate(api.level, api.rng, api.diff || 0);
       const n = G.n, edges = G.edges;
       const xs = G.startX.slice(), ys = G.startY.slice();   // logical (normalised) positions
       const dxs = xs.slice(), dys = ys.slice();              // displayed (smoothed) positions
@@ -162,7 +174,7 @@
 
       function info() {
         if (won) { api.info('解開了！'); return; }
-        if (api.level === 1 && moves === 0) api.info('拖動釘子，讓所有繩子不再交叉');
+        if (!api.diff && api.level === 1 && moves === 0) api.info('拖動釘子，讓所有繩子不再交叉');
         else api.info('交叉 ' + crossings + '　節點 ' + n);
       }
       info();
@@ -324,7 +336,7 @@
         g.fillStyle = ok ? 'rgba(46,190,100,0.95)' : 'rgba(255,255,255,0.92)';
         U.rr(g, api.W / 2 - 64, 10, 128, 34, 17); g.fill();
         U.text(g, ok ? '全部解開！' : '交叉 ' + crossings, api.W / 2, 27, 16, ok ? '#fff' : '#d6334a', 'center', 900);
-        if (api.level === 1 && moves === 0 && !won) {
+        if (!api.diff && api.level === 1 && moves === 0 && !won) {
           const t = (time % 2) / 2;
           const i0 = edges[0][0];
           const px = SX(dxs[i0]), py = SY(dys[i0]);

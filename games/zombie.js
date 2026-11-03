@@ -74,7 +74,7 @@
     const WL = endless ? 12 : 13 + Math.min(3.5, Le * 0.07) - [0, 1, 2.5][diff];
     const t0 = 2.2;
     const gs = (0.85 + Math.min(0.35, Le * 0.006)) * (hard ? 1.1 : 1);
-    const zs = (0.28 + Math.min(0.06, Le * 0.001)) * [1, 1.3, 1.5][diff];
+    const zs0 = 0.28 + Math.min(0.06, Le * 0.001), zm = [1, 1.6, 2.3][diff];
     const st = { n: 1, w: 0, rm: 1, dm: 1 };
     const tl = [[0, dpsModel(st)]];
     let tlI = 0;
@@ -126,11 +126,23 @@
       tl.push([t + 6, dpsModel(st)]);
       side = rng() < 0.75 ? -side : side;
     }
+    if (diff > 0) {
+      // on 普通/困難 a red gate never sits right in front of a blue one on the same side
+      const gl = ev.filter((e) => e.type === 'gate');
+      const blocks = (b, side) => gl.some((o) => o !== b && o.good && o.side === side && o.t > b.t - 0.01 && o.t < b.t + 4);
+      for (const b of gl) {
+        if (b.good || !blocks(b, b.side)) continue;
+        if (!blocks(b, -b.side) && !gl.some((o) => o !== b && Math.abs(o.t - b.t) < 0.01 && o.side === -b.side)) b.side = -b.side;
+        else b.drop = true;
+      }
+      for (let i = ev.length - 1; i >= 0; i--) if (ev[i].drop) ev.splice(i, 1);
+    }
     const spread = 0.38 + Math.min(0.1, Le * 0.003);
     const spdBase = (4.3 + Math.min(1.6, Le * 0.03)) * [1, 1.08, 1.3][diff];
-    const damp = Math.max(0.6, 1 - Le * 0.008);
+    const damp = Math.max([0.6, 0.72, 0.9][diff], 1 - Le * 0.008);
     for (let w = 0; w < waves; w++) {
       const tw = t0 + w * WL;
+      const zs = zs0 * (1 + (zm - 1) * Math.min(1, w / 2));
       const bossWave = endless ? w % 5 === 4 : w === waves - 1;
       const grow = endless ? 1 + 0.1 * w + 0.004 * w * w : 1;
       let nz = Math.min(endless ? 20 : 16 + [0, 2, 5][diff], Math.round(4 + 1.2 * (endless ? Math.min(w, 8) : w) + Le * 0.13));
@@ -208,7 +220,7 @@
 
       function addMan(fromU) {
         if (S.men.length >= MAXN) return false;
-        S.men.push({ u: fromU, z: 0, cd: Math.random() * 0.3, flash: 0, pop: 0, bob: Math.random() * 6 });
+        S.men.push({ u: fromU, z: 0, cd: (S.men.length * 0.137) % 0.3, flash: 0, pop: 0, bob: Math.random() * 6 });
         return true;
       }
       addMan(0);
@@ -319,14 +331,15 @@
             if (z.z > z0 - 0.6 && z.z <= b.z + 0.2 && z.z < bz && Math.abs(b.u - z.u) < z.r + 0.025) { bz = z.z; bo = z; }
           }
           for (let j = 0; j < gs.length; j++) {
-            const gt = gs[j]; if (gt.dead) continue;
+            const gt = gs[j]; if (gt.dead && !(gt.deadT > 0)) continue;
             if (gt.z > z0 - 0.5 && gt.z <= b.z && gt.z < bz && Math.abs(b.u - gt.u) < GW) { bz = gt.z; bo = gt; isG = true; }
           }
           if (!bo) continue;
+          if (isG && bo.dead) { b.on = false; continue; }
           if (isG) {
             bo.hp -= b.dmg; bo.flash = 0.06; bo.pop = Math.min(1, bo.pop + 0.25);
             if (hitSnd <= 0) { api.sfx('hit'); hitSnd = 0.08; }
-            if (bo.hp <= 0) { bo.dead = true; grant(bo); }
+            if (bo.hp <= 0) { bo.dead = true; bo.deadT = 0.35; grant(bo); }
             b.on = false;
           } else {
             hitZombie(bo, b.dmg);
@@ -389,7 +402,8 @@
         for (let i = gs.length - 1; i >= 0; i--) {
           const gt = gs[i];
           gt.z -= GV * dt; gt.flash -= dt; gt.pop = Math.max(0, gt.pop - dt * 3);
-          if (gt.dead || gt.z < -1.5) gs.splice(i, 1);
+          if (gt.dead) gt.deadT -= dt;
+          if ((gt.dead && !(gt.deadT > 0)) || gt.z < -1.5) gs.splice(i, 1);
         }
         const info = ENDLESS ? '無盡模式 · 第 ' + (S.wave + 1) + ' 波 · 每 5 波一隻 BOSS'
           : '第 ' + (S.wave + 1) + '/' + plan.waves + ' 波' + (L === 1 && DIFF === 0 && S.T < 12 ? ' · 拖曳左右移動，射爆藍色閘門拿升級' : ' · 擊殺 ' + S.kills);
@@ -586,6 +600,7 @@
       }
 
       function drawGate(g, gt) {
+        if (gt.dead) return;
         proj(gt.u, gt.z);
         const x = PX, y = PY, s = PS;
         const fade = gt.z > ZF - 10 ? Math.max(0, (ZF + 2 - gt.z) / 12) : 1;

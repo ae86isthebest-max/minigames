@@ -24,17 +24,21 @@
   function opText(op) { return op.k + op.v; }
   function nice(v) { if (v > 50) return Math.round(v / 5) * 5; return Math.round(v); }
 
-  function genTrack(L, rng) {
+  // diff: 0 簡單 (original), 1 普通, 2 困難; endless: sections are generated on demand by more()
+  function genTrack(L0, rng, diff, endless) {
+    diff = diff || 0;
     const els = [];
-    let z = 18, c = 1;
+    let L = endless ? 30 : L0 + [0, 12, 30][diff];
+    let z = 18, c = 1, segI = 0;
     const nSeg = Math.min(26, 6 + Math.floor(L * 0.33));
     let last = '';
+    const badBias = [0, 0.1, 0.18][diff], dblP = [0.3, 0.4, 0.5][diff], efAdd = [0, 0.06, 0.14][diff], perK = [1, 0.9, 0.75][diff];
     function mkGate() {
       let a, b;
       const goodAdd = () => ({ k: '+', v: Math.max(3, nice(c * (c > 400 ? 0.15 + rng() * 0.25 : 0.35 + rng() * 0.75) + 2 + rng() * 6)), good: true });
       const goodMul = () => (c < 4 || c > 400) ? goodAdd() : { k: '×', v: (c < 25 && rng() < 0.35) ? 3 : 2, good: true };
       const bad = () => (rng() < 0.55 || c < 6) ? { k: '−', v: Math.max(1, Math.min(c - 1, nice(c * (0.3 + rng() * 0.4)))), good: false } : { k: '÷', v: 2, good: false };
-      if (c < 3 || L <= 2 || rng() < 0.55 - Math.min(0.25, L * 0.005)) { a = goodAdd(); b = c >= 4 ? goodMul() : goodAdd(); }
+      if (c < 3 || L <= 2 || rng() < 0.55 - Math.min(0.25, L * 0.005) - badBias) { a = goodAdd(); b = c >= 4 ? goodMul() : goodAdd(); }
       else { a = rng() < 0.5 ? goodAdd() : goodMul(); b = bad(); }
       if (a.k === '+' && b.k === '+' && a.v === b.v) b.v += 4;
       const ops = rng() < 0.5 ? [a, b] : [b, a];
@@ -64,9 +68,9 @@
       }
       const lane = fs || (Math.floor(rng() * 3) - 1);
       const xa = lane === 0 ? -1.4 : lane < 0 ? -2.4 : 0.2, xb = lane === 0 ? 1.4 : lane < 0 ? -0.2 : 2.4;
-      return { type: 'saw', z, x0: xa, x1: xb, sx: (xa + xb) / 2, r: 0.8, per: 2.4 + rng() * 1.2, ph: rng() * 6.28, rot: 0 };
+      return { type: 'saw', z, x0: xa, x1: xb, sx: (xa + xb) / 2, r: 0.8, per: (2.4 + rng() * 1.2) * perK, ph: rng() * 6.28, rot: 0 };
     }
-    for (let i = 0; i < nSeg; i++) {
+    function segment(i) {
       let type;
       if (i === 0) type = 'gate';
       else {
@@ -82,22 +86,32 @@
         c = Math.max(applyOp(g.ops[0], c), applyOp(g.ops[1], c));
       } else if (type === 'obst') {
         els.push(mkObst());
-        if (L >= 8 && rng() < 0.3) {
+        if (L >= 8 && rng() < dblP) {
           const o = els[els.length - 1];
           const cen = o.type === 'saw' ? (o.x0 + o.x1) / 2 : (o.xa + o.xb) / 2;
           if (Math.abs(cen) > 0.5) { z += 6; els.push(mkObst(cen < 0 ? -1 : 1)); }
         }
         c = Math.max(1, Math.round(c * 0.92));
       } else {
-        const n = Math.max(2, Math.round(c * (0.22 + Math.min(0.2, L * 0.004)) * (0.8 + 0.4 * rng())));
+        const ef = endless ? 0.3 + i * 0.012 : 0.22 + Math.min(0.2, L * 0.004) + efAdd;
+        const n = Math.max(2, Math.round(c * ef * (0.8 + 0.4 * rng())));
         els.push({ type: 'enemy', z: z + 2, x: (rng() * 2 - 1) * 1.2, n, n0: n, mem: [], fight: false, done: false });
         c -= n;
       }
       last = type;
       z += 15 + rng() * 4;
     }
+    if (endless) {
+      return {
+        els, zFin: Infinity, army: 0, best: 0, endless: true,
+        more(zLimit, count) {
+          while (z < zLimit) { c = Math.max(1, count); L = 30 + segI * 0.8; segment(segI++); }
+        },
+      };
+    }
+    for (let i = 0; i < nSeg; i++) segment(i);
     const zFin = z + 2;
-    const fa = 0.5 + Math.min(0.28, L * 0.005);
+    const fa = 0.5 + Math.min(0.28, L * 0.005) + [0, 0.08, 0.2][diff];
     const army = Math.max(3, Math.round(c * fa));
     // make sure the lazy "run straight down the middle" route is not enough to win
     function lazy() {
@@ -125,10 +139,14 @@
   }
 
   MG.register({
-    id: 'crowd', name: '人群跑酷', icon: '🏃', color: '#4c9bff',
+    id: 'crowd', name: '人群跑酷', icon: '🏃', color: '#4c9bff', endless: true,
     create(api) {
       const U = api.util, L = api.level, rng = api.rng;
-      const T = genTrack(L, rng);
+      const DIFF = api.diff || 0, ENDLESS = !!api.endless;
+      const T = genTrack(L, rng, DIFF, ENDLESS);
+      const SPEED = ENDLESS ? 10 : [9, 9.6, 10.6][DIFF];
+      if (ENDLESS) T.more(150, 1);
+      let dist = 0;
       let W, H, cx, hy, F, cache = null;
       function layout() {
         W = api.W; H = api.H; cx = W / 2;
@@ -230,6 +248,17 @@
         }
         hintT -= dt; countPop = Math.max(0, countPop - dt * 3);
         S.t += dt;
+        if (ENDLESS) {
+          T.more(S.z + 150, S.count);
+          let cut = 0;
+          while (cut < T.els.length) {
+            const e = T.els[cut], ze = e.type === 'gap' ? e.z1 : e.z + 2;
+            if (ze < S.z - S.camD - 4 && (e.type !== 'enemy' || e.done || ze < S.z - 30)) cut++; else break;
+          }
+          if (cut) T.els.splice(0, cut);
+          const d = Math.floor(S.z);
+          if (d !== dist) { dist = d; api.score(dist); }
+        }
         for (const e of T.els) if (e.type === 'saw') e.sx = sawX(e, S.t);
         const n0 = S.count;
         const R = blobR(S.count);
@@ -237,9 +266,10 @@
         S.tx = U.clamp(S.tx, -lim, lim);
         if (S.phase === 'run' || S.phase === 'fight') S.x += U.clamp(S.tx - S.x, -9 * dt, 9 * dt);
         let fwd = 0;
-        if (S.phase === 'run') fwd = V;
+        if (S.phase === 'run') fwd = ENDLESS ? SPEED + Math.min(4, S.z / 400) : SPEED;
         else if (S.phase === 'climb') fwd = 4.5;
         else if (S.phase === 'toStair') fwd = 7;
+        if (fwd) S.spd = fwd;
         S.z += fwd * dt;
         if (S.phase === 'climb' || S.phase === 'toStair' || S.phase === 'final') S.x += (0 - S.x) * Math.min(1, dt * 3);
         const tgtCam = (S.phase === 'final' || S.phase === 'toStair' || S.phase === 'climb' || S.phase === 'done') ? 11 : CAMD;
@@ -357,7 +387,7 @@
         if (S.phase === 'run' || S.phase === 'fight') syncVisible();
         if (S.count !== n0) countPop = 1;
         const prog = Math.min(100, Math.round(S.z / T.zFin * 100));
-        const info = L === 1 && S.z < 40 ? '拖曳左右轉向 · 穿過藍色閘門增加人數' : '人數 ' + S.count + ' · 敵軍 ' + army.n + ' · 進度 ' + prog + '%';
+        const info = ENDLESS ? '無盡模式 · 人數 ' + S.count + ' · 距離 ' + dist + 'm' : L === 1 && DIFF === 0 && S.z < 40 ? '拖曳左右轉向 · 穿過藍色閘門增加人數' : '人數 ' + S.count + ' · 敵軍 ' + army.n + ' · 進度 ' + prog + '%';
         if (info !== lastInfo) { lastInfo = info; api.info(info); }
       }
       let banner = null;
@@ -365,7 +395,7 @@
       function die(msg) {
         S.over = true; S.phase = 'dead';
         shake = 10; api.sfx('bad');
-        api.lose(msg);
+        api.lose(ENDLESS ? '跑了 ' + Math.floor(S.z) + ' 公尺' : msg);
       }
       function finishClimb() {
         S.phase = 'done'; S.over = true;
@@ -615,10 +645,16 @@
         g.restore();
         // HUD: progress bar
         const bw = Math.min(260, W - 40), bx = (W - bw) / 2, by = 14;
+        if (ENDLESS) {
+          g.fillStyle = 'rgba(30,30,80,0.45)'; U.rr(g, cx - 90, 8, 180, 40, 20); g.fill();
+          U.text(g, '📏 ' + dist + ' m', cx, 22, 17, '#ffffff', 'center', 900);
+          U.text(g, '最高 ' + Math.max(api.best || 0, dist) + ' m', cx, 39, 11, '#ffe27a', 'center', 800);
+        } else {
         g.fillStyle = 'rgba(30,30,80,0.35)'; U.rr(g, bx, by, bw, 12, 6); g.fill();
         g.fillStyle = '#ffffff'; U.rr(g, bx, by, Math.max(12, bw * Math.min(1, S.z / T.zFin)), 12, 6); g.fill();
         U.text(g, '🏁', bx + bw + 12, by + 6, 16, '#fff', 'center', 900);
         U.text(g, '🏃', bx - 12, by + 6, 15, '#fff', 'center', 900);
+        }
         if (banner) {
           const k = Math.min(1, banner.t / 0.35);
           g.globalAlpha = banner.t > 1.2 ? Math.max(0, 1 - (banner.t - 1.2) / 0.4) : 1;
@@ -664,7 +700,7 @@
       return {
         update, draw, down, move, up,
         resize() { layout(); },
-        _s: S, _k: { T, RW, V, blobR, army, applyOp, sawX, get pxPerUnit() { return F / CAMD; } },
+        _s: S, _k: { T, RW, get V() { return S.spd || SPEED; }, blobR, army, applyOp, sawX, get pxPerUnit() { return F / CAMD; } },
       };
     },
   });

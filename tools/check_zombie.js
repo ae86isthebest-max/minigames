@@ -93,6 +93,7 @@ function botStep(inst) {
       const tHave = (gt.z - 3) / k.GV;
       if (tNeed > tHave) continue;
       if (urgent && minSlack < tNeed + 1.5) continue;
+      if (s.gates.some((o) => !o.dead && !o.good && o.u * gt.u > 0 && o.z > gt.z && o.z < gt.z + 30 && wp.pel > 1)) continue;
       const val = gt.z - (gt.kind === 'wpn' ? 30 : gt.kind === 'men' ? 12 : 0);
       if (val < bestZ) { bestZ = val; best = gt; }
     }
@@ -108,13 +109,18 @@ function botStep(inst) {
     for (const z of s.zs) if (!z.dead && (!near || z.z < near.z)) near = z;
     tu = near ? near.u : 0; tz = near ? near.z : 1e9;
   }
-  for (const gt of s.gates) {
-    if (urgent && minSlack < -0.5) break;
-    if (gt.dead || gt.good || gt.z < 1 || gt.z > k.ZF || gt.z > tz + 1) continue;
-    const fan = (wp.pel > 1 ? (wp.pel - 1) / 2 * wp.spr * 1.2 : wp.spr) * k.FAN;
-    const edge = Math.abs(gt.u) - k.GW - hw - 0.04 - fan;
-    if (gt.u > 0 && tu > edge) tu = edge;
-    if (gt.u < 0 && tu < -edge) tu = -edge;
+  // keep the squad's bullet spread off red gates that are nearer than the target
+  const fan = (wp.pel > 1 ? (wp.pel - 1) / 2 * wp.spr * 1.2 : wp.spr) * k.FAN;
+  const bads = s.gates.filter((gt) => !gt.dead && !gt.good && gt.z >= 1 && gt.z <= k.ZF && gt.z <= tz + 1);
+  if (bads.length) {
+    const cost = (u) => {
+      let c = 0;
+      for (const gt of bads) { const ov = Math.min(u + hw + fan, gt.u + k.GW + 0.04) - Math.max(u - hw - fan, gt.u - k.GW - 0.04); if (ov > 0) c += ov; }
+      return c;
+    };
+    let bu = tu, bc = cost(tu) * 100;
+    for (let u = -0.8; u <= 0.8; u += 0.02) { const c = cost(u) * 100 + Math.abs(u - tu); if (c < bc) { bc = c; bu = u; } }
+    tu = bu;
   }
   return tu;
 }

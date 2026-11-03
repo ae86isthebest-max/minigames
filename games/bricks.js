@@ -8,39 +8,49 @@
   const GAP = 0.05;
   const HUES = ['#4cd986', '#3de0e0', '#4c9bff', '#5560c8', '#b26bff', '#ff7ac8', '#ff5d6c', '#ff8f3d', '#ffcc4d'];
 
-  function genLevel(L, rng) {
-    const R = Math.min(26, 5 + Math.floor(L * 0.35));
-    const init = Math.min(R, L >= 25 ? 4 : 3);
-    const N0 = 2 + Math.floor(L / 3);
-    const f = 0.75 + Math.min(0.4, L * 0.007);
-    const rows = [];
-    for (let k = 0; k < R; k++) {
+  // diff: 0 簡單 (original), 1 普通, 2 困難; endless: rows are made on demand forever, numbers keep growing
+  function genLevel(L0, rng, diff, endless) {
+    diff = diff || 0;
+    const L = endless ? 30 : L0 + [0, 12, 30][diff];
+    const R = endless ? Infinity : Math.min(26, 5 + Math.floor(L * 0.35));
+    const init = endless ? 4 : Math.min(R, (L >= 25 ? 4 : 3) + (diff === 2 ? 1 : 0));
+    const N0 = endless ? 8 : 2 + Math.floor(Math.floor(L / 3) * [1, 0.9, 0.8][diff]);
+    const fBase = (0.75 + Math.min(0.4, L * 0.007)) * [1, 1.1, 1.17][diff];
+    const pickP = [0.85, 0.8, 0.72][diff];
+    function makeRow(k) {
+      const Lk = endless ? L + k * 0.6 : L;
+      const f = endless ? fBase + k * 0.035 : fBase;
       const row = new Array(C).fill(null);
-      const nb = Math.min(C - 1, 2 + Math.floor(rng() * (3 + Math.min(2, L / 15))));
+      const nb = Math.min(C - 1, 2 + Math.floor(rng() * (3 + Math.min(2, Lk / 15))));
       const cols = [0, 1, 2, 3, 4, 5, 6];
       for (let i = cols.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = cols[i]; cols[i] = cols[j]; cols[j] = t; }
       const balls = N0 + 0.65 * k;
-      const tough = L >= 10 && rng() < 0.12;
+      const tough = Lk >= 10 && rng() < 0.12;
       for (let i = 0; i < nb; i++) {
         let hp = Math.max(1, Math.round(balls * f * (0.6 + rng() * 0.8) * (tough ? 1.6 : 1)));
         let type = 'sq', ori = 0;
         const r = rng();
-        if (L >= 8 && r < 0.06) type = 'bomb';
-        else if (L >= 4 && r < 0.2) { type = 'tri'; ori = Math.floor(rng() * 4); }
+        if (Lk >= 8 && r < 0.06) type = 'bomb';
+        else if (Lk >= 4 && r < 0.2) { type = 'tri'; ori = Math.floor(rng() * 4); }
         if (type === 'bomb') hp = Math.max(1, Math.round(hp * 0.6));
         row[cols[i]] = { hp, type, ori };
       }
-      if (rng() < 0.85 || k < 3) row[cols[nb]] = { pick: true };
-      rows.push(row);
+      if (rng() < pickP || k < 3) row[cols[nb]] = { pick: true };
+      return row;
     }
-    return { rows, init, N0, R };
+    const rows = [];
+    if (!endless) for (let k = 0; k < R; k++) rows.push(makeRow(k));
+    return { rows, init, N0, R, row(k) { while (rows.length <= k) rows.push(makeRow(rows.length)); return rows[k]; } };
   }
 
   MG.register({
-    id: 'bricks', name: '彈珠打磚', icon: '🎱', color: '#ff5d6c',
+    id: 'bricks', name: '彈珠打磚', icon: '🎱', color: '#ff5d6c', endless: true,
     create(api) {
       const U = api.util, L = api.level, rng = api.rng;
-      const lv = genLevel(L, rng);
+      const DIFF = api.diff || 0, ENDLESS = !!api.endless;
+      const lv = genLevel(L, rng, DIFF, ENDLESS);
+      const AIM_LIMIT = 12;
+      let aimT = 0, survived = 0;
       let W, H, cs, x0, x1, y0, floorY, rb, cache = null;
       function layout() {
         W = api.W; H = api.H;
@@ -87,7 +97,7 @@
           polyFor(b); S.bricks.push(b); S.grid[r][c] = b;
         }
       }
-      for (let i = 0; i < lv.init; i++) place(lv.rows[i], lv.init - 1 - i);
+      for (let i = 0; i < lv.init; i++) place(lv.row(i), lv.init - 1 - i);
       S.next = lv.init;
 
       // circle vs convex polygon: returns penetration depth (>0) and writes normal into NX/NY
@@ -275,13 +285,14 @@
           guard++;
         } while (aliveCount() === 0 && S.next < lv.R && guard < 30);
         for (const b of S.bricks) if (!b.dead && b.r >= ROWS) { lose(); return; }
+        if (ENDLESS) { survived++; api.score(survived); }
       }
       function shiftDown() {
         for (let r = S.grid.length - 1; r >= 0; r--) for (let c = 0; c < C; c++) { S.grid[r][c] = null; pgrid[r][c] = null; }
         for (const b of S.bricks) { if (b.dead) continue; b.r++; b.slide = 1; if (b.r < S.grid.length) { S.grid[b.r][b.c] = b; polyFor(b); } }
         for (const p of S.picks) { if (p.taken) continue; p.r++; p.t = 1; if (p.r >= ROWS) { p.taken = true; continue; } pgrid[p.r][p.c] = p; }
         if (S.next < lv.R) {
-          place(lv.rows[S.next], 0); S.next++;
+          place(lv.row(S.next), 0); S.next++;
           for (let c = 0; c < C; c++) { const b = S.grid[0][c]; if (b) b.slide = 1; const p = pgrid[0][c]; if (p) p.t = 1; }
         }
         for (let i = S.bricks.length - 1; i >= 0; i--) if (S.bricks[i].dead) S.bricks.splice(i, 1);
@@ -289,7 +300,7 @@
       }
       function lose() {
         S.over = true; S.phase = 'over'; shake = 12;
-        api.lose('磚塊碰到底線了！');
+        api.lose(ENDLESS ? '撐了 ' + survived + ' 回合！' : '磚塊碰到底線了！');
       }
       function winNow() {
         S.over = true; S.phase = 'over';
@@ -320,9 +331,15 @@
           while (left > 1e-6 && S.phase === 'fly') { const h = Math.min(left, 1 / 60); stepBalls(h); left -= h; }
         } else if (S.phase === 'shift') {
           S.shiftT += dt;
-          if (S.shiftT > 0.25) S.phase = 'aim';
+          if (S.shiftT > 0.25) { S.phase = 'aim'; aimT = 0; }
+        } else if (S.phase === 'aim' && ENDLESS) {
+          aimT += dt;
+          if (aimT >= AIM_LIMIT) {
+            const a = S.aim; S.aim = null;
+            if (a && a.ok) fire(a.dx, a.dy); else fire(Math.cos(1.45), -Math.sin(1.45));
+          }
         }
-        const info = L === 1 && S.turns < 2 ? '往後拉瞄準，放手發射全部彈珠' : '彈珠 ×' + S.n + ' · 剩 ' + (lv.R - S.next) + ' 排未出現';
+        const info = ENDLESS ? '無盡模式 · 每回合 ' + AIM_LIMIT + ' 秒內要發射 · 彈珠 ×' + S.n : L === 1 && DIFF === 0 && S.turns < 2 ? '往後拉瞄準，放手發射全部彈珠' : '彈珠 ×' + S.n + ' · 剩 ' + (lv.R - S.next) + ' 排未出現';
         if (info !== lastInfo) { lastInfo = info; api.info(info); }
       }
 
@@ -459,7 +476,17 @@
         g.globalAlpha = 1;
         g.restore();
         U.text(g, '🎱 ×' + S.n, x0 + 4, 24, 17, '#ffffff', 'left', 900);
-        U.text(g, '剩 ' + (lv.R - S.next) + ' 排', x1 - 4, 24, 15, 'rgba(255,255,255,0.8)', 'right', 800);
+        if (ENDLESS) {
+          U.text(g, '回合 ' + survived, W / 2, 17, 16, '#ffffff', 'center', 900);
+          U.text(g, '最高 ' + Math.max(api.best || 0, survived), W / 2, 35, 11, '#ffe27a', 'center', 800);
+          U.text(g, '∞', x1 - 4, 24, 20, 'rgba(255,255,255,0.8)', 'right', 900);
+          if (S.phase === 'aim' && aimT > AIM_LIMIT - 5 && !S.over) {
+            const left = Math.max(0, AIM_LIMIT - aimT);
+            g.strokeStyle = left < 2 ? '#ff5d6c' : '#ffcc4d'; g.lineWidth = 4;
+            g.beginPath(); g.arc(S.lx, floorY - rb, rb * 3.2, -Math.PI / 2, -Math.PI / 2 + 6.283 * left / 5); g.stroke();
+            U.text(g, String(Math.ceil(left)), S.lx, floorY - rb * 6.5, 16, left < 2 ? '#ff5d6c' : '#ffcc4d', 'center', 900);
+          }
+        } else U.text(g, '剩 ' + (lv.R - S.next) + ' 排', x1 - 4, 24, 15, 'rgba(255,255,255,0.8)', 'right', 800);
         const by = Math.min(H - 50, floorY + 6);
         btnFast.x = x0; btnFast.y = by; btnBack.x = x1 - btnBack.w; btnBack.y = by;
         if (S.phase === 'fly' && S.turnT > 2.5) btn(g, btnFast, S.speed > 1 ? '⏩×' + S.speed : '⏩', S.fast);
@@ -515,7 +542,7 @@
 
       // test hooks (tools/check_bricks.js): snapshot / restore the turn state for look-ahead
       function save() {
-        return { n: S.n, lx: S.lx, next: S.next, turns: S.turns,
+        return { n: S.n, lx: S.lx, next: S.next, turns: S.turns, survived,
           bricks: S.bricks.filter((b) => !b.dead).map((b) => ({ r: b.r, c: b.c, hp: b.hp, max: b.max, type: b.type, ori: b.ori })),
           picks: S.picks.filter((p) => !p.taken).map((p) => ({ r: p.r, c: p.c })) };
       }
@@ -524,7 +551,7 @@
         S.bricks.length = 0; S.picks.length = 0;
         for (const q of z.bricks) { const b = { r: q.r, c: q.c, hp: q.hp, max: q.max, type: q.type, ori: q.ori, flash: 0, pop: 0, slide: 0, px: null, py: null, dead: false }; polyFor(b); S.bricks.push(b); S.grid[b.r][b.c] = b; }
         for (const q of z.picks) { const p = { r: q.r, c: q.c, taken: false, t: 0 }; S.picks.push(p); pgrid[p.r][p.c] = p; }
-        S.n = z.n; S.lx = z.lx; S.next = z.next; S.turns = z.turns;
+        S.n = z.n; S.lx = z.lx; S.next = z.next; S.turns = z.turns; survived = z.survived; aimT = 0;
         S.phase = 'aim'; S.balls.length = 0; S.over = false; S.aim = null; S.nx = null; S.gained = 0;
       }
 

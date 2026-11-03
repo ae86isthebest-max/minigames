@@ -3,7 +3,7 @@
 // the level goal without losing. For each drop it tries several x positions in a cloned world,
 // simulates ~1 s and keeps the best (merge points, low stack, same fruits together).
 // Modes 簡單/普通/困難, levels 1-40 each. On 困難 a held fruit auto-drops after 5 s, so a
-// player who does nothing (fruit keeps falling in the middle) is also simulated and must lose.
+// player who does nothing is simulated too: 3 auto-drops in a row lose the level.
 // node tools/check_fruit.js [from=1] [to=40]
 'use strict';
 const fs = require('fs');
@@ -47,19 +47,25 @@ function evaluate(w, before) {
 }
 
 function seedRng(lv, mode) { return MG.mulberry32(lv * 7919 + 'fruit'.length * 104729 + 'fruit'.charCodeAt(0) + mode * 15485863); }
-// idle player: every fruit auto-drops in the middle after the hold limit
+// idle player: the untouched fruit sways and auto-drops wherever it is after the hold limit
 function playLazy(lv, mode) {
   const rng = seedRng(lv, mode);
   const d = F.genLevel(lv, rng, mode, false);
   const w = d.world;
   let cur = d.first, drops = 0;
   const per = Math.round((F.DROP_COOLDOWN + F.dropLimit(mode, false, 0)) / F.DT);
+  const st = { x: 0.5, dir: 1 };
+  const adv = (n) => { for (let i = 0; i < n && !w.lost; i++) { F.step(w, F.DT); w.events.length = 0; F.sway(st, F.DT); } };
+  adv(Math.round(F.dropLimit(mode, false, 0) / F.DT));
   while (drops < 900) {
     if (F.goalMet(d.goal, w)) return 'win';
     if (w.lost) return 'lose';
-    F.addFruit(w, cur, 0.5, F.SPAWN_Y); drops++;
+    F.addFruit(w, cur, st.x, F.SPAWN_Y); drops++;
     cur = F.randType(rng);
-    run(w, per);
+    adv(Math.round(F.DROP_COOLDOWN / F.DT));
+    if (F.goalMet(d.goal, w)) return 'win';
+    if (drops >= 3) return 'lose';
+    adv(per - Math.round(F.DROP_COOLDOWN / F.DT));
   }
   return 'timeout';
 }

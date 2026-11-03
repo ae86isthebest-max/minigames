@@ -6,7 +6,9 @@
 //      snapshot (same simulation) and fires the angle that leaves the safest board.
 //  (b) lazy baseline: always fires (almost) straight up. Bricks is turn-based, so literally
 //      doing nothing never ends the level; the lazy shooter must lose instead.
-// Pass = bot wins every level 1-60, lazy loses most levels (reported).
+// Modes 簡單/普通/困難 (levels 1-40, 簡單 up to [to]); 無盡 with 2 fixed seeds, where a player who never
+// touches the screen is auto-fired every 12 s and must lose, and the bot must survive 3x as many turns.
+// Pass = bot wins every level of every difficulty and the lazy shooter loses every 困難 level.
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -52,9 +54,12 @@ vm.runInContext(fs.readFileSync(path.join(root, 'games', 'bricks.js'), 'utf8'), 
 const MG = sandbox.MG;
 const def = MG.games.find((d) => d.id === 'bricks');
 
-function makeApi(lv) {
+function makeApi(lv, mode, seed) {
+  mode = mode || 0;
   const api = {
-    W, H, level: lv, rng: MG.mulberry32(lv * 7919 + 'bricks'.length * 104729 + 'bricks'.charCodeAt(0)),
+    W, H, level: mode === 3 ? 1 : lv, diff: mode === 3 ? 2 : mode, endless: mode === 3, best: 0, scoreV: 0,
+    rng: MG.mulberry32(seed !== undefined ? seed : lv * 7919 + 'bricks'.length * 104729 + 'bricks'.charCodeAt(0) + mode * 15485863),
+    score(n) { if (!api.sim) api.scoreV = n; },
     util: MG.util, sfx() {}, info() {}, result: null, sim: false, simResult: null,
     get ended() { return api.sim ? api.simResult !== null : api.result !== null; },
     win() { if (api.sim) { api.simResult = 'win'; return; } if (api.result === null) api.result = 'win'; },
@@ -137,14 +142,15 @@ function bestAngle(inst, api) {
   return lookahead(inst, api, cands);
 }
 
-function run(lv, mode) {
-  const api = makeApi(lv);
+function run(lv, mode, diff, seed) {
+  const api = makeApi(lv, diff, seed);
   const inst = def.create(api);
   const ctx = anyObj();
   const s = inst._s;
   let f = 0;
-  for (; f < 60 * 1500 && api.result === null; f++) {
-    if (s.phase === 'aim') {
+  const maxF = diff === 3 ? 60 * 4000 : 60 * 1500;
+  for (; f < maxF && api.result === null; f++) {
+    if (s.phase === 'aim' && mode !== 'none') {
       const a = mode === 'bot' ? bestAngle(inst, api) : 1.45;
       shoot(inst, a);
       if (s.phase !== 'fly') throw new Error('shot did not fire on level ' + lv);
@@ -152,20 +158,32 @@ function run(lv, mode) {
     inst.update(1 / 60);
     if (f % 60 === 0) inst.draw(ctx);
   }
-  return { result: api.result || 'timeout', turns: s.turns, balls: s.n, rows: inst._k.lv.R };
+  return { result: api.result || 'timeout', turns: s.turns, balls: s.n, rows: inst._k.lv.R, score: api.scoreV, t: f / 60 };
 }
 
-let fails = 0, lazyLoses = 0;
-for (let lv = FROM; lv <= TO; lv++) {
-  const b = run(lv, 'bot');
-  const z = run(lv, 'lazy');
-  if (b.result !== 'win') fails++;
-  if (z.result === 'lose') lazyLoses++;
-  if (VERBOSE || b.result !== 'win') {
-    console.log('L' + lv + ' bot=' + b.result + ' turns=' + b.turns + ' rows=' + b.rows + ' balls=' + b.balls + ' | lazy=' + z.result + ' turns=' + z.turns);
+const NAMES = ['簡單', '普通', '困難'];
+let bad = 0;
+for (let diff = 0; diff < 3; diff++) {
+  let fails = 0, lazyLoses = 0;
+  const to = diff === 0 ? Math.max(TO, 40) : 40;
+  for (let lv = FROM; lv <= to; lv++) {
+    const b = run(lv, 'bot', diff);
+    const z = run(lv, 'lazy', diff);
+    if (b.result !== 'win') fails++;
+    if (z.result === 'lose') lazyLoses++;
+    if (VERBOSE || b.result !== 'win' || (diff === 2 && z.result !== 'lose')) {
+      console.log(NAMES[diff] + ' L' + lv + ' bot=' + b.result + ' turns=' + b.turns + ' rows=' + b.rows + ' balls=' + b.balls + ' | lazy=' + z.result + ' turns=' + z.turns);
+    }
   }
+  const N = to - FROM + 1;
+  console.log('bricks ' + NAMES[diff] + ' levels ' + FROM + '-' + to + ': bot wins ' + (N - fails) + '/' + N + ', straight-up lazy shooter loses ' + lazyLoses + '/' + N);
+  bad += fails + (diff === 2 ? N - lazyLoses : 0);
 }
-const N = TO - FROM + 1;
-console.log('bricks levels ' + FROM + '-' + TO + ': bot wins ' + (N - fails) + '/' + N + ', straight-up lazy shooter loses ' + lazyLoses + '/' + N);
-if (fails) { console.log('FAIL'); process.exit(1); }
+for (let k = 0; k < 2; k++) {
+  const seed = 1000 + k * 777;
+  const b = run(1, 'bot', 3, seed), z = run(1, 'none', 3, seed);
+  console.log('bricks 無盡 seed ' + seed + ': bot ' + b.result + ' score(turns survived)=' + b.score + ' | no-input (auto-fire after 12 s) ' + z.result + ' after ' + z.t.toFixed(0) + 's score=' + z.score);
+  if (z.result !== 'lose' || b.result !== 'lose' || b.score < z.score * 3) bad++;
+}
+if (bad) { console.log('FAIL'); process.exit(1); }
 console.log('OK');
