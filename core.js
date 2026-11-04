@@ -47,7 +47,8 @@
     const k = MODES[mode].key;
     return g[k] = g[k] || { lv: 1, top: 0, best: 0 };
   }
-  function lastMode(id) { return (save.last && save.last[id]) || 0; }
+  // 簡單 is no longer offered in the picker (user asked to start at 普通); old 簡單 picks fall back to 普通
+  function lastMode(id) { return (save.last && save.last[id]) || 1; }
 
   // ---------- seeded rng ----------
   function mulberry32(a) {
@@ -138,7 +139,7 @@
   function tileRecord(def) {
     const p = save.p[def.id] || {};
     const parts = [];
-    for (let m = 0; m < 3; m++) { const r = p[MODES[m].key]; if (r && r.top > 0) parts.push(MODES[m].name[0] + r.top); }
+    for (let m = 1; m < 3; m++) { const r = p[MODES[m].key]; if (r && r.top > 0) parts.push(MODES[m].name[0] + r.top); }
     if (def.endless && p.x && p.x.best > 0) parts.push('🏆' + p.x.best);
     return parts.length ? parts.join(' · ') : '未開始';
   }
@@ -161,7 +162,7 @@
     $('pkName').textContent = def.name;
     const box = $('pkModes'); box.innerHTML = '';
     const n = def.endless ? 4 : 3;
-    for (let m = 0; m < n; m++) {
+    for (let m = 1; m < n; m++) {
       const r = rec_(id, m), M = MODES[m];
       const b = document.createElement('button');
       b.className = 'mode' + (m === lastMode(id) ? ' sel' : '');

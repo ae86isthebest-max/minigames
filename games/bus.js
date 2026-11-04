@@ -338,11 +338,6 @@
         gr.addColorStop(0, '#6a7086'); gr.addColorStop(1, '#585e73');
         g.fillStyle = gr;
         U.rr(g, lotX, lotY, lotW, lotH, 9); g.fill(); olStroke(g, 2);
-        g.strokeStyle = 'rgba(255,255,255,0.28)'; g.lineWidth = 2; g.setLineDash([cell * 0.22, cell * 0.12]);
-        g.beginPath();
-        for (let i = 1; i < cols; i++) { g.moveTo(lotX + i * cell, lotY + 5); g.lineTo(lotX + i * cell, lotY + lotH - 5); }
-        for (let j = 1; j < rows; j++) { g.moveTo(lotX + 5, lotY + j * cell); g.lineTo(lotX + lotW - 5, lotY + j * cell); }
-        g.stroke(); g.setLineDash([]);
         // bushes, trees and flowers outside the roads
         for (let i = 0; i < 46; i++) {
           const x = tr() * W, y = T + road / 2 + tr() * (H - T - road / 2), r = 7 + tr() * 9, kind = tr();
@@ -444,57 +439,32 @@
         g.save(); g.translate(x, y); g.rotate(a);
         g.fillStyle = 'rgba(0,0,0,0.25)';
         U.rr(g, -Lp / 2 + 2, -Wd / 2 + 4, Lp, Wd, rad); g.fill();
-        // wheels peeking out of the sides
-        const wr = Wd * 0.13, wl = Math.max(3, Lp * 0.13);
-        for (const wx of [Lp * 0.27, -Lp * 0.3]) {
-          for (const sy of [-1, 1]) {
-            U.rr(g, wx - wl / 2, sy * Wd / 2 - wr, wl, wr * 2, wr * 0.8);
-            g.fillStyle = '#3a3440'; g.fill(); olStroke(g, lw * 0.8);
-          }
-        }
-        // body
+        // body: solid paint with a darker side skirt
         U.rr(g, -Lp / 2, -Wd / 2, Lp, Wd, rad);
-        g.fillStyle = col; g.fill(); olStroke(g, lw);
-        // lower side shading
-        g.save(); U.rr(g, -Lp / 2, -Wd / 2, Lp, Wd, rad); g.clip();
-        g.fillStyle = dark; g.globalAlpha = 0.45; g.fillRect(-Lp / 2, Wd * 0.3, Lp, Wd * 0.2); g.globalAlpha = 1;
-        g.restore();
-        // roof panel + gloss strip
-        U.rr(g, -Lp / 2 + Lp * 0.07, -Wd * 0.3, Lp * 0.72, Wd * 0.6, Wd * 0.2);
-        g.fillStyle = light; g.fill(); olStroke(g, lw * 0.6);
-        U.rr(g, -Lp / 2 + Lp * 0.1, -Wd * 0.25, Lp * 0.6, Wd * 0.12, Wd * 0.06);
-        g.fillStyle = 'rgba(255,255,255,0.55)'; g.fill();
-        // windshield with two cute eyes
-        const wsx = Lp / 2 - Lp * 0.15, wsw = Lp * 0.115;
-        U.rr(g, wsx, -Wd * 0.38, wsw, Wd * 0.76, Wd * 0.14);
-        g.fillStyle = '#bfe8ff'; g.fill(); olStroke(g, lw * 0.7);
-        if (!masked) {
-          const er = Math.max(1.6, Math.min(wsw * 0.42, Wd * 0.12));
-          for (const sy of [-1, 1]) {
-            blob(g, wsx + wsw * 0.5, sy * Wd * 0.17, er, er * 1.1, '#ffffff', lw * 0.5);
-            g.fillStyle = OL; g.beginPath(); g.arc(wsx + wsw * 0.5 + er * 0.25, sy * Wd * 0.17, er * 0.55, 0, Math.PI * 2); g.fill();
-            g.fillStyle = '#fff'; g.beginPath(); g.arc(wsx + wsw * 0.5 + er * 0.05, sy * Wd * 0.17 - er * 0.3, er * 0.22, 0, Math.PI * 2); g.fill();
-          }
-        }
+        g.fillStyle = dark; g.fill(); olStroke(g, lw);
+        U.rr(g, -Lp / 2 + Wd * 0.06, -Wd / 2 + Wd * 0.04, Lp - Wd * 0.12, Wd * 0.82, rad * 0.85);
+        g.fillStyle = col; g.fill();
+        // roof: one solid lighter panel
+        U.rr(g, -Lp / 2 + Lp * 0.08, -Wd * 0.28, Lp * 0.7, Wd * 0.48, Wd * 0.14);
+        g.fillStyle = light; g.fill();
+        // windshield: dark tinted glass
+        const wsx = Lp / 2 - Lp * 0.15, wsw = Lp * 0.11;
+        U.rr(g, wsx, -Wd * 0.38, wsw, Wd * 0.7, Wd * 0.12);
+        g.fillStyle = '#2c3e55'; g.fill();
+        g.fillStyle = '#4d6a8c'; U.rr(g, wsx + wsw * 0.2, -Wd * 0.32, wsw * 0.3, Wd * 0.25, wsw * 0.15); g.fill();
         // headlights + tail lights
-        const hr = Math.max(1.4, Wd * 0.075);
-        blob(g, Lp / 2 - hr * 0.6, -Wd * 0.36, hr, hr, '#fff4a8', lw * 0.5);
-        blob(g, Lp / 2 - hr * 0.6, Wd * 0.36, hr, hr, '#fff4a8', lw * 0.5);
-        U.rr(g, -Lp / 2 - 1, -Wd * 0.4, 3.5, Wd * 0.16, 1.5); g.fillStyle = '#ff4256'; g.fill(); olStroke(g, lw * 0.4);
-        U.rr(g, -Lp / 2 - 1, Wd * 0.24, 3.5, Wd * 0.16, 1.5); g.fill(); olStroke(g, lw * 0.4);
-        // seats: chibi passengers (top view) or empty seat cushions
-        const sr = Math.max(1.8, Math.min(Wd * 0.13, Lp * 0.3 / b.cap * 1.4));
-        for (let i = 0; i < b.cap && !masked; i++) {
+        const hr = Math.max(1.4, Wd * 0.07);
+        g.fillStyle = '#fff4c2';
+        g.beginPath(); g.arc(Lp / 2 - hr * 0.9, -Wd * 0.38, hr, 0, Math.PI * 2); g.arc(Lp / 2 - hr * 0.9, Wd * 0.3, hr, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#d92b3a';
+        U.rr(g, -Lp / 2 + 1, -Wd * 0.4, 3, Wd * 0.14, 1.5); g.fill();
+        U.rr(g, -Lp / 2 + 1, Wd * 0.2, 3, Wd * 0.14, 1.5); g.fill();
+        // passengers seen from above: just heads, only once seated
+        const sr = Math.max(1.8, Math.min(Wd * 0.12, Lp * 0.3 / b.cap * 1.3));
+        for (let i = 0; i < b.filled && !masked; i++) {
           seatLocal(b, i, Lp, Wd, tmp2);
-          if (i < b.filled) {
-            blob(g, tmp2[0] - sr * 0.25, tmp2[1], sr * 1.2, sr * 1.25, col === b.col ? U.shade(col, -0.15) : col, Math.max(1, lw * 0.45));
-            blob(g, tmp2[0] + sr * 0.15, tmp2[1], sr * 0.85, sr * 0.85, '#ffdcb8', Math.max(1, lw * 0.45));
-            g.fillStyle = '#5a3a2a';
-            g.beginPath(); g.arc(tmp2[0] + sr * 0.05, tmp2[1], sr * 0.85, Math.PI * 0.55, Math.PI * 1.45); g.fill();
-          } else {
-            U.rr(g, tmp2[0] - sr, tmp2[1] - sr, sr * 2, sr * 2, sr * 0.6);
-            g.fillStyle = 'rgba(0,0,0,0.2)'; g.fill();
-          }
+          g.fillStyle = '#3b2a20'; g.beginPath(); g.arc(tmp2[0], tmp2[1], sr, 0, Math.PI * 2); g.fill();
+          g.fillStyle = '#f0c9a0'; g.beginPath(); g.arc(tmp2[0] + sr * 0.35, tmp2[1], sr * 0.55, 0, Math.PI * 2); g.fill();
         }
         if (inLot) {
           // white direction arrow on the roof, pointing at the nose
@@ -521,25 +491,17 @@
         g.restore();
       }
       function drawPerson(g, x, y, s, col, step) {
-        // chibi passenger: big round head, tiny body, stubby legs
-        const sw = Math.sin(step) * 1.6 * s, lw = Math.max(1, 1.5 * s);
-        g.fillStyle = 'rgba(0,0,0,0.18)'; g.beginPath(); g.ellipse(x, y + 9.5 * s, 5 * s, 1.6 * s, 0, 0, Math.PI * 2); g.fill();
-        blob(g, x - 2 * s + sw * 0.5, y + 6.5 * s, 1.9 * s, 2.8 * s, '#3d3550', lw);
-        blob(g, x + 2 * s - sw * 0.5, y + 6.5 * s, 1.9 * s, 2.8 * s, '#3d3550', lw);
-        U.rr(g, x - 4.4 * s, y - 2.5 * s, 8.8 * s, 8.5 * s, 3.6 * s);
-        g.fillStyle = col; g.fill(); olStroke(g, lw);
-        g.fillStyle = 'rgba(255,255,255,0.35)';
-        U.rr(g, x - 3.2 * s, y - 1.6 * s, 2.2 * s, 4.5 * s, 1.1 * s); g.fill();
-        blob(g, x, y - 8 * s, 6.2 * s, 5.9 * s, '#ffdcb8', lw);
-        g.fillStyle = '#5a3a2a';
-        g.beginPath(); g.ellipse(x, y - 10 * s, 6.2 * s, 4.2 * s, 0, Math.PI, Math.PI * 2); g.fill();
-        g.beginPath(); g.ellipse(x, y - 8 * s, 6.2 * s, 5.9 * s, 0, Math.PI * 1.02, Math.PI * 1.98); olStroke(g, lw);
-        if (s > 0.55) {
-          g.fillStyle = OL;
-          g.beginPath(); g.arc(x - 2.2 * s, y - 7 * s, 1.1 * s, 0, Math.PI * 2); g.arc(x + 2.2 * s, y - 7 * s, 1.1 * s, 0, Math.PI * 2); g.fill();
-          g.fillStyle = 'rgba(255,120,120,0.55)';
-          g.beginPath(); g.arc(x - 3.6 * s, y - 5.2 * s, 1 * s, 0, Math.PI * 2); g.arc(x + 3.6 * s, y - 5.2 * s, 1 * s, 0, Math.PI * 2); g.fill();
-        }
+        // simple standing passenger: small head, coat in the bus colour, two legs
+        const sw = Math.sin(step) * 1.4 * s;
+        g.fillStyle = 'rgba(0,0,0,0.18)'; g.beginPath(); g.ellipse(x, y + 9.5 * s, 4.5 * s, 1.4 * s, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#2f3440';
+        U.rr(g, x - 2.6 * s + sw * 0.4, y + 2.5 * s, 2.2 * s, 7 * s, 1 * s); g.fill();
+        U.rr(g, x + 0.4 * s - sw * 0.4, y + 2.5 * s, 2.2 * s, 7 * s, 1 * s); g.fill();
+        U.rr(g, x - 3.6 * s, y - 5 * s, 7.2 * s, 9 * s, 2.6 * s);
+        g.fillStyle = col; g.fill();
+        g.fillStyle = U.shade(col, -0.25); U.rr(g, x + 1.2 * s, y - 4.6 * s, 2.2 * s, 8.4 * s, 1.1 * s); g.fill();
+        g.fillStyle = '#f0c9a0'; g.beginPath(); g.arc(x, y - 8.2 * s, 3 * s, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#3b2a20'; g.beginPath(); g.arc(x, y - 8.9 * s, 3.1 * s, Math.PI * 1.05, Math.PI * 1.95); g.fill();
       }
       function burst(x, y, n, colr, spd, life, size) {
         for (let i = 0; i < n; i++) {
