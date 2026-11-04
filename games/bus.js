@@ -239,7 +239,8 @@
         const L = Math.max(road / 2, Math.min(lotX - gap - road / 2, bayX[0])), R = Math.min(W - road / 2, Math.max(lotX + lotW + gap + road / 2, bayX[NB - 1]));
         const B = lotY + lotH + gap + road / 2;
         lay = { W, H, qH, bayW, bayLen, bayY0, bayCy, road, T, gap, cell, lotX, lotY, lotW, lotH, bayX, L, R, B };
-        lay.sp = Math.max(15, Math.min(24, W / 18));
+        lay.sp = Math.max(22, Math.min(36, (W - 70) / 11));
+        lay.ps = Math.min(1.7, lay.sp / 20);
         for (const b of buses) {
           b.lotLp = b.len * cell - cell * 0.16; b.lotWd = cell * 0.72;
           b.bayLp = b.len === 3 ? bayLen * 0.92 : bayLen * 0.7; b.bayWd = bayW * 0.56;
@@ -439,36 +440,46 @@
         g.save(); g.translate(x, y); g.rotate(a);
         g.fillStyle = 'rgba(0,0,0,0.25)';
         U.rr(g, -Lp / 2 + 2, -Wd / 2 + 4, Lp, Wd, rad); g.fill();
-        // body: solid paint with a darker side skirt
+        // open-top bus: painted rim around a floor with rows of seats (backrests face the rear)
         U.rr(g, -Lp / 2, -Wd / 2, Lp, Wd, rad);
-        g.fillStyle = dark; g.fill(); olStroke(g, lw);
-        U.rr(g, -Lp / 2 + Wd * 0.06, -Wd / 2 + Wd * 0.04, Lp - Wd * 0.12, Wd * 0.82, rad * 0.85);
-        g.fillStyle = col; g.fill();
-        // roof: one solid lighter panel
-        U.rr(g, -Lp / 2 + Lp * 0.08, -Wd * 0.28, Lp * 0.7, Wd * 0.48, Wd * 0.14);
-        g.fillStyle = light; g.fill();
-        // windshield: dark tinted glass
-        const wsx = Lp / 2 - Lp * 0.15, wsw = Lp * 0.11;
-        U.rr(g, wsx, -Wd * 0.38, wsw, Wd * 0.7, Wd * 0.12);
+        g.fillStyle = col; g.fill(); olStroke(g, lw);
+        const rim = Wd * 0.1;
+        U.rr(g, -Lp / 2 + rim, -Wd / 2 + rim, Lp - Lp * 0.17 - rim, Wd - rim * 2, rad * 0.6);
+        g.fillStyle = '#d9d4c7'; g.fill();
+        g.fillStyle = dark; g.fillRect(-Lp / 2 + rim, -Wd / 2 + rim, Lp - Lp * 0.17 - rim, Wd * 0.04);
+        // windshield at the nose
+        const wsx = Lp / 2 - Lp * 0.15, wsw = Lp * 0.09;
+        U.rr(g, wsx, -Wd * 0.38, wsw, Wd * 0.76, Wd * 0.1);
         g.fillStyle = '#2c3e55'; g.fill();
-        g.fillStyle = '#4d6a8c'; U.rr(g, wsx + wsw * 0.2, -Wd * 0.32, wsw * 0.3, Wd * 0.25, wsw * 0.15); g.fill();
+        g.fillStyle = '#5d7ea3'; U.rr(g, wsx + wsw * 0.25, -Wd * 0.32, wsw * 0.3, Wd * 0.22, wsw * 0.15); g.fill();
         // headlights + tail lights
         const hr = Math.max(1.4, Wd * 0.07);
         g.fillStyle = '#fff4c2';
-        g.beginPath(); g.arc(Lp / 2 - hr * 0.9, -Wd * 0.38, hr, 0, Math.PI * 2); g.arc(Lp / 2 - hr * 0.9, Wd * 0.3, hr, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.arc(Lp / 2 - hr * 0.9, -Wd * 0.38, hr, 0, Math.PI * 2); g.arc(Lp / 2 - hr * 0.9, Wd * 0.38, hr, 0, Math.PI * 2); g.fill();
         g.fillStyle = '#d92b3a';
         U.rr(g, -Lp / 2 + 1, -Wd * 0.4, 3, Wd * 0.14, 1.5); g.fill();
-        U.rr(g, -Lp / 2 + 1, Wd * 0.2, 3, Wd * 0.14, 1.5); g.fill();
-        // passengers seen from above: just heads, only once seated
-        const sr = Math.max(1.8, Math.min(Wd * 0.12, Lp * 0.3 / b.cap * 1.3));
-        for (let i = 0; i < b.filled && !masked; i++) {
+        U.rr(g, -Lp / 2 + 1, Wd * 0.26, 3, Wd * 0.14, 1.5); g.fill();
+        // seats: cushion + backrest; a seated passenger shows head and shoulders
+        const cw = Lp * 0.6 / (b.cap / 2), sh = Wd * 0.3;
+        const seatCol = masked ? '#7d8392' : U.shade(col, -0.45), backCol = masked ? '#4a4f5c' : U.shade(col, -0.72);
+        for (let i = 0; i < b.cap; i++) {
           seatLocal(b, i, Lp, Wd, tmp2);
-          g.fillStyle = '#3b2a20'; g.beginPath(); g.arc(tmp2[0], tmp2[1], sr, 0, Math.PI * 2); g.fill();
-          g.fillStyle = '#f0c9a0'; g.beginPath(); g.arc(tmp2[0] + sr * 0.35, tmp2[1], sr * 0.55, 0, Math.PI * 2); g.fill();
+          const sx = tmp2[0], sy = tmp2[1];
+          U.rr(g, sx - cw * 0.3, sy - sh / 2, cw * 0.58, sh, Math.min(cw, sh) * 0.2);
+          g.fillStyle = seatCol; g.fill();
+          U.rr(g, sx - cw * 0.46, sy - sh * 0.6, cw * 0.22, sh * 1.2, cw * 0.1);
+          g.fillStyle = backCol; g.fill();
+          if (i < b.filled && !masked) {
+            const r = Math.min(cw * 0.3, sh * 0.42);
+            U.rr(g, sx - r * 0.7, sy - r * 1.15, r * 1.3, r * 2.3, r * 0.6);
+            g.fillStyle = U.shade(col, 0.25); g.fill();
+            g.fillStyle = '#3b2a20'; g.beginPath(); g.arc(sx, sy, r * 0.72, 0, Math.PI * 2); g.fill();
+            g.fillStyle = '#f0c9a0'; g.beginPath(); g.arc(sx + r * 0.25, sy, r * 0.42, 0, Math.PI * 2); g.fill();
+          }
         }
         if (inLot) {
           // white direction arrow on the roof, pointing at the nose
-          const al = masked ? Math.min(Lp * 0.34, Wd * 0.9) : Math.min(Lp * 0.42, Wd * 1.1), aw = Wd * 0.24, ax = masked ? Lp * 0.2 : Lp * 0.06;
+          const al = masked ? Math.min(Lp * 0.34, Wd * 0.9) : Math.min(Lp * 0.42, Wd * 1.1), aw = Wd * 0.17, ax = masked ? Lp * 0.2 : Lp * 0.06;
           g.beginPath();
           g.moveTo(ax + al / 2, 0); g.lineTo(ax + al / 2 - aw * 1.2, -aw); g.lineTo(ax + al / 2 - aw * 1.2, -aw * 0.38);
           g.lineTo(ax - al / 2, -aw * 0.38); g.lineTo(ax - al / 2, aw * 0.38); g.lineTo(ax + al / 2 - aw * 1.2, aw * 0.38); g.lineTo(ax + al / 2 - aw * 1.2, aw);
@@ -760,15 +771,15 @@
           const tx = bw[0] + tmp[0] * ca - tmp[1] * sa, ty = bw[1] + tmp[0] * sa + tmp[1] * ca;
           const k = U.easeOutCubic(Math.min(1, w.t));
           const x = U.lerp(w.x0, tx, k), y = U.lerp(w.y0, ty, k) - Math.sin(k * Math.PI) * 14;
-          drawPerson(g, x, y, 1 - k * 0.45, COLORS[w.color], time * 18);
+          drawPerson(g, x, y, lay.ps * (1 - k * 0.6), COLORS[w.color], time * 18);
         }
         // queue
-        const vis = Math.max(4, Math.floor((W - 64) / sp));
+        const vis = Math.min(12, Math.max(4, Math.floor((W - 70) / sp)));
         const qy = qH * 0.56;
         for (let i = Math.min(queue.length, vis) - 1; i >= 0; i--) {
           const x = sp * 1.2 + i * sp + qShift;
           const moving = qShift > 0.5;
-          drawPerson(g, x, qy, 1, COLORS[queue[i]], moving ? time * 16 + i : 0);
+          drawPerson(g, x, qy, lay.ps, COLORS[queue[i]], moving ? time * 16 + i : 0);
         }
         if (queue.length) {
           const bob = Math.sin(time * 6) * 2;
