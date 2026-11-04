@@ -6,6 +6,21 @@
   const SAVE_KEY = 'mg_save_v1';
   const params = new URLSearchParams(location.search);
 
+  // Softer cartoon outlines: strokes in the games' dark outline colour are drawn thinner and lighter.
+  const OUTLINES = { a: { k: 1, col: '' }, b: { k: 0.55, col: '' }, c: { k: 0.5, col: 'rgba(42,26,20,0.5)' }, d: { k: 0.35, col: 'rgba(42,26,20,0.3)' } };
+  const OUTLINE = OUTLINES[params.get('ol')] || OUTLINES.a;
+  if (OUTLINE !== OUTLINES.a) {
+    const P = CanvasRenderingContext2D.prototype, rawStroke = P.stroke;
+    P.stroke = function (path) {
+      if (this.strokeStyle !== '#2a1a14') return path ? rawStroke.call(this, path) : rawStroke.call(this);
+      const lw = this.lineWidth;
+      this.lineWidth = lw * OUTLINE.k;
+      if (OUTLINE.col) this.strokeStyle = OUTLINE.col;
+      if (path) rawStroke.call(this, path); else rawStroke.call(this);
+      this.lineWidth = lw; this.strokeStyle = '#2a1a14';
+    };
+  }
+
   // modes: 0 簡單, 1 普通, 2 困難, 3 無盡 (only for games with def.endless)
   const MODES = [
     { key: 'e', name: '簡單', color: '#2fa866' },
