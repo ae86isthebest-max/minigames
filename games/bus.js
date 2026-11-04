@@ -239,8 +239,8 @@
         const L = Math.max(road / 2, Math.min(lotX - gap - road / 2, bayX[0])), R = Math.min(W - road / 2, Math.max(lotX + lotW + gap + road / 2, bayX[NB - 1]));
         const B = lotY + lotH + gap + road / 2;
         lay = { W, H, qH, bayW, bayLen, bayY0, bayCy, road, T, gap, cell, lotX, lotY, lotW, lotH, bayX, L, R, B };
-        lay.sp = Math.max(22, Math.min(36, (W - 70) / 11));
-        lay.ps = Math.min(1.7, lay.sp / 20);
+        lay.sp = Math.max(26, Math.min(42, (W - 84) / 9));
+        lay.ps = Math.min(2, lay.sp / 18.5);
         for (const b of buses) {
           b.lotLp = b.len * cell - cell * 0.16; b.lotWd = cell * 0.72;
           b.bayLp = b.len === 3 ? bayLen * 0.92 : bayLen * 0.7; b.bayWd = bayW * 0.56;
@@ -774,7 +774,7 @@
           drawPerson(g, x, y, lay.ps * (1 - k * 0.6), COLORS[w.color], time * 18);
         }
         // queue
-        const vis = Math.min(12, Math.max(4, Math.floor((W - 70) / sp)));
+        const vis = Math.min(10, Math.max(4, Math.floor((W - 70) / sp)));
         const qy = qH * 0.56;
         for (let i = Math.min(queue.length, vis) - 1; i >= 0; i--) {
           const x = sp * 1.2 + i * sp + qShift;
