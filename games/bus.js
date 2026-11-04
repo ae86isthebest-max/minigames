@@ -436,7 +436,7 @@
         g.fillStyle = col; g.fill(); olStroke(g, lw);
         const rim = Wd * 0.1;
         U.rr(g, -Lp / 2 + rim, -Wd / 2 + rim, Lp - Lp * 0.17 - rim, Wd - rim * 2, rad * 0.6);
-        g.fillStyle = masked ? '#d9dbe2' : U.shade(col, 0.72); g.fill();
+        g.fillStyle = col; g.fill();
         g.fillStyle = dark; g.fillRect(-Lp / 2 + rim, -Wd / 2 + rim, Lp - Lp * 0.17 - rim, Wd * 0.04);
         // windshield at the nose
         const wsx = Lp / 2 - Lp * 0.15, wsw = Lp * 0.09;
