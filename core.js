@@ -8,10 +8,10 @@
 
   // modes: 0 簡單, 1 普通, 2 困難, 3 無盡 (only for games with def.endless)
   const MODES = [
-    { key: 'e', name: '簡單', color: '#4cd986' },
-    { key: 'n', name: '普通', color: '#ffcc4d' },
-    { key: 'h', name: '困難', color: '#ff5d6c' },
-    { key: 'x', name: '無盡', color: '#b26bff' },
+    { key: 'e', name: '簡單', color: '#2fa866' },
+    { key: 'n', name: '普通', color: '#d99a00' },
+    { key: 'h', name: '困難', color: '#e5484d' },
+    { key: 'x', name: '無盡', color: '#9a5be0' },
   ];
 
   // ---------- storage ----------
@@ -133,8 +133,7 @@
     games.forEach((def) => {
       const b = document.createElement('button');
       b.className = 'tile';
-      b.style.background = 'linear-gradient(160deg,' + util.shade(def.color, 0.15) + ',' + util.shade(def.color, -0.25) + ')';
-      b.innerHTML = '<div class="ic">' + def.icon + '</div><div class="nm">' + def.name + '</div><div class="lv">' + tileRecord(def) + '</div>';
+      b.innerHTML = '<img class="th" loading="lazy" alt="" src="thumbs/' + def.id + '.jpg"><span class="tx"><span class="nm">' + def.name + '</span><span class="lv">' + tileRecord(def) + '</span></span>';
       b.onclick = () => { sfx('tap'); openPicker(def.id); };
       grid.appendChild(b);
     });
@@ -143,7 +142,7 @@
   // ---------- difficulty picker ----------
   function openPicker(id) {
     const def = games.find((d) => d.id === id); if (!def) return;
-    $('pkIcon').textContent = def.icon;
+    $('pkThumb').src = 'thumbs/' + def.id + '.jpg';
     $('pkName').textContent = def.name;
     const box = $('pkModes'); box.innerHTML = '';
     const n = def.endless ? 4 : 3;

@@ -580,6 +580,23 @@
         }
       }
 
+      // red hazard band painted on the road in front of an enemy group: shows where the crowd stops to fight
+      function drawFightZone(g, ez, n) {
+        const z1 = ez - blobR(n) * 0.85 - 0.5, z0 = z1 - 1.8;
+        if (z0 - (S.z - S.camD) < 0.8) return;
+        const pulse = 0.75 + 0.25 * Math.sin(anim * 8);
+        g.globalAlpha = pulse;
+        quad(g, -RW, RW, z0, z1, 0.01, '#ff4d5e');
+        const n2 = 8;
+        for (let i = 0; i < n2; i++) {
+          const xa = -RW + (i + 0.2) * 2 * RW / n2, xb = xa + RW / n2 * 0.9;
+          quad(g, xa, xb, z0 + 0.15, z1 - 0.15, 0.015, '#ffffff');
+        }
+        g.globalAlpha = 1;
+        proj(0, 0, z0); const x0 = PX, y0 = PY, k = PK;
+        if (k > 6) otext(g, '前方戰鬥', x0, y0 + Math.min(20, 0.5 * k), Math.min(24, Math.max(14, 0.5 * k)), '#ff4d5e', 'center', 3);
+      }
+
       function drawGate(g, e) {
         for (let side = 0; side < 2; side++) {
           const op = e.ops[side];
@@ -672,6 +689,8 @@
         g.drawImage(cache, 0, 0, W, H);
         drawRoad(g);
         drawStairs(g);
+        for (const e of T.els) if (e.type === 'enemy' && !e.done && !e.fight && e.z - S.z < 75) drawFightZone(g, e.z, e.n);
+        if (army.n > 0 && S.phase !== 'final' && armyZ - S.z < 75) drawFightZone(g, armyZ, army.n);
         // depth-sorted scene objects
         dl.length = 0;
         const zmin = S.z - S.camD + 0.6, zmax = S.z + 75;
