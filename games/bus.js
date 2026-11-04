@@ -277,7 +277,7 @@
           const x = tr() * W, y = T + tr() * (H - T);
           g.beginPath(); g.moveTo(x - 3, y); g.lineTo(x - 1, y - 6); g.lineTo(x, y); g.lineTo(x + 2, y - 5); g.lineTo(x + 3, y); g.fill();
         }
-        // station platform: cream tiles + striped awning
+        // station platform: cream tiles
         gr = g.createLinearGradient(0, 0, 0, qH);
         gr.addColorStop(0, '#fff6e2'); gr.addColorStop(1, '#f4ddb6');
         g.fillStyle = gr; g.fillRect(0, 0, W, qH);
@@ -286,15 +286,6 @@
         for (let x = 13; x < W; x += 26) { g.moveTo(x, 12); g.lineTo(x, qH - 6); }
         g.moveTo(0, qH * 0.62); g.lineTo(W, qH * 0.62);
         g.stroke();
-        const sw = 20;
-        for (let x = 0, k = 0; x < W; x += sw, k++) {
-          g.fillStyle = k % 2 ? '#fff4e4' : '#ff6b57';
-          g.beginPath(); g.moveTo(x, 0); g.lineTo(x + sw, 0); g.lineTo(x + sw, 2);
-          g.arc(x + sw / 2, 2, sw / 2, 0, Math.PI); g.closePath(); g.fill();
-        }
-        g.beginPath();
-        for (let x = 0; x < W; x += sw) { g.moveTo(x + sw, 2); g.arc(x + sw / 2, 2, sw / 2, 0, Math.PI); }
-        g.lineWidth = 2; g.strokeStyle = OL; g.stroke();
         // platform edge (yellow safety strip)
         g.fillStyle = '#c9a678'; g.fillRect(0, qH - 7, W, 7);
         g.fillStyle = '#ffd34d'; g.fillRect(0, qH - 5, W, 3);
@@ -445,7 +436,7 @@
         g.fillStyle = col; g.fill(); olStroke(g, lw);
         const rim = Wd * 0.1;
         U.rr(g, -Lp / 2 + rim, -Wd / 2 + rim, Lp - Lp * 0.17 - rim, Wd - rim * 2, rad * 0.6);
-        g.fillStyle = '#d9d4c7'; g.fill();
+        g.fillStyle = masked ? '#d9dbe2' : U.shade(col, 0.72); g.fill();
         g.fillStyle = dark; g.fillRect(-Lp / 2 + rim, -Wd / 2 + rim, Lp - Lp * 0.17 - rim, Wd * 0.04);
         // windshield at the nose
         const wsx = Lp / 2 - Lp * 0.15, wsw = Lp * 0.09;
@@ -461,7 +452,7 @@
         U.rr(g, -Lp / 2 + 1, Wd * 0.26, 3, Wd * 0.14, 1.5); g.fill();
         // seats: cushion + backrest; a seated passenger shows head and shoulders
         const cw = Lp * 0.6 / (b.cap / 2), sh = Wd * 0.3;
-        const seatCol = masked ? '#7d8392' : U.shade(col, -0.45), backCol = masked ? '#4a4f5c' : U.shade(col, -0.72);
+        const seatCol = masked ? '#7d8392' : U.shade(col, -0.45), backCol = '#1a1a1e';
         for (let i = 0; i < b.cap; i++) {
           seatLocal(b, i, Lp, Wd, tmp2);
           const sx = tmp2[0], sy = tmp2[1];
@@ -484,7 +475,7 @@
           g.moveTo(ax + al / 2, 0); g.lineTo(ax + al / 2 - aw * 1.2, -aw); g.lineTo(ax + al / 2 - aw * 1.2, -aw * 0.38);
           g.lineTo(ax - al / 2, -aw * 0.38); g.lineTo(ax - al / 2, aw * 0.38); g.lineTo(ax + al / 2 - aw * 1.2, aw * 0.38); g.lineTo(ax + al / 2 - aw * 1.2, aw);
           g.closePath();
-          g.lineJoin = 'round'; g.lineWidth = lw * 1.1; g.strokeStyle = OL; g.stroke();
+          g.lineJoin = 'round'; g.lineWidth = lw * 1.3; g.strokeStyle = masked ? '#3a3150' : U.shade(col, -0.45); g.stroke();
           g.fillStyle = '#ffffff'; g.fill();
         }
         if (masked) {
