@@ -11,7 +11,7 @@
   // diff 0 簡單 (original), 1 普通, 2 困難
   function params(level, diff) {
     if (diff === 1) return { n: Math.min(12, 6 + Math.floor((level - 1) / 2)), hid: Math.min(0.5, 0.25 + level * 0.008), spare: 2, undo: 3 };
-    if (diff === 2) return { n: Math.min(12, 8 + Math.floor((level - 1) / 2)), hid: Math.min(0.6, 0.42 + level * 0.006), spare: 1, undo: 2 };
+    if (diff === 2) return { n: Math.min(12, 10 + Math.floor((level - 1) / 3)), hid: Math.min(0.75, 0.62 + level * 0.005), spare: 1, undo: 1 };
     return {
       n: Math.min(12, 3 + Math.floor((level - 1) / 2.5)),
       hid: level >= 8 ? Math.min(0.5, 0.2 + (level - 8) * 0.012) : 0,
@@ -112,7 +112,7 @@
     if (p.spare === 1) {
       tubes = [];
       for (let c = 0; c < n; c++) tubes.push([c, c, c, c]);
-      const iters = 70 + n * 12;
+      const iters = 140 + n * 24;
       for (let it = 0; it < iters || (tubes.some(tubeDone) && it < iters * 4); it++) {
         tries++;
         const i = Math.floor(rng() * n), j = Math.floor(rng() * n), a = Math.floor(rng() * CAP), b = Math.floor(rng() * CAP);
