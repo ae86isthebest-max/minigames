@@ -17,7 +17,7 @@
   --text:#efe6da; --muted:#a8998a; --accent:#d9a441; --red:#d4574a; --green:#6fb57d; --blue:#6aa6d9;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang HK","PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;font-size:16px;line-height:1.6}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;font-size:16px;line-height:1.6}
 body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
 header{position:sticky;top:0;z-index:5;background:rgba(20,17,15,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:calc(10px + env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 header h1{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;margin:0;font-weight:700;letter-spacing:1px}
@@ -97,7 +97,7 @@ const CASES = [{
   questionLimit: 4,           // 每位嫌疑人最多能問幾題
   searchLimit: 6,             // 監視器＋證物總共能查幾次
   intro: [
-    "11月9日深夜，地產商陳啟明（58歲）被發現死在自家半山別墅的書房裡。",
+    "11月9日深夜，建商陳啟明（58歲）被發現死在自家半山別墅的書房裡。",
     "23:30，管家用備用鑰匙打開書房，看到陳先生趴在書桌上，手邊有一個威士忌杯，印表機旁放著一張「遺書」。",
     "法醫初步報告：<b>氰化物中毒</b>，死亡時間大約在 <b>22:15 到 22:45</b> 之間。",
     "警方傾向以自殺結案，但你覺得事有蹊蹺。當晚屋內共有四個人。陳家的律師凌晨就會趕到。",
@@ -413,7 +413,13 @@ function render(){
 }
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.tab));
 render();
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+if ("serviceWorker" in navigator) {
+  // 有新版時自動重新載入一次，玩家不必手動清快取
+  const hadSW = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", ()=>{ if (hadSW && !reloaded){ reloaded = true; location.reload(); } });
+  navigator.serviceWorker.register("sw.js").then(r=>r.update()).catch(()=>{});
+}
 </script>
 </body>
 </html>
