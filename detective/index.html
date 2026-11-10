@@ -83,7 +83,7 @@ nav button.on{color:var(--accent)}
   <button data-tab="suspects"><span class="ic">🗣️</span>問話</button>
   <button data-tab="search"><span class="ic">🔍</span>搜證</button>
   <button data-tab="notes"><span class="ic">📓</span>筆記</button>
-  <button data-tab="accuse"><span class="ic">⚖️</span>指認</button>
+  <button data-tab="accuse"><span class="ic">⚖️</span>推理</button>
 </nav>
 <div class="toast" id="toast"></div>
 
@@ -166,7 +166,19 @@ const CASES = [{
     { id:"ev_printer", title:"書房印表機紀錄", text:"最後一次列印：11月9日 23:05，一頁。\n（法醫推定死亡時間為 22:15–22:45）", clue:"遺書在陳先生死後的 23:05 才印出" },
     { id:"ev_ledger", title:"書桌上的公司帳目", text:"由周曉晴經手的帳目短少 380 萬。\n陳先生用紅筆圈起來，旁邊寫著：「明天報警」。", clue:"周曉晴挪用 380 萬，陳先生準備報警" },
     { id:"ev_phone", title:"陳浩的手機（已還原刪除的訊息）", text:"22:20 陳浩 → 周曉晴：「好了。」\n22:22 周曉晴 → 陳浩：「我先假裝離開，十一點後門。」", clue:"陳浩和周曉晴當晚秘密聯絡" },
+    { id:"ev_window", title:"書房的窗戶", text:"窗戶沒有上鎖。\n窗台外側有一個模糊的泥巴鞋印（約 26 號）。", clue:"書房窗戶沒鎖，窗外有泥巴鞋印" },
     { id:"ev_lab", title:"大學實驗室化學品紀錄", text:"11月3日　陳浩　領出：氰化鉀 5 克\n狀態：未歸還", clue:"陳浩上週領出氰化鉀未歸還" }
+  ],
+  // 「發生了什麼事」的選項：requires 裡任何一條線索被發現，選項才會出現
+  kinds: [
+    { id:"suicide",  label:"陳先生是自殺的" },
+    { id:"murder",   label:"陳先生是被人殺害的" },
+    { id:"accident", label:"是意外：陳先生誤食了有毒的東西", requires:["ev_glass","h3","ev_lab"] }
+  ],
+  // 調查中才出現的人物，發現後會加入「兇手」選單
+  extraPeople: [
+    { id:"kevin",    name:"Kevin（花園裡的陌生男子）", av:"🧢", requires:["cctv_garden","l6"] },
+    { id:"intruder", name:"從窗戶闖入的不明人士", av:"🥷", requires:["ev_window"] }
   ],
   // 指認時的推理題：用來防止「用猜的」也能拿高分
   reasoning: [
@@ -176,14 +188,14 @@ const CASES = [{
   ],
   solution: {
     culprits: ["ho","chow"],
-    suicide: false,
+    kind: "murder",
     keyEvidence: ["ev_glass","ev_lab","ev_printer","ev_phone","cctv_kitchen","cctv_hall","cctv_back"],
     truth: [
       "<b>兇手是陳浩和周曉晴，兩人聯手犯案。</b>陳先生不是自殺。",
       "陳浩欠下大筆賭債，叔叔明天就要改遺囑把他除名；周曉晴挪用了 380 萬，陳先生已經寫下「明天報警」。兩人都有理由在今晚之前除掉陳先生。",
       "陳浩用從實驗室偷出來的氰化鉀做成有毒的冰塊，21:56 搶著幫黃伯把冰桶送進書房。陳先生 22:00 照常喝威士忌加冰，很快就毒發身亡。陳浩事後把冰桶洗乾淨，22:20 傳了「好了」給周曉晴。",
       "周曉晴 22:31 故意在大門監視器前開車離開，製造不在場證明。23:00 陳浩打開後門讓她回到屋內，她用密碼進入書房，23:05 用電腦印了一張假遺書。但陳先生根本不會打字，而且列印時間是在他死後。",
-      "陳太太說謊只是為了隱瞞外遇，與命案無關。"
+      "陳太太說謊只是為了隱瞞外遇，Kevin 也與命案無關。窗台上的泥巴鞋印是黃伯傍晚在窗外澆花時留下的，根本沒有人從窗戶闖入。"
     ]
   }
 }];
@@ -192,12 +204,12 @@ const CASES = [{
    遊戲邏輯
    ========================================================= */
 const C = CASES[0];
-const KEY = "detective_tw_save_" + C.id;
+const KEY = "detective_tw3_save_" + C.id;
 let S = load() || fresh();
 let tab = "brief", openSuspect = null, accusePick = freshPick();
 
 function fresh(){ return { asked:[], seen:[], done:false, result:null }; }
-function freshPick(){ return { culprits:[], suicide:null, evidence:[], reasoning:{} }; }
+function freshPick(){ return { kind:null, culprits:[], evidence:[], reasoning:{} }; }
 function load(){ try{ const s = JSON.parse(localStorage.getItem(KEY)); return s && s.asked ? s : null; }catch(e){ return null; } }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 
@@ -211,7 +223,7 @@ function renderClock(){
   document.getElementById("clockT").textContent = "🗣️" + totalQLeft() + "　🔍" + searchLeft();
   const total = C.suspects.length*C.questionLimit + C.searchLimit;
   const left = totalQLeft() + searchLeft();
-  document.getElementById("clockBar").style.width = (left/total*100)+"%";
+  document.getElementById("clockBar").style.width = (Math.max(0,left)/total*100)+"%";
   document.getElementById("clock").classList.toggle("low", left <= 4);
 }
 function toast(msg){
@@ -245,8 +257,9 @@ function vBrief(){
   🗣️ 問話：每位嫌疑人有很多問題可以問，但只會回答你 ${C.questionLimit} 題。有人會說謊。<br>
   🔍 搜證：調閱監視器、檢查證物，總共只能查 ${C.searchLimit} 項。找到關鍵證據會解鎖新的質問問題（質問也算一題）。<br>
   📓 筆記：自動記錄你問過、看過的內容。<br>
-  ⚖️ 指認：判斷自殺或他殺、選出兇手（可以不只一個），再選證據並回答推理題。</p></div>
+  ⚖️ 推理：隨時都可以推理。判斷發生了什麼事、選出兇手（可以不只一個），再選證據並回答推理題。查到越多線索，能選的可能性就越多。</p></div>
   <button class="btn primary" onclick="go('suspects')">開始調查</button>
+  <button class="btn" style="text-align:center" onclick="go('accuse')">🧠 我已經知道真相了！直接推理</button>
   <button class="btn danger" onclick="restart()">重新開始這個案件</button>`;
 }
 
@@ -310,47 +323,56 @@ function vNotes(){
   return html + `<p class="muted small">提示：比對口供、監視器和時間，找出誰在說謊，再想想他為什麼要說謊。</p>`;
 }
 
+function unlocked(item){ return !item.requires || item.requires.some(has); }
+const allPeople = () => [...C.suspects, ...C.extraPeople.filter(unlocked)];
+const kindOf = id => C.kinds.find(k=>k.id===id);
+
 function vAccuse(){
   if (S.done) return vResult();
   const seenItems = [...C.cctv, ...C.evidence].filter(it=>S.seen.includes(it.id));
   const P = accusePick;
-  const murder = P.suicide===false;
+  const kinds = C.kinds.filter(unlocked);
+  const lockedKinds = C.kinds.length - kinds.length;
+  const people = allPeople();
+  const murder = P.kind==="murder";
   let n = 1;
-  return `<div class="card"><h2>⚖️ 進行指認</h2><p class="muted small" style="margin:0">指認後就不能再調查。${totalQLeft()+searchLeft()>0?`你還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查。`:""}</p></div>
-  <div class="card"><h3>${n++}. 陳先生是怎麼死的？</h3>
-    <div class="pick ${P.suicide===true?"on":""}" onclick="pickSuicide(true)"><span class="box">${P.suicide===true?"✓":""}</span>自殺</div>
-    <div class="pick ${murder?"on":""}" onclick="pickSuicide(false)"><span class="box">${murder?"✓":""}</span>他殺</div>
+  return `<div class="card"><h2>⚖️ 推理真相</h2><p class="muted small" style="margin:0">隨時都可以來這裡推理，但提交後就不能再調查。${totalQLeft()+searchLeft()>0?`你還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查。`:""}<br>你查到越多線索，能選的可能性就越多。</p></div>
+  <div class="card"><h3>${n++}. 到底發生了什麼事？</h3>
+    ${kinds.map(k=>`<div class="pick ${P.kind===k.id?"on":""}" onclick="pickKind('${k.id}')"><span class="box">${P.kind===k.id?"✓":""}</span>${esc(k.label)}</div>`).join("")}
+    ${lockedKinds?`<p class="muted small">🔒 還有 ${lockedKinds} 種可能性，要先發現相關線索才會出現。</p>`:""}
   </div>
-  ${murder?`<div class="card"><h3>${n++}. 兇手是誰？（可以複選）</h3>
-    ${C.suspects.map(s=>`<div class="pick ${P.culprits.includes(s.id)?"on":""}" onclick="toggleCulprit('${s.id}')"><span class="box">${P.culprits.includes(s.id)?"✓":""}</span>${s.av} ${s.name}</div>`).join("")}
+  ${murder?`<div class="card"><h3>${n++}. 兇手是誰？（可以複選，甚至全部都選）</h3>
+    ${people.map(s=>`<div class="pick ${P.culprits.includes(s.id)?"on":""}" onclick="toggleCulprit('${s.id}')"><span class="box">${P.culprits.includes(s.id)?"✓":""}</span>${s.av} ${esc(s.name)}</div>`).join("")}
+    ${people.length>C.suspects.length?"":`<p class="muted small">🔒 調查中出現的其他人物，也會加進這裡。</p>`}
   </div>
   ${C.reasoning.map((r,i)=>`<div class="card"><h3>${n++}. ${esc(r.q)}</h3>
     ${r.options.map((o,j)=>`<div class="pick ${P.reasoning[i]===j?"on":""}" onclick="pickReason(${i},${j})"><span class="box">${P.reasoning[i]===j?"✓":""}</span>${esc(o)}</div>`).join("")}</div>`).join("")}`:""}
-  ${P.suicide===null?"":`<div class="card"><h3>${n++}. 選最多 3 項關鍵證據</h3>
+  ${P.kind===null?"":`<div class="card"><h3>${n++}. 選最多 3 項關鍵證據</h3>
     ${seenItems.length?seenItems.map(it=>`<div class="pick ${P.evidence.includes(it.id)?"on":""}" onclick="toggleEv('${it.id}')"><span class="box">${P.evidence.includes(it.id)?"✓":""}</span>${esc(it.title)}</div>`).join("")
-    :`<p class="muted small">你還沒看過任何監視器或證物。</p>`}
+    :`<p class="muted small">你還沒看過任何監視器或證物，只能憑直覺了。</p>`}
   </div>
-  <button class="btn primary" onclick="submitAccuse()">確定指認</button>`}`;
+  <button class="btn primary" onclick="submitAccuse()">確定提交</button>`}`;
 }
-function pickSuicide(v){ accusePick.suicide=v; if(v) accusePick.culprits=[]; render(); }
+function pickKind(v){ accusePick.kind=v; if(v!=="murder") accusePick.culprits=[]; render(); }
 function toggleCulprit(id){ const c=accusePick.culprits; c.includes(id)?c.splice(c.indexOf(id),1):c.push(id); render(); }
 function pickReason(i,j){ accusePick.reasoning[i]=j; render(); }
 function toggleEv(id){ const e=accusePick.evidence; if(e.includes(id)) e.splice(e.indexOf(id),1); else if(e.length<3) e.push(id); else toast("最多選 3 項"); render(); }
 function submitAccuse(){
-  const P = accusePick;
-  if (P.suicide===false && !P.culprits.length){ toast("請至少選一名兇手"); return; }
-  if (P.suicide===false && Object.keys(P.reasoning).length < C.reasoning.length){ toast("推理題還沒答完"); return; }
-  if (!confirm("確定指認？之後就不能再調查了。")) return;
+  const P = accusePick, murder = P.kind==="murder";
+  if (murder && !P.culprits.length){ toast("請至少選一名兇手"); return; }
+  if (murder && Object.keys(P.reasoning).length < C.reasoning.length){ toast("推理題還沒答完"); return; }
+  if (!confirm("確定提交？之後就不能再調查了。")) return;
   const sol = C.solution;
   let verdict;
-  if (P.suicide) verdict = sol.suicide ? "perfect" : "wrong";
+  if (P.kind !== sol.kind) verdict = "wrong";
+  else if (!murder) verdict = "perfect";
   else {
     const right = P.culprits.filter(x=>sol.culprits.includes(x)).length;
     const wrongN = P.culprits.length - right;
     verdict = (right===sol.culprits.length && !wrongN) ? "perfect" : right>0 ? "partial" : "wrong";
   }
   const evHits = P.evidence.filter(e=>sol.keyEvidence.includes(e)).length;
-  const reasonHits = P.suicide ? 0 : C.reasoning.filter((r,i)=>P.reasoning[i]===r.answer).length;
+  const reasonHits = murder ? C.reasoning.filter((r,i)=>P.reasoning[i]===r.answer).length : 0;
   const pts = evHits + reasonHits;   // 0–6
   let grade;
   if (verdict==="perfect") grade = pts>=6 ? "S" : pts>=4 ? "A" : "B";
@@ -361,16 +383,17 @@ function submitAccuse(){
   save(); render(); scrollTo(0,0);
 }
 function vResult(){
-  const r = S.result, sol = C.solution;
+  const r = S.result, sol = C.solution, murder = r.pick.kind==="murder";
   const msg = { perfect:"完全正確！你揪出了所有兇手。", partial:"抓到部分真相，但有兇手逃過一劫，或是你冤枉了好人。", wrong:"推理錯誤，真兇逍遙法外。" }[r.verdict];
-  const pickName = r.pick.suicide ? "自殺" : r.pick.culprits.map(id=>C.suspects.find(s=>s.id===id).name).join("、");
-  const answers = r.pick.suicide ? "" : `<div class="card"><h3>🧩 推理題</h3>${C.reasoning.map((q,i)=>{
+  const everyone = [...C.suspects, ...C.extraPeople];
+  const pickName = murder ? "他殺：" + r.pick.culprits.map(id=>everyone.find(s=>s.id===id).name).join("、") : kindOf(r.pick.kind).label;
+  const answers = !murder ? "" : `<div class="card"><h3>🧩 推理題</h3>${C.reasoning.map((q,i)=>{
     const ok = r.pick.reasoning[i]===q.answer;
     return `<p style="margin:6px 0">${ok?"✅":"❌"} ${esc(q.q)}<br><span class="muted small">答案：${esc(q.options[q.answer])}${ok?"":`（你選：${esc(q.options[r.pick.reasoning[i]])}）`}</span></p>`;}).join("")}</div>`;
   return `<div class="card" style="text-align:center"><div class="muted small">評級</div>
     <div class="grade" style="color:${r.grade==="F"?"var(--red)":r.grade==="S"?"var(--accent)":"var(--text)"}">${r.grade}</div>
     <p style="margin:4px 0">${msg}</p>
-    <p class="muted small" style="margin:0">你的指認：${pickName}<br>關鍵證據 ${r.evHits}/3　推理題 ${r.reasonHits}/${C.reasoning.length}　問了 ${r.qUsed} 題、查了 ${r.sUsed} 項</p></div>
+    <p class="muted small" style="margin:0">你的推理：${esc(pickName)}<br>關鍵證據 ${r.evHits}/3${murder?`　推理題 ${r.reasonHits}/${C.reasoning.length}`:""}　問了 ${r.qUsed} 題、查了 ${r.sUsed} 項</p></div>
   ${answers}
   <div class="card"><h3>📜 真相</h3>${sol.truth.map(p=>`<p>${p}</p>`).join("")}</div>
   <button class="btn primary" onclick="restart(true)">再玩一次</button>`;

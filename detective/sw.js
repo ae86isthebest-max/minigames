@@ -1,5 +1,5 @@
 // 離線用：第一次開啟就把所有檔案存起來；之後有網路會在背景更新，下次開啟就是新版
-const CACHE = 'detective-tw-v2';
+const CACHE = 'detective-tw-v3';
 const FILES = ['./', 'index.html', 'manifest.json', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => Promise.all(FILES.map(f => c.add(f).catch(() => {})))).then(() => self.skipWaiting()));
