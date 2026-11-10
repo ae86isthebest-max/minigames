@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-Hant-HK">
+<html lang="zh-Hant-TW">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -89,95 +89,101 @@ nav button.on{color:var(--accent)}
 
 <script>
 /* =========================================================
-   案件資料：之後加新案件，只需要喺 CASES 加多一個物件
+   案件資料：之後新增案件，只要在 CASES 多加一個物件
    ========================================================= */
 const CASES = [{
   id: "villa",
   title: "半山別墅之夜",
-  timeLimit: 15,              // 可做幾多個行動（每個行動 = 10 分鐘）
-  startClock: [1, 0],         // 調查開始時間 01:00
+  questionLimit: 4,           // 每位嫌疑人最多能問幾題
+  searchLimit: 6,             // 監視器＋證物總共能查幾次
   intro: [
-    "11月9日深夜，地產商陳啟明（58歲）被發現死喺自己半山別墅嘅書房。",
-    "23:30，管家用後備匙打開書房，見到陳生伏喺書枱，手邊有一隻威士忌杯，電腦打印機旁邊有一張「遺書」。",
-    "法醫初步報告：<b>氰化物中毒</b>，死亡時間大約 <b>22:15 至 22:45</b>。",
-    "警方傾向當自殺處理，但你覺得有古怪。當晚屋入面有四個人。陳家律師凌晨 03:30 就到，到時所有人都會拒絕再答問題。",
-    "你只有 <b>2.5 小時</b>。每問一條問題、睇一段 CCTV、或者檢查一件證物，都要用 10 分鐘。揀清楚先好問。"
+    "11月9日深夜，地產商陳啟明（58歲）被發現死在自家半山別墅的書房裡。",
+    "23:30，管家用備用鑰匙打開書房，看到陳先生趴在書桌上，手邊有一個威士忌杯，印表機旁放著一張「遺書」。",
+    "法醫初步報告：<b>氰化物中毒</b>，死亡時間大約在 <b>22:15 到 22:45</b> 之間。",
+    "警方傾向以自殺結案，但你覺得事有蹊蹺。當晚屋內共有四個人。陳家的律師凌晨就會趕到。",
+    "<b>時間有限：</b>每位嫌疑人在律師到之前，只會再回答你 <b>4 個問題</b>；鑑識人員今晚也只來得及幫你處理 <b>6 項</b>監視器畫面或證物。問什麼、查什麼，要好好取捨。"
   ],
-  goal: "查出真相：係自殺？定係有人落毒？兇手可能唔止一個。",
+  goal: "查出真相：是自殺？還是有人下毒？兇手可能不只一個。",
   suspects: [
-    { id:"wong", name:"黃伯", role:"管家（做咗 30 年）", av:"🧓",
+    { id:"wong", name:"黃伯", role:"管家（服務 30 年）", av:"🧓",
       questions:[
-        { id:"w1", q:"你幾點、點樣發現陳生？", a:"23:30 我照舊送杯暖奶去書房。敲門冇人應，我就用後備匙開門，見到老爺伏咗喺枱度……" },
-        { id:"w2", q:"陳生每晚有咩習慣？", a:"老爺每晚十點都會喺書房飲一杯威士忌，一定要加冰，幾十年都係咁。" },
-        { id:"w3", q:"今晚邊個攞冰去書房？", a:"平時一定係我攞。不過今晚浩少爺話佢順路，搶住幫我拎冰桶入去。佢平時好少咁勤力嘅。", clue:"浩少爺今晚主動拎冰入書房" },
-        { id:"w4", q:"陳生平時用唔用電腦打字？", a:"老爺？佢唔識打中文字㗎！所有信件同文件佢都係用鋼筆親手寫，打字嘅嘢一向係周小姐幫手。", clue:"陳生唔識打字，一向手寫" },
-        { id:"w5", q:"今晚仲有冇見到其他人？", a:"十點半左右周小姐話走，我送佢到大門口，見住佢揸車走。之後我就冇再見過佢。" },
-        { id:"w6", q:"書房道門點鎖？", a:"門一關就會自動鎖，要輸密碼或者用鎖匙先開到。密碼得老爺同周小姐知，鎖匙就得我有後備。", clue:"書房密碼得陳生同周曉晴知" }
+        { id:"w1", q:"你幾點、怎麼發現陳先生的？", a:"23:30 我照常送一杯熱牛奶去書房。敲門沒人回應，我就用備用鑰匙開門，結果看到老爺趴在桌上……" },
+        { id:"w2", q:"陳先生每晚有什麼習慣？", a:"老爺每天晚上十點都會在書房喝一杯威士忌，一定要加冰塊，幾十年都是這樣。" },
+        { id:"w3", q:"今晚是誰把冰塊送進書房的？", a:"平常一定是我送。不過今晚浩少爺說他順路，搶著幫我把冰桶拿進去。他平常很少這麼勤快的。", clue:"陳浩今晚主動把冰塊送進書房" },
+        { id:"w4", q:"陳先生平常會用電腦打字嗎？", a:"老爺？他不會打中文字啊！所有信件和文件都是他用鋼筆親手寫的，要打字的東西一向都是周小姐幫忙。", clue:"陳先生不會打字，一向親手寫" },
+        { id:"w5", q:"今晚還有看到其他人嗎？", a:"十點半左右周小姐說要走，我送她到大門口，看著她開車離開。之後就沒再見過她了。" },
+        { id:"w6", q:"書房的門是怎麼上鎖的？", a:"門一關就會自動上鎖，要輸入密碼或用鑰匙才打得開。密碼只有老爺和周小姐知道，備用鑰匙只有我有。", clue:"書房密碼只有陳先生和周曉晴知道" }
       ]},
-    { id:"lam", name:"林美玲", role:"陳太（結婚 20 年）", av:"👩",
+    { id:"lam", name:"林美玲", role:"陳太太（結婚 20 年）", av:"👩",
       questions:[
-        { id:"l1", q:"今晚十點之後你喺邊？", a:"我十點已經返房瞓咗，乜都唔知，係黃伯嗌醒我先知出咗事。" },
-        { id:"l2", q:"你同陳生關係點樣？", a:"好好呀，結婚咁多年，冇乜嘢嗌交。" },
-        { id:"l3", q:"陳生最近有冇心事？", a:"佢話想改遺囑，聽朝約咗律師嚟。好似同浩仔有關，佢話唔可以再縱住佢。", clue:"陳生聽日想改遺囑，同陳浩有關" },
-        { id:"l4", q:"你覺得陳生會唔會自殺？", a:"佢咁愛面子、咁硬頸嘅人……我真係估唔到佢會咁做。" },
-        { id:"l5", q:"陳浩同陳生關係點樣？", a:"浩仔欠咗好多賭債，之前都係佢叔叔幫佢還。上個月老公話最後一次，之後唔會再理佢。", clue:"陳浩欠賭債，陳生拒絕再幫" },
-        { id:"l6", q:"（出示花園 CCTV）22:40 你喺花園同個男人做緊乜？", requires:"cctv_garden",
-          a:"……好啦，我認。佢叫 Kevin，係我嘅健身教練。我哋……一齊咗半年。佢 22:55 由大門走，我 23:00 就返房。我冇殺人！我隱瞞只係唔想俾人知呢件事。", clue:"陳太講大話係為咗隱瞞婚外情" }
+        { id:"l1", q:"今晚十點以後你在哪裡？", a:"我十點就回房間睡了，什麼都不知道，是黃伯把我叫醒我才知道出事了。" },
+        { id:"l2", q:"你和陳先生感情如何？", a:"很好啊，結婚這麼多年，很少吵架。" },
+        { id:"l3", q:"陳先生最近有什麼心事嗎？", a:"他說想改遺囑，明天約了律師過來。好像跟阿浩有關，他說不能再這樣縱容他了。", clue:"陳先生明天要改遺囑，和陳浩有關" },
+        { id:"l4", q:"你覺得陳先生會自殺嗎？", a:"他那麼愛面子、那麼固執的人……我真的想不到他會這樣做。" },
+        { id:"l5", q:"陳浩和陳先生的關係如何？", a:"阿浩欠了很多賭債，以前都是他叔叔幫他還。上個月我先生說這是最後一次，以後不會再管他了。", clue:"陳浩欠賭債，陳先生拒絕再幫忙" },
+        { id:"l6", q:"（出示花園監視器）22:40 你在花園和一個男人做什麼？", requires:"cctv_garden",
+          a:"……好，我承認。他叫 Kevin，是我的健身教練。我們……在一起半年了。他 22:53 從側門離開，我 23:00 前就回房間了。我沒有殺人！我說謊只是不想讓別人知道這件事。", clue:"陳太太說謊是為了隱瞞外遇" }
       ]},
-    { id:"ho", name:"陳浩", role:"姪仔（大學實驗室助理）", av:"🧑",
+    { id:"ho", name:"陳浩", role:"姪子（大學實驗室助理）", av:"🧑",
       questions:[
-        { id:"h1", q:"今晚食完飯之後你做過乜？", a:"我一直喺房打機，冇出過房，乜都冇聽到。" },
-        { id:"h2", q:"你同叔叔關係點樣？", a:"叔叔對我好好，好似我阿爸咁，我點會害佢？" },
-        { id:"h3", q:"你做咩工作？", a:"我喺大學化學系實驗室做助理，幫教授準備實驗材料。", clue:"陳浩喺化學實驗室工作" },
-        { id:"h4", q:"你知唔知叔叔想改遺囑？", a:"冇聽過喎。改遺囑？同我有咩關係？" },
-        { id:"h5", q:"你有冇欠人錢？", a:"……少少啦，邊個後生仔冇欠下卡數？已經搞掂咗。" },
-        { id:"h6", q:"（出示廚房 CCTV）點解你話冇出過房，但又拎冰桶入書房？", requires:"cctv_kitchen",
-          a:"我……我唔記得咗啫！我只係幫黃伯手，放低冰桶就返房，前後五分鐘。咁都有問題？" },
-        { id:"h7", q:"（出示實驗室紀錄）你上星期簽出 5 克氰化鉀做乜？", requires:"ev_lab",
-          a:"做……做實驗呀！成個實驗室大把人借！你唔好亂噏！", note:"佢講嘢開始口窒，手一直震。" },
-        { id:"h8", q:"（出示手機訊息）你同周曉晴講嘅「得咗」係咩意思？", requires:"ev_phone",
-          a:"……我要見律師。", note:"陳浩之後一句都唔肯再講。" }
+        { id:"h1", q:"今晚吃完飯後你做了什麼？", a:"我一直在房間打電動，沒出過房門，什麼都沒聽到。" },
+        { id:"h2", q:"你和叔叔的關係如何？", a:"叔叔對我很好，就像我爸一樣，我怎麼可能害他？" },
+        { id:"h3", q:"你的工作是什麼？", a:"我在大學化學系的實驗室當助理，幫教授準備實驗材料。", clue:"陳浩在化學實驗室工作" },
+        { id:"h4", q:"你知道叔叔想改遺囑嗎？", a:"沒聽說過耶。改遺囑？跟我有什麼關係？" },
+        { id:"h5", q:"你有欠別人錢嗎？", a:"……一點點啦，哪個年輕人沒欠點卡債？已經處理好了。" },
+        { id:"h6", q:"（出示廚房監視器）你說沒出過房門，那為什麼會拿冰桶進書房？", requires:"cctv_kitchen",
+          a:"我……我忘了而已！我只是幫黃伯的忙，放下冰桶就回房間，前後五分鐘。這樣也有問題？" },
+        { id:"h7", q:"（出示實驗室紀錄）你上週領出 5 克氰化鉀做什麼？", requires:"ev_lab",
+          a:"做……做實驗啊！整個實驗室一堆人都會領！你不要亂講！", note:"他說話開始結巴，手一直發抖。" },
+        { id:"h8", q:"（出示手機訊息）你傳給周曉晴的「好了」是什麼意思？", requires:"ev_phone",
+          a:"……我要找律師。", note:"陳浩之後一句話都不肯再說。" }
       ]},
-    { id:"chow", name:"周曉晴", role:"私人秘書（跟咗陳生 6 年）", av:"👩‍💼",
+    { id:"chow", name:"周曉晴", role:"私人秘書（跟了陳先生 6 年）", av:"👩‍💼",
       questions:[
-        { id:"c1", q:"你今晚幾點離開？", a:"十點半就揸車走咗，大門 CCTV 拍得到，黃伯都見住我走。" },
-        { id:"c2", q:"你今晚嚟做乜？", a:"送幾份合約俾陳生簽，簽完我就走。" },
-        { id:"c3", q:"陳生今晚精神點樣？", a:"好差。佢話好攰，仲講過一句「活住都冇乜意思」。我當時都覺得唔妥……" },
-        { id:"c4", q:"你知唔知書房密碼？", a:"知，我係佢秘書，成日要入去攞文件。" },
-        { id:"c5", q:"你同陳浩熟唔熟？", a:"唔熟，見過幾次面，打個招呼咁啫。" },
-        { id:"c6", q:"（出示書房走廊 CCTV）你話十點半走咗，點解 23:02 會喺書房門口？", requires:"cctv_hall",
-          a:"我……我返嚟攞漏咗嘅手機！入到去見陳生伏咗喺度，我以為佢瞓著，所以冇理。", note:"屍體就喺佢面前，佢都冇報警，仲要過咗六分鐘先出嚟。" },
-        { id:"c7", q:"（出示公司帳目）你經手嘅數少咗 380 萬，係咩事？", requires:"ev_ledger",
-          a:"嗰啲係誤會嚟！我……我本來打算還嘅！" },
-        { id:"c8", q:"（出示打印紀錄）遺書係 23:05 打印，正正係你喺書房嗰陣，係咪你打嘅？", requires:"ev_printer",
-          a:"……", note:"周曉晴低頭，眼淚流落嚟，冇再出聲。" }
+        { id:"c1", q:"你今晚幾點離開的？", a:"十點半就開車走了，大門監視器拍得到，黃伯也看著我離開的。" },
+        { id:"c2", q:"你今晚來做什麼？", a:"送幾份合約給陳先生簽名，簽完我就走了。" },
+        { id:"c3", q:"陳先生今晚精神狀況如何？", a:"很差。他說很累，還說了一句「活著也沒什麼意思」。我當時就覺得不太對勁……" },
+        { id:"c4", q:"你知道書房的密碼嗎？", a:"知道，我是他的秘書，常常要進去拿文件。" },
+        { id:"c5", q:"你和陳浩熟嗎？", a:"不熟，見過幾次面，打個招呼而已。" },
+        { id:"c6", q:"（出示書房走廊監視器）你說十點半就走了，為什麼 23:02 會出現在書房門口？", requires:"cctv_hall",
+          a:"我……我回來拿忘記帶走的手機！進去看到陳先生趴著，我以為他睡著了，所以就沒理他。", note:"屍體就在她面前，她卻沒有報警，還待了六分鐘才出來。" },
+        { id:"c7", q:"（出示公司帳目）你經手的帳少了 380 萬，是怎麼回事？", requires:"ev_ledger",
+          a:"那是誤會！我……我本來就打算要還的！" },
+        { id:"c8", q:"（出示列印紀錄）遺書是 23:05 印出來的，剛好是你在書房的時候，是你打的嗎？", requires:"ev_printer",
+          a:"……", note:"周曉晴低下頭，眼淚掉了下來，再也沒說話。" }
       ]}
   ],
   cctv: [
-    { id:"cctv_kitchen", title:"廚房走廊 21:55–22:10", text:"21:56  陳浩由廚房行出嚟，手拎住冰桶，行向書房方向。\n22:03  陳浩空手行返嚟，望咗兩下鏡頭，返上樓。", clue:"陳浩 21:56 親自拎冰桶入書房" },
-    { id:"cctv_garden", title:"後花園 22:30–23:00", text:"22:38  林美玲行出花園。\n22:40  一個戴帽男人由側門入嚟，兩人擁抱、傾偈。\n22:53  男人由側門離開。\n22:58  林美玲返入屋。", clue:"陳太 22:40 喺花園見陌生男人" },
-    { id:"cctv_gate", title:"大門 22:20–23:30", text:"22:31  周曉晴架白色私家車駛出大門。\n22:55  戴帽男人步行經大門離開。\n之後至 23:30 冇人出入。", clue:"周曉晴 22:31 揸車離開大門" },
-    { id:"cctv_back", title:"後門 22:50–23:15", text:"22:59  陳浩落樓，打開後門。\n23:00  一個著黑色外套、戴口罩嘅女人入屋。\n23:12  黑外套女人由後門離開，陳浩鎖返門。", clue:"23:00 陳浩開後門放一個女人入屋" },
-    { id:"cctv_hall", title:"書房走廊 22:55–23:35", text:"23:02  著黑色外套嘅女人除低口罩，係周曉晴。佢喺書房門口輸入密碼，入咗書房。\n23:08  周曉晴離開書房，行向後門。\n23:30  黃伯用鎖匙開門入書房。", clue:"周曉晴 23:02–23:08 喺書房入面" }
+    { id:"cctv_kitchen", title:"廚房走廊 21:55–22:10", text:"21:56  陳浩從廚房走出來，手上拿著冰桶，往書房方向走去。\n22:03  陳浩空手走回來，看了鏡頭兩眼，上樓。", clue:"陳浩 21:56 親自把冰桶拿進書房" },
+    { id:"cctv_garden", title:"後花園 22:30–23:00", text:"22:38  林美玲走到花園。\n22:40  一名戴帽子的男子從側門進來，兩人擁抱、交談。\n22:53  男子從側門離開。\n22:58  林美玲回到屋內。", clue:"陳太太 22:40 在花園和陌生男子見面" },
+    { id:"cctv_gate", title:"大門 22:20–23:30", text:"22:31  周曉晴的白色轎車駛出大門。\n之後到 23:30 都沒有人從大門進出。", clue:"周曉晴 22:31 開車從大門離開" },
+    { id:"cctv_back", title:"後門 22:50–23:15", text:"22:59  陳浩下樓，打開後門。\n23:00  一名穿黑色外套、戴口罩的女子進入屋內。\n23:12  黑外套女子從後門離開，陳浩把門鎖上。", clue:"23:00 陳浩打開後門讓一名女子進屋" },
+    { id:"cctv_hall", title:"書房走廊 22:55–23:35", text:"23:02  穿黑色外套的女子拿下口罩，是周曉晴。她在書房門口輸入密碼，走進書房。\n23:08  周曉晴離開書房，往後門走去。\n23:30  黃伯用鑰匙開門進入書房。", clue:"周曉晴 23:02–23:08 待在書房裡" }
   ],
   evidence: [
-    { id:"ev_note", title:"遺書", text:"電腦打印，得一行字：「我好攰，對不起美玲。」\n冇親筆簽名。", clue:"遺書係電腦打印，冇簽名" },
-    { id:"ev_glass", title:"威士忌杯、酒樽、冰桶", text:"杯入面嘅溶冰水驗到大量氰化物。\n威士忌酒樽：冇毒。\n冰桶：已經被人洗乾淨，放返廚房。", clue:"毒係落喺冰度，冰桶被人洗過" },
-    { id:"ev_printer", title:"書房打印機紀錄", text:"最後一次打印：11月9日 23:05，一頁。\n（法醫話死亡時間係 22:15–22:45）", clue:"遺書喺陳生死後 23:05 先打印" },
-    { id:"ev_ledger", title:"書枱上嘅公司帳目", text:"由周曉晴經手嘅帳目少咗 380 萬。\n陳生用紅筆圈住，旁邊寫住：「明日報警」。", clue:"周曉晴虧空 380 萬，陳生準備報警" },
-    { id:"ev_phone", title:"陳浩手機（已還原刪除訊息）", text:"22:20 陳浩 → 周曉晴：「得咗。」\n22:22 周曉晴 → 陳浩：「我扮走先，十一點後門。」", clue:"陳浩同周曉晴當晚有秘密聯絡" },
-    { id:"ev_lab", title:"大學實驗室化學品紀錄", text:"11月3日　陳浩　簽出：氰化鉀 5 克\n狀態：未歸還", clue:"陳浩上星期簽出氰化鉀未還" }
+    { id:"ev_note", title:"遺書", text:"電腦列印，只有一行字：「我好累，對不起美玲。」\n沒有親筆簽名。", clue:"遺書是電腦列印，沒有簽名" },
+    { id:"ev_glass", title:"威士忌杯、酒瓶、冰桶", text:"杯中融化的冰水驗出大量氰化物。\n威士忌酒瓶：沒有毒。\n冰桶：已被人洗乾淨，放回廚房。", clue:"毒下在冰塊裡，冰桶被洗過" },
+    { id:"ev_printer", title:"書房印表機紀錄", text:"最後一次列印：11月9日 23:05，一頁。\n（法醫推定死亡時間為 22:15–22:45）", clue:"遺書在陳先生死後的 23:05 才印出" },
+    { id:"ev_ledger", title:"書桌上的公司帳目", text:"由周曉晴經手的帳目短少 380 萬。\n陳先生用紅筆圈起來，旁邊寫著：「明天報警」。", clue:"周曉晴挪用 380 萬，陳先生準備報警" },
+    { id:"ev_phone", title:"陳浩的手機（已還原刪除的訊息）", text:"22:20 陳浩 → 周曉晴：「好了。」\n22:22 周曉晴 → 陳浩：「我先假裝離開，十一點後門。」", clue:"陳浩和周曉晴當晚秘密聯絡" },
+    { id:"ev_lab", title:"大學實驗室化學品紀錄", text:"11月3日　陳浩　領出：氰化鉀 5 克\n狀態：未歸還", clue:"陳浩上週領出氰化鉀未歸還" }
+  ],
+  // 指認時的推理題：用來防止「用猜的」也能拿高分
+  reasoning: [
+    { q:"毒是下在哪裡？", options:["威士忌酒瓶","冰塊","酒杯杯緣","黃伯的熱牛奶"], answer:1 },
+    { q:"遺書是誰弄的？", options:["陳先生自己寫的","陳太太","周曉晴","黃伯"], answer:2 },
+    { q:"周曉晴離開後，是怎麼回到書房的？", options:["從大門走回來","陳浩幫她開後門","爬窗進去","她根本沒離開過"], answer:1 }
   ],
   solution: {
     culprits: ["ho","chow"],
     suicide: false,
     keyEvidence: ["ev_glass","ev_lab","ev_printer","ev_phone","cctv_kitchen","cctv_hall","cctv_back"],
     truth: [
-      "<b>兇手係陳浩同周曉晴，兩個人合謀。</b>陳生唔係自殺。",
-      "陳浩欠落大筆賭債，叔叔聽日就會改遺囑剔走佢；周曉晴虧空咗 380 萬，陳生已經寫低「明日報警」。兩個人都有理由喺今晚之前搞掂陳生。",
-      "陳浩用實驗室偷出嚟嘅氰化鉀整咗有毒嘅冰，21:56 搶住幫黃伯拎冰桶入書房。陳生 22:00 照舊飲威士忌加冰，好快就毒發身亡。陳浩之後洗乾淨冰桶，22:20 send「得咗」俾周曉晴。",
-      "周曉晴 22:31 故意喺大門 CCTV 前揸車離開，製造不在場證明。23:00 陳浩開後門放佢返入屋，佢用密碼入書房，23:05 用電腦打印咗一張假遺書。但陳生根本唔識打字，打印時間仲係佢死咗之後。",
-      "陳太講大話只係為咗隱瞞婚外情，同案件無關。"
+      "<b>兇手是陳浩和周曉晴，兩人聯手犯案。</b>陳先生不是自殺。",
+      "陳浩欠下大筆賭債，叔叔明天就要改遺囑把他除名；周曉晴挪用了 380 萬，陳先生已經寫下「明天報警」。兩人都有理由在今晚之前除掉陳先生。",
+      "陳浩用從實驗室偷出來的氰化鉀做成有毒的冰塊，21:56 搶著幫黃伯把冰桶送進書房。陳先生 22:00 照常喝威士忌加冰，很快就毒發身亡。陳浩事後把冰桶洗乾淨，22:20 傳了「好了」給周曉晴。",
+      "周曉晴 22:31 故意在大門監視器前開車離開，製造不在場證明。23:00 陳浩打開後門讓她回到屋內，她用密碼進入書房，23:05 用電腦印了一張假遺書。但陳先生根本不會打字，而且列印時間是在他死後。",
+      "陳太太說謊只是為了隱瞞外遇，與命案無關。"
     ]
   }
 }];
@@ -186,48 +192,47 @@ const CASES = [{
    遊戲邏輯
    ========================================================= */
 const C = CASES[0];
-const KEY = "detective_save_" + C.id;
+const KEY = "detective_tw_save_" + C.id;
 let S = load() || fresh();
-let tab = "brief", openSuspect = null, accusePick = { culprits:[], suicide:false, evidence:[] };
+let tab = "brief", openSuspect = null, accusePick = freshPick();
 
-function fresh(){ return { used:0, asked:[], seen:[], log:[], done:false, result:null }; }
-function load(){ try{ return JSON.parse(localStorage.getItem(KEY)); }catch(e){ return null; } }
+function fresh(){ return { asked:[], seen:[], done:false, result:null }; }
+function freshPick(){ return { culprits:[], suicide:null, evidence:[], reasoning:{} }; }
+function load(){ try{ const s = JSON.parse(localStorage.getItem(KEY)); return s && s.asked ? s : null; }catch(e){ return null; } }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
-const left = () => C.timeLimit - S.used;
-const has = id => S.seen.includes(id) || S.asked.includes(id);
 
-function clockText(){
-  const m = C.startClock[0]*60 + C.startClock[1] + S.used*10;
-  return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");
-}
+const has = id => S.seen.includes(id) || S.asked.includes(id);
+const askedOf = s => s.questions.filter(q=>S.asked.includes(q.id)).length;
+const qLeft = s => C.questionLimit - askedOf(s);
+const searchLeft = () => C.searchLimit - S.seen.length;
+const totalQLeft = () => C.suspects.reduce((n,s)=>n+qLeft(s),0);
+
 function renderClock(){
-  document.getElementById("clockT").textContent = clockText() + " · 剩" + left() + "次";
-  document.getElementById("clockBar").style.width = (left()/C.timeLimit*100)+"%";
-  document.getElementById("clock").classList.toggle("low", left() <= 3);
+  document.getElementById("clockT").textContent = "🗣️" + totalQLeft() + "　🔍" + searchLeft();
+  const total = C.suspects.length*C.questionLimit + C.searchLimit;
+  const left = totalQLeft() + searchLeft();
+  document.getElementById("clockBar").style.width = (left/total*100)+"%";
+  document.getElementById("clock").classList.toggle("low", left <= 4);
 }
 function toast(msg){
   const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show");
-  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 2200);
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 2400);
 }
-function spend(){
-  S.used++; save(); renderClock();
-  if (left() === 0) toast("⏰ 律師到咗！冇時間再查，要作出指認。");
-  else if (left() <= 3) toast("⚠️ 只剩 " + left() + " 次行動");
+function afterSpend(){
+  save(); renderClock();
+  if (totalQLeft()===0 && searchLeft()===0) setTimeout(()=>toast("⏰ 律師到了！調查結束，請進行指認。"), 300);
 }
 
 function ask(sus, q){
-  if (S.asked.includes(q.id) || left() <= 0 || S.done) return;
-  S.asked.push(q.id);
-  S.log.push({ type:"q", sus:sus.id, id:q.id });
-  spend(); render();
+  if (S.asked.includes(q.id) || qLeft(sus) <= 0 || S.done) return;
+  S.asked.push(q.id); afterSpend(); render();
+  if (qLeft(sus)===0) setTimeout(()=>toast(sus.name + "：「我不會再回答了，等我的律師來。」"), 300);
 }
-function inspect(item, kind){
-  if (S.seen.includes(item.id) || left() <= 0 || S.done) return;
-  S.seen.push(item.id);
-  S.log.push({ type:kind, id:item.id });
+function inspect(item){
+  if (S.seen.includes(item.id) || searchLeft() <= 0 || S.done) return;
+  S.seen.push(item.id); afterSpend(); render();
   const unlocked = C.suspects.flatMap(s=>s.questions).filter(q=>q.requires===item.id);
-  spend(); render();
-  if (unlocked.length && left()>0) setTimeout(()=>toast("🔓 解鎖咗新問題，可以拎去質問疑犯"), 400);
+  if (unlocked.length) setTimeout(()=>toast("🔓 解鎖新問題，可以拿去質問嫌疑人"), 400);
 }
 
 const esc = s => String(s).replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
@@ -237,12 +242,12 @@ function vBrief(){
   return `<div class="card intro"><h2>${C.title}</h2>${C.intro.map(p=>`<p>${p}</p>`).join("")}</div>
   <div class="card"><h3>🎯 任務</h3><p style="margin:0">${C.goal}</p></div>
   <div class="card"><h3>玩法</h3><p class="small muted" style="margin:0">
-  🗣️ 問話：每個疑犯有好多條問題，但時間唔夠問晒。有人會講大話。<br>
-  🔍 搜證：睇 CCTV、檢查證物。搵到關鍵證據會解鎖新嘅質問問題。<br>
-  📓 筆記：自動記低你問過同睇過嘅嘢。<br>
-  ⚖️ 指認：揀兇手（可以多過一個）或者判斷係自殺，再揀證據證明。</p></div>
+  🗣️ 問話：每位嫌疑人有很多問題可以問，但只會回答你 ${C.questionLimit} 題。有人會說謊。<br>
+  🔍 搜證：調閱監視器、檢查證物，總共只能查 ${C.searchLimit} 項。找到關鍵證據會解鎖新的質問問題（質問也算一題）。<br>
+  📓 筆記：自動記錄你問過、看過的內容。<br>
+  ⚖️ 指認：判斷自殺或他殺、選出兇手（可以不只一個），再選證據並回答推理題。</p></div>
   <button class="btn primary" onclick="go('suspects')">開始調查</button>
-  <button class="btn danger" onclick="restart()">重新開始呢單案</button>`;
+  <button class="btn danger" onclick="restart()">重新開始這個案件</button>`;
 }
 
 function vSuspects(){
@@ -252,24 +257,25 @@ function vSuspects(){
     const lockedN = s.questions.length - qs.length;
     const askedHere = qs.filter(q=>S.asked.includes(q.id));
     const notAsked = qs.filter(q=>!S.asked.includes(q.id));
-    return `<button class="back" onclick="openSuspect=null;render()">‹ 返回疑犯列表</button>
+    const left = qLeft(s), off = left<=0||S.done;
+    return `<button class="back" onclick="openSuspect=null;render()">‹ 返回嫌疑人列表</button>
     <div class="card"><div style="display:flex;gap:12px;align-items:center"><div style="font-size:44px">${s.av}</div>
-      <div><h2 style="margin:0">${s.name}</h2><div class="muted small">${s.role}</div></div></div></div>
+      <div><h2 style="margin:0">${s.name}</h2><div class="muted small">${s.role}</div>
+      <div class="small" style="color:${left?"var(--accent)":"var(--red)"}">${left?`還願意回答 ${left} 題`:"拒絕再回答"}</div></div></div></div>
     ${askedHere.length?`<div class="card"><h3>已問</h3>${askedHere.map(q=>qaHTML(q)).join("")}</div>`:""}
-    <div class="card"><h3>可以問</h3>
-      ${notAsked.length?notAsked.map(q=>`<button class="btn" ${left()<=0||S.done?"disabled":""} onclick="askById('${s.id}','${q.id}')">
-        ${q.requires?'<span class="tag new">新</span>':''}${esc(q.q)} <span class="tag cost">10 分鐘</span></button>`).join("")
-      :`<p class="muted small">暫時冇其他問題。</p>`}
-      ${lockedN?`<p class="muted small">🔒 仲有 ${lockedN} 條問題，要搵到相關證據先問得。</p>`:""}
-    </div>`;
+    ${off?"":`<div class="card"><h3>可以問（選 ${left} 題）</h3>
+      ${notAsked.length?notAsked.map(q=>`<button class="btn" onclick="askById('${s.id}','${q.id}')">
+        ${q.requires?'<span class="tag new">質問</span>':''}${esc(q.q)}</button>`).join("")
+      :`<p class="muted small">暫時沒有其他問題。</p>`}
+      ${lockedN?`<p class="muted small">🔒 還有 ${lockedN} 個問題，要先找到相關證據才能問。</p>`:""}
+    </div>`}`;
   }
-  return `<p class="muted small">揀一個疑犯問話。每條問題用 10 分鐘。</p>
+  return `<p class="muted small">選一位嫌疑人問話。每人只會回答 ${C.questionLimit} 題，先想清楚要問什麼。</p>
   <div class="suspects">${C.suspects.map(s=>{
-    const avail = s.questions.filter(q=>!q.requires||has(q.requires));
-    const n = avail.filter(q=>S.asked.includes(q.id)).length;
+    const left = qLeft(s);
     return `<div class="sus" onclick="openSuspect='${s.id}';render();scrollTo(0,0)">
       <div class="av">${s.av}</div><div class="nm">${s.name}</div><div class="rl">${s.role}</div>
-      <div class="ct">已問 ${n} / 可問 ${avail.length}</div></div>`;}).join("")}</div>`;
+      <div class="ct" style="${left?"":"color:var(--red)"}">${left?`還能問 ${left} 題`:"已拒答"}</div></div>`;}).join("")}</div>`;
 }
 function qaHTML(q){
   const silent = q.a === "……";
@@ -278,54 +284,63 @@ function qaHTML(q){
 function askById(sid, qid){ const s=C.suspects.find(x=>x.id===sid); ask(s, s.questions.find(q=>q.id===qid)); }
 
 function vSearch(){
+  const off = searchLeft()<=0||S.done;
   const block = (title, items, kind) => `<div class="card"><h3>${title}</h3>${items.map(it=>{
     if (S.seen.includes(it.id)) return `<div style="margin:12px 0"><div style="font-weight:700">${esc(it.title)}</div>
       ${kind==="cctv"?`<div class="cctv"><span class="rec">● REC</span>\n${esc(it.text)}</div>`:`<div class="muted">${nl(it.text)}</div>`}</div>`;
-    return `<button class="btn" ${left()<=0||S.done?"disabled":""} onclick="inspectById('${kind}','${it.id}')">${kind==="cctv"?"📹":"🧾"} ${esc(it.title)} <span class="tag cost">10 分鐘</span></button>`;
+    return `<button class="btn" ${off?"disabled":""} onclick="inspectById('${kind}','${it.id}')">${kind==="cctv"?"📹":"🧾"} ${esc(it.title)}</button>`;
   }).join("")}</div>`;
-  return `<p class="muted small">每睇一段片或者檢查一件證物用 10 分鐘。</p>
-  ${block("📹 閉路電視", C.cctv, "cctv")}${block("🧾 證物", C.evidence, "ev")}`;
+  return `<p class="muted small">${searchLeft()>0?`鑑識人員還能幫你處理 <b style="color:var(--accent)">${searchLeft()}</b> 項（共 ${C.cctv.length+C.evidence.length} 項）。`:"鑑識人員已經沒時間了。"}</p>
+  ${block("📹 監視器", C.cctv, "cctv")}${block("🧾 證物", C.evidence, "ev")}`;
 }
-function inspectById(kind, id){ inspect((kind==="cctv"?C.cctv:C.evidence).find(x=>x.id===id), kind); }
+function inspectById(kind, id){ inspect((kind==="cctv"?C.cctv:C.evidence).find(x=>x.id===id)); }
 
 function vNotes(){
-  if (!S.log.length) return `<div class="card"><p class="muted" style="margin:0">未有紀錄。去問話或者搜證啦。</p></div>`;
+  if (!S.asked.length && !S.seen.length) return `<div class="card"><p class="muted" style="margin:0">還沒有紀錄。先去問話或搜證吧。</p></div>`;
   const clues = [];
   C.suspects.forEach(s=>s.questions.forEach(q=>{ if(q.clue && S.asked.includes(q.id)) clues.push(q.clue); }));
   [...C.cctv, ...C.evidence].forEach(it=>{ if(it.clue && S.seen.includes(it.id)) clues.push(it.clue); });
-  let html = `<div class="card"><h3>🔑 重點</h3><ul style="margin:0;padding-left:20px">${clues.map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>`;
+  let html = clues.length?`<div class="card"><h3>🔑 重點</h3><ul style="margin:0;padding-left:20px">${clues.map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>`:"";
   C.suspects.forEach(s=>{
     const qs = s.questions.filter(q=>S.asked.includes(q.id));
     if (qs.length) html += `<div class="card log-sec"><h3>${s.av} ${s.name}</h3>${qs.map(qaHTML).join("")}</div>`;
   });
-  return html + `<p class="muted small">提示：對比口供同 CCTV、時間，搵出邊個講大話，再諗佢點解要講大話。</p>`;
+  const seen = [...C.cctv, ...C.evidence].filter(it=>S.seen.includes(it.id));
+  if (seen.length) html += `<div class="card log-sec"><h3>🔍 搜證結果</h3>${seen.map(it=>`<div style="margin:10px 0"><b>${esc(it.title)}</b><div class="muted small">${nl(it.text)}</div></div>`).join("")}</div>`;
+  return html + `<p class="muted small">提示：比對口供、監視器和時間，找出誰在說謊，再想想他為什麼要說謊。</p>`;
 }
 
 function vAccuse(){
   if (S.done) return vResult();
   const seenItems = [...C.cctv, ...C.evidence].filter(it=>S.seen.includes(it.id));
   const P = accusePick;
-  return `<div class="card"><h2>⚖️ 作出指認</h2><p class="muted small" style="margin:0">指認之後就唔可以再調查。${left()>0?`你仲有 ${left()} 次行動未用。`:""}</p></div>
-  <div class="card"><h3>1. 陳生係點死？</h3>
-    <div class="pick ${P.suicide?"on":""}" onclick="pickSuicide(true)"><span class="box">${P.suicide?"✓":""}</span>自殺</div>
-    <div class="pick ${!P.suicide&&P.culprits.length?"on":""}" onclick="pickSuicide(false)"><span class="box">${!P.suicide&&P.culprits.length?"✓":""}</span>被人殺害</div>
+  const murder = P.suicide===false;
+  let n = 1;
+  return `<div class="card"><h2>⚖️ 進行指認</h2><p class="muted small" style="margin:0">指認後就不能再調查。${totalQLeft()+searchLeft()>0?`你還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查。`:""}</p></div>
+  <div class="card"><h3>${n++}. 陳先生是怎麼死的？</h3>
+    <div class="pick ${P.suicide===true?"on":""}" onclick="pickSuicide(true)"><span class="box">${P.suicide===true?"✓":""}</span>自殺</div>
+    <div class="pick ${murder?"on":""}" onclick="pickSuicide(false)"><span class="box">${murder?"✓":""}</span>他殺</div>
   </div>
-  ${P.suicide?"":`<div class="card"><h3>2. 兇手係邊個？（可以揀多過一個）</h3>
+  ${murder?`<div class="card"><h3>${n++}. 兇手是誰？（可以複選）</h3>
     ${C.suspects.map(s=>`<div class="pick ${P.culprits.includes(s.id)?"on":""}" onclick="toggleCulprit('${s.id}')"><span class="box">${P.culprits.includes(s.id)?"✓":""}</span>${s.av} ${s.name}</div>`).join("")}
-  </div>`}
-  <div class="card"><h3>${P.suicide?"2":"3"}. 揀最多 3 件關鍵證據</h3>
-    ${seenItems.length?seenItems.map(it=>`<div class="pick ${P.evidence.includes(it.id)?"on":""}" onclick="toggleEv('${it.id}')"><span class="box">${P.evidence.includes(it.id)?"✓":""}</span>${esc(it.title)}</div>`).join("")
-    :`<p class="muted small">你未睇過任何 CCTV 或證物。</p>`}
   </div>
-  <button class="btn primary" onclick="submitAccuse()">確定指認</button>`;
+  ${C.reasoning.map((r,i)=>`<div class="card"><h3>${n++}. ${esc(r.q)}</h3>
+    ${r.options.map((o,j)=>`<div class="pick ${P.reasoning[i]===j?"on":""}" onclick="pickReason(${i},${j})"><span class="box">${P.reasoning[i]===j?"✓":""}</span>${esc(o)}</div>`).join("")}</div>`).join("")}`:""}
+  ${P.suicide===null?"":`<div class="card"><h3>${n++}. 選最多 3 項關鍵證據</h3>
+    ${seenItems.length?seenItems.map(it=>`<div class="pick ${P.evidence.includes(it.id)?"on":""}" onclick="toggleEv('${it.id}')"><span class="box">${P.evidence.includes(it.id)?"✓":""}</span>${esc(it.title)}</div>`).join("")
+    :`<p class="muted small">你還沒看過任何監視器或證物。</p>`}
+  </div>
+  <button class="btn primary" onclick="submitAccuse()">確定指認</button>`}`;
 }
-function pickSuicide(v){ accusePick.suicide=v; if(v) accusePick.culprits=[]; else if(!accusePick.culprits.length) toast("揀埋兇手"); render(); }
-function toggleCulprit(id){ const c=accusePick.culprits; accusePick.suicide=false; c.includes(id)?c.splice(c.indexOf(id),1):c.push(id); render(); }
-function toggleEv(id){ const e=accusePick.evidence; if(e.includes(id)) e.splice(e.indexOf(id),1); else if(e.length<3) e.push(id); else toast("最多揀 3 件"); render(); }
+function pickSuicide(v){ accusePick.suicide=v; if(v) accusePick.culprits=[]; render(); }
+function toggleCulprit(id){ const c=accusePick.culprits; c.includes(id)?c.splice(c.indexOf(id),1):c.push(id); render(); }
+function pickReason(i,j){ accusePick.reasoning[i]=j; render(); }
+function toggleEv(id){ const e=accusePick.evidence; if(e.includes(id)) e.splice(e.indexOf(id),1); else if(e.length<3) e.push(id); else toast("最多選 3 項"); render(); }
 function submitAccuse(){
   const P = accusePick;
-  if (!P.suicide && !P.culprits.length){ toast("請揀「自殺」或者至少一個兇手"); return; }
-  if (!confirm("確定指認？之後就唔可以再調查。")) return;
+  if (P.suicide===false && !P.culprits.length){ toast("請至少選一名兇手"); return; }
+  if (P.suicide===false && Object.keys(P.reasoning).length < C.reasoning.length){ toast("推理題還沒答完"); return; }
+  if (!confirm("確定指認？之後就不能再調查了。")) return;
   const sol = C.solution;
   let verdict;
   if (P.suicide) verdict = sol.suicide ? "perfect" : "wrong";
@@ -335,28 +350,35 @@ function submitAccuse(){
     verdict = (right===sol.culprits.length && !wrongN) ? "perfect" : right>0 ? "partial" : "wrong";
   }
   const evHits = P.evidence.filter(e=>sol.keyEvidence.includes(e)).length;
+  const reasonHits = P.suicide ? 0 : C.reasoning.filter((r,i)=>P.reasoning[i]===r.answer).length;
+  const pts = evHits + reasonHits;   // 0–6
   let grade;
-  if (verdict==="perfect") grade = evHits>=3 ? "S" : evHits===2 ? "A" : "B";
-  else if (verdict==="partial") grade = evHits>=2 ? "C" : "D";
+  if (verdict==="perfect") grade = pts>=6 ? "S" : pts>=4 ? "A" : "B";
+  else if (verdict==="partial") grade = pts>=3 ? "C" : "D";
   else grade = "F";
-  S.done = true; S.result = { verdict, evHits, grade, pick: JSON.parse(JSON.stringify(P)), used:S.used };
+  S.done = true;
+  S.result = { verdict, evHits, reasonHits, grade, pick: JSON.parse(JSON.stringify(P)), qUsed:S.asked.length, sUsed:S.seen.length };
   save(); render(); scrollTo(0,0);
 }
 function vResult(){
   const r = S.result, sol = C.solution;
-  const msg = { perfect:"完全正確！你揭穿咗所有兇手。", partial:"捉到部分真相，但有兇手甩咗身，或者你冤枉咗人。", wrong:"推理錯誤，真兇逍遙法外。" }[r.verdict];
+  const msg = { perfect:"完全正確！你揪出了所有兇手。", partial:"抓到部分真相，但有兇手逃過一劫，或是你冤枉了好人。", wrong:"推理錯誤，真兇逍遙法外。" }[r.verdict];
   const pickName = r.pick.suicide ? "自殺" : r.pick.culprits.map(id=>C.suspects.find(s=>s.id===id).name).join("、");
+  const answers = r.pick.suicide ? "" : `<div class="card"><h3>🧩 推理題</h3>${C.reasoning.map((q,i)=>{
+    const ok = r.pick.reasoning[i]===q.answer;
+    return `<p style="margin:6px 0">${ok?"✅":"❌"} ${esc(q.q)}<br><span class="muted small">答案：${esc(q.options[q.answer])}${ok?"":`（你選：${esc(q.options[r.pick.reasoning[i]])}）`}</span></p>`;}).join("")}</div>`;
   return `<div class="card" style="text-align:center"><div class="muted small">評級</div>
     <div class="grade" style="color:${r.grade==="F"?"var(--red)":r.grade==="S"?"var(--accent)":"var(--text)"}">${r.grade}</div>
     <p style="margin:4px 0">${msg}</p>
-    <p class="muted small" style="margin:0">你嘅指認：${pickName}　｜　關鍵證據命中 ${r.evHits}/3　｜　用咗 ${r.used} 次行動</p></div>
+    <p class="muted small" style="margin:0">你的指認：${pickName}<br>關鍵證據 ${r.evHits}/3　推理題 ${r.reasonHits}/${C.reasoning.length}　問了 ${r.qUsed} 題、查了 ${r.sUsed} 項</p></div>
+  ${answers}
   <div class="card"><h3>📜 真相</h3>${sol.truth.map(p=>`<p>${p}</p>`).join("")}</div>
   <button class="btn primary" onclick="restart(true)">再玩一次</button>`;
 }
 
 function restart(skipConfirm){
   if (!skipConfirm && !confirm("清除所有進度，重新開始？")) return;
-  S = fresh(); accusePick = { culprits:[], suicide:false, evidence:[] }; openSuspect=null; save(); go("brief");
+  S = fresh(); accusePick = freshPick(); openSuspect=null; save(); go("brief");
 }
 function go(t){ tab=t; if(t!=="suspects") openSuspect=null; render(); scrollTo(0,0); }
 function render(){
