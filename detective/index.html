@@ -126,14 +126,17 @@ function afterSpend(){
 
 function ask(sus, q){
   if (S.asked.includes(q.id) || qLeft(sus) <= 0 || S.done) return;
+  const before = availCount();
+  (S.variant = S.variant || {})[q.id] = q.alt && q.alt.when.some(has) ? "alt" : "base";
   S.asked.push(q.id); afterSpend(); render();
+  if (availCount() > before) setTimeout(()=>toast("🔓 聽到新線索，可以拿去問其他人"), 400);
   if (qLeft(sus)===0) setTimeout(()=>toast(sus.name + "：「我不會再回答了，等我的律師來。」"), 300);
 }
 function inspect(item){
   if (S.seen.includes(item.id) || searchLeft() <= 0 || S.done) return;
+  const before = availCount();
   S.seen.push(item.id); afterSpend(); render();
-  const unlocked = C.suspects.flatMap(s=>s.questions).filter(q=>q.requires===item.id);
-  if (unlocked.length) setTimeout(()=>toast("🔓 解鎖新問題，可以拿去質問嫌疑人"), 400);
+  if (availCount() > before) setTimeout(()=>toast("🔓 解鎖新問題，可以拿去質問嫌疑人"), 400);
 }
 
 const esc = s => String(s).replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
@@ -145,6 +148,7 @@ function vBrief(){
   <div class="card"><h3>玩法</h3><p class="small muted" style="margin:0">
   🗣️ 問話：每位嫌疑人有很多問題可以問，但只會回答你 ${C.questionLimit} 題。有人會說謊。<br>
   🔍 搜證：調閱監視器、檢查證物，總共只能查 ${C.searchLimit} 項。找到關鍵證據會解鎖新的質問問題（質問也算一題）。<br>
+  💡 有些問題要先從別人口中聽到相關的事才問得出來，所以先問誰、後問誰很重要。<br>
   📓 筆記：自動記錄你問過、看過的內容。<br>
   ⚖️ 推理：隨時都可以推理。判斷發生了什麼事、選出兇手（可以不只一個），再選證據並回答推理題。查到越多線索，能選的可能性和推理題就越多。推理錯了不會公布真相，可以繼續調查再試。</p></div>
   <button class="btn primary" onclick="go('suspects')">開始調查</button>
@@ -155,7 +159,7 @@ function vBrief(){
 function vSuspects(){
   if (openSuspect){
     const s = C.suspects.find(x=>x.id===openSuspect);
-    const qs = s.questions.filter(q=>!q.requires || has(q.requires));
+    const qs = s.questions.filter(unlocked);
     const lockedN = s.questions.length - qs.length;
     const askedHere = qs.filter(q=>S.asked.includes(q.id));
     const notAsked = qs.filter(q=>!S.asked.includes(q.id));
@@ -167,9 +171,9 @@ function vSuspects(){
     ${askedHere.length?`<div class="card"><h3>已問</h3>${askedHere.map(q=>qaHTML(q)).join("")}</div>`:""}
     ${off?"":`<div class="card"><h3>可以問（選 ${left} 題）</h3>
       ${notAsked.length?notAsked.map(q=>`<button class="btn" onclick="askById('${s.id}','${q.id}')">
-        ${q.requires?'<span class="tag new">質問</span>':''}${esc(q.q)}</button>`).join("")
+        ${/^（出示/.test(q.q)?'<span class="tag new">質問</span>':(q.requires||q.requiresAll)?'<span class="tag new">追問</span>':''}${esc(textOf(q).q)}</button>`).join("")
       :`<p class="muted small">暫時沒有其他問題。</p>`}
-      ${lockedN?`<p class="muted small">🔒 還有 ${lockedN} 個問題，要先找到相關證據才能問。</p>`:""}
+      ${lockedN?`<p class="muted small">🔒 還有 ${lockedN} 個問題，要先從其他人口中或證物裡得到相關線索才能問。</p>`:""}
     </div>`}`;
   }
   return `<p class="muted small">選一位嫌疑人問話。每人只會回答 ${C.questionLimit} 題，先想清楚要問什麼。</p>
@@ -180,8 +184,8 @@ function vSuspects(){
       <div class="ct" style="${left?"":"color:var(--red)"}">${left?`還能問 ${left} 題`:"已拒答"}</div></div>`;}).join("")}</div>`;
 }
 function qaHTML(q){
-  const silent = q.a === "……";
-  return `<div class="qa"><div class="q">問：${esc(q.q)}</div><div class="a ${silent?"":"say"}">${esc(q.a)}</div>${q.note?`<div class="note">${esc(q.note)}</div>`:""}</div>`;
+  const t = textOf(q), silent = t.a === "……";
+  return `<div class="qa"><div class="q">問：${esc(t.q)}</div><div class="a ${silent?"":"say"}">${esc(t.a)}</div>${q.note?`<div class="note">${esc(q.note)}</div>`:""}</div>`;
 }
 function askById(sid, qid){ const s=C.suspects.find(x=>x.id===sid); ask(s, s.questions.find(q=>q.id===qid)); }
 
@@ -212,7 +216,17 @@ function vNotes(){
   return html + `<p class="muted small">提示：比對口供、監視器和時間，找出誰在說謊，再想想他為什麼要說謊。</p>`;
 }
 
-function unlocked(item){ return !item.requires || item.requires.some(has); }
+function unlocked(item){
+  const any = item.requires ? [].concat(item.requires) : null;
+  return (!any || any.some(has)) && (!item.requiresAll || item.requiresAll.every(has));
+}
+const availCount = () => C.suspects.flatMap(s=>s.questions).filter(unlocked).length;
+// 問題的問法與回答：問的當下決定用哪個版本，之後筆記裡不會變
+function textOf(q){
+  const v = S.variant && S.variant[q.id];
+  const useAlt = v ? v==="alt" : !!(q.alt && q.alt.when.some(has));
+  return { q: useAlt && q.alt.q || q.q, a: useAlt && q.alt.a || q.a };
+}
 const allPeople = () => [...C.suspects, ...C.extraPeople.filter(unlocked)];
 const kindOf = id => C.kinds.find(k=>k.id===id);
 
@@ -305,7 +319,7 @@ function restart(skipConfirm){
   if (!skipConfirm && !confirm("清除所有進度，重新開始？")) return;
   S = fresh(); accusePick = freshPick(); openSuspect=null; save(); go("brief");
 }
-function go(t){ tab=t; if(t!=="suspects") openSuspect=null; render(); scrollTo(0,0); }
+function go(t){ tab=t; openSuspect=null; render(); scrollTo(0,0); }
 function render(){
   document.getElementById("caseTitle").textContent = "🕵️ " + C.title;
   renderClock();
