@@ -80,6 +80,47 @@ nav button.on{color:var(--accent)}
 .report{border-left:3px solid var(--blue);padding:2px 0 2px 12px;margin:10px 0}
 details.past{margin-bottom:14px}
 details.past summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6px 0}
+.scene{position:relative;margin:0 0 12px;border-radius:12px;overflow:hidden;border:2px solid var(--line);background:#000;line-height:0}
+.scene canvas{width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;display:block}
+.talk{margin-bottom:14px}
+.talk .scene{margin:0}
+.talk .you{font-size:13px;color:var(--muted);margin:0 2px 6px}
+.bubble{position:relative;background:#fffdf7;color:#1b1512;border:3px solid #1b1512;padding:8px 12px;margin:0 6px 12px;font-size:15px;line-height:1.55;box-shadow:4px 4px 0 #1b1512;cursor:pointer;min-height:48px}
+.bubble b{display:block;font-size:12px;color:#8a5a1a;margin-bottom:2px}
+.bubble::after{content:"";position:absolute;left:50%;bottom:-15px;margin-left:-9px;border:9px solid transparent;border-top-color:#1b1512;border-bottom:0}
+.bubble::before{content:"";position:absolute;left:50%;bottom:-9px;margin-left:-6px;border:6px solid transparent;border-top-color:#fffdf7;border-bottom:0;z-index:1}
+.scene canvas.tap{cursor:pointer}
+.rooms{display:flex;gap:6px;overflow-x:auto;margin:0 0 8px;padding-bottom:2px;scrollbar-width:none}
+.rooms button{flex:0 0 auto;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:999px;padding:6px 11px;font-size:13px;font-family:inherit;cursor:pointer}
+.rooms button.on{background:var(--accent);color:#1a140c;border-color:var(--accent);font-weight:700}
+.rooms button .dot{color:#ffd04a;margin-left:3px}
+.rooms button.on .dot{color:#7a3a00}
+.hint{font-size:12px;color:var(--muted);margin:-4px 2px 10px}
+.look{background:#fffdf7;color:#1b1512;border:3px solid #1b1512;box-shadow:4px 4px 0 #1b1512;padding:10px 12px;margin:0 4px 14px;line-height:1.6;font-size:15px}
+.look b{display:block;font-size:13px;color:#8a5a1a;margin-bottom:2px}
+.look .muted{color:#5a4a3a}
+.look .cctv{background:#0d1a12;color:#9fd49f}
+.doing{margin:0 2px 12px;font-size:13px;color:var(--muted);line-height:1.6}
+.doing span{color:var(--text);cursor:pointer;text-decoration:underline dotted}
+.cap{line-height:1.5;font-size:13px;color:#9fd49f;background:#0d1a12;padding:6px 10px;min-height:20px;font-family:ui-monospace,Menlo,monospace}
+.ctl{display:flex;gap:6px;background:#0d1a12;padding:0 8px 8px;line-height:1}
+.ctl button{background:#1d2a22;color:#9fd49f;border:1px solid #2f4a3a;border-radius:6px;padding:5px 10px;font-size:13px;font-family:inherit;cursor:pointer}
+.court-bubble{min-height:70px}
+.found{font-size:12px;color:var(--accent)}
+.world{position:relative;margin:0 -16px 10px;border-top:2px solid #000;border-bottom:2px solid #000;line-height:0;background:#000;overflow:hidden}
+.world canvas{width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;display:block;touch-action:manipulation;cursor:pointer}
+.wbubble{position:absolute;top:6px;max-width:78%;width:max-content;background:#fffdf7;color:#1b1512;border:2px solid #1b1512;box-shadow:3px 3px 0 #1b1512;padding:5px 9px;font-size:13.5px;line-height:1.5;pointer-events:none;z-index:2}
+.wbubble b{display:block;font-size:11px;color:#8a5a1a}
+.wbubble::after{content:"";position:absolute;left:var(--tail,50%);bottom:-9px;margin-left:-6px;border:6px solid transparent;border-top-color:#1b1512;border-bottom:0}
+.wtip{position:absolute;right:8px;bottom:6px;font-size:11px;color:#fff;line-height:1.2;text-shadow:0 1px 2px #000;pointer-events:none}
+.wtop{display:flex;gap:12px;align-items:center;margin-bottom:8px;font-size:13px;color:var(--muted)}
+.wtop .back{margin:0}
+.wtop b{color:var(--text);font-size:15px}
+.wq{display:block;width:100%;text-align:left;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:6px 0;font-size:14px;font-family:inherit;cursor:pointer}
+.dlg{position:fixed;inset:0;background:#0009;display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
+.dlg-box{background:var(--panel);border:3px solid #1b1512;box-shadow:4px 4px 0 #000;border-radius:10px;padding:18px;max-width:340px;width:100%}
+.dlg-msg{white-space:pre-line;line-height:1.6;margin-bottom:14px}
+.dlg-btns{display:flex;gap:10px;justify-content:flex-end}
 </style>
 </head>
 <body>
@@ -97,12 +138,17 @@ details.past summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6p
 </nav>
 <div class="toast" id="toast"></div>
 
+<script src="pixel.js"></script>
 <script src="cases.js"></script>
 <script src="case2.js"></script>
 <script src="case2_people.js"></script>
 <script src="case2_people2.js"></script>
 <script src="case2_people3.js"></script>
 <script src="case2_items.js"></script>
+<script src="case2_art.js"></script>
+<script src="case1_art.js"></script>
+<script src="world.js"></script>
+<script src="case2_world.js"></script>
 <script>
 /* =========================================================
    遊戲邏輯（所有案件共用）
@@ -164,22 +210,194 @@ const searchCap = l => at(l.search === undefined ? 99 : l.search, S.phase);
 const searchLeftAt = l => Math.max(0, searchCap(l) - S.seen.filter(id=>(S.sp[id]||0)===S.phase && (allItems().find(x=>x.id===id)||{}).loc===l.id).length);
 const testsLeftAt = l => Math.max(0, (l.perVisit||0) - tests().filter(t=>t.loc===l.id && S.labq[t.id]===S.phase).length);
 
-function visit(id){
+async function visit(id){
   const l = LOC(id);
   if (!here(id)){
     if (S.done) return;
     const cost = l.cost||1;
     if (apLeft() < cost){ toast("今天的行動點不夠了"); return; }
-    if (!confirm(`前往「${l.name}」？\n會用掉 ${cost} 個行動點（今天還剩 ${apLeft()} 點）。`)) return;
+    if (!await uiConfirm(`前往「${l.name}」？\n會用掉 ${cost} 個行動點（今天還剩 ${apLeft()} 點）。`)) return;
     (S.visits[S.phase] = S.visits[S.phase] || []).push(id); save(); checkEvents();
   }
-  openLoc = id; openSuspect = null; render(); scrollTo(0,0);
+  openLoc = id; openSuspect = null; peek = null; render(); scrollTo(0,0);
 }
 function submitTest(id){
   const t = tests().find(x=>x.id===id), l = LOC(t.loc);
   if (S.done || !here(l.id) || S.labq[id]!==undefined || testsLeftAt(l)<=0 || !testOpen(t)) return;
   S.labq[id] = S.phase; checkEvents(); save(); render();
   toast(`🧪 已送出，${t.days} 天後會有結果`);
+}
+
+/* ---------- 像素場景（案件有 art:true 才會畫） ---------- */
+const art = () => !!C.art && typeof PX !== "undefined";
+let lastSaid = null;   // { sid, qid }：剛剛回答的問題，用來顯示對話框
+function lookOf(s){
+  if (!s.look) return null;
+  const L = Object.assign({}, s.look);
+  Object.keys(s.look.byPhase||{}).forEach(k=>{ if (S.phase >= +k) Object.assign(L, s.look.byPhase[k]); });
+  delete L.byPhase; return L;
+}
+function sceneHTML(name, opt, extraClass="", hot){
+  return `<div class="scene ${extraClass}"><canvas data-scene="${name}" data-opt='${JSON.stringify(opt||{}).replace(/'/g,"&#39;")}'${hot?` data-hot='${JSON.stringify(hot).replace(/'/g,"&#39;")}' class="tap"`:""}></canvas></div>`;
+}
+// 監視器／錄影動畫
+function animHTML(it, auto){
+  const id = it.id;
+  return `<div class="scene"><canvas data-anim="${it.id}" data-auto="${auto?1:0}" class="tap"></canvas><div class="cap"></div>
+    <div class="ctl"><button onclick="animDo(this,'toggle')">▶︎ 播放／暫停</button><button onclick="animDo(this,'restart')">↺ 從頭看</button><span style="margin-left:auto;align-self:center;font-size:12px;opacity:.7">${esc(((id==="__replay"?(C.court||{}).replay:it.anim)||{}).cam||"")}</span></div></div>`;
+}
+function animDo(btn, how){ const cv = btn.closest(".scene").querySelector("canvas"); cv._ctl && cv._ctl[how](); }
+const extraLook = id => (C.looks && C.looks[id]) || null;
+function looksFor(id){ if (id==="_you") return (C.court && C.court.detective) || DETECTIVE; const s = C.suspects.find(x=>x.id===id); return (s && lookOf(s)) || extraLook(id); }
+function drawScenes(){
+  document.querySelectorAll("canvas[data-scene]").forEach(cv=>{
+    const opt = JSON.parse(cv.dataset.opt||"{}");
+    if (opt.who) opt.people = opt.who.map(id=>looksFor(id)).filter(Boolean);
+    if (opt.cast) opt.people = opt.cast.map(c=>({ ...c, L: looksFor(c.id) })).filter(c=>c.L);
+    const hits = PX.draw(cv, cv.dataset.scene, opt);
+    if (cv.dataset.hot){
+      const hot = JSON.parse(cv.dataset.hot);
+      cv.onclick = e=>{
+        const r = cv.getBoundingClientRect(), x = (e.clientX-r.left)*PX.W/r.width, y = (e.clientY-r.top)*PX.H/r.height;
+        const inR = (q)=> x>=q[0] && x<=q[0]+q[2] && y>=q[1] && y<=q[1]+q[3];
+        // 先看還沒查的證物（小），再看人，最後才是其他地方
+        const fresh = hot.spots.find(q=>q.k==="item" && q.fresh && inR(q.r));
+        if (fresh) return tapSpot(fresh);
+        const p = hits.find(h=>x>=h.x && x<=h.x+h.w && y>=h.y && y<=h.y+h.h);
+        if (p && hot.people) return tapPerson(p.id);
+        const h = hot.spots.filter(q=>inR(q.r)).sort((a,b)=>a.r[2]*a.r[3]-b.r[2]*b.r[3])[0];
+        if (h) return tapSpot(h);
+        toast("這裡看起來沒什麼特別的。");
+      };
+    }
+  });
+  const wc = document.getElementById("worldcv");
+  if (wc && openLoc){ const l = LOC(openLoc), def = worldDef(l); if (def) WORLD.mount(wc, def, l.id, worldHooks(l, def)); }
+  document.querySelectorAll("canvas[data-anim]").forEach(cv=>{
+    const it = cv.dataset.anim==="__replay" ? { anim:(C.court||{}).replay } : [...allItems(), ...tests()].find(x=>x.id===cv.dataset.anim); if (!it || !it.anim) return;
+    const cap = cv.parentNode.querySelector(".cap");
+    cv._ctl = PX.play(cv, it.anim, looksFor, (t,end)=>{ cap.textContent = t || (end ? "（播放結束）" : "…"); }, cv.dataset.auto==="1");
+    cv.onclick = ()=>cv._ctl.toggle();
+  });
+  const b = document.querySelector(".bubble[data-type]");
+  if (b){ const full = b.dataset.type; let i = 0; const el = b.querySelector(".say-text"); el.textContent = "";
+    clearInterval(window._tw); window._tw = setInterval(()=>{ i += 2; el.textContent = full.slice(0,i); if (i >= full.length) clearInterval(window._tw); }, 22);
+    b.onclick = ()=>{ clearInterval(window._tw); el.textContent = full; }; }
+}
+
+/* ---------- 可以走進去的房間、可以點的東西 ---------- */
+let openRoom = {}, peek = null;   // peek：剛剛點開的東西 { kind:"item"|"detail", id }
+const roomsOf = l => (C.rooms && C.rooms[l.id]) || [{ id:l.id, name:l.name, scene:l.scene||l.id }];
+const roomOpen = r => (r.phase===undefined || S.phase>=r.phase) && (r.until===undefined || S.phase<=r.until) && (!r.requires || unlocked(r));
+const curRoom = l => { const rs = roomsOf(l).filter(roomOpen); return rs.find(r=>r.id===openRoom[l.id]) || rs[0]; };
+const dailyOf = s => (s.daily && at(s.daily, S.phase)) || {};
+const roomOfPerson = (s, l) => dailyOf(s).room || roomsOf(l)[0].id;
+const allDetails = () => Object.values(C.rooms||{}).flat().flatMap(r=>(r.details||[]).map(d=>({ ...d, room:r.id })));
+const detailOpen = d => (d.phase===undefined || S.phase>=d.phase) && (d.until===undefined || S.phase<=d.until) && unlocked(d);
+const HOME = { id:"_", name:"現場" };   // 沒有地點的案件（第 1 集）：整個現場當成一個地點
+const itemsInRoom = (l, r) => allItems().filter(it=>(it.loc||"_")===l.id && it.hot && (it.room||roomsOf(l)[0].id)===r.id && (S.seen.includes(it.id) || (itemOpen(it) && unlocked(it))));
+function goRoom(lid, rid){ openRoom[lid] = rid; peek = null; render(); }
+function tapPerson(id){ if (!travel()) tab = "suspects"; openSuspect = id; lastSaid = null; render(); scrollTo(0,0); }
+function tapSpot(h){
+  const l = travel() ? LOC(openLoc) : HOME;
+  if (h.k==="go"){ goRoom(l.id, h.to); return; }
+  if (h.k==="detail"){ S.found = S.found || []; const isNew = !S.found.includes(h.id); if (isNew){ S.found.push(h.id); save(); } peek = { kind:"detail", id:h.id, isNew }; render(); return; }
+  if (h.k==="item"){
+    const ids = h.ids, fresh = ids.find(id=>!S.seen.includes(id));
+    if (fresh){
+      if (S.done) return;
+      if ((travel() ? searchLeftAt(l) : searchLeft()) <= 0){ toast("這裡今天已經查不了更多了。"); return; }
+      inspectById(fresh); if (S.seen.includes(fresh)){ peek = { kind:"item", id:fresh }; render(); }
+    } else { peek = { kind:"item", id:ids[ids.length-1] }; render(); }
+  }
+}
+function itemBody(it, auto){
+  return `${art() && it.anim ? animHTML(it, auto) : art() && it.scene ? sceneHTML(it.scene, it.sceneOpt) : ""}${it.cctv?`<div class="cctv"><span class="rec">● REC</span>\n${esc(it.text)}</div>`:`<div class="muted">${nl(it.text)}</div>`}`;
+}
+function roomBlock(l){
+  const rooms = roomsOf(l).filter(roomOpen), r = curRoom(l);
+  const ppl = C.suspects.filter(s=>!isGone(s) && (!travel() || whereOf(s)===l.id) && roomOfPerson(s,l)===r.id);
+  const items = itemsInRoom(l, r);
+  const dets = (r.details||[]).filter(detailOpen);
+  const unseen = it => !S.seen.includes(it.id);
+  const ropt = typeof r.opt === "function" ? r.opt(S.phase, has) : (r.opt||{});
+  const groups = {};
+  items.forEach(it=>{ const k = it.hot.join(","); (groups[k] = groups[k] || { r:it.hot, ids:[] }).ids.push(it.id); });
+  const spots = [
+    ...Object.values(groups).map(g=>({ k:"item", r:g.r, ids:g.ids, fresh: g.ids.some(id=>!S.seen.includes(id)) })),
+    ...dets.map(d=>({ k:"detail", r:d.hot, id:d.id })),
+    ...(r.go||[]).filter(g=>{ const t = roomsOf(l).find(x=>x.id===g.to); return t && roomOpen(t); }).map(g=>({ k:"go", r:g.hot, to:g.to }))
+  ];
+  const cast = ppl.map((s,i)=>{ const d = dailyOf(s); return { id:s.id, x: d.x!==undefined ? d.x : 30+i*28, y: d.y, pose: d.pose, facing: d.facing||1 }; });
+  const marks = Object.values(groups).filter(g=>g.ids.some(id=>{ const it = allItems().find(x=>x.id===id); return unseen(it) && itemOpen(it); })).map(g=>[g.r[0]+g.r[2]/2|0, g.r[1]+3]);
+  const opt = { ...ropt, phase:S.phase, cast, marks };
+  const nUnseen = rr => itemsInRoom(l, rr).filter(it=>unseen(it) && itemOpen(it) && unlocked(it)).length;
+  const chips = rooms.length>1 ? `<div class="rooms">${rooms.map(x=>`<button class="${x.id===r.id?"on":""}" onclick="goRoom('${l.id}','${x.id}')">${esc(x.name)}${nUnseen(x)?'<span class="dot">✦</span>':""}</button>`).join("")}</div>` : "";
+  let look = "";
+  if (peek && peek.kind==="detail"){ const d = dets.find(x=>x.id===peek.id); if (d) look = `<div class="look"><b>🔎 ${esc(d.name||"你注意到")}</b>${nl(d.text)}${peek.isNew?`<div class="found" style="margin-top:4px">發現小細節！（${(S.found||[]).length}／${allDetails().length}）</div>`:""}</div>`; }
+  if (peek && peek.kind==="item"){ const it = allItems().find(x=>x.id===peek.id); if (it && S.seen.includes(it.id)) look = `<div class="look"><b>🧾 ${esc(it.title)}</b>${itemBody(it, true)}</div>`; }
+  const doing = ppl.filter(s=>dailyOf(s).doing).map(s=>`<div>👤 <span onclick="tapPerson('${s.id}')">${esc(s.name.replace(/（.*）/,""))}</span>：${esc(dailyOf(s).doing)}</div>`).join("");
+  return `${chips}${sceneHTML(r.scene, opt, "", { people:true, spots })}
+    <p class="hint">點畫面：人可以問話，<span style="color:#ffd04a">✦</span> 是還沒查的東西，其他地方也可能藏著小細節。</p>
+    ${look}${doing?`<div class="doing">${doing}</div>`:""}`;
+}
+
+/* ---------- 走動模式（橫向動畫場景） ---------- */
+let wTalk = null;
+const worldDef = l => art() && typeof WORLD !== "undefined" && C.world && C.world[l.id] && C.world[l.id].when(S.phase) ? C.world[l.id] : null;
+function leaveWorld(){ openLoc = null; wTalk = null; peek = null; lastSaid = null; render(); scrollTo(0,0); }
+function worldTalk(s){
+  const qs = s.questions.filter(unlocked), notAsked = qs.filter(q=>!S.asked.includes(q.id));
+  const left = qLeft(s), off = left<=0 || S.done, lockedN = s.questions.length - qs.length;
+  const said = lastSaid && lastSaid.sid===s.id ? s.questions.find(q=>q.id===lastSaid.qid) : null;
+  return `<div class="card" style="padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center"><b>${s.av} ${esc(s.name)}</b><button class="back" style="margin:0" onclick="wTalk=null;lastSaid=null;render()">結束對話 ✕</button></div>
+    <div class="muted small">${esc(s.role)}・<span style="color:${left?"var(--accent)":"var(--red)"}">${left?`還願意回答 ${left} 題`:"今天不肯再回答了"}</span></div>
+    ${said && said.note ? `<div class="note" style="margin-top:6px">${esc(said.note)}</div>` : ""}
+    ${off ? "" : notAsked.map(q=>`<button class="wq" onclick="askById('${s.id}','${q.id}')">${/^（出示/.test(textOf(q).q)?'<span class="tag new">質問</span>':(q.requires||q.requiresAll)?'<span class="tag new">追問</span>':''}${esc(textOf(q).q)}</button>`).join("")}
+    ${lockedN && !off ? `<p class="muted small" style="margin:6px 0 0">🔒 還有 ${lockedN} 個問題，要先得到相關線索才能問。</p>` : ""}</div>`;
+}
+function worldView(l, def){
+  const sl = searchLeftAt(l), nd = allDetails().length;
+  let panel;
+  if (wTalk){ const s = C.suspects.find(x=>x.id===wTalk); panel = worldTalk(s); }
+  else if (peek && peek.kind==="item"){ const it = allItems().find(x=>x.id===peek.id); panel = `<div class="look"><b>🧾 ${esc(it.title)}</b>${itemBody(it, true)}</div>`; }
+  else if (peek && peek.kind==="detail"){ const d = allDetails().find(x=>x.id===peek.id); panel = `<div class="look"><b>🔎 ${esc(d.name||"你注意到")}</b>${nl(d.text)}${peek.isNew?`<div class="found" style="margin-top:4px">發現小細節！（${(S.found||[]).length}／${nd}）</div>`:""}</div>`; }
+  else panel = `<p class="hint" style="margin:0 2px 12px">點地面走過去。點人問話，點東西調查，<span style="color:#ffd04a">✦</span> 是還沒查過的東西。其他地方也可能藏著小細節。</p>`;
+  const seenHere = allItems().filter(it=>it.loc===l.id && S.seen.includes(it.id));
+  return `<div class="wtop"><button class="back" onclick="leaveWorld()">‹ 地圖</button><b>${esc(l.name)}</b><span>🔍 還能查 ${sl} 項</span><span class="found">🔎 ${(S.found||[]).length}／${nd}</span></div>
+  <div class="world"><canvas id="worldcv"></canvas><div class="wbubble" hidden><b></b><span></span></div><div class="wtip"></div></div>
+  ${panel}
+  ${seenHere.length ? `<div class="card"><h3>🧾 這裡查到的東西</h3>${seenHere.map(it=>`<button class="wq" onclick="wTalk=null;peek={kind:'item',id:'${it.id}'};render()">${it.cctv?"📹":"🧾"} ${esc(it.title)}</button>`).join("")}</div>` : ""}`;
+}
+function worldHooks(l, def){
+  const sus = id => C.suspects.find(x=>x.id===id);
+  return {
+    you: def.you,
+    buddy: def.buddy ? () => { const s = sus(def.buddy); return s && !isGone(s) && whereOf(s)===l.id ? { id:s.id, L:lookOf(s) } : null; } : null,
+    people: () => C.suspects.filter(s=>!isGone(s) && whereOf(s)===l.id && s.id!==def.buddy).map(s=>{ const pl = (def.place||{})[s.id] || {}; return { id:s.id, x: pl.x ?? 140, pose: pl.pose, facing: pl.facing, L: lookOf(s), mark: wTalk===s.id }; }),
+    spots: () => {
+      const groups = {};
+      allItems().filter(it=>it.loc===l.id && def.spots[it.id] && (S.seen.includes(it.id) || (itemOpen(it) && unlocked(it)))).forEach(it=>{
+        const r = def.spots[it.id], k = r.join(","); (groups[k] = groups[k] || { k:"item", r:r.slice(0,4), walk:r[4], ids:[] }).ids.push(it.id); });
+      Object.values(groups).forEach(g=>g.fresh = g.ids.some(id=>!S.seen.includes(id) && itemOpen(allItems().find(x=>x.id===id))));
+      const dets = allDetails().filter(d=>def.details[d.id] && detailOpen(d)).map(d=>({ k:"detail", id:d.id, r:def.details[d.id].slice(0,4), walk:def.details[d.id][4] }));
+      return [...Object.values(groups), ...dets];
+    },
+    onPerson: id => { wTalk = id; peek = null; lastSaid = null; render(); },
+    onSpot: h => { wTalk = null; lastSaid = null; tapSpot(h); },
+    onGround: () => { if (wTalk || peek){ wTalk = null; peek = null; lastSaid = null; render(); } },
+    bubble: () => {
+      if (wTalk){ const s = sus(wTalk); const q = lastSaid && lastSaid.sid===wTalk ? s.questions.find(x=>x.id===lastSaid.qid) : null;
+        return { who:wTalk, text: q ? textOf(q).a : qLeft(s) ? (s.hello || "……你想問什麼？") : "今天就到這裡吧。" }; }
+      if (peek && peek.kind==="detail"){ const d = allDetails().find(x=>x.id===peek.id); return d ? { who:"you", text:d.text.replace(/\n/g," ") } : null; }
+      return null;
+    },
+    nameOf: id => (sus(id) || { name:"" }).name.replace(/（.*）/,""),
+    opt: () => ({ phase:S.phase }),
+    script: def.intro && S.phase===0 ? def.intro : null,
+    scriptDone: set => { S.introSeen = S.introSeen || {}; if (set){ S.introSeen[l.id] = 1; save(); } return !!S.introSeen[l.id]; },
+    refresh: () => render()
+  };
 }
 
 /* ---------- 共用狀態 ---------- */
@@ -221,6 +439,16 @@ function renderClock(){
   document.getElementById("clockBar").style.width = Math.max(0,Math.min(1,frac))*100+"%";
   document.getElementById("clock").classList.toggle("low", frac <= .25);
 }
+/* ---------- 站內確認框（不用瀏覽器 confirm，在 App 內也能用） ---------- */
+function uiConfirm(msg){
+  return new Promise(res=>{
+    const d = document.createElement("div"); d.className = "dlg";
+    d.innerHTML = `<div class="dlg-box"><div class="dlg-msg"></div><div class="dlg-btns"><button class="btn" style="text-align:center;margin:0" data-v="0">取消</button><button class="btn primary" style="margin:0" data-v="1">確定</button></div></div>`;
+    d.querySelector(".dlg-msg").textContent = msg;
+    d.onclick = e=>{ const v = e.target.dataset && e.target.dataset.v; if (v===undefined && e.target!==d) return; d.remove(); res(v==="1"); };
+    document.body.appendChild(d); d.querySelector('[data-v="1"]').focus();
+  });
+}
 function toast(msg){
   const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show");
   clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 2600);
@@ -235,7 +463,7 @@ function ask(sus, q){
   if (S.asked.includes(q.id) || qLeft(sus) <= 0 || S.done || !unlocked(q)) return;
   const before = availCount();
   (S.variant = S.variant || {})[q.id] = q.alt && q.alt.when.some(has) ? "alt" : "base";
-  S.asked.push(q.id); S.qp[q.id] = S.phase; afterSpend(); render();
+  S.asked.push(q.id); S.qp[q.id] = S.phase; lastSaid = { sid:sus.id, qid:q.id }; afterSpend(); render();
   if (availCount() > before) setTimeout(()=>toast("🔓 聽到新線索，可以拿去問其他人"), 400);
   if (qLeft(sus)===0) setTimeout(()=>toast(sus.name + (multi() && !lastPhase() ? "：「今天就到這裡吧，我累了。」" : "：「我不會再回答了，等我的律師來。」")), 300);
 }
@@ -278,7 +506,7 @@ function phaseBlock(i){
 function vBrief(){
   const P = PH(), m = multi();
   const head = m
-    ? `<div class="card intro"><span class="phase">📅 ${esc(P.title)}</span><h2>${S.phase===0?esc(C.title):esc(P.headline||P.short)}</h2>${phaseBlock(S.phase)}</div>
+    ? `${art()&&P.scene?sceneHTML(P.scene, P.sceneOpt||{phase:S.phase}):""}<div class="card intro"><span class="phase">📅 ${esc(P.title)}</span><h2>${S.phase===0?esc(C.title):esc(P.headline||P.short)}</h2>${phaseBlock(S.phase)}</div>
        ${S.phase>0?phasesOf(C).slice(0,S.phase).map((p,i)=>`<details class="past card"><summary>回顧：${esc(p.title)}</summary>${phaseBlock(i)}</details>`).reverse().join(""):""}`
     : `<div class="card intro"><h2>${C.title}</h2>${C.intro.map(p=>`<p>${p}</p>`).join("")}</div>`;
   const rules = travel()
@@ -313,11 +541,11 @@ function vBrief(){
   <button class="btn" style="text-align:center" onclick="go('accuse')">🧠 我已經知道真相了！直接推理</button>
   <button class="btn danger" onclick="restart()">重新開始這個案件</button>`;
 }
-function nextPhase(){
+async function nextPhase(){
   const nx = phasesOf(C)[S.phase+1];
   const left = travel() ? (apLeft() ? `\n今天還有 ${apLeft()} 個行動點，進入下一天就不能再用了。` : "")
     : ((totalQLeft()+searchLeft()) ? `\n今天還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查，進入下一天就不能再用了。` : "");
-  if (!confirm(`進入「${nx.title}」？${left}`)) return;
+  if (!await uiConfirm(`進入「${nx.title}」？${left}`)) return;
   S.phase++; checkEvents(); save(); openSuspect = null; openLoc = null; tab = "brief"; render(); scrollTo(0,0);
   setTimeout(()=>toast("📅 " + nx.title), 300);
 }
@@ -343,6 +571,7 @@ function vMap(){
   ${hidden?`<p class="muted small">🔒 還有 ${hidden} 個地方，要先查到相關線索才會知道。</p>`:""}`;
 }
 function vLocation(l){
+  const wd = worldDef(l); if (wd) return worldView(l, wd);
   const ppl = C.suspects.filter(s=>!isGone(s) && whereOf(s)===l.id);
   const items = allItems().filter(it=>it.loc===l.id);
   const shownItems = items.filter(it=>S.seen.includes(it.id) || (itemOpen(it) && unlocked(it)));
@@ -351,9 +580,11 @@ function vLocation(l){
   const ts = tests().filter(t=>t.loc===l.id && (S.labq[t.id]!==undefined || testOpen(t)));
   const lockedTests = tests().filter(t=>t.loc===l.id && S.labq[t.id]===undefined && (t.until===undefined || t.until >= S.phase) && !testOpen(t)).length;
   const tl = testsLeftAt(l);
-  return `<button class="back" onclick="openLoc=null;render()">‹ 返回地圖</button>
+  const sceneTop = art() ? roomBlock(l) : "";
+  return `<button class="back" onclick="openLoc=null;peek=null;render()">‹ 返回地圖</button>
+  ${sceneTop}
   <div class="card"><div style="display:flex;gap:12px;align-items:center"><div style="font-size:40px">${l.icon}</div>
-    <div><h2 style="margin:0">${esc(l.name)}</h2><div class="muted small">${esc(l.desc||"")}</div></div></div>
+    <div><h2 style="margin:0">${esc(l.name)}</h2><div class="muted small">${esc(l.desc||"")}</div>${art()&&allDetails().length?`<div class="found">🔎 已發現小細節 ${(S.found||[]).length}／${allDetails().length}</div>`:""}</div></div>
     ${l.note?`<p class="small muted" style="margin:8px 0 0">${esc(at(l.note,S.phase)||"")}</p>`:""}</div>
   ${ppl.length?`<div class="card"><h3>🗣️ 在場的人</h3><div class="suspects">${ppl.map(s=>{
       const left = qLeft(s);
@@ -361,7 +592,7 @@ function vLocation(l){
       <div class="ct" style="${left?"":"color:var(--red)"}">${left?`今天還能問 ${left} 題`:"今天不答了"}</div></div>`;}).join("")}</div></div>`:""}
   ${shownItems.length||lockedItems?`<div class="card"><h3>🔍 可以查的東西</h3><p class="muted small" style="margin:0">${sl>0?`這次還能查 <b style="color:var(--accent)">${sl}</b> 項。`:"這裡今天已經查不了更多了。"}</p>
     ${shownItems.map(it=>S.seen.includes(it.id)
-      ? `<div style="margin:12px 0"><div style="font-weight:700"><span class="tag">${esc(phasesOf(C)[S.sp[it.id]||0].short)}</span>${esc(it.title)}</div>${it.cctv?`<div class="cctv"><span class="rec">● REC</span>\n${esc(it.text)}</div>`:`<div class="muted">${nl(it.text)}</div>`}</div>`
+      ? `<div style="margin:12px 0"><div style="font-weight:700"><span class="tag">${esc(phasesOf(C)[S.sp[it.id]||0].short)}</span>${esc(it.title)}</div>${itemBody(it, false)}</div>`
       : `<button class="btn" ${off?"disabled":""} onclick="inspectById('${it.id}')">${it.cctv?"📹":"🧾"} ${esc(it.title)}${it.until!==undefined&&it.until===S.phase?' <span class="tag cost">今天過後就查不到了</span>':""}${(it.phase||0)===S.phase&&S.phase>0?' <span class="tag new">新</span>':""}</button>`).join("")}
     ${lockedItems?`<p class="muted small">🔒 還有 ${lockedItems} 項，要先發現相關線索才會知道可以查。</p>`:""}</div>`:""}
   ${l.perVisit?`<div class="card"><h3>🧪 化驗</h3><p class="muted small" style="margin:0">${tl>0?`這次還能送 <b style="color:var(--accent)">${tl}</b> 件。`:"這次能送的件數已經滿了。"}結果要等幾天，會在早上出現在「案情」頁。</p>
@@ -385,7 +616,20 @@ function vSuspects(){
     const left = qLeft(s), off = left<=0||S.done;
     const status = gone ? `<div class="small" style="color:var(--red)">🕯️ ${esc(s.goneNote||"已經不在了")}</div>`
       : `<div class="small" style="color:${left?"var(--accent)":"var(--red)"}">${left?`${multi()?"今天":""}還願意回答 ${left} 題`:travel()&&!reachable(s)?"今天不在這裡":multi()&&!lastPhase()?"今天不肯再回答了":"拒絕再回答"}</div>`;
-    return `<button class="back" onclick="openSuspect=null;render()">‹ 返回${openLoc?"「"+esc(LOC(openLoc).name)+"」":"嫌疑人列表"}</button>
+    let talk = "";
+    if (art() && lookOf(s)){
+      const said = lastSaid && lastSaid.sid===s.id ? s.questions.find(q=>q.id===lastSaid.qid) : null;
+      const line = said ? textOf(said).a : gone ? "……" : left ? (s.hello||"……你想問什麼？") : "今天就到這裡吧。";
+      const rlist = C.rooms ? (travel() ? C.rooms[whereOf(s)] : C.rooms._) || [] : [];
+      const rr = rlist.find(r=>r.id===dailyOf(s).room) || (travel() ? rlist[0] : null);
+      const where = rr ? rr.scene : (travel() && whereOf(s)) ? (LOC(whereOf(s)).scene||whereOf(s)) : (C.defaultScene||"farm");
+      const wopt = rr && rr.opt ? (typeof rr.opt==="function" ? rr.opt(S.phase, has) : rr.opt) : {};
+      talk = `<div class="talk">${said?`<div class="you">你：${esc(textOf(said).q)}</div>`:""}
+        <div class="bubble" data-type="${esc(line).replace(/"/g,"&quot;")}"><b>${esc(s.name.replace(/（.*）/,""))}</b><span class="say-text"></span></div>
+        ${sceneHTML(where, { ...wopt, phase:S.phase, who:[s.id], solo:true, dim:gone })}${said&&said.note?`<div class="note" style="margin:6px 2px 0">${esc(said.note)}</div>`:""}</div>`;
+    }
+    return `<button class="back" onclick="openSuspect=null;lastSaid=null;render()">‹ 返回${openLoc?"「"+esc(LOC(openLoc).name)+"」":"嫌疑人列表"}</button>
+    ${talk}
     <div class="card"><div style="display:flex;gap:12px;align-items:center"><div style="font-size:44px">${s.av}</div>
       <div><h2 style="margin:0">${s.name}</h2><div class="muted small">${s.role}</div>${status}</div></div></div>
     ${off||gone?"":`<div class="card"><h3>可以問（選 ${left} 題）</h3>
@@ -421,13 +665,13 @@ function vSearch(){
     if (!shown.length) return "";
     return `<div class="card"><h3>${title}</h3>${shown.map(it=>{
       if (S.seen.includes(it.id)) return `<div style="margin:12px 0"><div style="font-weight:700">${multi()?`<span class="tag">${esc(phasesOf(C)[S.sp[it.id]||0].short)}</span>`:""}${esc(it.title)}</div>
-        ${kind==="cctv"?`<div class="cctv"><span class="rec">● REC</span>\n${esc(it.text)}</div>`:`<div class="muted">${nl(it.text)}</div>`}</div>`;
+        ${art() ? itemBody(it, false) : kind==="cctv"?`<div class="cctv"><span class="rec">● REC</span>\n${esc(it.text)}</div>`:`<div class="muted">${nl(it.text)}</div>`}</div>`;
       return `<button class="btn" ${off?"disabled":""} onclick="inspectById('${it.id}')">${kind==="cctv"?"📹":"🧾"} ${esc(it.title)}${it.until!==undefined&&it.until===S.phase?' <span class="tag cost">今天過後就查不到了</span>':""}${(it.phase||0)===S.phase&&S.phase>0?' <span class="tag new">新</span>':""}</button>`;
     }).join("")}</div>`;
   };
   const open = allItems().filter(it=>!S.seen.includes(it.id) && itemOpen(it) && unlocked(it)).length;
   const html = block("📹 監視器", C.cctv, "cctv") + block("🧾 證物", C.evidence, "ev");
-  return `<p class="muted small">${searchLeft()>0?`鑑識人員${multi()?"今天":""}還能幫你處理 <b style="color:var(--accent)">${searchLeft()}</b> 項（目前可查 ${open} 項）。`:multi()&&!lastPhase()?"鑑識人員今天已經沒時間了，明天再來。":"鑑識人員已經沒時間了。"}</p>
+  return `${art() && C.rooms ? roomBlock(HOME) : ""}<p class="muted small">${searchLeft()>0?`鑑識人員${multi()?"今天":""}還能幫你處理 <b style="color:var(--accent)">${searchLeft()}</b> 項（目前可查 ${open} 項）。`:multi()&&!lastPhase()?"鑑識人員今天已經沒時間了，明天再來。":"鑑識人員已經沒時間了。"}</p>
   ${html}${lockedAll?`<p class="muted small">🔒 還有 ${lockedAll} 項，要先發現相關線索才會知道可以查。</p>`:""}`;
 }
 function inspectById(id){ inspect(allItems().find(x=>x.id===id)); }
@@ -495,7 +739,53 @@ const allPeople = () => [...C.suspects.filter(s=>!s.witness && unlocked({require
 const kindOf = id => C.kinds.find(k=>k.id===id);
 
 /* ---------- 推理 ---------- */
+/* ---------- 結案：所有人聚在一起，你說出推理 ---------- */
+const DETECTIVE = { skin:"#e8c09a", hair:"#2a2220", hairStyle:"short", top:"#e9e4da", coat:"#a8865a", bottom:"#3a3328", tie:"#5a2a2a" };
+function courtSteps(){
+  const r = S.result, P = r.pick, sol = C.solution, K = C.court || {};
+  const everyone = [...C.suspects, ...C.extraPeople];
+  const nm = id => (everyone.find(s=>s.id===id)||{}).name.replace(/（.*）/,"");
+  const steps = [];
+  steps.push({ who:"narr", text: (typeof K.open==="function" ? K.open(S.phase) : K.open) || "所有人都被叫到了一起。大家看著你，等你開口。" });
+  const kd = C.kinds.find(k=>k.id===P.kind);
+  steps.push({ who:"you", text: (K.kindLine && K.kindLine[P.kind]) || `我的結論是——${kd ? kd.label.replace(/^(.{2,4})：/,"$1。") : "……"}` });
+  if (P.kind==="murder"){
+    C.reasoning.forEach((q,i)=>{ if (unlocked(q) && P.reasoning[i]!==undefined) steps.push({ who:"you", text:`${q.q}\n——${q.options[P.reasoning[i]]}。` }); });
+    if ((K.murmur||[]).length) steps.push({ who:"narr", text:K.murmur[(S.tries||1) % K.murmur.length] });
+    steps.push({ who:"you", text:`這一切的兇手，就是——${P.culprits.map(nm).join("、")}！`, focus:P.culprits });
+    P.culprits.forEach(id=>{
+      const guilty = sol.culprits.includes(id);
+      const line = guilty ? (r.verdict==="perfect" ? (K.confess||{})[id] : (K.cornered||{})[id]) : (K.deny||{})[id];
+      const def = guilty ? (r.verdict==="perfect" ? "……是我。" : "……你什麼都不懂。") : "我？你有什麼證據？";
+      (Array.isArray(line) ? line : [line || def]).forEach(t=>steps.push({ who:id, text:t, focus:[id], pose: guilty&&r.verdict==="perfect" ? "cry" : "point" }));
+    });
+  } else if (r.verdict==="perfect" && K.kindTrue) steps.push({ who:"narr", text:K.kindTrue });
+  if (r.verdict==="perfect" && K.replay) steps.push({ who:"narr", text: K.replayText || "那一晚到底發生了什麼事——", anim:true });
+  steps.push({ who:"narr", text: r.verdict==="perfect" ? (K.endGood || "真相終於大白。") : (K.endBad || "沒有人說話。你總覺得，有人悄悄鬆了一口氣。") });
+  return steps;
+}
+function vCourt(){
+  const steps = courtSteps(), i = Math.min(S.court, steps.length-1), st = steps[i];
+  const K = C.court || {};
+  const ids = ((typeof K.who==="function" ? K.who(S.phase) : K.who) || C.suspects.filter(s=>!s.witness).map(s=>s.id)).filter(id=>{ const s = C.suspects.find(x=>x.id===id); return !s || !isGone(s); });
+  const n = ids.length, focus = st.focus || [];
+  const cast = [{ id:"_you", x:16, y:100, pose: st.who==="you" ? "point" : "stand", facing:1 }].concat(ids.map((id,j)=>{
+    const x = 44 + (n===1 ? 70 : j*(140/(n-1)));
+    const fx = focus.length ? (C.suspects.find(s=>s.id===focus[0]) ? 44 + ids.indexOf(focus[0])*(140/(n-1||1)) : x) : 0;
+    const facing = focus.length && !focus.includes(id) ? (fx < x ? -1 : 1) : -1;
+    return { id, x, y: 96 + (j%2)*4, pose: focus.includes(id) && st.who===id ? (st.pose||"stand") : "stand", facing, mark: focus.includes(id) };
+  }));
+  const speaker = st.who==="you" ? "你" : st.who==="narr" ? "" : (C.suspects.find(s=>s.id===st.who)||{name:""}).name.replace(/（.*）/,"");
+  const last = i >= steps.length-1;
+  return `<div class="card" style="padding:12px"><div class="muted small" style="margin-bottom:8px">⚖️ ${esc(K.title||"揭開真相")}（${i+1}／${steps.length}）</div>
+    <div class="bubble court-bubble" data-type="${esc(st.text).replace(/"/g,"&quot;")}">${speaker?`<b>${esc(speaker)}</b>`:"<b>　</b>"}<span class="say-text" style="white-space:pre-line"></span></div>
+    ${st.anim ? animHTML({ id:"__replay" }, true) : sceneHTML(K.scene || "living", { ...(K.opt||{}), phase:S.phase, cast })}
+    <button class="btn primary" style="margin-top:12px" onclick="courtNext(${last?1:0})">${last?"看結果":"下一步 ▶"}</button>
+    ${last?"":`<button class="btn" style="text-align:center" onclick="courtNext(1)">跳過，直接看結果</button>`}</div>`;
+}
+function courtNext(end){ if (end) delete S.court; else S.court++; save(); render(); scrollTo(0,0); }
 function vAccuse(){
+  if (S.done && S.court !== undefined && art()) return vCourt();
   if (S.done) return vResult();
   const seenItems = evidencePool();
   const P = accusePick;
@@ -528,11 +818,11 @@ function pickKind(v){ accusePick.kind=v; if(v!=="murder") accusePick.culprits=[]
 function toggleCulprit(id){ const c=accusePick.culprits; c.includes(id)?c.splice(c.indexOf(id),1):c.push(id); render(); }
 function pickReason(i,j){ accusePick.reasoning[i]=j; render(); }
 function toggleEv(id){ const e=accusePick.evidence; if(e.includes(id)) e.splice(e.indexOf(id),1); else if(e.length<3) e.push(id); else toast("最多選 3 項"); render(); }
-function submitAccuse(){
+async function submitAccuse(){
   const P = accusePick, murder = P.kind==="murder";
   if (murder && !P.culprits.length){ toast("請至少選一名兇手"); return; }
   if (murder && C.reasoning.some((r,i)=>unlocked(r) && P.reasoning[i]===undefined)){ toast("推理題還沒答完"); return; }
-  if (!confirm("確定提交你的推理？")) return;
+  if (!await uiConfirm("確定提交你的推理？")) return;
   const sol = C.solution;
   let verdict;
   if (P.kind !== sol.kind) verdict = "wrong";
@@ -553,6 +843,7 @@ function submitAccuse(){
   S.tries = (S.tries||0) + 1;
   S.revealed = verdict==="perfect";
   S.result = { verdict, evHits, reasonHits, grade, pick: JSON.parse(JSON.stringify(P)), qUsed:S.asked.length, sUsed:S.seen.length + Object.keys(S.labq).length };
+  if (art()) S.court = 0;
   save(); render(); scrollTo(0,0);
 }
 function vResult(){
@@ -577,20 +868,20 @@ function vResult(){
   <button class="btn primary" onclick="retry()">${dig?"繼續調查，再推理一次":"再推理一次"}</button>
   <button class="btn" style="text-align:center" onclick="reveal()">我放棄，直接看真相</button>
   <button class="btn danger" onclick="restart()">整個案件重新開始</button>`;
-  return `<div class="card" style="text-align:center"><div class="muted small">評級</div>
+  return `${art()?`<button class="btn" style="text-align:center;margin-top:0" onclick="S.court=0;save();render();scrollTo(0,0)">🎬 重看結案過程</button>`:""}<div class="card" style="text-align:center"><div class="muted small">評級</div>
     <div class="grade" style="color:${r.grade==="F"?"var(--red)":r.grade==="S"?"var(--accent)":"var(--text)"}">${r.grade}</div>
     <p style="margin:4px 0">${msg}</p>
     <p class="muted small" style="margin:0">你的推理：${esc(pickName)}<br>關鍵證據 ${r.evHits}/3${murder?`　推理題 ${r.reasonHits}/${C.reasoning.length}`:""}<br>問了 ${r.qUsed} 題、查了 ${r.sUsed} 項</p></div>
   ${tail}`;
 }
 function retry(){ S.done=false; S.result=null; accusePick=freshPick(); save(); go(travel()?"brief":totalQLeft()+searchLeft()>0?"notes":multi()&&!lastPhase()?"brief":"accuse"); }
-function reveal(){ if(!confirm("確定要看真相？看了就沒有懸念了。")) return; S.revealed=true; save(); render(); scrollTo(0,0); }
+async function reveal(){ if(!await uiConfirm("確定要看真相？看了就沒有懸念了。")) return; S.revealed=true; save(); render(); scrollTo(0,0); }
 
-function restart(skipConfirm){
-  if (!skipConfirm && !confirm("清除所有進度，重新開始？")) return;
+async function restart(skipConfirm){
+  if (!skipConfirm && !await uiConfirm("清除所有進度，重新開始？")) return;
   S = fresh(); accusePick = freshPick(); openSuspect=null; openLoc=null; save(); go("brief");
 }
-function go(t){ tab=t; openSuspect=null; if(t!=="map") openLoc=null; render(); scrollTo(0,0); }
+function go(t){ tab=t; openSuspect=null; lastSaid=null; wTalk=null; peek=null; if(t!=="map") openLoc=null; render(); scrollTo(0,0); }
 function renderNav(){
   const tabs = travel()
     ? [["brief","📁","案情"],["map","🗺️","地點"],["notes","📓","筆記"],["accuse","⚖️","推理"]]
@@ -609,6 +900,7 @@ function render(){
   renderClock(); renderNav();
   const v = { brief:vBrief, suspects:vSuspects, search:vSearch, map:vMap, notes:vNotes, accuse:vAccuse }[tab]();
   document.getElementById("view").innerHTML = v;
+  if (art()) drawScenes();
 }
 render();
 if ("serviceWorker" in navigator) {
