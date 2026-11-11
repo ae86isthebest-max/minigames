@@ -99,68 +99,135 @@ details.past summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6p
 
 <script src="cases.js"></script>
 <script src="case2.js"></script>
+<script src="case2_people.js"></script>
+<script src="case2_people2.js"></script>
+<script src="case2_people3.js"></script>
+<script src="case2_items.js"></script>
 <script>
 /* =========================================================
    遊戲邏輯（所有案件共用）
-   案件可以分成好幾個階段（phases，例如第一晚、第二天、第三天）：
-   - 每個階段各自有問話、搜證次數，沒用完不會留到下一階段
-   - 證物可設 phase（從第幾階段開始能查）、until（查到第幾階段為止）
-   - 嫌疑人可設 gone（從第幾階段開始不在了，例如被殺）
-   - 階段可附 reports（進入該階段就自動拿到的報告，不佔搜證次數）
-   沒有 phases 的案件（第 1 集）就是只有一個階段。
+
+   三種案件格式：
+   1. 單一階段（第 1 集）：questionLimit / searchLimit，問話＋搜證。
+   2. 多階段（phases）：每階段各自有次數，可設 reports（自動拿到的報告）。
+   3. 多地點（locations）：每天有行動點（actions），去一個地點用 cost 點（預設 1）。
+      - 嫌疑人 where[階段] ＝ 那天在哪個地點（null ＝ 找不到人）；witness:true ＝ 證人，不能被指認
+      - 證物 loc ＝ 在哪個地點查；地點 search ＝ 每次去能查幾項（可依階段給陣列）
+      - 化驗 tests：要到 loc 送件（每次去最多 perVisit 件），days 天後結果才出來
+      - phases[i].startAt ＝ 那天一開始就在的地點（不用行動點）
+   共用：
+      phase / until：從第幾階段開始有、到第幾階段為止
+      requires（任一）/ requiresAll（全部）：要先知道哪些線索
+      alt：問過 when 裡的問題或看過證據時，改用另一種問法／回答
+      tl：[["10/17 20:16","說明"], ...] 會自動整理進筆記的「時間線」
+      events：突發事件（atLoc＝人在那個地點時才發生；unless＝已知道這些就不發生）。條件（phase、requires…）一滿足就發生，可以是某天早上，也可以是玩家做了某件事之後
    ========================================================= */
 let C = null, KEY = null, S = null;
-let screen = "home", tab = "brief", openSuspect = null, accusePick = freshPick();
+let screen = "home", tab = "brief", openSuspect = null, openLoc = null, noteView = "key", noteWho = "all", accusePick = freshPick();
 
 const saveKey = c => "detective_tw3_save_" + c.id;
 const phasesOf = c => c.phases || [{ title:null, short:"", questionLimit:c.questionLimit, searchLimit:c.searchLimit }];
 const multi = () => !!C.phases;
+const travel = () => !!C.locations;
 const PH = () => phasesOf(C)[S.phase];
 const lastPhase = () => S.phase >= phasesOf(C).length - 1;
+const at = (arr, i) => Array.isArray(arr) ? arr[Math.min(i, arr.length-1)] : arr;
 
-function fresh(){ return { asked:[], seen:[], qp:{}, sp:{}, phase:0, done:false, result:null }; }
+function fresh(){ return { asked:[], seen:[], qp:{}, sp:{}, phase:0, visits:{}, labq:{}, ev:{}, done:false, result:null }; }
 function freshPick(){ return { kind:null, culprits:[], evidence:[], reasoning:{} }; }
 function loadFor(c){
   try{ const s = JSON.parse(localStorage.getItem(saveKey(c)));
-    if (s && s.asked){ s.qp = s.qp||{}; s.sp = s.sp||{}; s.phase = s.phase||0; return s; } }catch(e){}
+    if (s && s.asked){ s.qp=s.qp||{}; s.sp=s.sp||{}; s.phase=s.phase||0; s.visits=s.visits||{}; s.labq=s.labq||{}; s.ev=s.ev||{}; return s; } }catch(e){}
   return null;
 }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 
 function openCase(i){
   C = CASES[i]; KEY = saveKey(C); S = loadFor(C) || fresh();
-  accusePick = freshPick(); openSuspect = null; screen = "case"; tab = "brief";
-  try{ localStorage.setItem("detective_last_case", C.id); }catch(e){}
+  accusePick = freshPick(); openSuspect = null; openLoc = null; screen = "case"; tab = "brief"; checkEvents();
   render(); scrollTo(0,0);
 }
 function goHome(){ screen = "home"; render(); scrollTo(0,0); }
 
+/* ---------- 地點與行動點 ---------- */
+const LOC = id => C.locations.find(l=>l.id===id);
+const tests = () => C.tests || [];
+const visitsToday = () => S.visits[S.phase] || [];
+const here = id => !!id && (PH().startAt===id || visitsToday().includes(id));
+const apLeft = () => travel() ? PH().actions - visitsToday().reduce((n,id)=>n+(LOC(id).cost||1),0) : 0;
+const locOpen = l => (l.phase||0) <= S.phase && (l.until===undefined || l.until >= S.phase) && unlocked(l);
+const whereOf = s => s.where ? at(s.where, S.phase) : null;
+const testOpen = t => (t.phase||0) <= S.phase && (t.until===undefined || t.until >= S.phase) && unlocked(t);
+const testReady = t => S.labq[t.id] !== undefined && S.phase >= S.labq[t.id] + t.days;
+const readyTests = () => tests().filter(testReady);
+const searchCap = l => at(l.search === undefined ? 99 : l.search, S.phase);
+const searchLeftAt = l => Math.max(0, searchCap(l) - S.seen.filter(id=>(S.sp[id]||0)===S.phase && (allItems().find(x=>x.id===id)||{}).loc===l.id).length);
+const testsLeftAt = l => Math.max(0, (l.perVisit||0) - tests().filter(t=>t.loc===l.id && S.labq[t.id]===S.phase).length);
+
+function visit(id){
+  const l = LOC(id);
+  if (!here(id)){
+    if (S.done) return;
+    const cost = l.cost||1;
+    if (apLeft() < cost){ toast("今天的行動點不夠了"); return; }
+    if (!confirm(`前往「${l.name}」？\n會用掉 ${cost} 個行動點（今天還剩 ${apLeft()} 點）。`)) return;
+    (S.visits[S.phase] = S.visits[S.phase] || []).push(id); save(); checkEvents();
+  }
+  openLoc = id; openSuspect = null; render(); scrollTo(0,0);
+}
+function submitTest(id){
+  const t = tests().find(x=>x.id===id), l = LOC(t.loc);
+  if (S.done || !here(l.id) || S.labq[id]!==undefined || testsLeftAt(l)<=0 || !testOpen(t)) return;
+  S.labq[id] = S.phase; checkEvents(); save(); render();
+  toast(`🧪 已送出，${t.days} 天後會有結果`);
+}
+
+/* ---------- 共用狀態 ---------- */
 const reportsGot = () => phasesOf(C).slice(0, S.phase+1).flatMap(p=>p.reports||[]);
-const has = id => S.seen.includes(id) || S.asked.includes(id) || reportsGot().some(r=>r.id===id);
-const isGone = s => s.gone !== undefined && S.phase >= s.gone;
+const has = id => S.seen.includes(id) || S.asked.includes(id) || reportsGot().some(r=>r.id===id) || S.ev[id]!==undefined || tests().some(t=>t.id===id && testReady(t));
+// 突發事件：條件一滿足就發生（可能連鎖）
+function checkEvents(){
+  let fired = [], changed = true;
+  while (changed){ changed = false;
+    for (const e of (C.events||[])) if (S.ev[e.id]===undefined && unlocked(e) && (!e.atLoc || here(e.atLoc)) && (!e.unless || !e.unless.some(has))){ S.ev[e.id] = S.phase; fired.push(e); changed = true; }
+  }
+  if (fired.length){ save(); setTimeout(()=>toast("📢 " + fired.map(e=>e.title).join("、") + "（詳情在「案情」）"), 900); }
+}
+const isGone = s => (s.gone !== undefined && S.phase >= s.gone);
 const askedNow = s => s.questions.filter(q=>S.asked.includes(q.id) && (S.qp[q.id]||0)===S.phase).length;
-const qLeft = s => isGone(s) ? 0 : Math.max(0, PH().questionLimit - askedNow(s));
-const searchLeft = () => Math.max(0, PH().searchLimit - S.seen.filter(id=>(S.sp[id]||0)===S.phase).length);
+const reachable = s => !isGone(s) && (!travel() || here(whereOf(s)));
+const qLeft = s => !reachable(s) ? 0 : Math.max(0, PH().questionLimit - askedNow(s));
+const searchLeft = () => travel()
+  ? C.locations.filter(l=>here(l.id)).reduce((n,l)=>n+searchLeftAt(l),0)
+  : Math.max(0, PH().searchLimit - S.seen.filter(id=>(S.sp[id]||0)===S.phase).length);
 const totalQLeft = () => C.suspects.reduce((n,s)=>n+qLeft(s),0);
 const allItems = () => [...C.cctv, ...C.evidence];
 const itemOpen = it => (it.phase||0) <= S.phase && (it.until===undefined || it.until >= S.phase);
-const canDig = () => totalQLeft()+searchLeft() > 0 || (multi() && !lastPhase());
+const canDig = () => totalQLeft()+searchLeft() > 0 || apLeft() > 0 || (multi() && !lastPhase());
+const evidencePool = () => [...allItems().filter(it=>S.seen.includes(it.id)), ...readyTests()];
 
 function renderClock(){
   const P = PH();
-  document.getElementById("clockT").textContent = (P.short ? P.short + "　" : "") + "🗣️" + totalQLeft() + "　🔍" + searchLeft();
-  const total = C.suspects.filter(s=>!isGone(s)).length*P.questionLimit + P.searchLimit;
-  const left = totalQLeft() + searchLeft();
-  document.getElementById("clockBar").style.width = (Math.max(0,left)/total*100)+"%";
-  document.getElementById("clock").classList.toggle("low", left <= 4);
+  let t, frac;
+  if (travel()){
+    t = `${P.short}　🚗${apLeft()}`;
+    frac = P.actions ? apLeft()/P.actions : (totalQLeft()+searchLeft() ? 1 : 0);
+  } else {
+    t = (P.short ? P.short + "　" : "") + "🗣️" + totalQLeft() + "　🔍" + searchLeft();
+    const total = C.suspects.filter(s=>!isGone(s)).length*P.questionLimit + P.searchLimit;
+    frac = (totalQLeft()+searchLeft())/total;
+  }
+  document.getElementById("clockT").textContent = t;
+  document.getElementById("clockBar").style.width = Math.max(0,Math.min(1,frac))*100+"%";
+  document.getElementById("clock").classList.toggle("low", frac <= .25);
 }
 function toast(msg){
   const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show");
   clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 2600);
 }
 function afterSpend(){
-  save(); renderClock();
-  if (totalQLeft()===0 && searchLeft()===0) setTimeout(()=>toast(
+  checkEvents(); save(); renderClock();
+  if (!travel() && totalQLeft()===0 && searchLeft()===0) setTimeout(()=>toast(
     multi() && !lastPhase() ? "🌙 今天能做的都做完了，到「案情」進入下一天。" : (C.endToast || "⏰ 律師到了！調查結束，請進行指認。")), 300);
 }
 
@@ -170,13 +237,14 @@ function ask(sus, q){
   (S.variant = S.variant || {})[q.id] = q.alt && q.alt.when.some(has) ? "alt" : "base";
   S.asked.push(q.id); S.qp[q.id] = S.phase; afterSpend(); render();
   if (availCount() > before) setTimeout(()=>toast("🔓 聽到新線索，可以拿去問其他人"), 400);
-  if (qLeft(sus)===0) setTimeout(()=>toast(sus.name + (multi() && !lastPhase() ? "：「我累了，今天不想再說了。」" : "：「我不會再回答了，等我的律師來。」")), 300);
+  if (qLeft(sus)===0) setTimeout(()=>toast(sus.name + (multi() && !lastPhase() ? "：「今天就到這裡吧，我累了。」" : "：「我不會再回答了，等我的律師來。」")), 300);
 }
 function inspect(item){
-  if (S.seen.includes(item.id) || searchLeft() <= 0 || S.done || !itemOpen(item) || !unlocked(item)) return;
+  if (S.seen.includes(item.id) || S.done || !itemOpen(item) || !unlocked(item)) return;
+  if (travel() ? (!here(item.loc) || searchLeftAt(LOC(item.loc))<=0) : searchLeft()<=0) return;
   const before = availCount();
   S.seen.push(item.id); S.sp[item.id] = S.phase; afterSpend(); render();
-  if (availCount() > before) setTimeout(()=>toast("🔓 解鎖新問題，可以拿去質問嫌疑人"), 400);
+  if (availCount() > before) setTimeout(()=>toast("🔓 有新的問題或地方可以查了"), 400);
 }
 
 const esc = s => String(s).replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
@@ -198,23 +266,35 @@ function vHome(){
 
 /* ---------- 案情 ---------- */
 function reportHTML(r){ return `<div class="report"><b>📋 ${esc(r.title)}</b><div class="muted small">${nl(r.text)}</div></div>`; }
+function testHTML(t){ return `<div class="report"><b>🧪 ${esc(t.title)}</b><div class="muted small">${nl(t.text)}</div></div>`; }
 function phaseBlock(i){
   const p = phasesOf(C)[i];
   const intro = i===0 ? C.intro : (p.intro||[]);
-  return `${intro.map(x=>`<p>${x}</p>`).join("")}${(p.reports||[]).map(reportHTML).join("")}`;
+  const labs = tests().filter(t=>S.labq[t.id]!==undefined && S.labq[t.id]+t.days===i);
+  const evs = (C.events||[]).filter(e=>S.ev[e.id]===i);
+  return `${intro.map(x=>`<p>${x}</p>`).join("")}${(p.reports||[]).map(reportHTML).join("")}${evs.map(e=>`<div class="report" style="border-color:var(--red)"><b>📢 ${esc(e.title)}</b><div class="muted small">${nl(e.text)}</div></div>`).join("")}
+    ${labs.length?`<p style="margin-top:12px"><b>📞 今天收到的化驗結果</b></p>${labs.map(testHTML).join("")}`:""}`;
 }
 function vBrief(){
   const P = PH(), m = multi();
   const head = m
-    ? `<div class="card intro"><span class="phase">📅 ${esc(P.title)}</span><h2>${S.phase===0?esc(C.title):esc(P.short)}</h2>${phaseBlock(S.phase)}</div>
+    ? `<div class="card intro"><span class="phase">📅 ${esc(P.title)}</span><h2>${S.phase===0?esc(C.title):esc(P.headline||P.short)}</h2>${phaseBlock(S.phase)}</div>
        ${S.phase>0?phasesOf(C).slice(0,S.phase).map((p,i)=>`<details class="past card"><summary>回顧：${esc(p.title)}</summary>${phaseBlock(i)}</details>`).reverse().join(""):""}`
     : `<div class="card intro"><h2>${C.title}</h2>${C.intro.map(p=>`<p>${p}</p>`).join("")}</div>`;
-  const rules = m
+  const rules = travel()
+    ? `🗺️ 地點：每天有幾個<b>行動點</b>（今天 ${P.actions} 點）。去一個地方要用行動點，到了那裡就可以問在場的人、查那裡的證物。${P.startAt?`今天一開始你在「${esc(LOC(P.startAt).name)}」，不用行動點。`:""}<br>
+       🗣️ 問話：每個人每天只會回答你 ${P.questionLimit} 題。有人會說謊。人每天會在不同的地方。<br>
+       🔍 搜證：每個地點每次能查的證物有限。有些證物過幾天就會消失。<br>
+       🧪 化驗：把證物送到鑑識中心，<b>要等 1–2 天才有結果</b>，結果會在當天早上出現在這一頁。想清楚先送什麼。<br>
+       📅 案件一共 ${phasesOf(C).length} 天，準備好了就到這一頁「進入下一天」。沒用完的行動點不會留到隔天。<br>
+       💡 有些問題、地點要先聽到或看到相關線索才會出現。<br>
+       📓 筆記：可以按重點、時間線、人物或證物整理。<br>
+       ⚖️ 推理：隨時都可以推理。推理錯了不會公布真相，可以繼續調查再試。`
+    : m
     ? `🗣️ 問話：每位嫌疑人<b>每天</b>只會回答你幾題（今天 ${P.questionLimit} 題）。有人會說謊。<br>
        🔍 搜證：鑑識人員今天能幫你處理 ${P.searchLimit} 項。<b>沒用完的次數不會留到隔天。</b><br>
-       📅 案件分成 ${phasesOf(C).length} 天。準備好了就到這一頁「進入下一天」。隔天會有新的證物和鑑識結果，也可能發生新的事件；有些東西放太久就查不到了。<br>
+       📅 案件分成 ${phasesOf(C).length} 天。準備好了就到這一頁「進入下一天」。<br>
        💡 有些問題要先從別人口中聽到相關的事、或看過相關證物才問得出來。<br>
-       📓 筆記：自動記錄你問過、看過的內容。<br>
        ⚖️ 推理：隨時都可以推理。推理錯了不會公布真相，可以繼續調查再試。`
     : `🗣️ 問話：每位嫌疑人有很多問題可以問，但只會回答你 ${P.questionLimit} 題。有人會說謊。<br>
        🔍 搜證：調閱監視器、檢查證物，總共只能查 ${P.searchLimit} 項。找到關鍵證據會解鎖新的質問問題（質問也算一題）。<br>
@@ -223,19 +303,74 @@ function vBrief(){
        ⚖️ 推理：隨時都可以推理。判斷發生了什麼事、選出兇手（可以不只一個），再選證據並回答推理題。查到越多線索，能選的可能性和推理題就越多。推理錯了不會公布真相，可以繼續調查再試。`;
   const next = m && !lastPhase() && !S.done
     ? `<button class="btn" style="text-align:center;border-color:var(--accent);color:var(--accent)" onclick="nextPhase()">🌙 結束今天，進入「${esc(phasesOf(C)[S.phase+1].short)}」 ›</button>` : "";
+  const pending = tests().filter(t=>S.labq[t.id]!==undefined && !testReady(t));
   return `${head}
+  ${pending.length?`<div class="card"><h3>⏳ 化驗中</h3>${pending.map(t=>`<p class="small" style="margin:4px 0">🧪 ${esc(t.title)}<span class="muted">（${S.labq[t.id]+t.days-S.phase} 天後）</span></p>`).join("")}</div>`:""}
   <div class="card"><h3>🎯 任務</h3><p style="margin:0">${C.goal}</p></div>
-  <div class="card"><h3>玩法</h3><p class="small muted" style="margin:0">${rules}</p></div>
-  <button class="btn primary" onclick="go('suspects')">${S.asked.length||S.seen.length?"繼續調查":"開始調查"}</button>
+  <details class="card"><summary><b>玩法</b></summary><p class="small muted" style="margin:8px 0 0">${rules}</p></details>
+  <button class="btn primary" onclick="go('${travel()?"map":"suspects"}')">${S.asked.length||S.seen.length?"繼續調查":"開始調查"}</button>
   ${next}
   <button class="btn" style="text-align:center" onclick="go('accuse')">🧠 我已經知道真相了！直接推理</button>
   <button class="btn danger" onclick="restart()">重新開始這個案件</button>`;
 }
 function nextPhase(){
-  const nx = phasesOf(C)[S.phase+1], q = totalQLeft(), s = searchLeft();
-  if (!confirm(`進入「${nx.title}」？` + (q+s ? `\n今天還有 ${q} 題可問、${s} 項可查，進入下一天就不能再用了。` : ""))) return;
-  S.phase++; save(); openSuspect = null; tab = "brief"; render(); scrollTo(0,0);
+  const nx = phasesOf(C)[S.phase+1];
+  const left = travel() ? (apLeft() ? `\n今天還有 ${apLeft()} 個行動點，進入下一天就不能再用了。` : "")
+    : ((totalQLeft()+searchLeft()) ? `\n今天還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查，進入下一天就不能再用了。` : "");
+  if (!confirm(`進入「${nx.title}」？${left}`)) return;
+  S.phase++; checkEvents(); save(); openSuspect = null; openLoc = null; tab = "brief"; render(); scrollTo(0,0);
   setTimeout(()=>toast("📅 " + nx.title), 300);
+}
+
+/* ---------- 地點 ---------- */
+function vMap(){
+  if (openSuspect) return vSuspects();
+  if (openLoc) return vLocation(LOC(openLoc));
+  const open = C.locations.filter(locOpen);
+  const hidden = C.locations.filter(l=>(l.phase||0)<=S.phase && !unlocked(l)).length;
+  const closed = C.locations.filter(l=>unlocked(l) && !locOpen(l));
+  return `<p class="muted small">今天還有 <b style="color:var(--accent)">${apLeft()}</b> 個行動點。去一個地方要用行動點，今天已經去過的地方可以隨時回去。</p>
+  ${open.map(l=>{
+    const ppl = C.suspects.filter(s=>!isGone(s) && whereOf(s)===l.id);
+    const isHere = here(l.id), cost = l.cost||1;
+    const status = isHere ? `<span class="tag cost">📍 今天在這裡</span>` : `<span class="tag">🚗 ${cost} 點</span>`;
+    return `<div class="sus" style="text-align:left;margin-bottom:12px" onclick="visit('${l.id}')">
+      <div style="display:flex;gap:12px;align-items:center"><div class="av" style="font-size:34px">${l.icon}</div>
+      <div style="min-width:0"><div class="nm" style="margin:0">${esc(l.name)}</div><div class="rl">${esc(l.desc||"")}</div>
+      <div class="small" style="margin-top:4px">${status}${ppl.length?`<span class="muted">在場：${ppl.map(s=>s.name.replace(/（.*）/,"")).join("、")}</span>`:`<span class="muted">今天沒有可以問話的人</span>`}</div></div></div></div>`;
+  }).join("")}
+  ${closed.map(l=>`<div class="sus" style="text-align:left;margin-bottom:12px;opacity:.45"><div style="display:flex;gap:12px;align-items:center"><div class="av" style="font-size:34px">${l.icon}</div><div><div class="nm" style="margin:0">${esc(l.name)}</div><div class="rl">${esc(l.closedText||"現在去不了")}</div></div></div></div>`).join("")}
+  ${hidden?`<p class="muted small">🔒 還有 ${hidden} 個地方，要先查到相關線索才會知道。</p>`:""}`;
+}
+function vLocation(l){
+  const ppl = C.suspects.filter(s=>!isGone(s) && whereOf(s)===l.id);
+  const items = allItems().filter(it=>it.loc===l.id);
+  const shownItems = items.filter(it=>S.seen.includes(it.id) || (itemOpen(it) && unlocked(it)));
+  const lockedItems = items.filter(it=>!S.seen.includes(it.id) && itemOpen(it) && !unlocked(it)).length;
+  const sl = searchLeftAt(l), off = S.done || sl<=0;
+  const ts = tests().filter(t=>t.loc===l.id && (S.labq[t.id]!==undefined || testOpen(t)));
+  const lockedTests = tests().filter(t=>t.loc===l.id && S.labq[t.id]===undefined && (t.until===undefined || t.until >= S.phase) && !testOpen(t)).length;
+  const tl = testsLeftAt(l);
+  return `<button class="back" onclick="openLoc=null;render()">‹ 返回地圖</button>
+  <div class="card"><div style="display:flex;gap:12px;align-items:center"><div style="font-size:40px">${l.icon}</div>
+    <div><h2 style="margin:0">${esc(l.name)}</h2><div class="muted small">${esc(l.desc||"")}</div></div></div>
+    ${l.note?`<p class="small muted" style="margin:8px 0 0">${esc(at(l.note,S.phase)||"")}</p>`:""}</div>
+  ${ppl.length?`<div class="card"><h3>🗣️ 在場的人</h3><div class="suspects">${ppl.map(s=>{
+      const left = qLeft(s);
+      return `<div class="sus" onclick="openSuspect='${s.id}';render();scrollTo(0,0)"><div class="av">${s.av}</div><div class="nm">${s.name}</div><div class="rl">${s.role}</div>
+      <div class="ct" style="${left?"":"color:var(--red)"}">${left?`今天還能問 ${left} 題`:"今天不答了"}</div></div>`;}).join("")}</div></div>`:""}
+  ${shownItems.length||lockedItems?`<div class="card"><h3>🔍 可以查的東西</h3><p class="muted small" style="margin:0">${sl>0?`這次還能查 <b style="color:var(--accent)">${sl}</b> 項。`:"這裡今天已經查不了更多了。"}</p>
+    ${shownItems.map(it=>S.seen.includes(it.id)
+      ? `<div style="margin:12px 0"><div style="font-weight:700"><span class="tag">${esc(phasesOf(C)[S.sp[it.id]||0].short)}</span>${esc(it.title)}</div>${it.cctv?`<div class="cctv"><span class="rec">● REC</span>\n${esc(it.text)}</div>`:`<div class="muted">${nl(it.text)}</div>`}</div>`
+      : `<button class="btn" ${off?"disabled":""} onclick="inspectById('${it.id}')">${it.cctv?"📹":"🧾"} ${esc(it.title)}${it.until!==undefined&&it.until===S.phase?' <span class="tag cost">今天過後就查不到了</span>':""}${(it.phase||0)===S.phase&&S.phase>0?' <span class="tag new">新</span>':""}</button>`).join("")}
+    ${lockedItems?`<p class="muted small">🔒 還有 ${lockedItems} 項，要先發現相關線索才會知道可以查。</p>`:""}</div>`:""}
+  ${l.perVisit?`<div class="card"><h3>🧪 化驗</h3><p class="muted small" style="margin:0">${tl>0?`這次還能送 <b style="color:var(--accent)">${tl}</b> 件。`:"這次能送的件數已經滿了。"}結果要等幾天，會在早上出現在「案情」頁。</p>
+    ${ts.map(t=>{
+      if (testReady(t)) return `<div style="margin:12px 0"><div style="font-weight:700">✅ ${esc(t.title)}</div><div class="muted">${nl(t.text)}</div></div>`;
+      if (S.labq[t.id]!==undefined) return `<p class="small" style="margin:10px 0">⏳ ${esc(t.title)}<span class="muted">（${S.labq[t.id]+t.days-S.phase} 天後出結果）</span></p>`;
+      return `<button class="btn" ${S.done||tl<=0?"disabled":""} onclick="submitTest('${t.id}')">🧪 ${esc(t.title)} <span class="tag">${t.days} 天</span>${t.until!==undefined&&t.until===S.phase?' <span class="tag cost">今天過後就送不了</span>':""}${t.desc?`<div class="muted small">${esc(t.desc)}</div>`:""}</button>`;
+    }).join("")}
+    ${lockedTests?`<p class="muted small">🔒 還有 ${lockedTests} 項化驗，要先找到相關的東西才能送。</p>`:""}</div>`:""}`;
 }
 
 /* ---------- 問話 ---------- */
@@ -249,17 +384,17 @@ function vSuspects(){
     const notAsked = qs.filter(q=>!S.asked.includes(q.id));
     const left = qLeft(s), off = left<=0||S.done;
     const status = gone ? `<div class="small" style="color:var(--red)">🕯️ ${esc(s.goneNote||"已經不在了")}</div>`
-      : `<div class="small" style="color:${left?"var(--accent)":"var(--red)"}">${left?`${multi()?"今天":""}還願意回答 ${left} 題`:multi()&&!lastPhase()?"今天不肯再回答了":"拒絕再回答"}</div>`;
-    return `<button class="back" onclick="openSuspect=null;render()">‹ 返回嫌疑人列表</button>
+      : `<div class="small" style="color:${left?"var(--accent)":"var(--red)"}">${left?`${multi()?"今天":""}還願意回答 ${left} 題`:travel()&&!reachable(s)?"今天不在這裡":multi()&&!lastPhase()?"今天不肯再回答了":"拒絕再回答"}</div>`;
+    return `<button class="back" onclick="openSuspect=null;render()">‹ 返回${openLoc?"「"+esc(LOC(openLoc).name)+"」":"嫌疑人列表"}</button>
     <div class="card"><div style="display:flex;gap:12px;align-items:center"><div style="font-size:44px">${s.av}</div>
       <div><h2 style="margin:0">${s.name}</h2><div class="muted small">${s.role}</div>${status}</div></div></div>
-    ${askedHere.length?`<div class="card"><h3>已問</h3>${askedHere.map(q=>qaHTML(q)).join("")}</div>`:""}
     ${off||gone?"":`<div class="card"><h3>可以問（選 ${left} 題）</h3>
       ${notAsked.length?notAsked.map(q=>`<button class="btn" onclick="askById('${s.id}','${q.id}')">
         ${/^（出示/.test(textOf(q).q)?'<span class="tag new">質問</span>':(q.requires||q.requiresAll)?'<span class="tag new">追問</span>':''}${esc(textOf(q).q)}</button>`).join("")
       :`<p class="muted small">暫時沒有其他問題。</p>`}
       ${lockedN?`<p class="muted small">🔒 還有 ${lockedN} 個問題，要先從其他人口中或證物裡得到相關線索才能問。</p>`:""}
-    </div>`}`;
+    </div>`}
+    ${askedHere.length?`<div class="card"><h3>已問</h3>${askedHere.map(q=>qaHTML(q)).join("")}</div>`:""}`;
   }
   const P = PH();
   return `<p class="muted small">選一位嫌疑人問話。每人${multi()?"今天":""}只會回答 ${P.questionLimit} 題，先想清楚要問什麼。</p>
@@ -276,7 +411,7 @@ function qaHTML(q){
 }
 function askById(sid, qid){ const s=C.suspects.find(x=>x.id===sid); ask(s, s.questions.find(q=>q.id===qid)); }
 
-/* ---------- 搜證 ---------- */
+/* ---------- 搜證（沒有地點的案件） ---------- */
 function vSearch(){
   const off = searchLeft()<=0||S.done;
   let lockedAll = 0;
@@ -287,7 +422,7 @@ function vSearch(){
     return `<div class="card"><h3>${title}</h3>${shown.map(it=>{
       if (S.seen.includes(it.id)) return `<div style="margin:12px 0"><div style="font-weight:700">${multi()?`<span class="tag">${esc(phasesOf(C)[S.sp[it.id]||0].short)}</span>`:""}${esc(it.title)}</div>
         ${kind==="cctv"?`<div class="cctv"><span class="rec">● REC</span>\n${esc(it.text)}</div>`:`<div class="muted">${nl(it.text)}</div>`}</div>`;
-      return `<button class="btn" ${off?"disabled":""} onclick="inspectById('${kind}','${it.id}')">${kind==="cctv"?"📹":it.lab?"🧪":"🧾"} ${esc(it.title)}${it.until!==undefined&&it.until===S.phase?' <span class="tag cost">今天過後就查不到了</span>':""}${(it.phase||0)===S.phase&&S.phase>0?' <span class="tag new">新</span>':""}</button>`;
+      return `<button class="btn" ${off?"disabled":""} onclick="inspectById('${it.id}')">${kind==="cctv"?"📹":"🧾"} ${esc(it.title)}${it.until!==undefined&&it.until===S.phase?' <span class="tag cost">今天過後就查不到了</span>':""}${(it.phase||0)===S.phase&&S.phase>0?' <span class="tag new">新</span>':""}</button>`;
     }).join("")}</div>`;
   };
   const open = allItems().filter(it=>!S.seen.includes(it.id) && itemOpen(it) && unlocked(it)).length;
@@ -295,25 +430,51 @@ function vSearch(){
   return `<p class="muted small">${searchLeft()>0?`鑑識人員${multi()?"今天":""}還能幫你處理 <b style="color:var(--accent)">${searchLeft()}</b> 項（目前可查 ${open} 項）。`:multi()&&!lastPhase()?"鑑識人員今天已經沒時間了，明天再來。":"鑑識人員已經沒時間了。"}</p>
   ${html}${lockedAll?`<p class="muted small">🔒 還有 ${lockedAll} 項，要先發現相關線索才會知道可以查。</p>`:""}`;
 }
-function inspectById(kind, id){ inspect((kind==="cctv"?C.cctv:C.evidence).find(x=>x.id===id)); }
+function inspectById(id){ inspect(allItems().find(x=>x.id===id)); }
 
 /* ---------- 筆記 ---------- */
+function knownThings(){
+  // 所有已知的東西：{id, kind, title, text, clue, tl, who, phase}
+  const out = [];
+  phasesOf(C).slice(0,S.phase+1).forEach((p,i)=>(p.reports||[]).forEach(r=>out.push({...r, kind:"report", phase:i})));
+  C.suspects.forEach(s=>s.questions.forEach(q=>{ if (S.asked.includes(q.id)) out.push({...q, kind:"q", who:s.id, phase:S.qp[q.id]||0}); }));
+  (C.events||[]).forEach(e=>{ if (S.ev[e.id]!==undefined) out.push({...e, kind:"report", phase:S.ev[e.id]}); });
+  allItems().forEach(it=>{ if (S.seen.includes(it.id)) out.push({...it, kind:"item", phase:S.sp[it.id]||0}); });
+  readyTests().forEach(t=>out.push({...t, kind:"test", phase:S.labq[t.id]+t.days}));
+  return out;
+}
 function vNotes(){
-  const reps = reportsGot();
-  if (!S.asked.length && !S.seen.length && !reps.length) return `<div class="card"><p class="muted" style="margin:0">還沒有紀錄。先去問話或搜證吧。</p></div>`;
-  const clues = [];
-  reps.forEach(r=>{ if (r.clue) clues.push(r.clue); });
-  C.suspects.forEach(s=>s.questions.forEach(q=>{ if(q.clue && S.asked.includes(q.id)) clues.push(q.clue); }));
-  allItems().forEach(it=>{ if(it.clue && S.seen.includes(it.id)) clues.push(it.clue); });
-  let html = clues.length?`<div class="card"><h3>🔑 重點</h3><ul style="margin:0;padding-left:20px">${clues.map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>`:"";
-  if (reps.length) html += `<div class="card log-sec"><h3>📋 報告</h3>${reps.map(reportHTML).join("")}</div>`;
-  C.suspects.forEach(s=>{
-    const qs = s.questions.filter(q=>S.asked.includes(q.id));
-    if (qs.length) html += `<div class="card log-sec"><h3>${s.av} ${s.name}</h3>${qs.map(qaHTML).join("")}</div>`;
-  });
-  const seen = allItems().filter(it=>S.seen.includes(it.id));
-  if (seen.length) html += `<div class="card log-sec"><h3>🔍 搜證結果</h3>${seen.map(it=>`<div style="margin:10px 0"><b>${esc(it.title)}</b><div class="muted small">${nl(it.text)}</div></div>`).join("")}</div>`;
-  return html + `<p class="muted small">提示：比對口供、監視器和時間，找出誰在說謊，再想想他為什麼要說謊。</p>`;
+  const K = knownThings();
+  if (!K.length) return `<div class="card"><p class="muted" style="margin:0">還沒有紀錄。先去問話或搜證吧。</p></div>`;
+  const views = [["key","🔑 重點"],["time","🕒 時間線"],["who","👤 人物"],["ev","🧾 證物"]];
+  const bar = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${views.map(([k,l])=>`<button class="tag" style="border:0;padding:6px 12px;font-size:13px;${noteView===k?"background:var(--accent);color:#1a140c":""}" onclick="noteView='${k}';render()">${l}</button>`).join("")}</div>`;
+  let html = "";
+  if (noteView==="key"){
+    const byDay = phasesOf(C).map((p,i)=>K.filter(k=>k.clue && k.phase===i));
+    html = byDay.map((arr,i)=>arr.length?`<div class="card"><h3>${multi()?esc(phasesOf(C)[i].short):"🔑 重點"}</h3><ul style="margin:0;padding-left:20px">${arr.map(k=>`<li>${esc(k.clue)}</li>`).join("")}</ul></div>`:"").reverse().join("") || `<div class="card"><p class="muted small" style="margin:0">還沒有重點。</p></div>`;
+  } else if (noteView==="time"){
+    const rows = [];
+    K.forEach(k=>(k.tl||[]).forEach(([t,txt])=>rows.push([t,txt])));
+    const seen = new Set(), uniq = rows.filter(([t,x])=>{ const key=t+x; if(seen.has(key)) return false; seen.add(key); return true; });
+    const key = t => /^\d{4}/.test(t) ? t : "2026/" + t;
+    uniq.sort((a,b)=>key(a[0])<key(b[0])?-1:key(a[0])>key(b[0])?1:0);
+    let last = "";
+    html = uniq.length ? `<div class="card"><h3>🕒 你目前拼出來的時間線</h3><p class="muted small" style="margin:0 0 8px">自動整理自你聽到、看到的內容。口供不一定是真的。</p>${uniq.map(([t,x])=>{
+      const sp = t.indexOf(" "), d = sp<0 ? t : t.slice(0,sp), hm = sp<0 ? "" : t.slice(sp+1);
+      const hd = d!==last ? `<div style="color:var(--accent);font-weight:700;margin-top:10px">${esc(d)}</div>` : ""; last = d;
+      return `${hd}<div class="small" style="display:flex;gap:10px;margin:4px 0"><span style="flex:none;min-width:3.2em;font-variant-numeric:tabular-nums;color:var(--muted)">${esc(hm)}</span><span>${esc(x)}</span></div>`;}).join("")}</div>`
+      : `<div class="card"><p class="muted small" style="margin:0">還沒有可以排進時間線的資料。</p></div>`;
+  } else if (noteView==="who"){
+    const people = C.suspects.filter(s=>s.questions.some(q=>S.asked.includes(q.id)));
+    html = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${[["all","全部"],...people.map(s=>[s.id,s.av+" "+s.name.replace(/（.*）/,"")])].map(([k,l])=>`<button class="tag" style="border:0;padding:6px 10px;font-size:13px;${noteWho===k?"background:var(--accent);color:#1a140c":""}" onclick="noteWho='${k}';render()">${esc(l)}</button>`).join("")}</div>`
+      + people.filter(s=>noteWho==="all"||noteWho===s.id).map(s=>`<div class="card log-sec"><h3>${s.av} ${s.name}</h3>${s.questions.filter(q=>S.asked.includes(q.id)).sort((a,b)=>(S.qp[a.id]||0)-(S.qp[b.id]||0)).map(qaHTML).join("")}</div>`).join("");
+  } else {
+    const reps = K.filter(k=>k.kind==="report"), its = K.filter(k=>k.kind==="item"), ts = K.filter(k=>k.kind==="test");
+    html = (reps.length?`<div class="card log-sec"><h3>📋 報告與事件</h3>${reps.map(reportHTML).join("")}</div>`:"")
+      + (its.length?`<div class="card log-sec"><h3>🔍 搜證結果</h3>${its.map(it=>`<div style="margin:10px 0"><b>${esc(it.title)}</b>${it.loc?` <span class="muted small">（${esc(LOC(it.loc).name)}）</span>`:""}<div class="muted small">${nl(it.text)}</div></div>`).join("")}</div>`:"")
+      + (ts.length?`<div class="card log-sec"><h3>🧪 化驗結果</h3>${ts.map(testHTML).join("")}</div>`:"");
+  }
+  return bar + html + `<p class="muted small">提示：比對口供、監視器和時間，找出誰在說謊，再想想他為什麼要說謊。</p>`;
 }
 
 /* ---------- 解鎖規則 ---------- */
@@ -322,20 +483,21 @@ function unlocked(item){
   return (item.phase===undefined || item.phase <= S.phase) && (!any || any.some(has)) && (!item.requiresAll || item.requiresAll.every(has));
 }
 const availCount = () => C.suspects.filter(s=>!isGone(s)).flatMap(s=>s.questions).filter(unlocked).length
-  + allItems().filter(it=>itemOpen(it) && unlocked(it)).length;
+  + allItems().filter(it=>itemOpen(it) && unlocked(it)).length + tests().filter(testOpen).length
+  + (travel() ? C.locations.filter(locOpen).length : 0);
 // 問題的問法與回答：問的當下決定用哪個版本，之後筆記裡不會變
 function textOf(q){
   const v = S.variant && S.variant[q.id];
   const useAlt = v ? v==="alt" : !!(q.alt && q.alt.when.some(has));
   return { q: useAlt && q.alt.q || q.q, a: useAlt && q.alt.a || q.a };
 }
-const allPeople = () => [...C.suspects, ...C.extraPeople.filter(unlocked)];
+const allPeople = () => [...C.suspects.filter(s=>!s.witness && unlocked({requires:s.knownBy})), ...C.extraPeople.filter(unlocked)];
 const kindOf = id => C.kinds.find(k=>k.id===id);
 
 /* ---------- 推理 ---------- */
 function vAccuse(){
   if (S.done) return vResult();
-  const seenItems = allItems().filter(it=>S.seen.includes(it.id));
+  const seenItems = evidencePool();
   const P = accusePick;
   const kinds = C.kinds.filter(unlocked);
   const lockedKinds = C.kinds.length - kinds.length;
@@ -343,14 +505,15 @@ function vAccuse(){
   const murder = P.kind==="murder";
   const lockedR = C.reasoning.filter(r=>!unlocked(r)).length;
   let n = 1;
-  return `<div class="card"><h2>⚖️ 推理真相</h2><p class="muted small" style="margin:0">隨時都可以來這裡推理。推理錯了不會直接公布真相，可以回去繼續調查再推理一次。${totalQLeft()+searchLeft()>0?`你${multi()?"今天":""}還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查。`:""}${multi()&&!lastPhase()?`案件還有 ${phasesOf(C).length-1-S.phase} 天可以調查。`:""}<br>你查到越多線索，能選的可能性就越多。</p></div>
+  const leftTxt = travel() ? (apLeft()?`你今天還有 ${apLeft()} 個行動點。`:"") : (totalQLeft()+searchLeft()>0?`你${multi()?"今天":""}還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查。`:"");
+  return `<div class="card"><h2>⚖️ 推理真相</h2><p class="muted small" style="margin:0">隨時都可以來這裡推理。推理錯了不會直接公布真相，可以回去繼續調查再推理一次。${leftTxt}${multi()&&!lastPhase()?`案件還有 ${phasesOf(C).length-1-S.phase} 天可以調查。`:""}<br>你查到越多線索，能選的可能性就越多。</p></div>
   <div class="card"><h3>${n++}. ${esc(C.kindQuestion || "到底發生了什麼事？")}</h3>
     ${kinds.map(k=>`<div class="pick ${P.kind===k.id?"on":""}" onclick="pickKind('${k.id}')"><span class="box">${P.kind===k.id?"✓":""}</span>${esc(k.label)}</div>`).join("")}
     ${lockedKinds?`<p class="muted small">🔒 還有 ${lockedKinds} 種可能性，要先發現相關線索才會出現。</p>`:""}
   </div>
   ${murder?`<div class="card"><h3>${n++}. 兇手是誰？（可以複選，甚至全部都選）</h3>
     ${people.map(s=>`<div class="pick ${P.culprits.includes(s.id)?"on":""}" onclick="toggleCulprit('${s.id}')"><span class="box">${P.culprits.includes(s.id)?"✓":""}</span>${s.av} ${esc(s.name)}</div>`).join("")}
-    ${people.length>C.suspects.length?"":`<p class="muted small">🔒 調查中出現的其他人物，也會加進這裡。</p>`}
+    <p class="muted small">🔒 調查中出現的其他人物，也會加進這裡。</p>
   </div>
   ${C.reasoning.map((r,i)=>!unlocked(r)?"":`<div class="card"><h3>${n++}. ${esc(r.q)}</h3>
     ${r.options.map((o,j)=>`<div class="pick ${P.reasoning[i]===j?"on":""}" onclick="pickReason(${i},${j})"><span class="box">${P.reasoning[i]===j?"✓":""}</span>${esc(o)}</div>`).join("")}</div>`).join("")}
@@ -389,7 +552,7 @@ function submitAccuse(){
   S.done = true;
   S.tries = (S.tries||0) + 1;
   S.revealed = verdict==="perfect";
-  S.result = { verdict, evHits, reasonHits, grade, pick: JSON.parse(JSON.stringify(P)), qUsed:S.asked.length, sUsed:S.seen.length };
+  S.result = { verdict, evHits, reasonHits, grade, pick: JSON.parse(JSON.stringify(P)), qUsed:S.asked.length, sUsed:S.seen.length + Object.keys(S.labq).length };
   save(); render(); scrollTo(0,0);
 }
 function vResult(){
@@ -402,7 +565,8 @@ function vResult(){
     const mine = r.pick.reasoning[i], ok = mine===q.answer;
     return `<p style="margin:6px 0">${ok?"✅":"❌"} ${esc(q.q)}<br><span class="muted small">答案：${esc(q.options[q.answer])}${ok?"":`（${mine===undefined?"你沒有作答":"你選："+esc(q.options[mine])}）`}</span></p>`;}).join("")}</div>`;
   const dig = canDig();
-  const digText = totalQLeft()+searchLeft()>0 ? `你${multi()?"今天":""}還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查，可以回去繼續調查，`
+  const digText = travel() ? (apLeft()||!lastPhase() ? "你還有時間，可以回去繼續調查，" : "調查的時間已經用完，但你可以重新整理筆記，")
+    : totalQLeft()+searchLeft()>0 ? `你${multi()?"今天":""}還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查，可以回去繼續調查，`
     : multi() && !lastPhase() ? "今天的次數用完了，但你可以進入下一天繼續調查，"
     : "調查的機會已經用完，但你可以重新整理筆記，";
   const tail = shown ? `${answers}
@@ -419,14 +583,22 @@ function vResult(){
     <p class="muted small" style="margin:0">你的推理：${esc(pickName)}<br>關鍵證據 ${r.evHits}/3${murder?`　推理題 ${r.reasonHits}/${C.reasoning.length}`:""}<br>問了 ${r.qUsed} 題、查了 ${r.sUsed} 項</p></div>
   ${tail}`;
 }
-function retry(){ S.done=false; S.result=null; accusePick=freshPick(); save(); go(totalQLeft()+searchLeft()>0?"notes":multi()&&!lastPhase()?"brief":"accuse"); }
+function retry(){ S.done=false; S.result=null; accusePick=freshPick(); save(); go(travel()?"brief":totalQLeft()+searchLeft()>0?"notes":multi()&&!lastPhase()?"brief":"accuse"); }
 function reveal(){ if(!confirm("確定要看真相？看了就沒有懸念了。")) return; S.revealed=true; save(); render(); scrollTo(0,0); }
 
 function restart(skipConfirm){
   if (!skipConfirm && !confirm("清除所有進度，重新開始？")) return;
-  S = fresh(); accusePick = freshPick(); openSuspect=null; save(); go("brief");
+  S = fresh(); accusePick = freshPick(); openSuspect=null; openLoc=null; save(); go("brief");
 }
-function go(t){ tab=t; openSuspect=null; render(); scrollTo(0,0); }
+function go(t){ tab=t; openSuspect=null; if(t!=="map") openLoc=null; render(); scrollTo(0,0); }
+function renderNav(){
+  const tabs = travel()
+    ? [["brief","📁","案情"],["map","🗺️","地點"],["notes","📓","筆記"],["accuse","⚖️","推理"]]
+    : [["brief","📁","案情"],["suspects","🗣️","問話"],["search","🔍","搜證"],["notes","📓","筆記"],["accuse","⚖️","推理"]];
+  const nav = document.getElementById("nav");
+  nav.innerHTML = tabs.map(([k,ic,l])=>`<button data-tab="${k}" class="${tab===k?"on":""}"><span class="ic">${ic}</span>${l}</button>`).join("");
+  nav.querySelectorAll("button").forEach(b=>b.onclick=()=>go(b.dataset.tab));
+}
 function render(){
   const home = screen==="home";
   document.getElementById("homeBtn").style.display = home ? "none" : "";
@@ -434,12 +606,10 @@ function render(){
   document.getElementById("nav").style.display = home ? "none" : "";
   document.getElementById("caseTitle").textContent = home ? "🕵️ 偵探檔案" : C.title;
   if (home){ document.getElementById("view").innerHTML = vHome(); return; }
-  renderClock();
-  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on", b.dataset.tab===tab));
-  const v = { brief:vBrief, suspects:vSuspects, search:vSearch, notes:vNotes, accuse:vAccuse }[tab]();
+  renderClock(); renderNav();
+  const v = { brief:vBrief, suspects:vSuspects, search:vSearch, map:vMap, notes:vNotes, accuse:vAccuse }[tab]();
   document.getElementById("view").innerHTML = v;
 }
-document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.tab));
 render();
 if ("serviceWorker" in navigator) {
   // 有新版時自動重新載入一次，玩家不必手動清快取
