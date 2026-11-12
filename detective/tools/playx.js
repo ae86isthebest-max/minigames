@@ -95,7 +95,7 @@ const {chromium}=require('playwright'); const CID=process.env.CASE||'fingers';
   const locs=vis;
   const st=await p.evaluate(()=>({used:usedNow(),left:timeLeft(),t:nowStr()}));
   console.log(`day ${ph}: ${acts.length} actions, used ${st.used} min, left ${st.left} (now ${st.t}), visits ${locs.join(',')}`);
-  if(ph<NPH-1) await p.evaluate(async()=>{ await nextPhase(); });
+  if(ph<NPH-1) await p.evaluate(async()=>{ const p0=S.phase; for(let k=0;k<6 && S.phase===p0;k++){ await nextPhase(); if(typeof inter!=="undefined" && inter){ for(let j=0;j<80 && inter;j++){ const L=interLine(); if(L && L.choices) interPick(0); else interNext(1); } } } });
  }
  const res=await p.evaluate(async keys=>{
   go('accuse'); pickKind(C.solution.kind); C.solution.culprits.forEach(toggleCulprit); keys.forEach(toggleEv);

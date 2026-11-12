@@ -138,6 +138,10 @@ ARC.defineCast({
   "name": "龍叔",
   "look": {"age": "old", "skin": "#c08a60", "hair": "#d8d8d0", "hairStyle": "short", "top": "#f4f4f0", "bottom": "#3a3a3a"}
  },
+ "dengta": {
+  "name": "司機",
+  "look": {"skin": "#d8a880", "hair": "#1e1e1e", "hairStyle": "short", "top": "#1e1e22", "bottom": "#1e1e22"}
+ },
  "doufa": {
   "name": "豆花",
   "note": "拉布拉多鑑識犬，需要新做狗的 sprite"

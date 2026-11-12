@@ -1086,6 +1086,16 @@ function vBrief(){
 }
 async function nextPhase(){
   const nx = phasesOf(C)[S.phase+1];
+  // 今天還有「定時發生」的事（例如綁匪約好的電話）：不能直接跳過，先快轉到那個時間
+  if (CLK()){
+    const due = (C.events||[]).filter(e=>e.atTime && !e.atLoc && (e.phase||0)===S.phase && S.ev[e.id]===undefined && unlocked(e) && (!e.unless || !e.unless.some(has)) && !timeReached(e.atTime))
+      .sort((a,b)=>clkAt(CLK(),a.atTime)-clkAt(CLK(),b.atTime))[0];
+    if (due){
+      if (!await uiConfirm(`今天 ${due.atTime} 還有事情要發生。\n要直接等到 ${due.atTime} 嗎？`)) return;
+      (S.used = S.used || {})[S.phase] = clkAt(CLK(), due.atTime) - toMin(CLK().start);
+      save(); render(); checkEvents(); return;
+    }
+  }
   const left = CLK() ? (timeLeft() > 0 ? `\n今天還有 ${minLabel(timeLeft())}，進入下一天就不能再用了。` : "")
     : travel() ? (apLeft() ? `\n今天還有 ${apLeft()} 個行動點，進入下一天就不能再用了。` : "")
     : ((totalQLeft()+searchLeft()) ? `\n今天還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查，進入下一天就不能再用了。` : "");
