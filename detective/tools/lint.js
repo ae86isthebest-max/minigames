@@ -9,12 +9,19 @@ const r=await p.evaluate((ci)=>{ localStorage.clear(); openCase(ci);
   C.suspects.forEach(s=>s.questions.forEach(q=>ids.add(q.id)));
   allItems().forEach(i=>ids.add(i.id)); tests().forEach(t=>ids.add(t.id));
   (C.events||[]).forEach(e=>ids.add(e.id)); ph.forEach(x=>(x.reports||[]).forEach(r=>ids.add(r.id)));
-  const refs=[]; const chk=(o,where)=>{ const arr=v=>v===undefined?[]:Array.isArray(v)?v:[v]; [...arr(o.requires),...arr(o.requiresAll),...arr(o.unless),...arr(o.alt&&o.alt.when)].forEach(id=>{ if(!ids.has(id)) refs.push(where+':'+id); }); };
+  const refs=[], arcUse=[]; const chk=(o,where)=>{ const arr=v=>v===undefined?[]:Array.isArray(v)?v:[v]; [...arr(o.requires),...arr(o.requiresAll),...arr(o.unless),...arr(o.alt&&o.alt.when)].forEach(id=>{ if (ARC.is(id)){ arcUse.push(id.split(':')[1]); return; } if(!ids.has(id)) refs.push(where+':'+id); }); };
   C.suspects.forEach(s=>s.questions.forEach(q=>chk(q,'Q '+q.id)));
   allItems().forEach(i=>chk(i,'I '+i.id)); tests().forEach(t=>chk(t,'T '+t.id));
   (C.locations||[]).forEach(l=>chk(l,'L '+l.id)); (C.reasoning||[]).forEach((x,i)=>chk(x,'R'+i)); (C.kinds||[]).forEach(k=>chk(k,'K '+k.id)); (C.events||[]).forEach(e=>chk(e,'E '+e.id)); (C.extraPeople||[]).forEach(e=>chk(e,'X '+e.id));
   (C.solution.keyEvidence||[]).forEach(id=>{ if(!ids.has(id)) refs.push('keyEvidence:'+id); });
   out.push('dangling refs: '+(refs.join(', ')||'none'));
+  // 主線（跨集記憶）：這一集會記下哪些旗標、用到哪些旗標。用到的旗標要在前面的集數記下，或由這一集的 arcRecap（有 miss）補上
+  const arcSet = [...new Set(ARC.entries().flatMap(e=>e.arc))], recap = (C.arcRecap||[]).filter(r=>r.miss).map(r=>r.flag);
+  window.__arcSeen = window.__arcSeen || new Set();
+  const bad = [...new Set(arcUse)].filter(f=>!/^(done|solved)_/.test(f) && !recap.includes(f) && !arcSet.includes(f));
+  const noMiss = [...new Set(arcUse)].filter(f=>!/^(done|solved)_/.test(f) && window.__arcSeen.has(f) && !recap.includes(f));
+  out.push('arc flags set here: '+(arcSet.join(', ')||'none')+' | used here: '+([...new Set(arcUse)].join(', ')||'none')+(bad.length?' | !! used but never set or recapped: '+bad.join(', '):'')+(noMiss.length?' | !! set in an earlier episode but no arcRecap miss here: '+noMiss.join(', '):''));
+  arcSet.forEach(f=>window.__arcSeen.add(f));
   // areas
   const locs = travel() ? C.locations : [HOME];
   const noArea=[], dead=[], noName=[];

@@ -213,6 +213,7 @@ body.fs .toast{bottom:calc(14px + env(safe-area-inset-bottom))}
 </nav>
 <div class="toast" id="toast"></div>
 
+<script src="arc.js"></script>
 <script src="pixel.js"></script>
 <script src="cases.js"></script>
 <script src="case2.js"></script>
@@ -291,17 +292,18 @@ function loadFor(c){
     if (s && s.asked){ s.qp=s.qp||{}; s.sp=s.sp||{}; s.phase=s.phase||0; s.visits=s.visits||{}; s.labq=s.labq||{}; s.ev=s.ev||{}; return s; } }catch(e){}
   return null;
 }
-function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} ARC.sync(); }
 
 async function openCase(i){
   if (CASES[i].warn && !(loadFor(CASES[i]) || {}).warned && !await uiConfirm("⚠️ " + CASES[i].warn + "\n\n確定要開始嗎？")) return;
   C = CASES[i]; KEY = saveKey(C); S = loadFor(C) || fresh(); if (C.warn){ S.warned = 1; save(); }
   (C.cctv||[]).forEach(c=>{ c.cctv = true; });   // 監視器畫面：顯示成 REC 畫面、選單用 📹
-  accusePick = freshPick(); openSuspect = null; openLoc = null; screen = "case"; tab = "brief"; checkEvents();
+  ARC.open(); accusePick = freshPick(); openSuspect = null; openLoc = null; screen = "case"; tab = "brief"; checkEvents();
   wTalk = null; wSay = null; peek = null; mapFrom = null; wRoom = null; wGo = false; talkFrom = null;
   // 有畫面的案件：一揀完就直接進現場（第一晚的開場動畫會自動播）
   wBuddy = false; sheetFrom = null;
   if (art()){ if (travel()){ tab = "map"; openLoc = PH().startAt || null; } else tab = "scene"; }
+  inter = null; if (interMaybe("before")){ sheetFrom = openLoc; tab = "accuse"; }   // 開場前的幕間（arc.js）
   render(); scrollTo(0,0);
   if (fsMode()){ goFull(); if (!S.fsTip){ S.fsTip = 1; save(); setTimeout(()=>toast("💡 筆記、案情、結案：點小吳或右上角「💬 小吳」"), 1500); } }
 }
@@ -381,7 +383,7 @@ function animHTML(it, auto){
 }
 function animDo(btn, how){ const cv = btn.closest(".scene").querySelector("canvas"); cv._ctl && cv._ctl[how](); }
 const extraLook = id => (C.looks && C.looks[id]) || null;
-function looksFor(id){ if (id==="_you") return (C.court && C.court.detective) || DETECTIVE; const s = C.suspects.find(x=>x.id===id); return (s && lookOf(s)) || extraLook(id); }
+function looksFor(id){ if (id==="_you") return (C.court && C.court.detective) || DETECTIVE; const s = C.suspects.find(x=>x.id===id); return (s && lookOf(s)) || extraLook(id) || ARC.look(id); }
 function drawScenes(){
   document.querySelectorAll("canvas[data-scene]").forEach(cv=>{
     const opt = JSON.parse(cv.dataset.opt||"{}");
@@ -628,7 +630,8 @@ function openBuddy(){
 }
 function closePanel(){ wGo = false; talkFrom = null; wRoom = null; wBuddy = false; wTalk = null; wAct = null; peek = null; wSay = null; lastSaid = null; render(); }
 function openSheet(t){ if (!SHEETS.includes(tab)) sheetFrom = openLoc; wGo = false; wRoom = null; wBuddy = false; tab = t; openSuspect = null; lastSaid = null; wTalk = null; wSay = null; peek = null; wAct = null; render(); }
-function closeSheet(){ tab = travel() ? "map" : "scene"; openLoc = travel() ? sheetFrom : null; sheetFrom = null; wBuddy = false; render(); }
+function closeSheet(){ if (inter){ interNext(1); return; }   // 幕間播到一半關掉＝跳過
+  tab = travel() ? "map" : "scene"; openLoc = travel() ? sheetFrom : null; sheetFrom = null; wBuddy = false; render(); }
 function goFull(){
   const d = document.documentElement, rq = d.requestFullscreen || d.webkitRequestFullscreen;
   try { const r = rq && rq.call(d, { navigationUI:"hide" }); if (r && r.then) r.then(()=>{ try { screen.orientation.lock("landscape").catch(()=>{}); } catch(e){} render(); }).catch(()=>{}); } catch(e){}
@@ -882,7 +885,10 @@ function worldHooks(l, def){
 
 /* ---------- 共用狀態 ---------- */
 const reportsGot = () => phasesOf(C).slice(0, S.phase+1).flatMap(p=>p.reports||[]);
-const has = id => (S.marks||[]).includes(id) || S.seen.includes(id) || S.asked.includes(id) || reportsGot().some(r=>r.id===id) || S.ev[id]!==undefined || tests().some(t=>t.id===id && testReady(t));
+// "arc:旗標"、"arcfound:旗標" 是跨集記憶（見 arc.js），其他是這一集裡看過、問過、收到的東西
+const has = id => ARC.is(id) ? ARC.test(id) : has0(id);
+const has0 = id => (S.marks||[]).includes(id) || S.seen.includes(id) || S.asked.includes(id) || reportsGot().some(r=>r.id===id) || S.ev[id]!==undefined || tests().some(t=>t.id===id && testReady(t));
+ARC.bind(has0);
 // 突發事件：條件一滿足就發生（可能連鎖）
 function checkEvents(){
   let fired = [], changed = true;
@@ -1008,7 +1014,7 @@ function phaseBlock(i){
   const intro = i===0 ? C.intro : (p.intro||[]);
   const labs = tests().filter(t=>S.labq[t.id]!==undefined && S.labq[t.id]+t.days===i);
   const evs = (C.events||[]).filter(e=>S.ev[e.id]===i);
-  return `${intro.map(x=>`<p>${x}</p>`).join("")}${(p.reports||[]).map(reportHTML).join("")}${evs.map(e=>`<div class="report" style="border-color:var(--red)"><b>📢 ${esc(e.title)}</b><div class="muted small">${nl(e.text)}</div></div>`).join("")}
+  return `${i===0 ? ARC.recapHTML() : ""}${intro.map(x=>`<p>${x}</p>`).join("")}${(p.reports||[]).map(reportHTML).join("")}${evs.map(e=>`<div class="report" style="border-color:var(--red)"><b>📢 ${esc(e.title)}</b><div class="muted small">${nl(e.text)}</div></div>`).join("")}
     ${labs.length?`<p style="margin-top:12px"><b>📞 今天收到的化驗結果</b></p>${labs.map(testHTML).join("")}`:""}`;
 }
 function vBrief(){
@@ -1240,9 +1246,11 @@ function vNotes(){
   const K = knownThings();
   if (!K.length) return `<div class="card"><p class="muted" style="margin:0">還沒有紀錄。先去問話或搜證吧。</p></div>`;
   const views = [["key","🔑 重點"],["time","🕒 時間線"],["who","👤 人物"],["ev","🧾 證物"]];
+  if (ARC.list().length) views.push(["arc","📌 主線"]); else if (noteView==="arc") noteView = "key";
   const bar = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${views.map(([k,l])=>`<button class="tag" style="border:0;padding:6px 12px;font-size:13px;${noteView===k?"background:var(--accent);color:#1a140c":""}" onclick="noteView='${k}';render()">${l}</button>`).join("")}</div>`;
   let html = "";
-  if (noteView==="key"){
+  if (noteView==="arc") html = ARC.notesHTML();
+  else if (noteView==="key"){
     const byDay = phasesOf(C).map((p,i)=>K.filter(k=>k.clue && k.phase===i));
     html = byDay.map((arr,i)=>arr.length?`<div class="card"><h3>${multi()?esc(phasesOf(C)[i].short):"🔑 重點"}</h3><ul style="margin:0;padding-left:20px">${arr.map(k=>`<li>${esc(k.clue)}</li>`).join("")}</ul></div>`:"").reverse().join("") || `<div class="card"><p class="muted small" style="margin:0">還沒有重點。</p></div>`;
   } else if (noteView==="time"){
@@ -1337,8 +1345,9 @@ function vCourt(){
     <button class="btn primary" style="margin-top:12px" onclick="courtNext(${last?1:0})">${last?"看結果":"下一步 ▶"}</button>
     ${last?"":`<button class="btn" style="text-align:center" onclick="courtNext(1)">跳過，直接看結果</button>`}</div>`;
 }
-function courtNext(end){ if (end) delete S.court; else S.court++; save(); render(); scrollTo(0,0); }
+function courtNext(end){ if (end){ delete S.court; interMaybe("after"); } else S.court++; save(); render(); scrollTo(0,0); }
 function vAccuse(){
+  if (inter) return vInter();
   if (S.done && S.court !== undefined && art()) return vCourt();
   if (S.done) return vResult();
   const seenItems = evidencePool();
@@ -1427,14 +1436,14 @@ function vResult(){
   <button class="btn primary" onclick="retry()">${dig?"繼續調查，再推理一次":"再推理一次"}</button>
   <button class="btn" style="text-align:center" onclick="reveal()">我放棄，直接看真相</button>
   <button class="btn danger" onclick="restart()">整個案件重新開始</button>`;
-  return `${art()?`<button class="btn" style="text-align:center;margin-top:0" onclick="S.court=0;save();render();scrollTo(0,0)">🎬 重看結案過程</button>`:""}<div class="card" style="text-align:center"><div class="muted small">評級</div>
+  return `${art()?`<button class="btn" style="text-align:center;margin-top:0" onclick="S.court=0;save();render();scrollTo(0,0)">🎬 重看結案過程</button>`:""}${interBtns()}<div class="card" style="text-align:center"><div class="muted small">評級</div>
     <div class="grade" style="color:${r.grade==="F"?"var(--red)":r.grade==="S"?"var(--accent)":"var(--text)"}">${r.grade}</div>
     <p style="margin:4px 0">${msg}</p>
     <p class="muted small" style="margin:0">你的推理：${esc(pickName)}<br>關鍵證據 ${r.evHits}/3${murder?`　推理題 ${r.reasonHits}/${rq.length}`:""}<br>問了 ${r.qUsed} 題、查了 ${r.sUsed} 項${allDetails().length ? `、發現小細節 ${(S.found||[]).length}／${allDetails().length}` : ""}<br>第 ${S.tries||1} 次推理${(S.tries||1) > 1 && r.verdict==="perfect" ? "（第一次就全對才有 S）" : ""}</p></div>
   ${tail}`;
 }
 function retry(){ S.done=false; S.result=null; accusePick=freshPick(); save(); go(travel()?"brief":totalQLeft()+searchLeft()>0?"notes":multi()&&!lastPhase()?"brief":"accuse"); }
-async function reveal(){ if(!await uiConfirm("確定要看真相？看了就沒有懸念了。")) return; S.revealed=true; save(); render(); scrollTo(0,0); }
+async function reveal(){ if(!await uiConfirm("確定要看真相？看了就沒有懸念了。")) return; S.revealed=true; save(); interMaybe("after"); render(); scrollTo(0,0); }
 
 async function restart(skipConfirm){
   if (!skipConfirm && !await uiConfirm("清除所有進度，重新開始？")) return;
