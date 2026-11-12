@@ -257,6 +257,24 @@ const WORLD = (() => {
     return cur.hooks.bubble();
   }
 
+  /* ---------- 地面的質感：有深度、有碎石裂縫，近處暗一點 ---------- */
+  function groundFx(p, g, cam){
+    const x0 = Math.floor(cam / 2) * 2 - 4, x1 = cam + VW + 4;
+    g.save();
+    g.globalAlpha = 0.16; p.R(x0, GROUND + 1, x1 - x0, 1, "#ffffff");                 // 地面前緣反光
+    for (let k = 0; k < 4; k++){ g.globalAlpha = 0.07 + k * 0.05; p.R(x0, GROUND + 7 + k, x1 - x0, 1, "#000000"); }   // 越近越暗
+    for (let x = x0; x < x1; x += 2){
+      const h = ((x * 2654435761) >>> 0) % 997;                                  // 固定的亂數（跟著世界座標，不會閃）
+      if (h % 7 === 0){ g.globalAlpha = 0.28; p.R(x, GROUND + 2 + (h % 7), 1 + (h % 2), 1, "#000000"); }
+      if (h % 11 === 0){ g.globalAlpha = 0.22; p.R(x, GROUND + 3 + (h % 5), 1, 1, "#ffffff"); }
+      if (h % 53 === 0){ g.globalAlpha = 0.3; p.R(x, GROUND + 4 + (h % 4), 3 + (h % 3), 1, "#000000"); p.R(x + 1, GROUND + 3 + (h % 4), 2, 1, "#000000"); }   // 裂縫、小坑
+      if (h % 41 === 0){ g.globalAlpha = 0.35; p.R(x, GROUND + 6 + (h % 3), 2, 2, "#000000"); g.globalAlpha = 0.25; p.R(x, GROUND + 6 + (h % 3), 1, 1, "#ffffff"); }   // 小石頭
+    }
+    g.restore();
+  }
+  // 腳下的影子
+  function shadowAt(p, g, x, y, w){ g.save(); g.globalAlpha = 0.3; p.R(x - w/2, y - 1, w, 2, "#000000"); g.globalAlpha = 0.18; p.R(x - w/2 + 2, y + 1, w - 4, 1, "#000000"); g.restore(); }
+
   /* ---------- 小動作：呼吸、眨眼、依姿勢動 ---------- */
   function alive(q, t, talking){
     const ph = t + ((q.x * 0.37) % 5);
@@ -343,6 +361,7 @@ const WORLD = (() => {
     const cam = Math.round(s.cam);
     g.translate(-cam, 0);
     def.draw(p, s.t, hooks.opt(), cam, g);
+    if (!def.noGroundFx) groundFx(p, g, cam);
     // 還沒查的證物：閃光（在外面看不到建築裡面的）
     hooks.spots().forEach(q => { const cx = q.r[0]+q.r[2]/2; if (q.k==="item" && q.fresh && !hiddenAt(s, cx, q.r[1]+q.r[3]/2) && Math.floor(s.t*2 + q.r[0]) % 3 !== 0) p.spark(cx, q.r[1]+2); });
     // 車
@@ -357,6 +376,7 @@ const WORLD = (() => {
     if (!hideYou) list.push({ id:"you", x:s.px, y:s.py, L:hooks.you, kind:"you" });
     list.sort((a,c) => (a.z||0) - (c.z||0) || a.y - c.y);
     const drawOne = q => {
+      if (!/lie|fall/.test(q.pose || "")) shadowAt(p, g, q.x, q.y, /sit|kneel/.test(q.pose || "") ? 16 : 13);
       const talking = talkingId === q.id || (talkingId === "wu" && q.kind === "buddy");
       if (q.kind==="you" || q.kind==="buddy"){
         const moving = q.kind==="you" ? s.walking : s.bmove, face = q.kind==="you" ? s.face : s.bface;

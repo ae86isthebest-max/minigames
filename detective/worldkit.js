@@ -32,7 +32,23 @@ const WK = (() => {
     const k = scene + "|" + JSON.stringify(opt);
     if (cache[k]) return cache[k];
     const c = document.createElement("canvas"); PX.draw(c, scene, opt);
+    if (!OUT.has(scene)) texture(c);
     return cache[k] = c;
+  }
+  // 室內質感：牆面細細的斑駁＋牆角、天花板的陰影（看起來比較有立體感，不會一片平）
+  function texture(c){
+    const g = c.getContext("2d"), W = c.width, H = c.height, d = g.getImageData(0, 0, W, H), px = d.data;
+    let sd = 7;
+    const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){
+      const i = (y*W + x) * 4; let f = 1;
+      const r = rnd(); if (r < 0.06) f -= 0.07; else if (r < 0.09) f += 0.05;          // 斑駁
+      if (y < 5) f -= (5 - y) * 0.035;                                                  // 天花板陰影
+      if (x < 4) f -= (4 - x) * 0.03; if (x > W - 5) f -= (x - (W - 5)) * 0.03;           // 兩邊牆角
+      if (y > H - 22 && y < H - 18) f -= 0.05;                                          // 牆腳和地板交界
+      px[i] = Math.max(0, Math.min(255, px[i] * f)); px[i+1] = Math.max(0, Math.min(255, px[i+1] * f)); px[i+2] = Math.max(0, Math.min(255, px[i+2] * f));
+    }
+    g.putImageData(d, 0, 0);
   }
   // 戶外場景：把它自己的天空挖掉，改用這個地點當天的天色（下雨天就不會出現晴天的天空）
   function noSky(src){
@@ -102,6 +118,7 @@ const WK = (() => {
       const ox = pos[it.room || first]; if (ox === undefined) return;
       spots[it.id] = [ox + it.hot[0], OY + it.hot[1], it.hot[2], it.hot[3]];
     });
+    Object.assign(spots, o.spots || {});          // 個別地點可以把證物搬到別的位置（例如停在店外的車）
     rooms.forEach(r => (r.details || []).forEach(d => { details[d.id] = [pos[r.id] + d.hot[0], OY + d.hot[1], d.hot[2], d.hot[3]]; }));
     const setting = o.setting || SETTING[l.id] || "town", fac = FAC[l.id] || FAC.police;
     const used = {};
@@ -119,7 +136,7 @@ const WK = (() => {
       rooms.forEach((r, i) => {
         const ox = pos[r.id];
         if (ox > cam + 250 || ox + RW < cam - 10) return;
-        const img = roomImg(r.scene, roomOpt(r)); p.ctx(g);
+        const img = roomImg(r.scene, { ...roomOpt(r), ...((o.ropt || {})[r.id] || {}) }); p.ctx(g);
         if (OUT.has(r.scene)){
           const im2 = noSky(img);
           g.drawImage(im2, 0, 0, RW, 20, ox, 0, RW, OY + 20); g.drawImage(im2, 0, 20, RW, 88, ox, OY + 20, RW, 88);
@@ -148,6 +165,7 @@ const WK = (() => {
         const a = pos[ins[0].id] - GAP, b = pos[ins[ins.length - 1].id] + RW;
         R(a - 2, OY, 4, 98 - 32, shade(fac[0], -.5)); R(b + GAP - 2, OY, 4, 98 - 32, shade(fac[0], -.5));
       }
+      if (o.drawAfter) o.drawAfter(p, t, op, cam);
     }
     function front(p, t, op, cam){
       const rain = skyOf(op.phase || 0)[4];

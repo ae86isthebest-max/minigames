@@ -172,6 +172,9 @@
   }
   const say = (who, text, name) => ({ say:[who, text], name });
   EP2.world = {
+    // 振德茶行：振德的車（有行車記錄器）停在店門外，不是停在店裡
+    shop: { auto:true, ropt:{ shop:{ noCar:true } }, spots:{ ev_dashcam:[320, 104, 40, 20] },
+      drawAfter: (p) => { p.OBJ.car(320, G - 20, "#7a8a6a"); p.R(345, G - 19, 3, 2, "#2a2a2e"); p.P(346, G - 19, "#e04a3a"); } },
     farm: {
       w: WD, spawn: 74, park: 30, when: ON, draw, front, overlay, spots: SPOTS, details: DETAILS, placeFor, buddy: "wu",
       // 主屋、製茶房、工寮：在外面只看得到外牆，進門才看得到裡面
