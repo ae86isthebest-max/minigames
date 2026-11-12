@@ -25,7 +25,7 @@ const EP4 = {
   ],
   goal: "查出翠玉貔貅是怎麼不見的、是誰拿走的、現在在哪裡。拿走的人可能不只一個，也可能不是在今晚動手。",
   phases: [
-    { title:"凌晨　3月20日（五）", short:"凌晨", startAt:"hotel", questionLimit:4, clock:{ start:"03:50", end:"07:30", ask:5, item:10, cctv:15, test:10 },
+    { title:"凌晨　3月20日（五）", short:"凌晨", startAt:"hotel", questionLimit:4, clock:{ start:"03:50", end:"08:00", ask:5, item:10, cctv:15, test:10 },
       reports:[
         { id:"r_scene", title:"現場初步狀況（保全主任鄧志強口述）",
           text:"03:12 展示櫃的重量感應器發出「物件不在」的警報。\n03:14 鄧志強和保全小郭刷卡進入 3202。展示櫃外面罩著絨布套，鎖是好的，玻璃沒有破。\n03:20 鄧志強用一號鑰匙打開展示櫃：紅木底座還在，上面只剩一個絲綢小袋，摸起來又濕又冰。玻璃內側有一層霧。\n03:25 報警。\n02:51 到 02:58，晚班管家江明哲曾經用萬用房卡進過 3202，已經被保全留在保全室。",
@@ -59,8 +59,8 @@ const EP4 = {
     { id:"haoapt", mins:20, name:"葉承浩的公寓（內湖）", sign:"內湖大樓", icon:"🏢", desc:"葉家長子住的地方", phase:1, requires:["hao4","fang5","h_hb_casino"] },
     { id:"qiu", mins:25, name:"邱國樑玉雕工作室（萬華）", sign:"邱師傅玉雕", icon:"🪨", desc:"老師傅的玉雕工作室", phase:1, requires:["h_hb_qiu","maria5"] },
     { id:"ice", mins:30, name:"極凍乾冰（五股）", sign:"極凍乾冰", icon:"🧊", desc:"酒店外燴用的乾冰供應商", phase:1, requires:["kai4","cai3","ev_dock_log"] },
-    { id:"suhome", mins:25, name:"蘇曼文的家（中和）", sign:"中和公寓", icon:"🚪", desc:"瀚古玉器部主管住的公寓", phase:1, requires:["e_dock_call","h_su_ice","du4"] },
-    { id:"market", mins:15, name:"建國假日玉市・福記", sign:"建國玉市", icon:"💎", desc:"建國高架橋下的假日玉市（只有週末開）", phase:2, requires:["h_hb_fuji","hao9","ho0"] }
+    { id:"suhome", mins:25, name:"蘇曼文的家（中和）", sign:"中和公寓", icon:"🚪", desc:"瀚古玉器部主管住的公寓", phase:1, requires:["e_dock_call","cai6","h_su_ice","du4"] },
+    { id:"market", mins:15, name:"建國假日玉市・福記", sign:"建國玉市", icon:"💎", desc:"建國高架橋下的假日玉市（只有週末開）", phase:2, requires:["h_hb_fuji","hao9","qiu6"] }
   ],
   events: [
     { id:"e_dock_call", phase:0, until:0, atTime:"07:00", atLoc:"hotel", title:"卸貨區打來的電話",
@@ -71,7 +71,7 @@ const EP4 = {
       text:"電視上的午間新聞：「雲頂酒店億元國寶失竊，警方鎖定一名晚班管家……」\n畫面上是江明哲被帶進分局的背影。瀚古拍賣發出聲明：貔貅有保險，「委託人的權益不會受到影響」。",
       clue:"新聞說警方鎖定管家江明哲；瀚古說貔貅有保險，委託人（葉家）不會有損失",
       tl:[["03/20 12:00","午間新聞報導失竊案，點名管家"]] },
-    { id:"e_ice_find", phase:2, atTime:"10:00", title:"乾冰廠的發現",
+    { id:"e_ice_find", phase:2, atTime:"10:00", unless:["ev_box"], title:"乾冰廠的發現",
       text:"極凍乾冰的司機阿成打電話到分局：「我今天早上洗昨天收回來的保冷箱，雲頂那一箱的最底下，壓著一個綠色的石頭雕刻，用餐巾包著。是不是你們在找的東西？」\n東西已經被送到鑑識中心，許知夏在等你。",
       clue:"極凍乾冰在雲頂酒店退回的保冷箱底部，發現一件用餐巾包著的綠色雕刻，已送到鑑識中心",
       tl:[["03/21 10:00","極凍乾冰在退回的保冷箱底部發現綠色雕刻"]] },
@@ -85,18 +85,16 @@ const EP4 = {
     { id:"fraud", label:"監守自盜：葉家自己演的，為了騙保險金", requires:["e_news","rec_ins"], who:"是誰策劃的？（可以複選）", whoLine:"策劃這一切的，就是" },
     { id:"lost",  label:"沒有人偷：是展示櫃故障，或工作人員收錯了地方", requires:["rep_xu","deng5"] }
   ],
-  extraPeople: [
-    { id:"ho", name:"何永福（福記老闆）", av:"💎", requires:["h_hb_fuji","ho0"] }
-  ],
+  extraPeople: [],
   reasoning: [
     { q:"展示櫃裡的東西，真正被拿走是在幾點？", requires:["h_maint","h_cold"], options:["21:50","22:41","02:51","03:12"], answer:1 },
     { q:"東西被拿走了，為什麼警報到 03:12 才響？", requires:["h_drift"], requiresAll:["h_cold"], options:["有人在 03:12 才動手","櫃子裡被放了一樣會慢慢變輕、最後消失的東西","感應器壞了","有人用遙控器把警報延後"], answer:1 },
     { q:"放在絲綢小袋裡、代替貔貅的是什麼？", requires:["lab_stand","kai3"], requiresAll:["rep_xu"], options:["冰塊","乾冰","一塊石頭","什麼都沒有"], answer:1 },
     { q:"預展那天晚上，展示櫃裡的貔貅是真品嗎？", requires:["h_base521","lab_fake"], requiresAll:["pei4"], options:["是真品","不是，是一件比真品輕的仿品","一半一半，被修補過","沒辦法判斷"], answer:1 },
-    { q:"被拿走的那一件，是怎麼離開 32 樓的？", requires:["e_ice_find","cai3"], options:["裝在手提包裡","藏在外燴的乾冰保冷箱裡，被不知情的人推下樓","從窗戶垂下去","藏在管家的推車裡"], answer:1 },
+    { q:"被拿走的那一件，是怎麼離開 32 樓的？", requires:["e_ice_find","ev_box"], options:["裝在手提包裡","藏在外燴的乾冰保冷箱裡，被不知情的人推下樓","從窗戶垂下去","藏在管家的推車裡"], answer:1 },
     { q:"蘇曼文為什麼要拿走它？", requires:["su12","h_su_ice"], requiresAll:["pei4"], options:["為了錢","她發現那是假貨，怕拍賣後被揭穿，毀了自己的鑑定","幫葉承浩","報復葉家"], answer:1 },
     { q:"真品是什麼時候被換掉的？", requires:["maria5","h_hb_qiu"], options:["去年 8 月初","預展當晚","運到酒店的路上","在瀚古的庫房裡"], answer:0 },
-    { q:"真品現在在哪裡？", requires:["e_ho_safe"], options:["葉家的保險櫃","福記何永福的保險櫃","已經賣到國外","被毀掉了"], answer:1 }
+    { q:"真品是怎麼到何永福手上的？", requires:["e_ho_safe"], options:["葉父生前賣給他的","葉承浩拿去押給他的","蘇曼文賣給他的","林佩珊託他保管的"], answer:1 }
   ],
   solution: {
     kind: "theft",
