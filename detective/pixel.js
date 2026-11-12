@@ -495,6 +495,6 @@ const PX = (() => {
     R(ox+2, Math.round(y)-1, 10, 1, "#00000040");
     return { x: ox-1, y: oy-2, w: 16, h: 30 };
   }
-  const prim = { R, P, dither, shade, mix, OBJ, windowBox, door, sign, lamp, spark, INK, ctx:(c)=>{ g = c; }, seed:(n)=>{ seed = n; }, rnd:()=>rnd() };
+  const prim = { R, P, dither, shade, mix, OBJ, windowBox, door, sign, lamp, spark, INK, ctx:(c)=>{ g = c; }, g:()=>g, seed:(n)=>{ seed = n; }, rnd:()=>rnd() };
   return { draw, person, profile, play, SCENES, W, H, prim };
 })();

@@ -108,7 +108,8 @@ details.past summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6p
 .court-bubble{min-height:70px}
 .found{font-size:12px;color:var(--accent)}
 .world{position:relative;margin:0 -16px 10px;border-top:2px solid #000;border-bottom:2px solid #000;line-height:0;background:#000;overflow:hidden}
-.world canvas{width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;display:block;touch-action:manipulation;cursor:pointer}
+.world canvas{width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;display:block;touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:pointer}
+.wskip{position:absolute;right:8px;top:8px;z-index:3;background:rgba(20,16,12,.72);color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:99px;padding:4px 12px;font-size:12px;font-family:inherit;cursor:pointer}
 .wbubble{position:absolute;top:6px;max-width:78%;width:max-content;background:#fffdf7;color:#1b1512;border:2px solid #1b1512;box-shadow:3px 3px 0 #1b1512;padding:5px 9px;font-size:13.5px;line-height:1.5;pointer-events:none;z-index:2}
 .wbubble b{display:block;font-size:11px;color:#8a5a1a}
 .wbubble::after{content:"";position:absolute;left:var(--tail,50%);bottom:-9px;margin-left:-6px;border:6px solid transparent;border-top-color:#1b1512;border-bottom:0}
@@ -367,7 +368,7 @@ function worldDef(l){
   return WK.autoWorld(l, w || {});
 }
 function leaveWorld(){ mapFrom = openLoc || mapFrom; openLoc = null; wTalk = null; wSay = null; peek = null; lastSaid = null; tab = "map"; render(); scrollTo(0,0); }
-const BUDDY = { id:"_wu", name:"小吳", look:{ skin:"#e8c09a", hair:"#2a2a2a", hairStyle:"short", top:"#f4f6f6", bottom:"#f4f6f6", hood:"#f4f6f6", mask:"#9ac0e0", gloves:"#4a8ad8" } };
+const BUDDY = { id:"_wu", name:"小吳", look:{ skin:"#e8c09a", hair:"#2a2a2a", hairStyle:"spiky", top:"#8ab4d8", coat:"#f4f6f6", bottom:"#3a4152", glasses:true, gloves:"#4a8ad8" } };
 function buddyHint(l){
   const sl = travel() ? searchLeftAt(l) : searchLeft();
   const fresh = allItems().filter(it=>(it.loc||"_")===l.id && !S.seen.includes(it.id) && itemOpen(it) && unlocked(it)).length;
@@ -433,7 +434,7 @@ function worldView(l, def){
   const seenHere = allItems().filter(it=>(it.loc||"_")===l.id && S.seen.includes(it.id));
   const lab = l.perVisit ? `<button class="wq" style="border-color:var(--accent)" onclick="wTalk=null;peek=peek&&peek.kind==='lab'?null:{kind:'lab'};render()">🧪 化驗櫃台（這次還能送 ${testsLeftAt(l)} 件）</button>` : "";
   return `<div class="wtop">${travel()?`<button class="back" onclick="leaveWorld()">‹ 地圖</button>`:""}<b>${esc(travel()?l.name:"案發現場")}</b><span>🔍 還能查 ${sl} 項</span><span class="found">🔎 ${(S.found||[]).length}／${nd}</span></div>
-  <div class="world"><canvas id="worldcv"></canvas><div class="wbubble" hidden><b></b><span></span></div><div class="wtip"></div></div>
+  <div class="world"><canvas id="worldcv"></canvas><div class="wbubble" hidden><b></b><span></span></div><div class="wtip"></div><button class="wskip" hidden>跳過 ⏭</button></div>
   ${panel}${lab}
   ${seenHere.length ? `<div class="card"><h3>🧾 這裡查到的東西</h3>${seenHere.map(it=>`<button class="wq" onclick="wTalk=null;peek={kind:'item',id:'${it.id}'};render()">${it.cctv?"📹":"🧾"} ${esc(it.title)}</button>`).join("")}</div>` : ""}`;
 }

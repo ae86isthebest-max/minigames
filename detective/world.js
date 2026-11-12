@@ -30,7 +30,23 @@ const WORLD = (() => {
     if (s.px > def.w - 8){ s.px = def.w - 30; s.py = GROUND; resetTrail(s); }
     if (!s.car && def.park !== undefined) s.car = { x:def.park, from:def.park, to:def.park, d:0, c:"#e9e4da" };
     if (hooks.script && !s.script && !hooks.scriptDone()){ s.script = hooks.script; s.si = 0; s.sT = 0; startStep(); }
-    canvas.onclick = e => tap(e);
+    // 操作：按下去就有反應；按住或拖著，主角就一路跟著手指走
+    canvas.onclick = null;
+    canvas.onpointerdown = e => {
+      if (e.button > 0) return;
+      try { canvas.setPointerCapture(e.pointerId); } catch(_){}
+      s.lastTap = "";
+      tap(e);
+      cur.hold = { id:e.pointerId, sx:e.clientX, sy:e.clientY, cx:e.clientX, cy:e.clientY, t:performance.now(), moved:false, kind:s.lastTap };
+    };
+    canvas.onpointermove = e => {
+      const h = cur.hold; if (!h || h.id !== e.pointerId) return;
+      h.cx = e.clientX; h.cy = e.clientY;
+      if (Math.hypot(h.cx - h.sx, h.cy - h.sy) > 10) h.moved = true;
+    };
+    canvas.onpointerup = canvas.onpointercancel = e => { if (cur.hold && cur.hold.id === e.pointerId) cur.hold = null; };
+    const skipBtn = wrap.querySelector(".wskip");
+    if (skipBtn) skipBtn.onclick = e => { e.stopPropagation(); skip(); };
     let last = performance.now();
     const loop = now => {
       if (!canvas.isConnected) return;
@@ -53,7 +69,19 @@ const WORLD = (() => {
     if (k.car) s.car = { x:k.car[0], from:k.car[0], to:k.car[1], d:k.car[2], c:k.car[3]||"#e9e4da" };
     if (k.set || k.carStop) { if (!k.say && !k.walk && !k.car && !k.wait) next(); }
   }
-  function next(){ const s = cur.s; s.si++; startStep(); }
+  function next(){ const s = cur.s; s.si++; s.readT = 0; startStep(); }
+  // 跳過整段劇情：把每一步的結果直接套用
+  function skip(){
+    const s = cur.s; let guard = 0;
+    while (s.script && guard++ < 300){
+      const k = step();
+      if (k && k.walk){ if (k.walk[0]==="you"){ s.px = k.walk[1]; s.path = []; } else { s.bx = k.walk[1]; s.btx = null; } }
+      if (k && k.car) s.car = { x:k.car[1], from:k.car[1], to:k.car[1], d:0, c:k.car[3]||"#e9e4da" };
+      next();
+    }
+    s.py = GROUND; s.by = GROUND; resetTrail(s);
+    s.cam = Math.max(0, Math.min(cur.def.w - VW, s.px - VW/2));
+  }
 
   /* ---------- 樓層、樓梯、建築 ---------- */
   const floors = () => cur.def.floors || [];
@@ -97,17 +125,17 @@ const WORLD = (() => {
     const { canvas, s, hooks } = cur;
     const r = canvas.getBoundingClientRect();
     const x = (e.clientX - r.left) * VW / r.width + s.cam, y = (e.clientY - r.top) * VH / r.height;
-    if (s.script){ const k = step(); if (k && k.say){ if (s.typed.length < k.say[1].length) s.typed = k.say[1]; else next(); } return; }
+    if (s.script){ s.lastTap = "script"; const k = step(); if (k && k.say){ if (s.typed.length < k.say[1].length) s.typed = k.say[1]; else next(); } return; }
     const inBox0 = (bx,by,bw,bh) => x>=bx && x<=bx+bw && y>=by && y<=by+bh;
     // 從外面就看得到的東西（例如亮著的窗戶）：walk 在建築外面
-    const outSpot = hooks.spots().find(q => q.walk !== undefined && bldAt(q.walk) < 0 && inBox0(...q.r));
+    const outSpot = hooks.spots().find(q => q.walk !== undefined && bldAt(q.walk) < 0 && inBox0(...q.r) && !(bldAt(x) >= 0 && (s.rv[bldAt(x)]||0) >= 0.5));
     if (outSpot) return goThen(outSpot.walk, GROUND, () => hooks.onSpot(outSpot));
     // 還沒進去的建築：先走到門口，進去
     const bi = bldAt(x), inside = bldAt(s.px);
-    if (bi >= 0 && bi === inside && hiddenAt(s, x, y)){ hooks.onGround && hooks.onGround(); return goThen(x, floorAt(x, y), null); }
+    if (bi >= 0 && bi === inside && hiddenAt(s, x, y)){ s.lastTap = "ground"; hooks.onGround && hooks.onGround(); return goThen(x, floorAt(x, y), null); }
     if (bi >= 0 && bi !== inside && (s.rv[bi]||0) < 0.5){
       const b = blds()[bi], d = Math.abs(s.px - b.x0) < Math.abs(s.px - b.x1) ? b.x0 + 10 : b.x1 - 10;
-      hooks.onGround && hooks.onGround();
+      s.lastTap = "ground"; hooks.onGround && hooks.onGround();
       return goThen(d, GROUND, null);
     }
     const ppl = hooks.people();
@@ -115,13 +143,20 @@ const WORLD = (() => {
     const inBox = (bx,by,bw,bh) => x>=bx && x<=bx+bw && y>=by && y<=by+bh;
     const spots = hooks.spots();
     const target = q => { const cx = q.r[0]+q.r[2]/2, fy = floorAt(cx, q.r[1]+q.r[3]/2); return [q.walk ?? cx, fy]; };
-    const fresh = spots.find(q => q.k==="item" && q.fresh && inBox(...q.r));
+    // 點的範圍放大一點，手指不用點得很準
+    const M = 5, inR = r => inBox(r[0]-M, r[1]-M, r[2]+M*2, r[3]+M*2);
+    const fresh = spots.find(q => q.k==="item" && q.fresh && inR(q.r)) ;
     if (fresh){ const [tx,ty] = target(fresh); return goThen(tx, ty, () => hooks.onSpot(fresh)); }
-    const p = ppl.find(q => inBox(q.x-9, (q.y||GROUND)-31, 18, 32));
+    const p = ppl.filter(q => inBox(q.x-13, (q.y||GROUND)-36, 26, 38)).sort((a,c) => Math.abs(a.x-x) - Math.abs(c.x-x))[0];
     if (p) return goThen(p.x + (s.px < p.x ? -16 : 16), p.y||GROUND, () => { s.face = s.px < p.x ? 1 : -1; hooks.onPerson(p.id); });
-    if (buddy && inBox(s.bx-9, s.by-31, 18, 32)) return hooks.onBuddy ? hooks.onBuddy(buddy.id) : hooks.onPerson(buddy.id);
+    if (buddy && inBox(s.bx-10, s.by-33, 20, 34)) return hooks.onBuddy ? hooks.onBuddy(buddy.id) : hooks.onPerson(buddy.id);
     const h = spots.filter(q => inBox(...q.r)).sort((a,b)=>a.r[2]*a.r[3]-b.r[2]*b.r[3])[0];
     if (h){ const [tx,ty] = target(h); return goThen(tx, ty, () => hooks.onSpot(h)); }
+    // 什麼都沒點中：附近有沒查過的東西，就當作點它
+    const dist = r => Math.hypot(Math.max(r[0]-x, 0, x-r[0]-r[2]), Math.max(r[1]-y, 0, y-r[1]-r[3]));
+    const near = spots.filter(q => q.k==="item" && q.fresh && dist(q.r) < 12).sort((a,c) => dist(a.r) - dist(c.r))[0];
+    if (near){ const [tx,ty] = target(near); return goThen(tx, ty, () => hooks.onSpot(near)); }
+    s.lastTap = "ground";
     hooks.onGround && hooks.onGround();
     const fy = floorAt(x, y);
     goThen(x, fy, null);
@@ -154,10 +189,21 @@ const WORLD = (() => {
   function update(dt){
     const { s, def } = cur; s.t += dt; s.sT += dt;
     const wasX = s.px, wasY = s.py;
+    // 按住／拖著：一直往手指的位置走（手指放在畫面邊緣，就會一直走下去）
+    const h = cur.hold;
+    if (h && !s.script && (h.moved || (h.kind === "ground" && performance.now() - h.t > 280))){
+      const r = cur.canvas.getBoundingClientRect();
+      const hx = (h.cx - r.left) * VW / r.width + s.cam, hy = (h.cy - r.top) * VH / r.height;
+      const fy = floorAt(hx, hy), last = s.path[s.path.length-1];
+      if (!last || Math.abs(last[0] - clampX(hx, fy)) > 3 || Math.abs(last[1] - fy) > 1) goThen(hx, fy, null);
+    }
+    // 距離遠就用跑的
+    let left = 0, lx = s.px, ly = s.py; s.path.forEach(([a,b]) => { left += Math.hypot(a-lx, b-ly); lx = a; ly = b; });
+    s.spd = (s.spd || 1) + ((left > 70 ? 1.8 : 1) - (s.spd || 1)) * Math.min(1, dt*4);
     if (s.path.length){
       const [tx, ty] = s.path[0], dx = tx - s.px, dy = ty - s.py, d = Math.hypot(dx, dy);
       if (Math.abs(dx) > 0.3) s.face = dx > 0 ? 1 : -1;
-      const m = Math.min(d, SPEED*dt*(Math.abs(dy) > 1 ? 0.8 : 1));
+      const m = Math.min(d, SPEED*s.spd*dt*(Math.abs(dy) > 1 ? 0.8 : 1));
       if (d > 0){ s.px += dx/d*m; s.py += dy/d*m; }
       s.walking = true;
       if (Math.hypot(tx - s.px, ty - s.py) < 0.5){
@@ -176,7 +222,7 @@ const WORLD = (() => {
       else { s.btx = null; resetTrail(s); if (s.script && step() && step().walk && step().walk[0]==="buddy") next(); }
     } else {
       const [gx, gy] = trailBack(s, BACK), dd = Math.hypot(gx - s.bx, gy - s.by);
-      if (dd > 0.5){ const m = Math.min(dd, SPEED*1.05*dt); s.bx += (gx-s.bx)/dd*m; s.by += (gy-s.by)/dd*m; }
+      if (dd > 0.5){ const m = Math.min(dd, SPEED*Math.max(1.05, s.spd*1.05)*dt); s.bx += (gx-s.bx)/dd*m; s.by += (gy-s.by)/dd*m; }
     }
     s.bmove = Math.hypot(s.bx-obx, s.by-oby) > 0.05;
     if (s.bmove && Math.abs(s.bx-obx) > 0.02) s.bface = s.bx > obx ? 1 : -1;
@@ -199,6 +245,11 @@ const WORLD = (() => {
     const key = b ? b.who + "|" + b.text : "";
     if (key !== s.typeKey){ s.typeKey = key; s.typed = ""; }
     if (b && s.typed.length < b.text.length) s.typed = b.text.slice(0, s.typed.length + Math.max(1, Math.round(dt*40)));
+    // 劇情對白打完後，停一下讓人看，然後自動下一句（點一下可以馬上跳）
+    if (s.script && step() && step().say && b && s.typed.length >= b.text.length){
+      s.readT = (s.readT || 0) + dt;
+      if (s.readT > 1.3 + b.text.length / 7) next();
+    }
   }
   function bubbleNow(){
     const s = cur.s;
@@ -350,8 +401,9 @@ const WORLD = (() => {
         bub.style.setProperty("--tail", Math.max(10, Math.min(bw - 10, hx - left)) + "px");
       } else bub.hidden = true;
     } else if (bub) bub.hidden = true;
-    if (cur.tip) cur.tip.textContent = s.script ? (step() && step().say ? "點一下繼續 ▶" : "") : "";
+    if (cur.tip) cur.tip.textContent = s.script ? (step() && step().say ? "點一下跳到下一句 ▶" : "") : "";
+    const sk = cur.canvas.parentNode.querySelector(".wskip"); if (sk) sk.hidden = !s.script;
   }
 
-  return { mount, state, VW, VH, GROUND, reset:(lid)=>{ delete st[lid]; } };
+  return { mount, state, skip:() => cur && cur.s.script && skip(), VW, VH, GROUND, reset:(lid)=>{ delete st[lid]; } };
 })();

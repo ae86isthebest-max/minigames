@@ -61,7 +61,7 @@
       ] },
     { id:"garden", name:"後花園", scene:"vgarden", opt:{ lit:true },
       details:[
-        { id:"v_bed", name:"花圃", hot:[18,56,48,18], text:"書房窗下的花圃剛澆過水，泥土又濕又軟。旁邊放著一個澆花壺。" },
+        { id:"v_bed", name:"花圃", hot:[18,56,48,18], text:"後花園的花圃剛澆過水，泥土又濕又軟。旁邊放著一個澆花壺。" },
         { id:"v_gate", name:"側門", hot:[148,28,34,46], text:"側門沒有上鎖。門軸剛上過油，推起來一點聲音也沒有。" },
         { id:"v_bench", name:"長椅", hot:[94,76,44,18], text:"長椅上有兩個並排的濕印子，有人在這裡坐過。\n長椅下有一根外國牌子的菸蒂。" },
         { id:"v_upwin", name:"亮著的窗戶", hot:[118,28,26,22], text:"另一扇窗戶也亮著燈，窗簾拉得緊緊的。" }
@@ -82,15 +82,15 @@
   };
   const SC = {
     ev_note:["doc"], ev_glass:["vstudy",{ staff:[[150,-1,"cam"]] }], ev_printer:["vstudy",{ staff:[[166,-1,"kneel"]] }],
-    ev_ledger:["doc",{stamp:true}], ev_phone:["chat"], ev_window:["vgarden",{ lit:true, staff:[[42,1,"kneel"]] }], ev_lab:["doc",{stamp:true}]
+    ev_ledger:["doc",{stamp:true}], ev_phone:["chat"], ev_window:["vstudy",{ staff:[[160,-1,"kneel"]] }], ev_lab:["doc",{stamp:true}]
   };
   const D = "2026-11-09";
   const ANIM = {
     cctv_kitchen: { scene:"vcorridor", cam:"CAM3 廚房走廊", date:D, beats:[
-      { t:"21:56:00", d:3.5, cap:"陳浩從廚房走出來，手上拿著冰桶，往書房方向走去。", m:{ ho_b:[200,96,"hold",1,21,92] }, out:["ho_b"] },
-      { t:"22:03:00", d:2.5, cap:"陳浩空手走回來，", m:{ ho:[110,98,null,-1,200,98] } },
+      { t:"21:56:00", d:3.5, cap:"陳浩從廚房走出來，手上拿著冰桶，走上樓梯往二樓書房去。", m:{ ho_b:[74,44,"hold",1,21,92] }, out:["ho_b"] },
+      { t:"22:03:00", d:2.5, cap:"陳浩空手下樓，", m:{ ho:[110,98,null,1,74,44] } },
       { t:"22:03:10", d:2, cap:"看了鏡頭兩眼，", m:{ ho:[110,98,"stand",1] } },
-      { t:"22:03:20", d:2.5, cap:"上樓。", m:{ ho:[74,44,null,-1] }, out:["ho"] }
+      { t:"22:03:20", d:2.5, cap:"又上樓回房間。", m:{ ho:[74,44,null,-1] }, out:["ho"] }
     ] },
     cctv_garden: { scene:"vgarden", opt:{ lit:true }, cam:"CAM4 後花園", date:D, beats:[
       { t:"22:38:00", d:3, cap:"林美玲走到花園。", m:{ lam:[108,96,null,1,77,90] } },
@@ -112,7 +112,7 @@
     cctv_hall: { scene:"vstudyhall", cam:"CAM2 書房走廊", date:D, beats:[
       { t:"23:02:00", d:2.5, cap:"一名穿黑色外套的女子走到書房門口。", m:{ masked:[97,94,null,1,10,98] }, out:["masked"] },
       { t:"23:02:20", d:3, cap:"她拿下口罩——是周曉晴。她輸入密碼，走進書房。", m:{ chowb:[97,94,"point",1] }, out:["chowb"] },
-      { t:"23:08:00", d:2.5, cap:"周曉晴離開書房，往後門走去。", m:{ chowb:[-12,98,null,-1,97,94] }, out:["chowb"] },
+      { t:"23:08:00", d:2.5, cap:"周曉晴離開書房，下樓往後門走去。", m:{ chowb:[-12,98,null,-1,97,94] }, out:["chowb"] },
       { t:"23:30:00", d:3, cap:"黃伯用鑰匙開門，進入書房。", m:{ wong:[97,94,"hold",-1,200,98] }, out:["wong"] }
     ] }
   };
