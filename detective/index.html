@@ -204,6 +204,7 @@ body.fs .toast{bottom:calc(14px + env(safe-area-inset-bottom))}
 </nav>
 <div class="toast" id="toast"></div>
 
+<script src="arc.js"></script>
 <script src="pixel.js"></script>
 <script src="cases.js"></script>
 <script src="case2.js"></script>
@@ -274,12 +275,12 @@ function loadFor(c){
     if (s && s.asked){ s.qp=s.qp||{}; s.sp=s.sp||{}; s.phase=s.phase||0; s.visits=s.visits||{}; s.labq=s.labq||{}; s.ev=s.ev||{}; return s; } }catch(e){}
   return null;
 }
-function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} ARC.sync(); }
 
 function openCase(i){
   C = CASES[i]; KEY = saveKey(C); S = loadFor(C) || fresh();
   (C.cctv||[]).forEach(c=>{ c.cctv = true; });   // 監視器畫面：顯示成 REC 畫面、選單用 📹
-  accusePick = freshPick(); openSuspect = null; openLoc = null; screen = "case"; tab = "brief"; checkEvents();
+  ARC.open(); accusePick = freshPick(); openSuspect = null; openLoc = null; screen = "case"; tab = "brief"; checkEvents();
   wTalk = null; wSay = null; peek = null; mapFrom = null; wRoom = null; wGo = false; talkFrom = null;
   // 有畫面的案件：一揀完就直接進現場（第一晚的開場動畫會自動播）
   wBuddy = false; sheetFrom = null;
@@ -839,7 +840,10 @@ function worldHooks(l, def){
 
 /* ---------- 共用狀態 ---------- */
 const reportsGot = () => phasesOf(C).slice(0, S.phase+1).flatMap(p=>p.reports||[]);
-const has = id => S.seen.includes(id) || S.asked.includes(id) || reportsGot().some(r=>r.id===id) || S.ev[id]!==undefined || tests().some(t=>t.id===id && testReady(t));
+// "arc:旗標"、"arcfound:旗標" 是跨集記憶（見 arc.js），其他是這一集裡看過、問過、收到的東西
+const has = id => ARC.is(id) ? ARC.test(id) : has0(id);
+const has0 = id => S.seen.includes(id) || S.asked.includes(id) || reportsGot().some(r=>r.id===id) || S.ev[id]!==undefined || tests().some(t=>t.id===id && testReady(t));
+ARC.bind(has0);
 // 突發事件：條件一滿足就發生（可能連鎖）
 function checkEvents(){
   let fired = [], changed = true;
@@ -947,7 +951,7 @@ function phaseBlock(i){
   const intro = i===0 ? C.intro : (p.intro||[]);
   const labs = tests().filter(t=>S.labq[t.id]!==undefined && S.labq[t.id]+t.days===i);
   const evs = (C.events||[]).filter(e=>S.ev[e.id]===i);
-  return `${intro.map(x=>`<p>${x}</p>`).join("")}${(p.reports||[]).map(reportHTML).join("")}${evs.map(e=>`<div class="report" style="border-color:var(--red)"><b>📢 ${esc(e.title)}</b><div class="muted small">${nl(e.text)}</div></div>`).join("")}
+  return `${i===0 ? ARC.recapHTML() : ""}${intro.map(x=>`<p>${x}</p>`).join("")}${(p.reports||[]).map(reportHTML).join("")}${evs.map(e=>`<div class="report" style="border-color:var(--red)"><b>📢 ${esc(e.title)}</b><div class="muted small">${nl(e.text)}</div></div>`).join("")}
     ${labs.length?`<p style="margin-top:12px"><b>📞 今天收到的化驗結果</b></p>${labs.map(testHTML).join("")}`:""}`;
 }
 function vBrief(){
@@ -1178,9 +1182,11 @@ function vNotes(){
   const K = knownThings();
   if (!K.length) return `<div class="card"><p class="muted" style="margin:0">還沒有紀錄。先去問話或搜證吧。</p></div>`;
   const views = [["key","🔑 重點"],["time","🕒 時間線"],["who","👤 人物"],["ev","🧾 證物"]];
+  if (ARC.list().length) views.push(["arc","📌 主線"]); else if (noteView==="arc") noteView = "key";
   const bar = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${views.map(([k,l])=>`<button class="tag" style="border:0;padding:6px 12px;font-size:13px;${noteView===k?"background:var(--accent);color:#1a140c":""}" onclick="noteView='${k}';render()">${l}</button>`).join("")}</div>`;
   let html = "";
-  if (noteView==="key"){
+  if (noteView==="arc") html = ARC.notesHTML();
+  else if (noteView==="key"){
     const byDay = phasesOf(C).map((p,i)=>K.filter(k=>k.clue && k.phase===i));
     html = byDay.map((arr,i)=>arr.length?`<div class="card"><h3>${multi()?esc(phasesOf(C)[i].short):"🔑 重點"}</h3><ul style="margin:0;padding-left:20px">${arr.map(k=>`<li>${esc(k.clue)}</li>`).join("")}</ul></div>`:"").reverse().join("") || `<div class="card"><p class="muted small" style="margin:0">還沒有重點。</p></div>`;
   } else if (noteView==="time"){
