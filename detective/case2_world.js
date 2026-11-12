@@ -100,7 +100,6 @@
       OBJ.teaBag(606, 118); OBJ.blood(664, 120, 14); OBJ.hair(646, 122);
       OBJ.marker(662, 117, 1); OBJ.marker(644, 117, 2); OBJ.marker(612, 117, 3);
       for (let x=662; x>616; x-=5) R(x, 123, 3, 1, "#6a5440");
-      PX.person(630, G, { skin:"#e8c09a", hair:"#2a2a2a", top:"#f4f6f6", bottom:"#f4f6f6", hood:"#f4f6f6", mask:"#9ac0e0", gloves:"#4a8ad8" }, 1, -1, "kneel");
     }
     R(632, 60, 1, 4, INK); R(629, 64, 7, 3, night ? "#ffd98a" : "#fff2c8"); dither(622, 67, 22, 14, "#ffd98a", 3);
 
@@ -145,19 +144,19 @@
     ev_ladder:[604,74,12,50], ev_dryer:[616,98,34,26], ev_dryerlog:[616,98,34,26], ev_tools:[658,86,34,38], ev_luminol:[658,86,34,38],
     ev_window2:[700,78,10,20,696], ev_hair:[642,116,10,8], ev_body:[598,114,36,10], ev_ashes:[558,98,42,26],
     ev_tuhut:[724,88,72,36], ev_note:[724,88,72,36], ev_garage:[120,84,56,40],
-    ev_hospital:[236,58,48,18,318], ev_letter:[236,58,48,18,318], ev_drawer:[236,58,48,18,318], ev_xinroom:[294,40,84,36,318],
+    ev_hospital:[236,58,48,18], ev_letter:[236,58,48,18], ev_drawer:[236,58,48,18], ev_xinroom:[294,40,84,36],
     ev_pool:[846,100,60,24,870], ev_watch:[846,100,60,24,870]
   };
   const DETAILS = {
     d_cam:[176,68,12,8], d_sky:[0,0,WD,28], d_tea:[96,84,90,18], d_tea2:[96,84,90,18], d_car:[16,100,52,24], d_chim:[588,28,10,28],
     d_cam2:[192,80,10,8], d_mj:[262,108,34,16], d_mj2:[262,108,34,16], d_sofa:[256,98,40,12], d_lamp:[258,80,18,10],
     d_cake:[341,96,14,10], d_shard:[356,118,46,6], d_dwin:[358,84,24,16],
-    d_shelf:[194,36,32,38,318], d_wash:[406,98,22,26], d_wash2:[406,98,22,26], d_hlamp:[430,80,12,10],
+    d_shelf:[194,36,32,38], d_wash:[406,98,22,26], d_wash2:[406,98,22,26], d_hlamp:[430,80,12,10],
     d_hutwin:[726,98,14,12], d_steps:[480,110,70,14], d_mud:[474,124,86,11],
     d_bags:[590,62,42,12], d_bulb:[626,60,12,10], d_tape:[556,104,152,6], d_door:[126,92,44,30],
-    d_lantern:[208,32,232,14,300], d_win:[280,82,18,16], d_altar:[258,84,38,16], d_swin:[260,40,20,18,318], d_pen:[244,58,18,8,318],
+    d_lantern:[208,32,232,14,300], d_win:[280,82,18,16], d_altar:[258,84,38,16], d_swin:[260,40,20,18], d_pen:[244,58,18,8],
     d_ash:[730,110,14,8], d_hat:[752,96,16,8], d_pillow:[748,110,14,6], d_gate:[894,82,16,22], d_wind:[830,0,130,30], d_slip:[156,96,14,10],
-    d_bed:[296,60,48,14,318], d_xwin:[354,40,18,16,318]
+    d_bed:[296,60,48,14], d_xwin:[354,40,18,16]
   };
   // 第一晚每個人站在哪裡
   const PLACE = {
@@ -176,6 +175,21 @@
   EP2.world = {
     farm: {
       w: WD, spawn: 74, park: 30, when: ON, draw, front, overlay, spots: SPOTS, details: DETAILS, placeFor, buddy: "wu",
+      // 主屋、製茶房、工寮：在外面只看得到外牆，進門才看得到裡面
+      buildings: [
+        { x0:184, x1:478, y0:24, wall:"#a89478", roof:"#3a2a22", rows:[44, 92], brick:true, door:"#5a3e24", night:o=>!(o.phase||0) },
+        { x0:556, x1:708, y0:52, wall:"#5a4a3c", roof:"#2a221e", rows:[86], brick:true, door:"#4a3424", night:o=>!(o.phase||0) },
+        { x0:720, x1:800, y0:88, wall:"#6a5a46", roof:"#2a221a", rows:[], door:"#5a3e24", doors:[true, false] }
+      ],
+      floors: [ { y:76, x0:192, x1:470 } ],
+      stairs: [ { x0:298, y0:G, x1:340, y1:76 }, { x0:446, y0:G, x1:468, y1:78 } ],
+      // 第二天早上：員警守著蓄水池（路通了以後才上得來）
+      extras: [
+        { id:"cop", name:"員警", phase:1, until:1, x:930, L:{ skin:"#d8a880", hair:"#1a1410", hairStyle:"short", top:"#3a5a8a", bottom:"#24324e", hat:"police", tie:"#1a2236" }, pose:"stand", facing:-1, mood:"tired", lines:[
+          "上面交代，蓄水池這裡先圍起來，誰都不能靠近。",
+          "土伯的遺體已經送下山給法醫了。",
+          "水門那邊很滑，你走路小心。" ] }
+      ],
       you: { skin:"#e8c09a", hair:"#2a2220", hairStyle:"short", top:"#e9e4da", coat:"#a8865a", bottom:"#3a3328", tie:"#5a2a2a", hat:"fedora", hatColor:"#4a3a2a" },
       intro: [
         { set:{ px:-60, bx:-80, cam:0 }, hide:true },

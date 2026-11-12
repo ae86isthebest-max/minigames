@@ -154,6 +154,7 @@ details.past summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6p
 <script src="world.js"></script>
 <script src="worldkit.js"></script>
 <script src="case2_world.js"></script>
+<script src="case1_world.js"></script>
 <script>
 /* =========================================================
    遊戲邏輯（所有案件共用）
@@ -376,6 +377,20 @@ function buddyHint(l){
   if (sl <= 0) return "這裡今天查不了更多了，去問問人吧。" + tail;
   return `這裡還可以查 ${sl} 樣東西。${fresh ? "閃光的地方是還沒查過的。" : "看得到的東西都查過了，換個地方吧。"}${tail}`;
 }
+// 不是嫌疑人、但在現場可以說幾句話的人（鑑識人員、員警……）：def.extras = [{ id, name, x, y, L, pose, facing, lines, phase, until }]
+const extrasOf = def => (typeof def.extras === "function" ? def.extras(S.phase) : (def.extras || [])).filter(e=>(e.phase===undefined || S.phase>=e.phase) && (e.until===undefined || S.phase<=e.until));
+// 表情：依今天在做什麼，問話時被質問會嚇一跳、冒汗
+function moodOf(s, pl){
+  const pose = String(pl.pose || ""), d = dailyOf(s);
+  let mood = pl.mood || d.mood || (/cry/.test(pose) ? "sad" : /smoke|phone/.test(pose) ? "worried" : /drink/.test(pose) ? "tired" : "");
+  let sweat = !!(pl.sweat || d.sweat), tear = /cry/.test(pose) || !!d.tear;
+  if (wTalk===s.id && lastSaid && lastSaid.sid===s.id){
+    const q = s.questions.find(x=>x.id===lastSaid.qid), t = q && textOf(q);
+    if (t && /^（出示|^（質問/.test(t.q)){ mood = "shock"; sweat = true; }
+    else if (t && /^……/.test(t.a)) mood = "worried";
+  }
+  return { mood, sweat, tear };
+}
 function pendingScript(l, def){
   const seen = S.introSeen || {};
   if (S.phase===0 && def.intro && !seen[l.id]) return { key:l.id, steps:def.intro };
@@ -428,7 +443,14 @@ function worldHooks(l, def){
     you: def.you || (C.world && C.world.farm && C.world.farm.you) || DETECTIVE,
     // 小吳一直跟在你後面（第 1 集沒有小吳這個角色，就用預設造型）
     buddy: () => { const s = sus(def.buddy || "wu"); if (s) return isGone(s) ? null : { id:s.id, L:lookOf(s) }; return { id:BUDDY.id, L:(C.looks && C.looks._wu) || BUDDY.look }; },
-    people: () => C.suspects.filter(s=>!isGone(s) && (!travel() || whereOf(s)===l.id) && s.id!==(def.buddy || "wu")).map(s=>{ const pl = (def.placeFor ? def.placeFor(s, S.phase) : (def.place||{})[s.id]) || {}; return { id:s.id, x: pl.x ?? 140, pose: pl.pose, facing: pl.facing, L: lookOf(s), mark: wTalk===s.id }; }),
+    people: () => [
+      ...C.suspects.filter(s=>!isGone(s) && (!travel() || whereOf(s)===l.id) && s.id!==(def.buddy || "wu")).map(s=>{
+        const pl = (def.placeFor ? def.placeFor(s, S.phase) : (def.place||{})[s.id]) || {};
+        const m = moodOf(s, pl);
+        return { id:s.id, x: pl.x ?? 140, y: pl.y, pose: pl.pose, facing: pl.facing, L: lookOf(s), mark: wTalk===s.id, ...m };
+      }),
+      ...extrasOf(def).map(e=>({ ...e, mark: wSay && wSay.who===e.id }))
+    ],
     spots: () => {
       const groups = {};
       allItems().filter(it=>(it.loc||"_")===l.id && def.spots[it.id] && (S.seen.includes(it.id) || (itemOpen(it) && unlocked(it)))).forEach(it=>{
@@ -438,7 +460,10 @@ function worldHooks(l, def){
       const dets = allDetails().filter(d=>def.details[d.id] && detailOpen(d) && roomOk(d)).map(d=>({ k:"detail", id:d.id, r:def.details[d.id].slice(0,4), walk:def.details[d.id][4] }));
       return [...Object.values(groups), ...dets];
     },
-    onPerson: id => { wTalk = id; wSay = null; peek = null; lastSaid = null; render(); },
+    onPerson: id => {
+      const e = extrasOf(def).find(x=>x.id===id);
+      if (e){ S.xl = S.xl || {}; const i = S.xl[id] || 0; S.xl[id] = i + 1; save(); wTalk = null; peek = null; lastSaid = null; wSay = { who:id, text:e.lines[i % e.lines.length] }; render(); return; }
+      wTalk = id; wSay = null; peek = null; lastSaid = null; render(); },
     onBuddy: id => { const s = sus(id); if (s && reachable(s) && !S.done){ wTalk = id; wSay = null; peek = null; lastSaid = null; render(); return; } wTalk = null; peek = null; wSay = { who:id, text:buddyHint(l) }; render(); },
     onSpot: h => { wTalk = null; wSay = null; lastSaid = null; tapSpot(h); },
     onGround: () => { if (wTalk || peek || wSay){ wTalk = null; peek = null; wSay = null; lastSaid = null; render(); } },
@@ -449,7 +474,7 @@ function worldHooks(l, def){
       if (peek && peek.kind==="detail"){ const d = allDetails().find(x=>x.id===peek.id); return d ? { who:"you", text:d.text.replace(/\n/g," ") } : null; }
       return null;
     },
-    nameOf: id => id===BUDDY.id ? BUDDY.name : (sus(id) || { name:"" }).name.replace(/（.*）/,""),
+    nameOf: id => id===BUDDY.id ? BUDDY.name : (extrasOf(def).find(e=>e.id===id) || {}).name || (sus(id) || { name:"" }).name.replace(/（.*）/,""),
     opt: () => ({ phase:S.phase }),
     script: ps && ps.steps,
     scriptDone: set => { if (set){ if (ps && ps.key){ S.introSeen = S.introSeen || {}; S.introSeen[ps.key] = 1; save(); } wArrive = null; wNews = []; } return !ps; },

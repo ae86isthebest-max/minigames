@@ -162,24 +162,4 @@
   };
   delete EP1.court.detective;
 
-  /* ---------- 可以走動的別墅（房間自動排成剖面，見 worldkit.js） ---------- */
-  const say = (who, text) => ({ say:[who, text], name: who === "you" ? "你" : "小吳" });
-  EP1.worldSky = () => ["#0b0f1c", "#27324a", "#18241f", "#1d2c25", 0, 1];
-  EP1.world = { _: { auto:true, setting:"villa", order:["security","hall","study","kitchen","garden"], spawn:72, park:8,
-    intro: [
-      { set:{ px:-70, bx:-90, cam:0 }, hide:true },
-      { car:[-60, 8, 2.4, "#e9e4da"], hide:true },
-      { wait:0.4, hide:true },
-      { set:{ px:66, bx:46, face:1 } },
-      say("wu", "到了，這裡就是陳家的半山別墅。"),
-      say("wu", "死者陳啟明，58 歲，做建設公司的。今晚被發現死在自己的書房裡。"),
-      say("wu", "23:30，管家黃伯用備用鑰匙開門，看到他趴在書桌上。手邊有一個威士忌杯，印表機旁邊放著一張「遺書」。"),
-      say("wu", "法醫初步判斷是氰化物中毒，死亡時間大約在 22:15 到 22:45 之間。"),
-      say("you", "警方怎麼看？"),
-      say("wu", "傾向以自殺結案。不過當晚屋裡一共有四個人。"),
-      { wait:0.8 },
-      say("wu", "陳家的律師凌晨就會到。在那之前，每個人大概只肯再回答你四個問題，我也只來得及幫你處理六樣東西。"),
-      say("you", "那就挑重要的問。"),
-      say("wu", "點畫面就能走過去。點人問話，點東西調查，閃光的是還沒查過的。要找我也可以點我。")
-    ] } };
 })();

@@ -121,7 +121,19 @@ const WK = (() => {
       const rain = skyOf(op.phase || 0)[4];
       if (rain) for (let i = 0; i < (rain > 1 ? 120 : 45); i++){ const x = cam + ((i * 37 + t * 30) % 252) - 6, y = (i * 53 + t * (rain > 1 ? 230 : 120)) % 140 - 4; p.R(x, y, 1, rain > 1 ? 4 : 3, "#8fa4b8"); }
     }
-    return { auto:true, w, spawn:o.spawn || 70, park:o.park ?? 8, draw, front, spots, details, placeFor, buddy:o.buddy || "wu", you:o.you, intro:o.intro, rooms, pos };
+    // 室內的房間連在一起就是一棟建築：在外面只看得到外牆
+    const buildings = [], shade = PX.prim.shade;
+    rooms.forEach(r => { if (OUT.has(r.scene)) return; const a = pos[r.id] - GAP, b = pos[r.id] + RW + GAP, last = buildings[buildings.length-1];
+      if (last && Math.abs(last.x1 - a) < GAP + 1) last.x1 = b; else buildings.push({ x0:a, x1:b }); });
+    buildings.forEach((b, i) => Object.assign(b, { y0:4, wall:fac[0], roof:shade(fac[0], -.5), brick: setting !== "city", rows:[8, 88], door:"#5a3e24",
+      night: op => skyOf(op.phase||0)[5],
+      sign: i ? null : (p) => { const { R, shade } = p, ox = b.x0 + GAP; R(ox + 60, 30, 72, 16, fac[1]); R(ox + 60, 30, 72, 1, shade(fac[1], .3)); R(ox + 60, 45, 72, 1, shade(fac[1], -.4));
+        if (l.id === "hospital"){ R(ox + 66, 35, 8, 2, "#e04a3a"); R(ox + 69, 32, 2, 8, "#e04a3a"); }
+        if (l.id === "police"){ R(ox + 66, 33, 6, 6, "#f2d03b"); R(ox + 68, 32, 2, 8, "#f2d03b"); }
+        for (let k = 0; k < 5; k++) R(ox + 80 + k * 9, 35, 7, 6, "#f4f0e0");
+        R(ox + 20, 104, 30, 4, shade(fac[1], -.1)); for (let k = 0; k < 6; k++) R(ox + 20 + k*5, 100, 4, 4, k%2 ? "#e9e4da" : fac[1]); }
+    }));
+    return { auto:true, w, spawn:o.spawn || 70, park:o.park ?? 8, draw, front, spots, details, placeFor, buddy:o.buddy || "wu", you:o.you, intro:o.intro, rooms, pos, buildings, extras:o.extras };
   }
 
   /* ---------- 早上的簡報：小吳把今天的事講一遍 ---------- */

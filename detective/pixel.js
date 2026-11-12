@@ -83,9 +83,12 @@ const PX = (() => {
     if (low){ add(3,18,4,4,bot); add(9,18,4,4,bot); add(2,21,5,2,shoe); add(9,21,5,2,shoe); if (L.skirt) add(3,17,10,4,bot); }
     else if (L.skirt){ add(3,17,10,5,bot); const a=pose==="walk1"?1:0, b=pose==="walk2"?1:0; add(4,22,2,4-a,skin); add(10,22,2,4-b,skin); add(3,25-a,4,2,shoe); add(9,25-b,4,2,shoe); }
     else { const a=pose==="walk1"?1:0, b=pose==="walk2"?1:0; add(4-b,18,3,8-a,bot); add(9+a,18,3,8-b,bot); add(3-b,25-a,4,2,shoe); add(9+a,25-b,4,2,shoe); }
-    // 身體
+    const legEnd = parts.length;
+    // 身體（領口、皮帶、衣服皺褶）
     add(3,10,10,9,top);
-    if (L.coat) { add(3,10,3,10,L.coat); add(10,10,3,10,L.coat); }
+    if (!low && !L.skirt && !L.coat) add(3,18,10,1,shade(bot,-.35));
+    add(6,10,4,1,shade(top,.22)); add(5,15,1,2,shade(top,-.12));
+    if (L.coat) { add(3,10,3,10,L.coat); add(10,10,3,10,L.coat); add(6,10,1,3,shade(L.coat,.2)); add(9,10,1,3,shade(L.coat,.2)); add(4,15,1,1,shade(L.coat,-.3)); add(11,15,1,1,shade(L.coat,-.3)); }
     if (L.apron) add(5,12,6,8,L.apron);
     if (L.tie) add(7,11,2,5,L.tie);
     if (L.chain) add(5,11,6,1,"#e6c34a");
@@ -94,6 +97,12 @@ const PX = (() => {
     const armDown = (x,sw) => { add(x,11,2,7+(sw||0),sl); add(x,18+(sw||0),2,2,hand); };
     const L1 = () => armDown(1, pose==="walk2"?-1:0);
     if (pose==="drink"||pose==="smoke"){ L1(); add(13,11,2,4,sl); add(10,10,4,2,sl); add(9,8,2,2,hand); if(pose==="drink") add(8,5,3,4,"#e9e4da"); else { add(7,8,3,1,"#e9e4da"); add(6,7,1,1,"#e25a2a"); } }
+    else if (pose==="cup"){ L1(); add(13,11,2,4,sl); add(10,14,4,2,sl); add(9,13,2,2,hand); add(8,11,3,4,L.cupColor||"#e9e4da"); add(8,11,3,1,shade(L.cupColor||"#e9e4da",-.25)); }
+    else if (pose==="cig"){ L1(); armDown(13); add(15,19,2,1,"#e9e4da"); add(17,19,1,1,"#e25a2a"); }
+    else if (pose==="broom2"){ L1(); add(13,11,2,6,sl); add(12,17,2,2,hand); add(11,6,1,7,"#8a6338"); add(12,13,1,7,"#8a6338"); add(13,20,1,5,"#8a6338"); add(11,24,6,3,"#c9a35a"); }
+    else if (pose==="brush"||pose==="brush2"){ L1(); add(13,11,2,4,sl); add(14,14,3,2,sl); add(17,pose==="brush"?14:16,2,2,hand); add(19,pose==="brush"?13:15,1,3,"#e6c34a"); }
+    else if (pose==="cam"){ add(1,11,2,5,sl); add(13,11,2,3,sl); add(12,7,2,4,sl); add(3,12,2,4,sl); add(4,8,2,4,sl); add(5,4,7,4,"#2a2a2e"); add(10,5,2,2,"#9ab0c8"); add(6,3,2,1,"#5a5a5e"); }
+    else if (pose==="write"){ add(1,11,2,5,sl); add(13,11,2,5,sl); add(3,15,3,2,hand); add(10,14,3,2,hand); add(3,13,6,5,"#f1ead8"); add(4,14,4,1,"#7a8a9a"); add(11,11,1,4,"#2a3a8a"); }
     else if (pose==="phone"){ L1(); add(13,11,2,3,sl); add(13,6,2,5,sl); add(12,5,2,2,hand); add(12,2,1,5,"#111"); }
     else if (pose==="point"){ L1(); add(13,11,7,2,sl); add(20,11,2,2,hand); }
     else if (pose==="cry"){ add(1,11,2,4,sl); add(13,11,2,4,sl); add(2,8,3,3,sl); add(11,8,3,3,sl); add(4,5,3,3,hand); add(9,5,3,3,hand); }
@@ -120,13 +129,39 @@ const PX = (() => {
     if (L.hat==="fedora"){ add(1,-1,14,2,L.hatColor||"#4a3a2a"); add(4,-4,8,3,L.hatColor||"#4a3a2a"); add(4,-2,8,1,"#2a1a10"); }
     if (L.hat==="police"){ add(3,-2,10,3,"#24324e"); add(2,0,12,1,"#1a2236"); add(7,-1,2,1,"#e6c34a"); }
     if (L.back){ add(3,0,10,9, L.hood||hair); }
-    // 臉
-    const ey = L.back ? -99 : 5, closed = pose==="cry"||legs==="lie"||legs==="fall";
+    // 臉：表情（L.mood：sad 傷心、worried 擔心、angry 生氣、shock 嚇到、tired 疲倦、smile 微笑、smug 得意）、眨眼、說話
+    const ey = L.back ? -99 : 5, closed = pose==="cry"||legs==="lie"||legs==="fall"||L.blink, mood = L.mood || (pose==="cry" ? "sad" : "");
+    if (!L.back){
+      add(4,9,8,1,shade(skin,-.12)); add(8,6,1,2,shade(skin,-.14));
+      if (hs!=="bald" && hs!=="balding") add(5,0,4,1,shade(hair,.3));
+      const bc = shade(hair,-.15);
+      if (mood==="angry"){ add(4,3,2,1,bc); add(6,4,1,1,bc); add(9,4,1,1,bc); add(10,3,2,1,bc); }
+      else if (mood==="sad"||mood==="worried"){ add(4,4,1,1,bc); add(5,3,2,1,bc); add(9,3,2,1,bc); add(11,4,1,1,bc); }
+      else if (mood==="shock"){ add(4,3,3,1,bc); add(9,3,3,1,bc); }
+    }
     if (L.sunglasses){ add(4,ey-1,8,2,"#111"); }
-    else if (pose!=="cry") { if (closed){ add(4,ey+1,3,1,INK); add(9,ey+1,3,1,INK); } else { add(5,ey,1,2,INK); add(10,ey,1,2,INK); } if (L.glasses){ add(4,ey-1,3,1,"#888"); add(9,ey-1,3,1,"#888"); } }
+    else if (pose!=="cry" && !L.back) {
+      if (closed){ add(4,ey+1,3,1,INK); add(9,ey+1,3,1,INK); }
+      else if (mood==="shock"){ add(4,ey-1,3,3,"#ffffff"); add(9,ey-1,3,3,"#ffffff"); add(5,ey,1,1,INK); add(10,ey,1,1,INK); }
+      else if (mood==="tired"){ add(4,ey,3,1,shade(skin,-.3)); add(9,ey,3,1,shade(skin,-.3)); add(5,ey+1,1,1,INK); add(10,ey+1,1,1,INK); add(4,ey+2,3,1,shade(skin,-.18)); add(9,ey+2,3,1,shade(skin,-.18)); }
+      else { add(5,ey,1,2,INK); add(10,ey,1,2,INK); add(6,ey,1,1,"#ffffff"); add(11,ey,1,1,"#ffffff"); }
+      if (L.glasses){ add(4,ey-1,3,1,"#888"); add(9,ey-1,3,1,"#888"); add(7,ey-1,2,1,"#888"); }
+    }
+    const mc = L.mouth||shade(skin,-.4);
     if (L.back) {}
     else if (L.mask) add(4,7,8,3,L.mask);
-    else if (pose!=="drink"&&pose!=="smoke") add(7,8,2,1, L.mouth||shade(skin,-.35));
+    else if (pose!=="drink"&&pose!=="smoke"){
+      if (L.talk) add(7,8,2,2,"#5a2424");
+      else if (mood==="sad"){ add(6,9,1,1,mc); add(7,8,2,1,mc); add(9,9,1,1,mc); }
+      else if (mood==="worried"){ add(7,8,2,1,mc); add(9,9,1,1,mc); }
+      else if (mood==="angry") add(6,8,4,1,mc);
+      else if (mood==="shock") add(7,8,2,2,"#3a1a1a");
+      else if (mood==="smile"){ add(6,8,1,1,mc); add(7,9,2,1,mc); add(9,8,1,1,mc); }
+      else if (mood==="smug"){ add(7,8,2,1,mc); add(9,7,1,1,mc); }
+      else add(7,8,2,1,mc);
+    }
+    if (!L.back && (mood==="sad" && L.tear || pose==="cry")){ add(5,8,1,2,"#9fd0ff"); add(10,8,1,2,"#9fd0ff"); }
+    if (!L.back && L.sweat){ add(13,2,1,2,"#9fd0ff"); }
     if (L.beard) add(4,7,8,2,shade(hair,.15));
     if (L.bruise) add(10,6,2,2,"#7a4a8a");
     if (old) { add(4,3,2,1,shade(skin,-.15)); add(10,3,2,1,shade(skin,-.15)); }
@@ -135,6 +170,8 @@ const PX = (() => {
     if (L.case && !low) add(14,17,6,5,"#4a3424");
     if (L.wet){ add(2,17,1,2,"#7fb6ff"); add(13,18,1,2,"#7fb6ff"); }
     if (L.bandage) add(1,18,2,1,"#f4f6f6");
+    if (L.bob && !low) for (let i=legEnd;i<parts.length;i++) parts[i][1] -= 1;
+    if (L.shake) parts.forEach(p=>p[0] += L.shake);
     // 外框 → 本體（kneel/sit 下沉 4 格；fall 斜倒；lie 橫躺）
     const rot = legs==="lie" ? 90 : legs==="fall" ? 35 : 0;
     const drop = low ? 4 : 0;
