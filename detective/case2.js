@@ -109,16 +109,17 @@ const EP2 = {
   extraPeople: [
     { id:"intruder", name:"外來的闖入者", av:"🥷", requires:["ev_window2"] }
   ],
+  // 推理題規則（跟第 1 集一樣）：題目、選項只能提到玩家已經看過聽過的事；requires 的每一條線索單獨就足以知道題目的前提；選項不夾帶沒查到的事實
   reasoning: [
     { q:"林振宗真正的死亡時間是？", requires:["ev_dryerlog","lab_stomach"], options:["20:00 以前","20:30–20:50","21:00–21:40","22:00 以後"], answer:1 },
-    { q:"兇手為什麼把焙茶機調到 110 度？", requires:["ev_dryerlog"], options:["想把茶葉和證據燒掉","讓屍體保溫，把推算的死亡時間往後推","不小心碰到的","是林振宗自己調的"], answer:1 },
-    { q:"林振宗是被什麼打死的？", requires:["ev_luminol","lab_weight"], options:["木梯","銅秤錘","焙茶機的鐵門","從閣樓掉下來的茶葉袋"], answer:1 },
+    { q:"20:47 焙茶機為什麼被調到 110 度？", requires:["ev_dryerlog"], options:["想把茶葉和證據燒掉","讓屍體保溫，把推算的死亡時間往後推","不小心碰到的","是林振宗自己調的"], answer:1 },
+    { q:"林振宗後腦的傷是什麼造成的？", requires:["ev_luminol","lab_weight"], options:["摔下來時撞到木梯或地面","銅秤錘","焙茶機的鐵門","從閣樓掉下來的茶葉袋"], answer:1 },
     { q:"林振宗真正倒下的地方在哪裡？", requires:["ev_ladder","lab_ladder"], options:["木梯下","工具架旁","閣樓上","焙茶機前"], answer:1 },
-    { q:"兇手怎麼避開客廳監視器，往返主屋和製茶房？", requires:["p5","ev_backstair"], options:["從二樓窗戶爬出去","走洗衣間的後樓梯和後門","監視器那時候壞了","兇手根本沒進過主屋"], answer:1 },
-    { q:"土伯是怎麼死的？", requires:["r2_tu"], options:["半夜巡水門時失足落水","被人約到池邊，用石頭打昏後推下水","自責而投水自殺","被外來的討債人殺害"], answer:1 },
-    { q:"凌晨三點，穿著粉紅色雨衣上山的人是誰？", requires:["pp4","ev_raincoat"], options:["蘇雅琴","林家欣","張佩如","土伯"], answer:1 },
-    { q:"誰撬開了書房的抽屜？", requires:["e_study"], options:["林家豪：想找遺囑","蘇雅琴：想找遺囑","林家欣：想毀掉信","張佩如：想偷錢"], answer:2 },
-    { q:"兇手的動機是什麼？", requires:["ev_letter","pol_old","x10","h6","n1","fg2"], options:["為了遺產","為了阻止茶園被捐出去","為母親 12 年前的死報仇","被林振宗發現欠債"], answer:2 }
+    { q:"主屋裡的人要怎麼不被客廳監視器拍到，去製茶房再回來？", requires:["p5","ev_backstair"], options:["從二樓窗戶爬出去","走洗衣間的後樓梯和後門","趁監視器故障的時候","沒有辦法，一定會被拍到"], answer:1 },
+    { q:"土伯是怎麼死的？", requires:["r2_tu"], options:["半夜巡水門時失足落水","被人打昏後推下水","自己投水自殺","被颱風吹落的東西砸中，掉進池裡"], answer:1 },
+    { q:"颱風夜穿著粉紅色雨衣去過後山的人是誰？", requires:["pp4","ev_raincoat"], options:["蘇雅琴","林家欣","張佩如","土伯"], answer:1 },
+    { q:"誰撬開了書房的抽屜？", requires:["e_study"], options:["林家豪","蘇雅琴","林家欣","張佩如"], answer:2 },
+    { q:"兇手的動機是什麼？", requires:["ev_letter","pol_old","x10","h6","n1","fg2"], options:["為了錢：遺產或債務","為了茶園的未來：要賣還是不賣","為了十二年前那個颱風夜的事","一時口角，失手打死"], answer:2 }
   ],
   solution: {
     kind: "murder",
