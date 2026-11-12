@@ -1,0 +1,43 @@
+const {chromium}=require('playwright');
+(async()=>{const b=await chromium.launch();const p=await b.newPage();
+const errs=[];p.on('pageerror',e=>errs.push(e.message));
+await p.goto('http://localhost:8765/index.html');
+for (const ci of [0,1]){
+const r=await p.evaluate((ci)=>{ localStorage.clear(); openCase(ci);
+  const out=[]; const ph=phasesOf(C);
+  const ids=new Set();
+  C.suspects.forEach(s=>s.questions.forEach(q=>ids.add(q.id)));
+  allItems().forEach(i=>ids.add(i.id)); tests().forEach(t=>ids.add(t.id));
+  (C.events||[]).forEach(e=>ids.add(e.id)); ph.forEach(x=>(x.reports||[]).forEach(r=>ids.add(r.id)));
+  const refs=[]; const chk=(o,where)=>{ const arr=v=>v===undefined?[]:Array.isArray(v)?v:[v]; [...arr(o.requires),...arr(o.requiresAll),...arr(o.unless),...arr(o.alt&&o.alt.when)].forEach(id=>{ if(!ids.has(id)) refs.push(where+':'+id); }); };
+  C.suspects.forEach(s=>s.questions.forEach(q=>chk(q,'Q '+q.id)));
+  allItems().forEach(i=>chk(i,'I '+i.id)); tests().forEach(t=>chk(t,'T '+t.id));
+  (C.locations||[]).forEach(l=>chk(l,'L '+l.id)); (C.reasoning||[]).forEach((x,i)=>chk(x,'R'+i)); (C.kinds||[]).forEach(k=>chk(k,'K '+k.id)); (C.events||[]).forEach(e=>chk(e,'E '+e.id)); (C.extraPeople||[]).forEach(e=>chk(e,'X '+e.id));
+  (C.solution.keyEvidence||[]).forEach(id=>{ if(!ids.has(id)) refs.push('keyEvidence:'+id); });
+  out.push('dangling refs: '+(refs.join(', ')||'none'));
+  // areas
+  const locs = travel() ? C.locations : [HOME];
+  const noArea=[], dead=[], noName=[];
+  locs.forEach(l=>{ const d=worldDef(l); if(!d) return; const used=new Set();
+    allItems().filter(it=>(it.loc||'_')===l.id).forEach(it=>{ const a=areaOf(it,l,d); if(!a || !(d.areas||[]).some(x=>x.id===a)) noArea.push(it.id); else used.add(a); });
+    (d.areas||[]).forEach(a=>{ if(!a.name) noName.push(l.id+'/'+a.id+'→'+areaName(d,a.id)); if(!used.has(a.id)) dead.push(l.id+'/'+a.id); }); });
+  out.push('items without area: '+(noArea.join(',')||'none'));
+  out.push('areas with no items (any day): '+(dead.join(', ')||'none'));
+  out.push('areas using fallback name: '+(noName.join(', ')||'none'));
+  // content volume
+  const nQ=C.suspects.reduce((n,s)=>n+s.questions.length,0);
+  out.push('questions '+nQ+', items '+allItems().length+' (objects '+allItems().filter(i=>i.obj).length+'), tests '+tests().length+', details '+allDetails().length);
+  out.push('per suspect: '+C.suspects.map(s=>s.id+':'+s.questions.length).join(' '));
+  out.push('no clue: Q '+C.suspects.flatMap(s=>s.questions.filter(q=>!q.clue).map(q=>q.id)).length+' / items '+allItems().filter(i=>!i.clue).map(i=>i.id).join(','));
+  // time budget per phase
+  ph.forEach((x,i)=>{ const k=x.clock||C.clock; if(!k) return; const toMin=t=>{const [h,m]=t.split(':').map(Number); return h*60+m;}; let len=toMin(k.end)-toMin(k.start); if(len<0) len+=1440;
+    const its=allItems().filter(it=>(it.phase===undefined||i>=it.phase)&&(it.until===undefined||i<=it.until));
+    const itemMin=its.reduce((n,it)=>n+(it.mins||(it.cctv?k.cctv:k.item)||0),0);
+    const ppl=C.suspects.filter(s=>!(s.gone!==undefined && i>=s.gone) && (!s.where || s.where[Math.min(i,s.where.length-1)]));
+    const askMin=ppl.length*(x.questionLimit||C.questionLimit||0)*(k.ask||0);
+    out.push('phase '+i+': '+len+' min available; all items '+itemMin+' min ('+its.length+'), max asking '+askMin+' min ('+ppl.length+' people × '+(x.questionLimit||C.questionLimit)+')'); });
+  out.push('max questions askable in whole game: '+ph.reduce((n,x,i)=>n+C.suspects.filter(s=>!(s.gone!==undefined && i>=s.gone) && (!s.where || s.where[Math.min(i,s.where.length-1)])).length*(x.questionLimit||C.questionLimit||0),0)+' of '+nQ);
+  return out; }, ci);
+console.log('=== CASE',ci,'===\n'+r.join('\n'));
+}
+console.log(errs); await b.close();})();

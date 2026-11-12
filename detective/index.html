@@ -647,7 +647,7 @@ function buddyMenu(l){
     ${travel() && l ? B("🗺️", "回地圖，開車去別的地方", "wBuddy=false;leaveWorld()") : ""}
     ${nx ? B("🌙", `結束今天，進入「${esc(nx.short)}」`, "nextPhase()") : ""}
     ${B("❓", "操作說明", "wBuddy='help';render()")}
-    ${B("⚖️", S.done ? "看結案結果" : "我知道真相了！跟小吳結案", "openSheet('accuse')", S.done ? "" : "隨時都可以結案；推理錯了不會公布真相，可以繼續查", "accent")}
+    ${B("⚖️", S.done ? "看結案結果" : "我知道真相了！跟小吳結案", "openSheet('accuse')", S.done ? "" : "隨時都可以結案；推理錯了不會公布真相，可以繼續查。不過第一次就全對才有 S", "accent")}
   </div>`;
 }
 function helpText(l){
@@ -674,6 +674,13 @@ function areaName(def, aid){
   const t = Array.isArray(a.text) ? a.text[0] : typeof a.text === "string" ? a.text : "";
   return (t.split(/[。，\n]/)[0] || "這裡").slice(0, 8);
 }
+// 這個區域藏了幾個小細節（畫面上點得到的）
+function areaDetails(l, def, aid){
+  const inA = d => { if (def.auto) return d.room === aid; const r = def.details && def.details[d.id]; if (!r) return false;
+    const cx = r[0] + r[2]/2, cy = r[1] + r[3]/2, a = (def.areas||[]).filter(a=>cx>=a.x0 && cx<=a.x1 && (a.y ?? FLOOR) >= cy - 2).sort((a,b)=>(a.y ?? FLOOR)-(b.y ?? FLOOR))[0]; return a && a.id === aid; };
+  const all = allDetails().filter(d=>detailOpen(d) && (def.auto ? roomsOf(l).some(r=>r.id===d.room) : true) && inA(d));
+  return { n: all.length, found: all.filter(d=>(S.found||[]).includes(d.id)).length };
+}
 function areaItems(l, def, aid){
   const all = allItems().filter(it=>(it.loc||"_")===l.id && areaOf(it, l, def)===aid);
   const open = all.filter(it=>S.seen.includes(it.id) || (itemOpen(it) && unlocked(it)));
@@ -695,7 +702,7 @@ function updateRoomBtn(){
   if (busy || !curArea){ b.hidden = true; return; }
   const { open } = areaItems(l, def, curArea);
   const n = open.filter(it=>!S.seen.includes(it.id)).length, np = peopleIn(def, curArea).length;
-  if (!open.length && !np && !areaItems(l, def, curArea).locked){ b.hidden = true; return; }
+  if (!open.length && !np && !areaItems(l, def, curArea).locked && !areaDetails(l, def, curArea).n){ b.hidden = true; return; }
   b.innerHTML = `📍 ${esc(areaName(def, curArea))}<span class="an">・在這裡做什麼？</span>${n ? `<span class="n">${n}</span>` : ""}${np ? `<span class="n pp">👤${np}</span>` : ""}`;
   b.hidden = false;
 }
@@ -751,7 +758,8 @@ function roomList(l, def){
     ${cctv.length ? `<button class="wq" ${cNew?'style="border-color:var(--accent)"':""} onclick="wAct={ids:[${cctv.map(it=>`'${it.id}'`).join(",")}]};render()">📹 監視器主機 <span class="tag">${cctv.length} 段錄影${cNew ? `・${cNew} 段沒看過` : "・都看過了"}</span></button>` : ""}
     ${rest.map(row).join("")}
     ${locked ? `<p class="muted small" style="margin:6px 2px 0">🔒 這裡好像還有 ${locked} 樣東西，現在還沒有理由去翻。</p>` : ""}
-    ${!open.length && !ppl.length ? `<p class="muted small" style="margin:6px 2px 0">這裡沒有人，也沒什麼可以查的。</p>` : ""}</div>`;
+    ${!open.length && !ppl.length ? `<p class="muted small" style="margin:6px 2px 0">這裡沒有人，也沒什麼可以查的。</p>` : ""}
+    ${(dt => dt.n ? `<p class="muted small" style="margin:8px 2px 0">🔎 這裡藏著 ${dt.n} 個小細節，已發現 ${dt.found} 個${dt.found < dt.n ? "。在畫面上到處點點看（不花時間）" : " ✓"}。</p>` : "")(areaDetails(l, def, wRoom))}</div>`;
 }
 function worldViewFS(l, def){
   let panel = "";
@@ -1318,6 +1326,10 @@ async function submitAccuse(){
   if (verdict==="perfect") grade = pts>=max ? "S" : pts>=Math.ceil(max*2/3) ? "A" : "B";
   else if (verdict==="partial") grade = pts>=Math.ceil(max/2) ? "C" : "D";
   else grade = "F";
+  // 第一次就推理正確才有 S；第二次最高 A，第三次以後最高 B（S.tries 這時還沒加上這一次）
+  const nth = (S.tries||0) + 1;
+  if (verdict==="perfect" && nth === 2 && grade === "S") grade = "A";
+  if (verdict==="perfect" && nth >= 3 && grade !== "B") grade = "B";
   S.done = true;
   S.tries = (S.tries||0) + 1;
   S.revealed = verdict==="perfect";
@@ -1350,7 +1362,7 @@ function vResult(){
   return `${art()?`<button class="btn" style="text-align:center;margin-top:0" onclick="S.court=0;save();render();scrollTo(0,0)">🎬 重看結案過程</button>`:""}<div class="card" style="text-align:center"><div class="muted small">評級</div>
     <div class="grade" style="color:${r.grade==="F"?"var(--red)":r.grade==="S"?"var(--accent)":"var(--text)"}">${r.grade}</div>
     <p style="margin:4px 0">${msg}</p>
-    <p class="muted small" style="margin:0">你的推理：${esc(pickName)}<br>關鍵證據 ${r.evHits}/3${murder?`　推理題 ${r.reasonHits}/${C.reasoning.length}`:""}<br>問了 ${r.qUsed} 題、查了 ${r.sUsed} 項</p></div>
+    <p class="muted small" style="margin:0">你的推理：${esc(pickName)}<br>關鍵證據 ${r.evHits}/3${murder?`　推理題 ${r.reasonHits}/${C.reasoning.length}`:""}<br>問了 ${r.qUsed} 題、查了 ${r.sUsed} 項${allDetails().length ? `、發現小細節 ${(S.found||[]).length}／${allDetails().length}` : ""}<br>第 ${S.tries||1} 次推理${(S.tries||1) > 1 && r.verdict==="perfect" ? "（第一次就全對才有 S）" : ""}</p></div>
   ${tail}`;
 }
 function retry(){ S.done=false; S.result=null; accusePick=freshPick(); save(); go(travel()?"brief":totalQLeft()+searchLeft()>0?"notes":multi()&&!lastPhase()?"brief":"accuse"); }
