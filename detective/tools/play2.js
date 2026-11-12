@@ -12,31 +12,32 @@ const SP='/tmp/claude-0/-home-user/02932761-879e-5116-b9f5-3977896359d5/scratchp
  const T=async(...ids)=>{for(const id of ids){const r=await p.evaluate(async id=>{await submitTest(id);return S.labq[id]!==undefined},id); if(!r) fail.push('T '+id+' day'+await p.evaluate(()=>S.phase));}};
  const V=async(id)=>{const r=await p.evaluate(async id=>{await visit(id);return here(id)},id); if(!r) fail.push('V '+id+' day'+await p.evaluate(()=>S.phase));};
  const next=async()=>{ console.log("day",await p.evaluate(()=>S.phase),"used",await p.evaluate(()=>usedNow()),"left",await p.evaluate(()=>timeLeft())); await p.evaluate(()=>{S.phase++;mapFrom=null;checkEvents();save();}); };
+ // 最佳路線。這裡只放「照這條路線一定問得到」的問題：FAILS 不是空的，就代表有問題或證物變得查不到了（前提、人在不在場、每天題數）
  // 第一晚
  await I('ev_dryer','ev_tools','ev_hair','ev_ladder');
  await Q('t1','t6','t7','y1','y2','y13','h1','h11','h18','x1','x1b','x13','o1','o13','o11','p1','p2','p12','wu1','wu3','wu2');
  await p.evaluate(()=>go('map')); await shot('m0');
  await next(); // 第二天 AP3
  await I('ev_dryerlog','ev_luminol','ev_raincoat','ev_laundry');
- await Q('p6','p7','p5','p13','y11','y14'/*needs y8*/,'h8','h7','h6'/*needs t8*/,'x4','x12');
+ await Q('p6','p7','p5','p13','y11','h8','h7','h6'/*needs t8*/,'x4','x12');
  await V('lab'); await T('lab_hoodie','lab_nail','lab_soil');
- await V('shop'); await Q('de1','de7','de2','de4'); await I('ev_dashcam');
+ await V('shop'); await Q('de1','de7','de2'); await I('ev_dashcam');
  await V('police'); await T('pol_phone'); await I('pol_old','pol_road');
  await p.evaluate(()=>{tab='map';openLoc='lab';render()}); await shot('lab1');
  await next(); // 第三天 AP4 start police
  await V('lab'); await T('lab_stomach','lab_hair','lab_weight');
- await V('farm'); await I('ev_note','ev_drawer','ev_backstair'); await Q('p14','y23','pp_bm','o6','h21','x6');
+ await V('farm'); await I('ev_note','ev_drawer','ev_backstair'); await Q('p14','y23','x6');
  await V('lawyer'); await Q('w1','w2','w5','w7');
  await V('care'); await Q('fg2','fg5','fg4','fg6'); await I('ev_visitlog');
  await next(); // 第四天
  await V('lab'); await T('lab_drawer','lab_backstair','lab_ladder');
- await V('farm'); await I('ev_ashes','ev_receipt'); await Q('pp_bm','pp4','pp5','pp6','y8','x10','x9','x14','p22','x15','y16','x7');
+ await V('farm'); await I('ev_ashes','ev_receipt'); await Q('pp_bm','pp4','pp5','pp6','y8','x10','x9','x15','y16','x7');
  await V('office'); await I('ev_video','ev_contract'); await Q('o3','o4','o15');
  await next(); // 第五天
  await V('lab'); await T('lab_ashes','lab_note');
  await V('taipei'); await Q('n1','n2','n4'); await I('ev_leave');
  await next(); // 第六天
- await V('farm'); await Q('x5','x18','x19','x24','y7');
+ await V('farm'); await Q('x5','x18','x19','y7');
  const st=await p.evaluate(()=>({ap:apLeft(),reasoning:C.reasoning.filter(unlocked).length,ready:readyTests().map(t=>t.id),asked:S.asked.length,seen:S.seen.length,ev:Object.keys(S.ev)}));
  console.log(JSON.stringify(st));
  await p.evaluate(async ()=>{go("accuse");pickKind('murder');toggleCulprit('xin');['lab_hoodie','lab_nail','ev_dryerlog'].forEach(toggleEv);C.reasoning.forEach((r,i)=>pickReason(i,r.answer));await submitAccuse();});
