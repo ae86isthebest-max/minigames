@@ -37,6 +37,13 @@ const r=await p.evaluate((ci)=>{ localStorage.clear(); openCase(ci);
     const askMin=ppl.length*(x.questionLimit||C.questionLimit||0)*(k.ask||0);
     out.push('phase '+i+': '+len+' min available; all items '+itemMin+' min ('+its.length+'), max asking '+askMin+' min ('+ppl.length+' people × '+(x.questionLimit||C.questionLimit)+')'); });
   out.push('max questions askable in whole game: '+ph.reduce((n,x,i)=>n+C.suspects.filter(s=>!(s.gone!==undefined && i>=s.gone) && (!s.where || s.where[Math.min(i,s.where.length-1)])).length*(x.questionLimit||C.questionLimit||0),0)+' of '+nQ);
+  // 推理題：每題列出「看到哪一樣東西就會出現」，人工確認每一樣單獨都足以知道題目的前提（題目、選項不可以洩露沒查到的劇情）
+  const titleOf = id => { const x = [...allItems(), ...tests(), ...(C.events||[]), ...ph.flatMap(p=>p.reports||[])].find(x=>x.id===id); if (x) return x.title; const q = C.suspects.flatMap(s=>s.questions.map(q=>({q, s}))).find(o=>o.q.id===id); return q ? q.s.name+'：'+q.q.q : id; };
+  out.push('reasoning premises (check each one alone proves the premise):');
+  (C.reasoning||[]).forEach((r,i)=>{ const req=[].concat(r.requires||[]), all=[].concat(r.requiresAll||[]);
+    out.push('  R'+i+' '+r.q+'  ['+r.options.join(' / ')+']'+(req.length||all.length?'':'  !! NO requires'));
+    req.forEach(id=>out.push('      any: '+id+' = '+String(titleOf(id)).slice(0,40)));
+    all.forEach(id=>out.push('      all: '+id+' = '+String(titleOf(id)).slice(0,40))); });
   return out; }, ci);
 console.log('=== CASE',ci,'===\n'+r.join('\n'));
 }
