@@ -81,8 +81,8 @@ const PX = (() => {
     if (arms) pose = arms;
     // 腿
     if (low){ add(3,18,4,4,bot); add(9,18,4,4,bot); add(2,21,5,2,shoe); add(9,21,5,2,shoe); if (L.skirt) add(3,17,10,4,bot); }
-    else if (L.skirt){ add(3,17,10,5,bot); const a=pose==="walk1"?1:0, b=pose==="walk2"?1:0; add(4,22,2,4-a,skin); add(10,22,2,4-b,skin); add(3,25-a,4,2,shoe); add(9,25-b,4,2,shoe); }
-    else { const a=pose==="walk1"?1:0, b=pose==="walk2"?1:0; add(4-b,18,3,8-a,bot); add(9+a,18,3,8-b,bot); add(3-b,25-a,4,2,shoe); add(9+a,25-b,4,2,shoe); }
+    else if (L.skirt){ add(3,17,10,5,bot); const a=legs==="walk1"?1:0, b=legs==="walk2"?1:0; add(4,22,2,4-a,skin); add(10,22,2,4-b,skin); add(3,25-a,4,2,shoe); add(9,25-b,4,2,shoe); }
+    else { const a=legs==="walk1"?1:0, b=legs==="walk2"?1:0; add(4-b,18,3,8-a,bot); add(9+a,18,3,8-b,bot); add(3-b,25-a,4,2,shoe); add(9+a,25-b,4,2,shoe); }
     if (!low && !L.skirt){ add(5,19,1,5,shade(bot,-.18)); add(10,19,1,5,shade(bot,-.18)); add(3,25,1,1,shade(shoe,.45)); add(9,25,1,1,shade(shoe,.45)); }
     const legEnd = parts.length;
     // 身體（領口、皮帶、衣服皺褶）
@@ -107,7 +107,8 @@ const PX = (() => {
     else if (pose==="phone"){ L1(); add(13,11,2,3,sl); add(13,6,2,5,sl); add(12,5,2,2,hand); add(13,1,2,6,"#111"); add(13,2,1,3,"#3a5a7a"); }
     else if (pose==="point"){ L1(); add(13,11,7,2,sl); add(20,11,2,2,hand); }
     else if (pose==="cry"){ add(1,11,2,4,sl); add(13,11,2,4,sl); add(2,8,3,3,sl); add(11,8,3,3,sl); add(4,3,3,4,hand); add(9,3,3,4,hand); }
-    else if (pose==="hold"||pose==="read"){ add(1,11,2,5,sl); add(13,11,2,5,sl); add(3,15,3,2,hand); add(10,15,3,2,hand); if(pose==="read") add(4,12,8,5,"#f1ead8"); else if (L.prop==="pot") { add(5,14,6,4,"#8a5a3a"); add(11,15,2,1,"#8a5a3a"); } else if (L.prop) add(4,14,8,4,L.prop); }
+    else if (pose==="hold"||pose==="read"){ add(1,11,2,5,sl); add(13,11,2,5,sl); add(3,15,3,2,hand); add(10,15,3,2,hand); if(pose==="read") add(4,12,8,5,"#f1ead8"); else if (L.prop==="pot") { add(5,14,6,4,"#8a5a3a"); add(11,15,2,1,"#8a5a3a"); }
+      else if (L.prop==="bucket") { add(4,13,8,6,"#9aa6ae"); add(4,13,8,1,"#e9f2f6"); add(5,16,6,1,"#7a868e"); add(5,11,2,2,"#dff4ff"); add(8,11,2,2,"#cfeeff"); add(7,12,1,1,"#ffffff"); } else if (L.prop) add(4,14,8,4,L.prop); }
     else if (pose==="cross"){ add(1,11,2,5,sl); add(13,11,2,5,sl); add(3,14,10,3,sl); add(3,14,2,2,hand); add(11,15,2,2,hand); }
     else if (pose==="broom"){ L1(); add(13,11,2,7,sl); add(13,18,2,2,hand); add(15,6,1,20,"#8a6338"); add(14,24,4,3,"#c9a35a"); }
     else { L1(); armDown(13, pose==="walk1"?-1:0); }
@@ -298,7 +299,8 @@ const PX = (() => {
     courtyard(o){ sky("#0d1220","#26324a"); R(0,50,W,24,"#3a3430"); dither(0,50,W,24,"#2a2622",3);
       R(6,30,60,44,"#4a4038"); R(2,26,68,5,"#3a2a22"); door(30,48,14,26,"#5a3e24"); windowBox(12,38,9,8,"#ffd98a"); windowBox(50,38,9,8,"#ffd98a");
       R(130,40,56,34,"#3d3530"); R(127,36,62,5,"#2a221e"); door(150,52,12,22,"#5a3e24"); windowBox(170,46,10,8,"#ffd98a"); sign(134,44,12,"#5a4a3a","#e9e4da");
-      R(84,44,3,30,"#555b60"); R(110,44,3,30,"#555b60"); R(87,44,23,2,"#6c7378");
+      // 中間是一排茶樹籬笆和路燈（大門在畫面右邊外面）
+      for(let x=74;x<124;x+=6){ R(x,62,7,12,"#2f4a2a"); P(x+2,63,"#3f6a3a"); } R(96,34,2,30,"#555b60"); R(92,32,10,3,"#6c7378"); dither(88,35,18,8,"#ffd98a44",2);
       floor(74,"#2f2a22","#2a2520"); rain(90); },
     road(o){ sky("#0d1220","#26324a",108); hills(30,"#1d2a24","#16201b"); R(0,62,W,46,"#2a2a26"); for(let x=0;x<W;x+=16) R(x,84,8,2,"#c9c9a0");
       R(160,20,3,44,"#555b60"); R(152,16,20,10,"#3a3e44"); R(156,19,6,4,"#9ab0c8"); P(168,20,"#e04a3a"); rain(100); },
@@ -325,6 +327,9 @@ const PX = (() => {
       R(78,66,62,4,"#5a3a2a"); R(78,66,62,1,"#7a5a3a"); R(80,70,4,22,"#4a2a1a"); R(134,70,4,22,"#4a2a1a");
       R(82,61,14,5,"#7a2a2a"); R(84,62,10,1,"#e9e4da"); R(124,58,6,8,"#d8eef6"); R(125,61,4,4,"#c98a2a"); R(132,46,2,20,"#c9a35a"); R(128,42,10,5,"#3f7a4a"); dither(124,46,18,12,"#ffd98a",3);
       R(104,62,16,3,"#2a2a2e");
+      // 威士忌酒瓶、冰桶（重演時冰桶要等陳浩放下才出現）
+      R(137,50,4,16,"#7a3a1a"); R(138,46,2,4,"#5a2a10"); R(137,56,4,4,"#e9d8a8");
+      if (!o.bucketAt || (o.t||0) >= o.bucketAt){ R(114,58,9,8,"#9aa6ae"); R(114,58,9,1,"#e9f2f6"); R(115,62,7,1,"#7a868e"); }
       if (o.body!==false){ R(90,56,11,9,"#d8a880"); R(90,55,11,3,"#9a9a92"); R(100,62,10,3,"#e9e4da"); }
       lamp(40,0); },
     vkitchen(o){ wall(66,"#e6e2d6",false); for(let x=0;x<W;x+=8) for(let y=30;y<66;y+=8) R(x,y,7,7,"#d6d2c6"); floor(66,"#9a9a90","#8a8a80");
@@ -344,14 +349,16 @@ const PX = (() => {
       R(0,72,W,36,"#2a2c30"); R(10,68,160,4,"#5a5e64"); R(14,72,3,30,"#4a4e54"); R(164,72,3,30,"#4a4e54"); R(40,62,22,6,"#d8d8d0"); R(44,63,14,1,"#888"); R(150,30,30,40,"#5a5e64"); R(154,34,22,14,"#3a3e44"); P(156,52,"#6fd46f"); P(160,52,"#e04a3a"); },
     vcorridor(o){ wall(70,"#e9e2d0",false); R(0,56,W,14,"#a8865a"); floor(70,"#8a6a4a","#7a5a3a");
       R(10,24,22,46,"#3a2a1a"); R(12,26,18,44,"#f1ead8"); dither(12,26,18,44,"#e6c34a33",3); sign(12,16,18,"#6b4a2b","#e9e4da");
-      for(let i=0;i<6;i++){ R(40+i*6,60-i*8,30,3,"#8a6a4a"); } R(38,14,2,56,"#4a2a1a");
+      for(let i=0;i<6;i++){ R(40+i*6,60-i*8,30,10+i*8,"#7a5a3a"); R(40+i*6,60-i*8,30,2,"#a8865a"); R(40+i*6,62-i*8,30,1,"#5a3e24"); }
+      for(let i=0;i<7;i++) R(40+i*6,58-i*8,1,6,"#4a2a1a"); R(40,14,1,44,"#4a2a1a"); R(40,14,52,2,"#5a3e24");
       R(170,26,20,44,"#5a3a2a"); R(160,40,8,4,"#c9a35a"); R(164,38,4,8,"#c9a35a"); lamp(110,0); },
     vstudyhall(o){ wall(70,"#2f4a3a",false); R(0,56,W,14,"#4a2a1a"); floor(70,"#3a2418","#30200f");
       door(86,20,22,50,"#4a2a1a"); R(110,40,5,7,"#222"); P(112,42,"#6fd46f"); sign(88,12,18,"#c9a35a","#4a2a1a"); R(10,24,24,46,"#2a1a10"); lamp(60,0); lamp(150,0); },
     vback(o){ wall(70,"#d6dad2",true); floor(70,"#9a9a90","#8a8a80"); door(84,20,24,50,"#5a3e24"); R(104,44,4,3,"#c9a35a"); R(80,70,32,4,"#5a5a52");
-      for(let i=0;i<6;i++){ R(10+i*6,62-i*8,30,3,"#8a6a4a"); } R(150,40,30,30,"#e9eeee"); R(156,46,18,18,"#bcc"); lamp(96,0); },
+      for(let i=0;i<6;i++){ R(10+i*6,62-i*8,30,8+i*8,"#7a5a3a"); R(10+i*6,62-i*8,30,2,"#a8865a"); R(10+i*6,64-i*8,30,1,"#5a3e24"); } R(150,40,30,30,"#e9eeee"); R(156,46,18,18,"#bcc"); lamp(96,0); },
     vgate(o){ sky("#0d1220","#26324a",108); hills(40,"#1d2a24","#16201b"); R(0,64,W,44,"#3a3a36"); R(60,30,6,40,"#8a8a82"); R(126,30,6,40,"#8a8a82"); R(54,26,18,6,"#6a6a62"); R(120,26,18,6,"#6a6a62");
-      R(66,44,60,2,"#555b60"); for(let x=68;x<126;x+=6) R(x,44,2,22,"#555b60"); dither(70,64,52,44,"#ffd98a18",3); R(52,34,8,4,"#e9e4da"); },
+      if (!(o.openUntil && (o.t||0) < o.openUntil)){ R(66,44,60,2,"#555b60"); for(let x=68;x<126;x+=6) R(x,44,2,22,"#555b60"); }
+      else { R(66,44,6,2,"#555b60"); for(let x=66;x<72;x+=3) R(x,44,1,22,"#555b60"); R(120,44,6,2,"#555b60"); for(let x=120;x<126;x+=3) R(x,44,1,22,"#555b60"); } dither(70,64,52,44,"#ffd98a18",3); R(52,34,8,4,"#e9e4da"); },
     chat(o){ R(0,0,W,H,"#2a2a2e"); R(62,4,68,100,"#111"); R(65,10,62,88,"#e9edf2"); R(65,10,62,8,"#5a7a9a"); R(70,12,30,3,"#e9e4da");
       R(96,24,28,10,"#8ad88a"); R(99,27,10,2,"#2a4a2a"); R(68,40,40,14,"#ffffff"); R(71,43,32,2,"#555"); R(71,47,24,2,"#555"); R(66,60,58,1,"#c9cdd2"); R(80,64,30,6,"#d8dce2"); },
     labresult(){ SCENES.lab(); OBJ.paper(84,40,26,34,9); },
@@ -395,7 +402,7 @@ const PX = (() => {
            m:{ 人:[到x, 到y, 姿勢, 面向, 從x, 從y] }, out:[離開的人], cars:{ 名:[到x, 從x, 顏色] } } ] }
      姿勢可以是陣列：在這段時間內依序播放（例如喝水→跌倒）。 */
   function play(canvas, A, looks, onCap, auto=true){
-    let alive = true, paused = !auto, t0 = performance.now(), pauseAt = auto ? 0 : 1.2, done = false;
+    let alive = true, paused = !auto, t0 = performance.now(), pauseAt = auto ? 0 : 1.2, done = false, seeking = false;
     const total = A.beats.reduce((n,b)=>n+b.d+0.5,0);
     const toSec = s => { const [h,m,x] = s.split(":").map(Number); return h*3600+m*60+(x||0); };
     const fmt = n => [Math.floor(n/3600)%24, Math.floor(n/60)%60, Math.floor(n)%60].map(v=>String(v).padStart(2,"0")).join(":");
@@ -408,11 +415,18 @@ const PX = (() => {
         Object.entries(b.m||{}).forEach(([id,v])=>{
           const prev = st[id] || {};
           const fx = v[4]!==undefined ? v[4] : prev.x!==undefined ? prev.x : v[0], fy = v[5]!==undefined ? v[5] : prev.y!==undefined ? prev.y : (v[1]||96);
-          const tx = v[0], ty = v[1]||96, moving = (fx!==tx || fy!==ty) && p<1;
+          const tx = v[0], ty = v[1]||96;
+          // v[6]：中途經過的點（例如先走到樓梯口，再沿著樓梯往上），照距離平均走
+          const pts = [[fx,fy], ...(v[6]||[]), [tx,ty]], segs = pts.slice(1).map((q,j)=>Math.hypot(q[0]-pts[j][0], q[1]-pts[j][1])), tot = segs.reduce((a,b)=>a+b,0) || 1;
+          const moving = segs.some(x=>x>0.5) && p<1;
+          let d = p*tot, j = 0; while (j < segs.length-1 && d > segs[j]){ d -= segs[j]; j++; }
+          const q0 = pts[j], q1 = pts[j+1], u = segs[j] ? Math.min(1, d/segs[j]) : 1;
+          const cx = p>=1 ? tx : q0[0]+(q1[0]-q0[0])*u, cy = p>=1 ? ty : q0[1]+(q1[1]-q0[1])*u, dirX = q1[0]-q0[0];
           let pose = v[2] || "stand";
           if (Array.isArray(pose)) pose = pose[Math.min(pose.length-1, Math.floor(p*pose.length))];
-          if (moving && pose!=="lie") pose = (Math.floor(sec*6)%2) ? "walk1" : "walk2";
-          st[id] = { x: fx+(tx-fx)*p, y: fy+(ty-fy)*p, pose, facing: v[3] || (tx<fx?-1:tx>fx?1:(prev.facing||1)) };
+          // 走動時腳要走路，但手上拿著的東西不能不見（例如 hold＝捧著冰桶 → walk1+hold）
+          if (moving && !/^(lie|fall|sit|kneel)/.test(pose)){ const w = (Math.floor(sec*6)%2) ? "walk1" : "walk2", arm = pose.includes("+") ? pose.split("+")[1] : pose; pose = /^(stand|walk1|walk2)$/.test(arm) ? w : w + "+" + arm; }
+          st[id] = { x: cx, y: cy, pose, facing: (moving && dirX) ? (dirX<0?-1:1) : v[3] || (tx<fx?-1:tx>fx?1:(prev.facing||1)) };
         });
         Object.entries(b.cars||{}).forEach(([id,v])=>{ const fx = v[1]!==undefined ? v[1] : (cars[id]||{}).x ?? v[0]; cars[id] = { x: fx+(v[0]-fx)*p, c:v[2]||(cars[id]||{}).c }; });
         if (sec < end || i===A.beats.length-1){ beat = b; k = p; break; }
@@ -437,7 +451,7 @@ const PX = (() => {
       g.font = "6px monospace"; g.fillStyle = "#000a"; g.fillRect(0,0,W,9);
       g.fillStyle = "#e9f2e9"; g.fillText(`${(A.cam||"").replace(/[^\x20-\x7e]/g,"").trim()||"REC"}  ${A.date||""} ${beat?fmt(clock):""}`, 3, 7);
       if (Math.floor(sec*2)%2===0 && !A.clean){ g.fillStyle = "#e04a3a"; g.fillRect(W-22,2,4,4); g.fillStyle = "#e9f2e9"; g.fillText("REC", W-16, 7); }
-      if (paused){ g.fillStyle = "#000a"; g.fillRect(82,42,28,24); g.fillStyle="#e9f2e9"; for(let i=0;i<15;i++) g.fillRect(92, 47+i, Math.min(i,14-i)+1, 1); }
+      if (paused && !seeking){ g.fillStyle = "#000a"; g.fillRect(82,42,28,24); g.fillStyle="#e9f2e9"; for(let i=0;i<15;i++) g.fillRect(92, 47+i, Math.min(i,14-i)+1, 1); }
       const cap = beat && !gap ? beat.cap : null;
       if (cap !== lastCap){ lastCap = cap; onCap && onCap(cap ? `${beat.t.slice(0,5)}　${cap}` : "", sec>=total); }
       if (sec >= total && !paused){ done = true; onCap && onCap(lastCap ? `${beat.t.slice(0,5)}　${lastCap}` : "", true); return; }
@@ -447,6 +461,9 @@ const PX = (() => {
     requestAnimationFrame(frame);
     return {
       stop(){ alive = false; },
+      seek(sec){ seeking = true; paused = true; pauseAt = Math.max(0, Math.min(total, sec)); alive = true; requestAnimationFrame(frame); },
+      total,
+      beatsAt: () => { let el = 0; return A.beats.map(b=>{ const st = el + 0.5; el = st + b.d; return [st, el]; }); },
       toggle(){ if (done){ this.restart(); return false; } if (paused){ paused = false; t0 = performance.now() - pauseAt*1000; requestAnimationFrame(frame); } else { paused = true; pauseAt = Math.min(total,(performance.now()-t0)/1000); } return paused; },
       restart(){ paused = false; done = false; t0 = performance.now(); lastCap = null; alive = true; requestAnimationFrame(frame); }
     };
