@@ -106,8 +106,9 @@ EP7.art = true;
     R(100, 52, 18, 8, "#f4f0e0"); R(102, 54, 14, 1, "#2a5a8a"); R(110, 50, 6, 4, "#f4e48a");   // 都更合約、便條
     R(120, 52, 16, 8, "#6a4a3a"); R(121, 53, 7, 6, "#e8e0c8"); R(129, 53, 6, 6, "#e8e0c8"); R(122, 55, 4, 2, "#8a8a8a");   // 相簿
     R(84, 54, 8, 5, "#2a2a2e"); R(85, 55, 6, 3, "#c9a24a"); P(88, 56, "#f4f0e0");   // 錶盒、金錶
-    if (!o.clean){ for (let i = 0; i < 3; i++) R(40 + i * 14, 66 + (i % 2) * 3, 10, 4, "#c8a070"); R(44, 92, 6, 3, "#f4f0e0"); R(56, 96, 8, 2, "#e8e4d0"); R(62, 90, 5, 4, "#c8c0e0"); }   // 抽屜被拉出來、東西散一地
+    if (!o.clean){ for (let i = 0; i < 3; i++) R(40 + i * 14, 66 + (i % 2) * 3, 10, 4, "#c8a070"); }   // 抽屜被拉出來
     floor(72, "#7a4a3a", "#6a3a2a"); R(30, 80, 130, 26, "#8a3a2a"); dither(30, 80, 130, 26, "#7a2a1a", 4);   // 地毯
+    if (!o.clean){ R(18, 88, 10, 5, "#3a6a9a"); R(19, 89, 8, 1, "#e8e0c8"); R(44, 92, 6, 3, "#f4f0e0"); R(56, 96, 8, 2, "#e8e4d0"); R(62, 90, 5, 4, "#c8c0e0"); }   // 支票簿、散一地的東西
     if (o.body){ R(76, 86, 34, 8, "#8a8a8a"); R(70, 86, 8, 7, "#d8a880"); R(70, 85, 7, 2, "#c8c8c0"); R(108, 88, 8, 4, "#3a3a3e"); R(116, 88, 6, 3, "#8a6a5a"); R(84, 85, 8, 2, "#1a1a1a"); OBJ.blood(68, 92, 12); R(64, 84, 6, 2, "#d8a880"); }
     else if (o.outline) OBJ.outline(80, 86);
     if (o.markers){ OBJ.marker(64, 100); OBJ.marker(120, 98); OBJ.marker(44, 96); }
@@ -135,6 +136,7 @@ EP7.art = true;
     R(150, 10, 16, 3, "#d6d6d6"); R(152, 13, 10, 5, "#2a2a2e"); if (o.unplug !== false){ R(166, 6, 1, 14, "#1a1a1a"); R(165, 20, 3, 3, "#2a2a2a"); } else P(160, 15, "#e04a3a");   // B2 監視器
     R(170, 6, 2, 6, "#3a3a3a");   // 插座
     floor(74, "#5a5a56", "#4e4e4a"); for (let x = 30; x < W; x += 44) R(x, 76, 2, 32, "#e9e4da");
+    R(133, 68, 8, 6, "#d8d0b0"); P(134, 67, "#f4f4e8"); P(137, 66, "#f4f4e8"); P(140, 67, "#e8e4d0"); R(135, 71, 4, 1, "#1a1a1a");   // 乾掉的白菊花
     if (o.cars !== false){ OBJ.car(150, 80, "#2a3a5a"); if (o.van) OBJ.car(76, 80, "#e9e4da"); }
     if (o.dash){ R(0, 96, W, 12, "#1a1a1e"); R(0, 0, W, 4, "#1a1a1e"); R(0, 0, 6, H, "#1a1a1e"); R(W - 6, 0, 6, H, "#1a1a1e"); R(80, 90, 32, 6, "#2a2a2e"); }
     lamp(96, 0, "#e8f0e8");
@@ -186,7 +188,7 @@ EP7.art = true;
     wall(72, "#dce0e4", false); R(0, 64, W, 8, "#7a8088");
     R(10, 20, 30, 30, "#f4f4ee"); R(12, 22, 26, 3, "#2a5a8a"); for (let r = 0; r < 5; r++) for (let c = 0; c < 4; c++) R(12 + c * 7, 27 + r * 4, 5, 2, (r === 1 && c === 2) ? "#c23a2a" : "#9a9a9a");   // 排班表
     for (let r = 0; r < 2; r++) for (let c = 0; c < 3; c++){ const x = 56 + c * 16, y = 26 + r * 14; R(x - 1, y - 1, 16, 12, "#2a2a2e"); R(x, y, 14, 10, "#0e2a1e"); for (let j = 0; j < 4; j++) R(x + 1, y + 2 + j * 2, 4 + ((c + j + r) * 5) % 9, 1, j === 2 && r === 0 && c === 1 ? "#ffb030" : "#6fd46f"); }
-    OBJ.desk(56, 66, 52);
+    OBJ.desk(56, 66, 52); R(62, 58, 10, 6, "#6a8a5a"); R(63, 59, 8, 2, "#e8e0c8");   // 便當袋
     R(110, 20, 20, 20, "#8a8e94"); for (let k = 0; k < 6; k++) R(112 + (k % 3) * 6, 22 + Math.floor(k / 3) * 9, 4, 6, k === 4 ? "#5a5e64" : "#c9a24a");   // 鑰匙櫃（一格是空的）
     R(140, 62, 24, 12, "#5a6a7a"); for (let k = 0; k < 4; k++) R(142 + k * 5, 58 + (k % 2), 4, 4, ["#2a2a2a", "#c23a2a", "#2a2a2a", "#3a6ab8"][k]);   // 報廢籃
     R(170, 10, 16, 30, "#2a5a8a"); txt("永升", 171, 22, "#f4f4ee", "6px sans-serif");
@@ -198,6 +200,7 @@ EP7.art = true;
     wall(72, "#ece8e0", false); R(0, 64, W, 8, "#3a3a3e");
     R(30, 50, 60, 4, "#8a8e94"); R(28, 54, 64, 16, "#5a5e64"); for (let k = 0; k < 6; k++) R(36 + k * 9, 20 + (k % 3) * 4, 7, 30 - (k % 3) * 4, "#a8c0d8"); R(34, 18, 52, 32, "#ffffff22");   // 都更模型
     R(100, 12, 70, 28, "#2a3a5a"); txt("宏遠建設", 108, 30, "#e9e4da", "8px sans-serif");
+    R(4, 40, 20, 32, "#8a8e94"); R(5, 44, 18, 1, "#5a5e64"); R(5, 56, 18, 1, "#5a5e64"); R(12, 49, 4, 2, "#2a2a2e"); R(12, 61, 4, 2, "#2a2a2e"); R(7, 64, 12, 6, "#7a3a2a");   // 檔案櫃、帳冊
     OBJ.desk(104, 66, 70); R(110, 56, 20, 6, "#f4f0e0"); R(140, 52, 16, 10, "#2a2a2e"); R(141, 53, 14, 7, "#3a5a7a");
     OBJ.plant(176, 66);
     floor(72, "#5a5a5e", "#4e4e52");
@@ -242,6 +245,7 @@ EP7.art = true;
     lin:  { skin:"#e8c09a", hair:"#3a2a20", hairStyle:"bun", top:"#e8dcc8", bottom:"#5a5a6a", apron:"#f4f4ee", mood:"sad", hello:"先生他……昨天我還幫他買了茶葉。" },
     jian: { skin:"#e8c09a", hair:"#1a1410", hairStyle:"slick", top:"#e9e4da", coat:"#2a2a3a", bottom:"#2a2a3a", tie:"#2a5a8a", hello:"我很忙。有話快問。" },
     heimao:{ hello:"沈警官，來打一圈？" },
+    zheng:{ skin:"#f0c8a8", hair:"#3a2a20", hairStyle:"bob", top:"#e86a6a", bottom:"#3a4a6a", mood:"worried", hello:"我兒子到現在還說，電梯上面有人……" },
     fen:  { skin:"#f4d4bc", hair:"#2a2220", hairStyle:"pony", top:"#4a6a8a", bottom:"#3a4a5a", glasses:true, hello:"海悅那台嗎？我調給你看。" },
     zhao: { hello:"這種案子，我見多了。" },
     qian: { hello:"來啦。這一下打得很準。" },
@@ -257,6 +261,7 @@ EP7.art = true;
     chen:  [ { room:"t14", x:150, pose:"cross", doing:"站在自己家門口，抱著一隻小狗。" }, { room:"t14", x:150, pose:"stand", doing:"在門口餵狗，一直往 14A 那邊看。" }, { room:"tlift", x:40, pose:"stand", doing:"站在電梯口，不敢一個人搭電梯。" } ],
     lin:   [ null, { room:"tliving", x:100, pose:"cry", doing:"坐在客廳的沙發上哭。" }, { room:"tliving", x:60, pose:"broom", doing:"在客廳慢慢地掃地。" } ],
     jian:  [ null, { room:"hyroom", x:140, pose:"phone", doing:"在辦公室講電話：「命案？……都更要延了。」" }, { room:"hyroom", x:60, pose:"cross", doing:"站在都更模型前面，看著那棟已經不在的老大樓。" } ],
+    zheng: [ null, { room:"tlift", x:150, pose:"cross", doing:"在電梯口等電梯，等了很久也不肯進去。" }, { room:"tlobby", x:40, pose:"stand", doing:"在管理室跟警衛說，她今天要帶小孩走樓梯。" } ],
     heimao:[ null, { room:"mjhall", x:100, pose:"sit", doing:"在角落那桌摸牌。" }, { room:"mjhall", x:100, pose:"smoke", doing:"坐在角落那桌抽菸。" } ],
     fen:   [ null, { room:"ysroom", x:80, pose:"sit", doing:"坐在監控螢幕前，戴著耳機。" }, { room:"ysroom", x:80, pose:"phone", doing:"在講電話派工。" } ],
     zhao:  [ { room:"t14", x:60, pose:"smoke", doing:"站在 14 樓走廊抽菸，手有一點抖。" } ],
@@ -287,7 +292,8 @@ EP7.art = true;
       { id:"tlobby", name:"一樓大廳・管理室", scene:"t_lobby", details:[
         { id:"d7_peanut", name:"花生殼", hot:[96,60,14,6], text:"管理台底下一堆花生殼。蘇金城說，他太太叫他戒菸，他就改吃花生。" } ] },
       { id:"tlift", name:"電梯口", scene:"t_lift", opt:(ph,has)=>({ open:1 }), details:[
-        { id:"d7_mark", name:"銅牌下面的白色方塊", hot:[24,40,22,14], text:"你問警衛那裡以前掛什麼。他想了很久：「好像是一張照片……那個死掉的技師的。後來有人說不吉利，拿掉了。」" } ] },
+        { id:"d7_mark", name:"銅牌下面的白色方塊", hot:[24,40,22,14], text:"你問警衛那裡以前掛什麼。他想了很久：「好像是一張照片……那個死掉的技師的。後來有人說不吉利，拿掉了。」" },
+        { id:"d7_button", name:"叫車按鈕", hot:[134,38,10,14], text:"「▲」那顆按鈕被按得發亮。「▼」旁邊貼著一張小小的恐龍貼紙——9B 那個小男孩貼的。他媽媽說，他現在不敢一個人搭電梯了。" } ] },
       { id:"tcommittee", name:"管委會辦公室", scene:"t_committee", details:[
         { id:"d7_notice", name:"公告欄", hot:[4,14,22,30], text:"公告：「6/10 都更說明會，請踴躍出席。」下面有人用原子筆寫：「14A 不簽就大家一起住危樓。」" } ] },
       { id:"t14", name:"14 樓走廊", scene:"t_14", opt:(ph,has)=>({ tape:ph===0, markers:ph===0, open:ph===0 }), details:[
@@ -306,7 +312,8 @@ EP7.art = true;
     lab: [ { id:"lab", name:"法醫室・鑑識中心", scene:"lab", details:[
       { id:"d7_radio", name:"收音機", hot:[110,40,20,12], text:"老錢的收音機在放〈月亮代表我的心〉。他跟著哼，走音走得很厲害。" } ] } ],
     yongsheng: [ { id:"ysroom", name:"永升電梯・監控中心", scene:"ys_room", details:[
-      { id:"d7_cert", name:"牆上的證書", hot:[170,10,16,30], text:"牆角掛著員工的技術證照影本。劉文彬的那張，發證日期是 2010 年，上面的照片還是個二十出頭的年輕人。" } ] } ],
+      { id:"d7_cert", name:"牆上的證書", hot:[170,10,16,30], text:"牆角掛著員工的技術證照影本。劉文彬的那張，發證日期是 2010 年，上面的照片還是個二十出頭的年輕人。" },
+      { id:"d7_lunch", name:"桌上的便當袋", hot:[60,56,14,8], text:"調度台旁邊放著一個便當袋，上面縫著一塊布：「文彬　不要辣」。張雅芬說，那是他媽媽每天幫他準備的，他今天沒來拿。" } ] } ],
     mahjong: [ { id:"mjhall", name:"好運來麻將館", scene:"mj_hall", details:[
       { id:"d7_cat", name:"櫃台下面", hot:[10,60,50,10], text:"櫃台下面睡著一隻真的黑貓。老范說：「不是我養的，是牠自己要叫這個名字。」" } ] } ],
     hongyuan: [ { id:"hyroom", name:"宏遠建設・都更部", scene:"hy_room", details:[
