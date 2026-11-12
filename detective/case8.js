@@ -56,20 +56,20 @@ const EP8 = {
       scene:{ title:"13:00　門鎖上了", scene:"s8_final", opt:{ swing:true }, cast:[ { id:"_you", x:60 }, { id:"wu", x:100, facing:-1, pose:"cross" } ], lines:[
         { who:"narr", text:"「喀。」門鎖上的聲音。燈一盞一盞暗下去，牆上的喇叭傳出低低的大提琴聲。" },
         { who:"narr", text:"房間正中間，那個八公斤的擺錘，開始慢慢地左右擺動。一次比一次高。" },
-        { who:"wu", text:"學、學長！門打不開！", id:"esc1", choices:[
+        { who:"wu", text:"學、學長！門打不開！", id:"esc1", time:15, timeout:0, late:"你還在想，身體已經先動了——你用肩膀撞向門。", choices:[
           { text:"用肩膀撞門", mark:"esc_door", say:{ who:"narr", text:"門紋風不動。電磁鎖的力氣比你大得多。" } },
           { text:"打電話叫外面的人開", mark:"esc_call", say:[ { who:"narr", text:"你打給櫃台。林語安的聲音在發抖：「測試模式的時候，總卡打不開……要葛哥的密碼。葛哥出去吃飯了，電話沒接！」" } ] },
           { text:"先看房間裡的提示", mark:"esc_hint", say:{ who:"you", text:"這是密室逃脫。它設計來讓人出得去。先看提示。" } } ] },
         { who:"wu", text:"……對耶。學長，牆上寫著：「當時間回到那一天，門就會為你打開。」", unless:"pick:esc_hint" },
         { who:"narr", text:"牆上的木牌寫著：「當時間回到那一天，門就會為你打開。」", when:"pick:esc_hint" },
         { who:"narr", text:"書櫃上七本書，書背上各有一個金色的數字。你只看得到其中四本：0、7、0、7。擺錘從你頭頂一公尺的地方掃過去。" },
-        { who:"wu", text:"牆上那個大鐘，要撥到幾點？", id:"esc2", choices:[
+        { who:"wu", text:"牆上那個大鐘，要撥到幾點？", id:"esc2", time:15, timeout:0, late:"擺錘越擺越高，你的手先動了，把鐘撥到 12:00——", choices:[
           { text:"12:00", mark:"esc_12", say:{ who:"narr", text:"鐘「噹」了一聲，什麼都沒發生。擺錘又高了一點。" } },
           { text:"07:07", mark:"esc_77", say:{ who:"narr", text:"鐘「噹、噹」了兩聲。書桌下面「喀」一聲，彈出一個小抽屜，裡面有一把黃銅鑰匙。" } },
           { text:"21:44", mark:"esc_2144", say:{ who:"narr", text:"鐘沒有反應。擺錘擦過書桌的邊角，一個杯子掉下來摔碎了。" } } ] },
         { who:"wu", text:"0707……七月七日，今天是……不對，是昨天。學長，試 07:07！", unless:"pick:esc_77" },
         { who:"narr", text:"你把鐘撥到 07:07。書桌下面「喀」一聲，彈出一個小抽屜，裡面有一把黃銅鑰匙。", unless:"pick:esc_77" },
-        { who:"wu", text:"鑰匙要插哪裡？這個房間到處都是孔！", id:"esc3", choices:[
+        { who:"wu", text:"鑰匙要插哪裡？這個房間到處都是孔！", id:"esc3", time:12, timeout:1, late:"擺錘又掃過來，你下意識往中間一撲——", choices:[
           { text:"門上的鎖孔", mark:"esc_k1", say:{ who:"narr", text:"插不進去。門上的鎖孔是裝飾用的，裡面是實心的。" } },
           { text:"擺錘底座的小孔", mark:"esc_k2", say:{ who:"narr", text:"你剛靠近，擺錘就從你耳邊掃過去。小吳一把把你拉回來。" } },
           { text:"書櫃最下層後面的小孔", mark:"esc_k3", say:{ who:"narr", text:"鑰匙轉了半圈。整個書櫃「嘎——」地往裡面轉開。" } } ] },
