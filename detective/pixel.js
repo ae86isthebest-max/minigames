@@ -108,7 +108,7 @@ const PX = (() => {
     else if (pose==="point"){ L1(); add(13,11,7,2,sl); add(20,11,2,2,hand); }
     else if (pose==="cry"){ add(1,11,2,4,sl); add(13,11,2,4,sl); add(2,8,3,3,sl); add(11,8,3,3,sl); add(4,3,3,4,hand); add(9,3,3,4,hand); }
     else if (pose==="hold"||pose==="read"){ add(1,11,2,5,sl); add(13,11,2,5,sl); add(3,15,3,2,hand); add(10,15,3,2,hand); if(pose==="read") add(4,12,8,5,"#f1ead8"); else if (L.prop==="pot") { add(5,14,6,4,"#8a5a3a"); add(11,15,2,1,"#8a5a3a"); }
-      else if (L.prop==="bucket") { add(4,13,8,6,"#9aa6ae"); add(4,13,8,1,"#e9f2f6"); add(5,16,6,1,"#7a868e"); add(5,11,2,2,"#dff4ff"); add(8,11,2,2,"#cfeeff"); add(7,12,1,1,"#ffffff"); } else if (L.prop) add(4,14,8,4,L.prop); }
+      else if (L.prop==="bucket") { add(4,13,8,6,"#9aa6ae"); add(4,13,8,1,"#e9f2f6"); add(5,16,6,1,"#7a868e"); add(5,11,2,2,"#dff4ff"); add(8,11,2,2,"#cfeeff"); add(7,12,1,1,"#ffffff"); } else if (L.prop==="bag") { add(3,15,10,6,"#cdbf9c"); add(3,15,10,1,"#a8987a"); add(4,19,8,1,"#b8aa88"); add(5,12,1,3,"#a8987a"); add(10,12,1,3,"#a8987a"); } else if (L.prop) add(4,14,8,4,L.prop); }
     else if (pose==="cross"){ add(1,11,2,5,sl); add(13,11,2,5,sl); add(3,14,10,3,sl); add(3,14,2,2,hand); add(11,15,2,2,hand); }
     else if (pose==="broom"){ L1(); add(13,11,2,7,sl); add(13,18,2,2,hand); add(15,6,1,20,"#8a6338"); add(14,24,4,3,"#c9a35a"); }
     else { L1(); armDown(13, pose==="walk1"?-1:0); }
@@ -512,6 +512,6 @@ const PX = (() => {
     R(ox+2, Math.round(y)-1, 10, 1, "#00000040");
     return { x: ox-1, y: oy-2, w: 16, h: 30 };
   }
-  const prim = { R, P, dither, shade, mix, OBJ, windowBox, door, sign, lamp, spark, INK, ctx:(c)=>{ g = c; }, g:()=>g, seed:(n)=>{ seed = n; }, rnd:()=>rnd() };
+  const prim = { R, P, dither, shade, mix, OBJ, windowBox, door, sign, lamp, spark, INK, sky, rain, hills, floor, wall, person, ctx:(c)=>{ g = c; }, g:()=>g, seed:(n)=>{ seed = n; }, rnd:()=>rnd() };
   return { draw, person, profile, play, SCENES, W, H, prim };
 })();

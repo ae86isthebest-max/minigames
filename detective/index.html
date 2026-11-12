@@ -73,6 +73,15 @@ nav button.on{color:var(--accent)}
 .hbtn{background:none;border:0;color:var(--accent);font-size:15px;padding:0 6px 0 0;font-family:inherit;flex:none;cursor:pointer}
 .hleft{display:flex;align-items:center;min-width:0;gap:4px}
 .ep{cursor:pointer}
+.warn{font-size:13px;color:#ff9a8a;margin:0 0 8px}
+.doc{width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0;font-variant-numeric:tabular-nums}
+.doc th{text-align:left;color:var(--muted);font-weight:600;border-bottom:1px solid #ffffff30;padding:3px 4px}
+.doc td{padding:4px;border-bottom:1px solid #ffffff12;vertical-align:top}
+.doc tr.r{cursor:pointer}
+.doc tr.r:hover td{background:#ffffff0d}
+.doc tr.hit td{background:#ffd04a22;color:var(--accent)}
+.doc tr.miss td{color:var(--muted);text-decoration:line-through #ffffff40}
+.dochint{font-size:12px;color:var(--muted);margin:2px 0}
 .ep .no{font-size:13px;color:var(--accent);letter-spacing:1px}
 .ep h2{margin:2px 0 6px}
 .sus.gone{opacity:.5;filter:grayscale(1)}
@@ -217,6 +226,13 @@ body.fs .toast{bottom:calc(14px + env(safe-area-inset-bottom))}
 <script src="worldkit.js"></script>
 <script src="case2_world.js"></script>
 <script src="case1_world.js"></script>
+<script src="case3.js"></script>
+<script src="case3_people.js"></script>
+<script src="case3_people2.js"></script>
+<script src="case3_items.js"></script>
+<script src="case3_records.js"></script>
+<script src="case3_art.js"></script>
+<script src="case3_world.js"></script>
 <script>
 /* =========================================================
    遊戲邏輯（所有案件共用）
@@ -276,8 +292,9 @@ function loadFor(c){
 }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 
-function openCase(i){
-  C = CASES[i]; KEY = saveKey(C); S = loadFor(C) || fresh();
+async function openCase(i){
+  if (CASES[i].warn && !(loadFor(CASES[i]) || {}).warned && !await uiConfirm("⚠️ " + CASES[i].warn + "\n\n確定要開始嗎？")) return;
+  C = CASES[i]; KEY = saveKey(C); S = loadFor(C) || fresh(); if (C.warn){ S.warned = 1; save(); }
   (C.cctv||[]).forEach(c=>{ c.cctv = true; });   // 監視器畫面：顯示成 REC 畫面、選單用 📹
   accusePick = freshPick(); openSuspect = null; openLoc = null; screen = "case"; tab = "brief"; checkEvents();
   wTalk = null; wSay = null; peek = null; mapFrom = null; wRoom = null; wGo = false; talkFrom = null;
@@ -337,10 +354,10 @@ async function submitTest(id, sure){
   const t = tests().find(x=>x.id===id), l = LOC(t.loc);
   if (S.done || !here(l.id) || S.labq[id]!==undefined || testsLeftAt(l)<=0 || !testOpen(t)) return;
   if (CLK() && timeLeft() < costTest()){ toast("今天來不及了"); return; }
-  if (!sure && !await uiConfirm(`送去化驗「${t.title}」？\n結果要等 ${t.days} 天才會出來。這次還能送 ${testsLeftAt(l)} 件。${CLK() ? `\n填單、交件要 ${minLabel(costTest())}。${timeTag()}。` : ""}`)) return;
+  if (!sure && !await uiConfirm(`${t.rec ? "申請調閱" : "送去化驗"}「${t.title}」？\n${t.rec ? "資料要等到明天早上才會拿到。" : `結果要等 ${t.days} 天才會出來。`}這次還能送 ${testsLeftAt(l)} 件。${CLK() ? `\n填單、交件要 ${minLabel(costTest())}。${timeTag()}。` : ""}`)) return;
   spend(costTest());
   S.labq[id] = S.phase; checkEvents(); save(); render();
-  toast(`🧪 已送出，${t.days} 天後會有結果`);
+  toast(t.rec ? `📑 已申請，明天早上拿到` : `🧪 已送出，${t.days} 天後會有結果`);
 }
 
 /* ---------- 像素場景（案件有 art:true 才會畫） ---------- */
@@ -446,7 +463,29 @@ function actCard(l){
       : `<button class="wq" style="border-color:var(--accent)" ${S.done||sl<=0||(CLK()&&timeLeft()<costItem(it))?"disabled":""} onclick="doAct('${it.id}')">${it.cctv?"▶️ 看":"🔍 調查"}「${esc(it.title)}」 <span class="tag cost">${cost(it)}</span></button>`).join("")}</div>`;
 }
 function itemBody(it, auto){
-  return `${art() && it.anim ? animHTML(it, auto) : art() && it.scene ? sceneHTML(it.scene, it.sceneOpt) : ""}${it.cctv?`<div class="cctv"><span class="rec">● REC</span>\n${esc(it.text)}</div>`:`<div class="muted">${nl(it.text)}</div>`}`;
+  return `${art() && it.anim ? animHTML(it, auto) : art() && it.scene ? sceneHTML(it.scene, it.sceneOpt) : ""}${it.cctv?`<div class="cctv"><span class="rec">● REC</span>\n${esc(it.text)}</div>`:`<div class="muted">${nl(it.text)}</div>`}${docHTML(it)}`;
+}
+/* ---------- 文件（月結單、通聯紀錄……）：一行一行看，點可疑的那一行把它圈起來 ----------
+   it.doc = { cols:["日期","摘要",…], rows:[ ["12/01","…"], { c:["12/05","…"], hit:{ id, clue, tl } }, … ] }
+   圈對了：hit.id 算是「已知道」（可以拿去當問題、證物的前提），clue 會進筆記；圈錯了只會被劃掉，不花時間。 */
+// 調閱資料只會有「申請那天」以前的紀錄：row.p ＝ 這一行從第幾天起才查得到（看送出申請的那天）
+const docRows = (d, it) => { const at = it && S.labq && S.labq[it.id]; return d.rows.map((r,i)=>[r,i]).filter(([r])=>!r.p || (at!==undefined && at >= r.p)); };
+const docHits = (d, it) => { const seen = {}; return docRows(d, it).map(([r])=>r).filter(r=>r && r.hit && !seen[r.hit.id] && (seen[r.hit.id] = 1)).map(r=>r.hit); };
+function docHTML(it){
+  const d = it.doc; if (!d) return "";
+  const marks = S.marks || [], miss = (S.miss || {})[it.id] || [], hits = docHits(d, it), got = hits.filter(h=>marks.includes(h.id)).length, rows = docRows(d, it);
+  return `<div class="dochint">📌 點可疑的那一行把它圈起來（不花時間）。${d.note ? esc(d.note) + "　" : ""}已圈出 ${got} 處${got >= hits.length && hits.length ? "，這份看完了" : ""}。</div>
+    <div style="overflow-x:auto"><table class="doc">${d.cols ? `<tr>${d.cols.map(c=>`<th>${esc(c)}</th>`).join("")}</tr>` : ""}${rows.map(([r,i])=>{
+      const cells = Array.isArray(r) ? r : r.c, hit = r.hit, on = hit && marks.includes(hit.id), off = miss.includes(i);
+      return `<tr class="r${on?" hit":""}${off?" miss":""}" onclick="markRow('${it.id}',${i})">${cells.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`;
+    }).join("")}</table></div>`;
+}
+function markRow(id, i){
+  const it = [...allItems(), ...tests()].find(x=>x.id===id); if (!it || S.done) return;
+  const r = it.doc.rows[i], hit = r && r.hit;
+  S.marks = S.marks || []; S.mp = S.mp || {};
+  if (hit){ if (S.marks.includes(hit.id)) return; const before = availCount(); S.marks.push(hit.id); S.mp[hit.id] = S.phase; checkEvents(); save(); render(); toast("📌 " + hit.clue); if (availCount() > before) setTimeout(()=>toast("🔓 圈出來的這一行，可以拿去問人或再查下去"), 2700); return; }
+  S.miss = S.miss || {}; const m = S.miss[id] = S.miss[id] || []; if (!m.includes(i)) m.push(i); save(); render(); toast("這一行看起來沒什麼問題。");
 }
 function roomBlock(l){
   const rooms = roomsOf(l).filter(roomOpen), r = curRoom(l);
@@ -531,13 +570,16 @@ function pendingScript(l, def){
   if (news.length) return { key:null, steps:[{ set:{} }, ...news] };
   return null;
 }
+// 分局的調閱申請和鑑識中心的化驗，用同一套（tests）；有 rec:true 的地點叫「調閱申請」
+const labW = l => tests().some(t=>t.loc===l.id && t.rec) ? { ic:"📑", nm:"調閱申請", v:"申請" } : { ic:"🧪", nm:"化驗櫃台", v:"送" };
 function labCard(l){
   const ts = tests().filter(t=>t.loc===l.id && (S.labq[t.id]!==undefined || testOpen(t)));
   const lockedTests = tests().filter(t=>t.loc===l.id && S.labq[t.id]===undefined && (t.until===undefined || t.until >= S.phase) && !testOpen(t)).length;
   const tl = testsLeftAt(l);
-  return `<div class="card"><h3>🧪 化驗</h3><p class="muted small" style="margin:0">${tl>0?`這次還能送 <b style="color:var(--accent)">${tl}</b> 件。`:"這次能送的件數已經滿了。"}結果要等幾天，早上小吳會跟你說。</p>
+  const W = labW(l);
+  return `<div class="card"><h3>${W.ic} ${W.nm}</h3><p class="muted small" style="margin:0">${tl>0?`這次還能${W.v} <b style="color:var(--accent)">${tl}</b> 件。`:"這次能送的件數已經滿了。"}結果要等幾天，早上小吳會跟你說。</p>
     ${ts.map(t=>{
-      if (testReady(t)) return `<div style="margin:12px 0"><div style="font-weight:700">✅ ${esc(t.title)}</div><div class="muted">${nl(t.text)}</div></div>`;
+      if (testReady(t)) return `<div style="margin:12px 0"><div style="font-weight:700">✅ ${esc(t.title)}</div><div class="muted">${nl(t.text)}</div>${docHTML(t)}</div>`;
       if (S.labq[t.id]!==undefined) return `<p class="small" style="margin:10px 0">⏳ ${esc(t.title)}<span class="muted">（${S.labq[t.id]+t.days-S.phase} 天後出結果）</span></p>`;
       return `<button class="btn" ${S.done||tl<=0?"disabled":""} onclick="submitTest('${t.id}')">🧪 ${esc(t.title)} <span class="tag">${t.days} 天</span>${t.until!==undefined&&t.until===S.phase?' <span class="tag cost">今天過後就送不了</span>':""}${t.desc?`<div class="muted small">${esc(t.desc)}</div>`:""}</button>`;
     }).join("")}
@@ -565,7 +607,7 @@ function worldView(l, def){
   else if (peek && peek.kind==="detail"){ const d = allDetails().find(x=>x.id===peek.id); panel = `<div class="look"><b>🔎 ${esc(d.name||"你注意到")}</b>${nl(d.text)}${peek.isNew?`<div class="found" style="margin-top:4px">發現小細節！（${(S.found||[]).length}／${nd}）</div>`:""}</div>`; }
   else panel = `<p class="hint" style="margin:0 2px 12px">點地面走過去，或點畫面上的指示牌（⬆ 上二樓、🚪 進去、出去）自動走過去，走路不花時間。看到<b style="color:#b07aff">【···】</b>代表那裡好像有暗門或秘道。頭上箭嘴：<b style="color:#ffd04a">黃</b> 可以問話、<b style="color:#ff5a4a">紅</b> 有新的質問、<b style="color:#8a8a8a">灰</b> 不肯再答、<b style="color:#6ac8ff">藍</b> 鑑識人員或員警（問話不花時間）、<b style="color:#6fd46f">綠</b> 小吳。點人、點東西會先問你要不要做，確定了才會${CLK() ? "花時間" : "用掉次數"}。<span style="color:#ffd04a">✦</span> 是還沒查過的東西，其他地方也可能藏著小細節。</p>`;
   const seenHere = allItems().filter(it=>(it.loc||"_")===l.id && S.seen.includes(it.id));
-  const lab = l.perVisit ? `<button class="wq" style="border-color:var(--accent)" onclick="wTalk=null;peek=peek&&peek.kind==='lab'?null:{kind:'lab'};render()">🧪 化驗櫃台（這次還能送 ${testsLeftAt(l)} 件）</button>` : "";
+  const lab = l.perVisit ? `<button class="wq" style="border-color:var(--accent)" onclick="wTalk=null;peek=peek&&peek.kind==='lab'?null:{kind:'lab'};render()">${labW(l).ic} ${labW(l).nm}（這次還能${labW(l).v} ${testsLeftAt(l)} 件）</button>` : "";
   return `<div class="wtop">${travel()?`<button class="back" onclick="leaveWorld()">‹ 地圖</button>`:""}<b>${esc(travel()?l.name:"案發現場")}</b>${CLK()?`<span>🕐 ${nowStr()}・剩 ${minLabel(timeLeft())}</span>`:`<span>🔍 還能查 ${sl} 項</span>`}<span class="found">🔎 ${(S.found||[]).length}／${nd}</span></div>
   <div class="world"><canvas id="worldcv"></canvas><div class="wbubble" hidden><b></b><span></span></div><div class="wtip"></div><button class="wskip" hidden>跳過 ⏭</button></div>
   ${panel}${lab}
@@ -641,7 +683,7 @@ function buddyMenu(l){
     ${canAsk ? B("🗣️", "問小吳問題", "wBuddy=false;wChat=false;wSay=null;wTalk='wu';render()") : ""}
     ${B("📓", "翻筆記", "openSheet('notes')", "問過的話、看過的證物、時間線都記在這裡")}
     ${seenHere.length ? B("🧾", `重看這裡查到的東西（${seenHere.length}）`, "wBuddy='items';render()") : ""}
-    ${l && l.perVisit ? B("🧪", `化驗櫃台（這次還能送 ${testsLeftAt(l)} 件）`, "wBuddy=false;wSay=null;peek={kind:'lab'};render()") : ""}
+    ${l && l.perVisit ? B(labW(l).ic, `${labW(l).nm}（這次還能${labW(l).v} ${testsLeftAt(l)} 件）`, "wBuddy=false;wSay=null;peek={kind:'lab'};render()") : ""}
     ${pending.length ? `<p class="small muted" style="margin:6px 2px">⏳ 化驗中：${pending.map(t=>`${esc(t.title)}（${S.labq[t.id]+t.days-S.phase} 天後）`).join("、")}</p>` : ""}
     ${B("📁", "案情・玩法", "openSheet('brief')")}
     ${travel() && l ? B("🗺️", "回地圖，開車去別的地方", "wBuddy=false;leaveWorld()") : ""}
@@ -772,7 +814,7 @@ function worldViewFS(l, def){
   else if (wGo) panel = goList(l, def);
   else if (wRoom) panel = roomList(l, def);
   const stage = `<div class="world"><canvas id="worldcv"></canvas><div class="wbtns"><button class="wroom" hidden onclick="openRoomList()"></button></div><div class="wbubble" hidden><b></b><span></span></div><div class="wtip"></div><button class="wskip" hidden>跳過 ⏭</button></div>`;
-  const extra = l.perVisit ? `<button class="hb go" onclick="wTalk=null;wBuddy=false;wSay=null;peek=peek&&peek.kind==='lab'?null:{kind:'lab'};render()">🧪 化驗</button>` : "";
+  const extra = l.perVisit ? `<button class="hb go" onclick="wTalk=null;wBuddy=false;wSay=null;peek=peek&&peek.kind==='lab'?null:{kind:'lab'};render()">${labW(l).ic} ${labW(l).nm.slice(0,2)}</button>` : "";
   return fsFrame(l, stage, panel, extra);
 }
 const sheetKey = () => `${tab}:${S.done?1:0}:${S.court ?? ""}`;
@@ -839,7 +881,7 @@ function worldHooks(l, def){
 
 /* ---------- 共用狀態 ---------- */
 const reportsGot = () => phasesOf(C).slice(0, S.phase+1).flatMap(p=>p.reports||[]);
-const has = id => S.seen.includes(id) || S.asked.includes(id) || reportsGot().some(r=>r.id===id) || S.ev[id]!==undefined || tests().some(t=>t.id===id && testReady(t));
+const has = id => (S.marks||[]).includes(id) || S.seen.includes(id) || S.asked.includes(id) || reportsGot().some(r=>r.id===id) || S.ev[id]!==undefined || tests().some(t=>t.id===id && testReady(t));
 // 突發事件：條件一滿足就發生（可能連鎖）
 function checkEvents(){
   let fired = [], changed = true;
@@ -934,14 +976,14 @@ function vHome(){
     if (s && s.done && s.result && s.revealed !== false) st = `已結案・評級 ${s.result.grade}`;
     else if (s && (s.asked.length || s.seen.length || s.phase)) st = "調查中" + (c.phases ? "・" + phasesOf(c)[s.phase].short : "");
     return `<div class="card ep" onclick="openCase(${i})"><div class="no">第 ${i+1} 集${tag?"・"+esc(tag):""}</div>
-      <h2>${esc(c.title)}</h2><p class="small muted" style="margin:0 0 8px">${c.blurb || esc(c.goal)}</p>
+      <h2>${esc(c.title)}</h2>${c.warn?`<p class="warn">⚠️ ${esc(c.warn)}</p>`:""}<p class="small muted" style="margin:0 0 8px">${c.blurb || esc(c.goal)}</p>
       <span class="tag ${st==="未開始"?"":"cost"}">${st}</span></div>`;
   }).join("");
 }
 
 /* ---------- 案情 ---------- */
 function reportHTML(r){ return `<div class="report"><b>📋 ${esc(r.title)}</b><div class="muted small">${nl(r.text)}</div></div>`; }
-function testHTML(t){ return `<div class="report"><b>🧪 ${esc(t.title)}</b><div class="muted small">${nl(t.text)}</div></div>`; }
+function testHTML(t){ return `<div class="report"><b>${t.rec ? "📑" : "🧪"} ${esc(t.title)}</b><div class="muted small">${nl(t.text)}</div>${docHTML(t)}</div>`; }
 function phaseBlock(i){
   const p = phasesOf(C)[i];
   const intro = i===0 ? C.intro : (p.intro||[]);
@@ -1084,7 +1126,7 @@ function vLocation(l){
     ${lockedItems?`<p class="muted small">🔒 還有 ${lockedItems} 項，要先發現相關線索才會知道可以查。</p>`:""}</div>`:""}
   ${l.perVisit?`<div class="card"><h3>🧪 化驗</h3><p class="muted small" style="margin:0">${tl>0?`這次還能送 <b style="color:var(--accent)">${tl}</b> 件。`:"這次能送的件數已經滿了。"}結果要等幾天，會在早上出現在「案情」頁。</p>
     ${ts.map(t=>{
-      if (testReady(t)) return `<div style="margin:12px 0"><div style="font-weight:700">✅ ${esc(t.title)}</div><div class="muted">${nl(t.text)}</div></div>`;
+      if (testReady(t)) return `<div style="margin:12px 0"><div style="font-weight:700">✅ ${esc(t.title)}</div><div class="muted">${nl(t.text)}</div>${docHTML(t)}</div>`;
       if (S.labq[t.id]!==undefined) return `<p class="small" style="margin:10px 0">⏳ ${esc(t.title)}<span class="muted">（${S.labq[t.id]+t.days-S.phase} 天後出結果）</span></p>`;
       return `<button class="btn" ${S.done||tl<=0?"disabled":""} onclick="submitTest('${t.id}')">🧪 ${esc(t.title)} <span class="tag">${t.days} 天</span>${t.until!==undefined&&t.until===S.phase?' <span class="tag cost">今天過後就送不了</span>':""}${t.desc?`<div class="muted small">${esc(t.desc)}</div>`:""}</button>`;
     }).join("")}
@@ -1172,6 +1214,7 @@ function knownThings(){
   (C.events||[]).forEach(e=>{ if (S.ev[e.id]!==undefined) out.push({...e, kind:"report", phase:S.ev[e.id]}); });
   allItems().forEach(it=>{ if (S.seen.includes(it.id)) out.push({...it, kind:"item", phase:S.sp[it.id]||0}); });
   readyTests().forEach(t=>out.push({...t, kind:"test", phase:S.labq[t.id]+t.days}));
+  [...allItems(), ...readyTests()].forEach(x=>x.doc && docHits(x.doc, x).forEach(h=>{ if ((S.marks||[]).includes(h.id)) out.push({...h, kind:"mark", phase:(S.mp||{})[h.id]||0}); }));
   return out;
 }
 function vNotes(){
@@ -1202,7 +1245,7 @@ function vNotes(){
   } else {
     const reps = K.filter(k=>k.kind==="report"), its = K.filter(k=>k.kind==="item"), ts = K.filter(k=>k.kind==="test");
     html = (reps.length?`<div class="card log-sec"><h3>📋 報告與事件</h3>${reps.map(reportHTML).join("")}</div>`:"")
-      + (its.length?`<div class="card log-sec"><h3>🔍 搜證結果</h3>${its.map(it=>`<div style="margin:10px 0"><b>${esc(it.title)}</b>${it.loc?` <span class="muted small">（${esc(LOC(it.loc).name)}）</span>`:""}<div class="muted small">${nl(it.text)}</div></div>`).join("")}</div>`:"")
+      + (its.length?`<div class="card log-sec"><h3>🔍 搜證結果</h3>${its.map(it=>`<div style="margin:10px 0"><b>${esc(it.title)}</b>${it.loc?` <span class="muted small">（${esc(LOC(it.loc).name)}）</span>`:""}<div class="muted small">${nl(it.text)}</div>${docHTML(it)}</div>`).join("")}</div>`:"")
       + (ts.length?`<div class="card log-sec"><h3>🧪 化驗結果</h3>${ts.map(testHTML).join("")}</div>`:"");
   }
   return bar + html + `<p class="muted small">提示：比對口供、監視器和時間，找出誰在說謊，再想想他為什麼要說謊。</p>`;

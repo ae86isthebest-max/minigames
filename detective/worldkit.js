@@ -10,7 +10,9 @@
 const WK = (() => {
   const OY = 26, GAP = 6, SX = 116, G = 124, RW = 192;
   // 會自己畫天空的戶外場景：不畫外牆
-  const OUT = new Set(["care", "vgarden", "farm", "backyard", "pool", "courtyard", "road"]);
+  const OUT0 = new Set(["care", "vgarden", "farm", "backyard", "pool", "courtyard", "road"]);
+  // 案件可以用 C.outScenes 加上自己的戶外場景
+  const OUT = { has: s => OUT0.has(s) || ((typeof C !== "undefined" && C && C.outScenes) || []).includes(s) };
   // 天色：[上, 下, 遠山, 近山, 雨(0 沒有 1 小雨 2 大雨), 夜晚]
   const SKY = [
     ["#0b0f1c", "#27324a", "#18241f", "#1d2c25", 2, 1],
@@ -120,7 +122,7 @@ const WK = (() => {
     });
     Object.assign(spots, o.spots || {});          // 個別地點可以把證物搬到別的位置（例如停在店外的車）
     rooms.forEach(r => (r.details || []).forEach(d => { details[d.id] = [pos[r.id] + d.hot[0], OY + d.hot[1], d.hot[2], d.hot[3]]; }));
-    const setting = o.setting || SETTING[l.id] || "town", fac = FAC[l.id] || FAC.police;
+    const setting = o.setting || (C.setting || {})[l.id] || SETTING[l.id] || "town", fac = (C.fac || {})[l.id] || FAC[l.id] || FAC.police;
     const used = {};
     const placeFor = (s) => {
       const d = dailyOf(s), room = d.room && pos[d.room] !== undefined ? d.room : rooms[0].id;
@@ -186,7 +188,7 @@ const WK = (() => {
         R(ox + 20, 104, 30, 4, shade(fac[1], -.1)); for (let k = 0; k < 6; k++) R(ox + 20 + k*5, 100, 4, 4, k%2 ? "#e9e4da" : fac[1]); }
     }));
     // 每個房間第一次走進去說的話（C.roomDesc[房間 id]），街上也說一句
-    const areas = rooms.map(r => ({ id:r.id, name:r.name, x0:pos[r.id] - GAP, x1:pos[r.id] + RW + GAP - 1, text:(C.roomDesc || {})[r.id] || `${r.name}。看起來沒什麼特別的。` }));
+    const areas = rooms.map(r => ({ id:r.id, name:r.name, x0:pos[r.id] - GAP, x1:pos[r.id] + RW - 1, text:(C.roomDesc || {})[r.id] || `${r.name}。看起來沒什麼特別的。` }));
     if (buildings.length) areas.push({ id:"_street", x0:0, x1:buildings[0].x0 - 1, text:"街上。這裡沒什麼特別的。" });
     return { auto:true, areas, w, spawn:o.spawn || 70, park:o.park ?? 8, draw, front, spots, details, placeFor, buddy:o.buddy || "wu", you:o.you, intro:o.intro, rooms, pos, buildings, extras:o.extras };
   }
@@ -230,20 +232,22 @@ const WK = (() => {
       if (!cv.isConnected) return;
       p.ctx(g); g.setTransform(1, 0, 0, 1, 0, 0);
       const t = now / 1000, night = skyOf(S.phase)[5];
-      // 地形
+      // 地形（案件可以用 C.mapDraw 自己畫）
+      if (C.mapDraw) C.mapDraw(p, t); else {
       R(0, 0, MW, MH, "#6f9a5a"); dither(0, 0, MW, MH, "#7aa866", 3);
       p.seed(7); for (let i = 0; i < 70; i++){ const x = p.rnd() * 110, y = 50 + p.rnd() * 85; R(x, y, 9, 5, "#3f6b3a"); R(x + 2, y - 2, 5, 2, "#4f7f46"); }   // 西南的山（鹿谷）
       for (let i = 0; i < 40; i++){ const x = 180 + p.rnd() * 60, y = 60 + p.rnd() * 70; R(x, y, 9, 5, "#3f6b3a"); R(x + 2, y - 2, 5, 2, "#4f7f46"); }   // 東邊的山（埔里）
       for (let y = 0; y < MH; y += 2){ const x = 150 + Math.sin(y / 14) * 12 - y * 0.55; R(x + Math.sin(t + y / 9) * 0.6, y, 6, 2, "#4a86b4"); R(x + 1, y, 2, 1, "#8ac0e0"); }   // 河
       R(92, 64, 70, 46, "#b8b0a0"); for (let x = 96; x < 160; x += 9) for (let y = 68; y < 108; y += 8) R(x, y, 6, 5, "#d6d0c2");    // 南投市
       R(180, 12, 58, 44, "#b0aaa0"); for (let x = 183; x < 236; x += 8) for (let y = 15; y < 54; y += 7) R(x, y, 5, 4, "#cfc9bc");   // 台中
+      }
       roads.forEach(([a, b]) => { line(pt(a), pt(b), "#4a4038", 3); line(pt(a), pt(b), "#e9d9a0", 1); });
       // 地點
       const open = C.locations.filter(locOpen);
       C.locations.forEach(l => {
         const [x, y] = pt(l.id), isOpen = open.includes(l), known = mapKnown(l);
         if (!known) return;
-        const f = FAC[l.id] || ["#e9e4da", "#5a3e24"];
+        const f = (C.fac || {})[l.id] || FAC[l.id] || ["#e9e4da", "#5a3e24"];
         R(x - 6, y - 7, 12, 8, isOpen ? f[0] : "#8a8a8a"); R(x - 7, y - 9, 14, 3, isOpen ? f[1] : "#5a5a5a"); R(x - 1, y - 4, 3, 5, "#3a2a1a");
         if (here(l.id)){ const b = Math.floor(t * 3) % 2; R(x - 2, y - 17 - b, 5, 4, "#ffd04a"); R(x - 1, y - 13 - b, 3, 2, "#ffd04a"); }
       });
