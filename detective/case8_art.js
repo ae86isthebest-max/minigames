@@ -25,6 +25,8 @@ EP8.art = true;
     for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++){ R(10 + c * 8, 20 + r * 8, 7, 7, "#f4f0e0"); R(11 + c * 8, 21 + r * 8, 5, 4, ["#6a8aa0", "#a08a6a", "#8aa06a"][(r + c) % 3]); }   // 照片牆
     R(70, 8, 52, 14, "#1a1418"); txt("謎　境", 80, 19, "#e8c040", "9px serif");
     R(64, 54, 64, 12, "#5a3a24"); R(62, 52, 68, 3, "#7a5a34"); R(84, 44, 14, 9, "#2a2a2e"); R(85, 45, 12, 7, "#3a5a7a"); R(104, 48, 6, 5, "#c8a040");   // 櫃台
+    R(113, 57, 10, 7, "#c8b088"); R(115, 55, 6, 2, "#a89068"); R(116, 56, 5, 3, "#f4f4f0");   // 林語安的包包、信封
+    R(70, 50, 7, 4, "#2a2a2e"); R(71, 48, 5, 3, "#f4f0e0");   // 名片架
     R(140, 20, 30, 24, "#e8e0c8"); for (let i = 0; i < 6; i++) R(142, 23 + i * 3, 24 - (i % 3) * 4, 1, "#3a3a3a"); R(142, 23, 8, 1, "#c23a2a");   // 預約板
     R(0, 30, 6, 42, "#5a5a5e"); R(186, 30, 6, 42, "#3a3036");
     lamp(60, 0, "#f8d898"); lamp(140, 0, "#f8d898");
@@ -35,6 +37,7 @@ EP8.art = true;
   SC.s8_hall = (o) => { const [s] = stOf(o);
     wall(74, "#3a3440", false); R(0, 66, W, 8, "#2a2428");
     HALL_DOORS.forEach(([x, c, n], k) => { door(x, 34, 22, 40, c); R(x + 2, 26, 18, 6, "#1a1418"); txt(n, x + 3, 31, "#e8c040", "5px sans-serif"); if (k === 2 && (s.ctrlAjar || o.ajar)) R(x + 16, 34, 6, 40, "#141018"); });
+    R(66, 44, 14, 30, "#6a7078"); for (let k = 0; k < 3; k++){ R(67, 45 + k * 10, 12, 9, "#7a8088"); R(76, 48 + k * 10, 2, 2, "#3a3a3e"); R(68, 46 + k * 10, 5, 2, "#f4f0e0"); }   // 置物櫃
     R(178, 48, 4, 8, "#2a2a2e"); P(179, 50, "#6fd46f");   // 讀卡機
     R(44, 6, 30, 16, "#c8a040"); R(46, 8, 26, 12, "#1a1418"); txt("LAST", 49, 17, "#c23a2a", "6px monospace");   // 海報
     lamp(104, 0, "#f8d898"); lamp(150, 0, "#f8d898");
@@ -95,6 +98,7 @@ EP8.art = true;
     R(100, 50, 24, 10, "#c8b890"); R(100, 50, 24, 2, "#a89870"); R(102, 53, 18, 1, "#3a3a3a"); dither(100, 50, 24, 10, "#d8c8a088", 3);   // 鞋盒
     R(140, 72, 12, 8, "#2a2a2e"); R(156, 72, 12, 8, "#2a2a2e"); R(170, 74, 6, 6, "#1a1a1a");   // 備用錘頭、膠帶
     for (let x = 16; x < 180; x += 40) R(x, 26, 2, 48, "#6a5a3a");
+    R(149, 13, 10, 8, "#f4e48a"); for (let k = 0; k < 3; k++) R(150, 15 + k * 2, 7 - k, 1, "#3a3a3a");   // 欠薪的紙條
     lamp(96, 0, "#e8e8d8");
     floor(72, "#5a5a54", "#4e4e48");
   };
@@ -107,6 +111,7 @@ EP8.art = true;
     windowBox(110, 10, 24, 20, "#a8c8e0");
     lamp(90, 0, "#f8e8c8");
     floor(72, "#8a6a4a", "#7a5a3a");
+    R(129, 63, 10, 10, "#5a5a5e"); R(128, 62, 12, 2, "#6a6a70"); R(131, 61, 3, 2, "#f4f0e0"); R(135, 61, 2, 2, "#c8a040");   // 垃圾桶、杯子碎片
   };
   // 江家
   SC.j_room = (o) => {
@@ -115,6 +120,8 @@ EP8.art = true;
     R(10, 40, 60, 24, "#c8b8a8"); R(8, 36, 64, 6, "#b8a898"); R(38, 54, 24, 6, "#f4f0e0"); R(40, 55, 20, 1, "#c23a2a");   // 沙發、帳單
     R(150, 14, 30, 30, "#e8e0c8"); R(152, 16, 26, 26, "#c8d0d8"); R(160, 22, 10, 14, "#e8c09a");   // 婚紗照
     R(120, 10, 16, 20, "#5a8aa0");   // 窗
+    R(76, 14, 12, 16, "#f4f0e0"); R(76, 14, 12, 3, "#c23a2a"); for (let k = 0; k < 4; k++) R(77, 19 + k * 3, 10, 1, "#c8c0b0"); P(79, 20, "#e04a3a"); P(84, 26, "#2a2a2a");   // 月曆
+    R(84, 48, 12, 4, "#d8e8f0"); R(85, 49, 9, 1, "#3a3a3a");   // 印出來的信
     lamp(96, 0, "#f8e8c8");
     floor(72, "#c8b8a0", "#b8a890");
   };
@@ -154,7 +161,7 @@ EP8.art = true;
 
   /* ---------- 人物造型 ---------- */
   const LOOK = {
-    ge:   { skin:"#d8a880", hair:"#3a2a1a", hairStyle:"short", top:"#2a3a5a", bottom:"#3a3a3a", glasses:true, mood:"tired", hello:"……我不知道他為什麼會站進黃線裡。",
+    ge:   { skin:"#d8a880", hair:"#3a2a1a", hairStyle:"short", top:"#5a6040", bottom:"#3a3a3a", glasses:true, mood:"tired", hello:"……我不知道他為什麼會站進黃線裡。",
             byPhase:{ 1:{ top:"#5a5a5e" }, 2:{ top:"#1e1e22", mood:"sad" } } },
     lin:  { skin:"#f4d4bc", hair:"#2a2220", hairStyle:"pony", top:"#1e1e22", bottom:"#2a2a3a", mood:"worried", hello:"我、我開門的時候，他就在那裡……" },
     zhuo: { skin:"#e0b48c", hair:"#1a1410", hairStyle:"spiky", top:"#6a5a3a", bottom:"#3a3a30", apron:"#5a4a3a", hello:"擺錘是我焊的。我焊得很牢。" },
@@ -189,7 +196,7 @@ EP8.art = true;
   });
   const L0 = id => { const L = Object.assign({}, LOOK[id]); delete L.hello; delete L.byPhase; return L; };
   EP8.looks = {
-    geL: L0("ge"), linL: L0("lin"), baiL: Object.assign(L0("bai"), { prop:"bag" }), yuL: L0("yu"), guanL: L0("guan"), zhuoL: Object.assign(L0("zhuo"), { prop:"bag" }),
+    geL: Object.assign(L0("ge"), { top:"#2a3a5a" }), linL: L0("lin"), baiL: Object.assign(L0("bai"), { prop:"bag" }), yuL: L0("yu"), guanL: L0("guan"), zhuoL: Object.assign(L0("zhuo"), { prop:"bag" }),
     jiangL: { skin:"#e0b48c", hair:"#1a1410", hairStyle:"short", top:"#e9e4da", bottom:"#3a3a4a", apron:"#5a4a3a" },
     jiangT: { skin:"#e0b48c", hair:"#1a1410", hairStyle:"short", top:"#e9e4da", bottom:"#3a3a4a", apron:"#5a4a3a", prop:"bag" },
     stu1: { skin:"#f4d4bc", hair:"#1a1410", hairStyle:"short", top:"#c23a2a", bottom:"#2a2a3a" },
@@ -200,7 +207,8 @@ EP8.art = true;
   EP8.rooms = {
     studio: [
       { id:"sfront", name:"大廳・櫃台", scene:"s8_front", details:[
-        { id:"d8_bell", name:"櫃台的鈴", hot:[104,46,8,8], text:"櫃台上一個金色的服務鈴，按下去是〈給愛麗絲〉的前兩小節。林語安說，那是江哥自己改的。" } ] },
+        { id:"d8_bell", name:"櫃台的鈴", hot:[104,46,8,8], text:"櫃台上一個金色的服務鈴，按下去是〈給愛麗絲〉的前兩小節。林語安說，那是江哥自己改的。" },
+        { id:"d8_card", name:"名片架", hot:[69,47,9,8], text:"櫃台的名片架上，謎境的名片印的是：「江承恩　老闆」「葛志偉　首席設計」。葛志偉那一疊，只剩最後兩張。" } ] },
       { id:"shall", name:"走廊", scene:"s8_hall", details:[
         { id:"d8_cam", name:"走廊的監視器", hot:[86,0,20,8], text:"走廊天花板的監視器正對著五扇門。它拍得到每一扇門，可是拍不到牆的後面。" } ] },
       { id:"sguzhai", name:"「古宅」", scene:"s8_guzhai", details:[
@@ -221,6 +229,7 @@ EP8.art = true;
     jianghome: [ { id:"jroom", name:"江家客廳", scene:"j_room", details:[
       { id:"d8_wedding", name:"婚紗照", hot:[150,14,30,30], text:"婚紗照的玻璃上有一條裂痕，用透明膠帶黏起來了。" } ] } ],
     alliance: [ { id:"alroom", name:"密室聯盟・執行長室", scene:"al_room", details:[
+      { id:"d8_cv", name:"桌上的履歷", hot:[140,52,16,8], text:"桌上一疊應徵「旗艦店店長」的履歷。最上面那一份的照片，是一個綁馬尾的年輕女生——林語安。" },
       { id:"d8_award", name:"獎盃", hot:[180,50,10,16], text:"盆栽旁邊一個獎盃：「年度最佳連鎖品牌」。底座上的灰比獎盃還厚。" } ] } ],
     gehome: [ { id:"ghome", name:"葛志偉的工作室", scene:"g_room", details:[
       { id:"d8_cake", name:"冰箱", hot:[130,30,16,40], text:"冰箱裡有一個沒拆的小蛋糕，上面的巧克力片寫著：「7/7　生日快樂　承恩＆志偉」。" } ] } ]
@@ -241,7 +250,9 @@ EP8.art = true;
       { t:"22:10:00", d:3.5, cap:"大學生們離開。", m:{ stu1:[-20,98,null,-1,DX.guz,DY,[[DX.guz,98]]], yuL:[-36,98,null,-1,DX.guz,DY,[[DX.guz,98]]], geL:[DX.ctrl,DY,null,1,DX.guz + 12,96,[[DX.ctrl,98]]] }, out:["stu1","yuL","geL"] },
       { t:"22:26:00", d:3, cap:"葛志偉從控制室出來，往大廳走。", m:{ geL:[-20,98,null,-1,DX.ctrl,DY,[[DX.ctrl,98]]] }, out:["geL"] },
       { t:"22:30:00", d:2.5, cap:"（21:05 到 23:38，沒有任何人走近「最後一個房間」的門。）" },
-      { t:"23:38:20", d:4, cap:"林語安走到「最後一個房間」門口，敲門，刷卡。", m:{ linL:[DX.last - 6,98,"point",1,-20,98] } },
+      { t:"23:31:00", d:3.5, cap:"林語安走進辦公室。", m:{ linL:[DX.office,DY,null,-1,40,98,[[DX.office,98]]] }, out:["linL"] },
+      { t:"23:37:10", d:3.5, cap:"她從辦公室出來，把一個白色信封塞進圍裙口袋。", m:{ linL:[30,98,"hold",1,DX.office,DY,[[DX.office,98]]] } },
+      { t:"23:38:20", d:4, cap:"林語安走到「最後一個房間」門口，敲門，刷卡。", m:{ linL:[DX.last - 6,98,"point",1,30,98] } },
       { t:"23:40:10", d:3, cap:"她衝出來。", m:{ linL:[-20,98,null,-1,DX.last - 6,98] }, out:["linL"] }
     ] },
     cctv_lobby: { scene:"s8_front", cam:"LOBBY", date:"2026-07-07", beats:[
@@ -249,6 +260,7 @@ EP8.art = true;
       { t:"20:00:30", d:3, cap:"卓家宏背著背包下班。", m:{ zhuoL:[-20,98,null,-1,200,98] }, out:["zhuoL"] },
       { t:"20:41:00", d:3, cap:"西裝男人離開。", m:{ baiL:[-20,98,null,-1,200,98], linL:[96,98,"stand",-1] } },
       { t:"20:52:00", d:3.5, cap:"四個大學生進來，在櫃台登記。", m:{ stu1:[80,98,null,1,-14,98], stu2:[110,98,null,1,-30,98], yuL:[60,98,null,1,-46,98], linL:[96,98,"write",-1] }, out:["stu1","stu2","yuL"] },
+      { t:"21:40:00", d:3, cap:"（21:00 到 22:10，林語安一直坐在櫃台後面，沒有離開過。）", m:{ linL:[96,98,"write",-1] } },
       { t:"22:12:00", d:3.5, cap:"大學生們離開，笑得很大聲。", m:{ stu1:[-20,98,null,-1,200,98], yuL:[-36,98,null,-1,210,98], linL:[96,98,"stand",-1] }, out:["stu1","yuL"] },
       { t:"22:28:00", d:3.5, cap:"葛志偉走出大門，跟林語安說了一句話。", m:{ geL:[-20,98,null,-1,200,98,[[110,98]]], linL:[96,98,"stand",1] }, out:["geL"] },
       { t:"23:30:00", d:3.5, cap:"林語安拉下一半的鐵捲門，往裡面看了一下，又走進去。", m:{ linL:[200,98,null,1,10,98] }, out:["linL"] }
@@ -286,7 +298,7 @@ EP8.art = true;
     { t:"21:39:30", d:5, cap:"「合約後天簽。他們要的是房間，不是人。……志偉，對不起。」", s:{}, m:{ geL:[128,98,"stand",1,124,98], jiangL:[150,98,"stand",-1] } },
     { t:"21:40:10", d:4.5, cap:"江承恩轉過身去收工具。葛志偉拔下擺錘的錘頭。", s:{ nohead:true }, m:{ geL:[164,98,"hold",1,128,98], jiangL:[140,98,"kneel",-1,150,98] } },
     { t:"21:40:30", d:3, cap:"他從背後砸了下去。", s:{ nohead:true, flash:true }, m:{ geL:[150,98,"hold",-1,164,98], jiangL:[140,98,"lie",-1] } },
-    { t:"21:41:00", d:5, cap:"他把江承恩拖到擺錘底下，裝回錘頭，重新纏上膠帶。", s:{}, m:{ jiangL:[170,98,"lie",-1,140,98], geL:[178,98,"kneel",-1,150,98] } },
+    { t:"21:41:00", d:5, cap:"他把江承恩拖到擺錘底下，把測試遙控器塞進他手裡。裝回錘頭，撕掉紅色膠帶，用自己的黑膠帶重新纏好。", s:{}, m:{ jiangL:[170,98,"lie",-1,140,98], geL:[178,98,"kneel",-1,150,98] } },
     { t:"21:43:30", d:4.5, cap:"他爬回控制室，把黑布拉進鐵櫃。", s:{ cab:[0,1,1,0] }, m:{ geL:[40,98,"stand",-1,178,98,[[124,98],[74,98],[60,98]]], jiangL:[170,98,"lie",-1] } },
     { t:"21:44:32", d:5, cap:"然後，在控制台按下了擺錘的啟動鍵。擺錘在江承恩的身體上方，擺了二十秒。", s:{ swing:true }, m:{ geL:[24,98,"point",-1,40,98], jiangL:[170,98,"lie",-1] } }
   ];
