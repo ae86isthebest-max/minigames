@@ -25,8 +25,26 @@ await boot();
 out.C = await p.evaluate(async()=>{ openCase(0); ['ev_glass','ev_lab','ev_printer','cctv_hall','cctv_back','ev_phone'].forEach(inspectById);
   openSheet('accuse'); pickKind('murder'); ['ho','chow'].forEach(toggleCulprit); ['ev_glass','ev_lab','ev_printer'].forEach(toggleEv); C.reasoning.forEach((r,i)=>pickReason(i,r.answer)); await submitAccuse();
   return [has("arc:done_villa"), has("arc:solved_villa"), ARC.grade("villa"), has("arc:done_tea")]; });
+// D：幕間（開場前、結案後），台詞跟著主線旗標變
+await boot();
+out.D = await p.evaluate(async()=>{ const r={};
+  ARC.defineCast({ t_lin:{ name:"林法醫", look:{ skin:"#e8c09a", hair:"#2a2220", hairStyle:"long", top:"#e9e4da", bottom:"#3a3328" } } });
+  CASES[0].before = { title:"測試開場", scene:"living", cast:[{ id:"_you", x:40 }, { id:"t_lin", x:120, facing:-1 }], lines:[{ who:"t_lin", text:"B1" }, { who:"you", text:"B2" }] };
+  CASES[0].after = { title:"測試收工", scene:"living", cast:[{ id:"_you", x:40 }, { id:"t_lin", x:120, facing:-1 }], arc:"t_talk",
+    lines:[{ who:"t_lin", text:"A1" }, { who:"you", text:"A-GUN", when:"arc:t_gun" }, { who:"narr", text:"A-NOGUN", unless:"arc:t_gun" }] };
+  openCase(0); r.before=[!!inter, tab, document.body.innerText.includes("測試開場"), document.body.innerText.includes("林法醫")];
+  interNext(0); interNext(1); r.beforeEnd=[!!inter, tab, ARC.seen("villa:before")];
+  openCase(0); r.beforeAgain=!!inter;
+  inspectById(TID); ['ev_glass','ev_lab','ev_printer','cctv_hall','cctv_back','ev_phone'].forEach(inspectById);
+  openSheet('accuse'); pickKind('murder'); ['ho','chow'].forEach(toggleCulprit); ['ev_glass','ev_lab','ev_printer'].forEach(toggleEv); C.reasoning.forEach((x,i)=>pickReason(i,x.answer)); await submitAccuse();
+  r.court=[S.court, !!inter]; courtNext(1); r.after=[!!inter, inter && inter.lines.map(l=>l.text)];
+  return r; });
+await p.waitForTimeout(300);
+Object.assign(out.D, await p.evaluate(()=>{ const r={}; interNext(0); interNext(0); r.afterEnd=[!!inter, has("arc:t_talk"), ARC.seen("villa:after"), document.body.innerText.includes("重看幕間：測試收工"), !!S.result]; return r; }));
 console.log(JSON.stringify(out,null,1));
 const ok = out.A.after[0] && out.A.after[1] && !out.A.before[0] && out.A.ep2[0][0]==="FOUND 版本" && out.A.ep2[1] && out.A.ep2[2] && out.A.briefHas && out.A.again[0]==="FOUND 版本"
   && out.B.ep2[0][0]==="MISS 版本" && out.B.ep2[1] && !out.B.ep2[2] && out.B.again[0]==="MISS 版本" && out.B.upgraded[0] && out.B.stillMiss[0]==="MISS 版本"
+  && out.D.before[0] && out.D.before[2] && out.D.before[3] && !out.D.beforeEnd[0] && out.D.beforeEnd[1]==="scene" && out.D.beforeEnd[2] && !out.D.beforeAgain
+  && out.D.court[0]===0 && out.D.after[0] && out.D.after[1].join()==="A1,A-GUN" && !out.D.afterEnd[0] && out.D.afterEnd[1] && out.D.afterEnd[2] && out.D.afterEnd[3] && out.D.afterEnd[4]
   && out.C[0] && out.C[1] && out.C[2]==="S" && !out.C[3];
 console.log(ok ? "ARC TEST PASS" : "ARC TEST FAIL", errs); await b.close();})();

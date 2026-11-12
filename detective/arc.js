@@ -18,6 +18,17 @@
       玩家知道的旗標才會列在筆記的「📌 主線」，不知道的完全不顯示（連數量都不顯示，免得洩露）。
    5) 程式裡直接問：ARC.has("gun")、ARC.found("gun")、ARC.grade("案件id")
 
+   6) 幕間（案件之間跟同事、朋友聊天的場面，像劇集一樣）：案件加 before（第一次打開這一集、開場之前播）或 after（真相公布之後播）
+        after: { title:"收工之後・麵攤", scene:"noodle", opt:{…}, cast:[ { id:"_you", x:40 }, { id:"wu", x:90, pose:"drink", facing:-1 } ],
+                 lines:[ { who:"wu", text:"……" },
+                         { who:"you", text:"那把槍的事……", when:"arc:gun" },        // when／unless：跟 requires 一樣，可以用 "arc:旗標"，也可以用這一集的 id
+                         { who:"narr", text:"你總覺得忘了什麼。", unless:"arc:gun" },
+                         { who:"lin", name:"林法醫", text:"……", pose:"point" } ],
+                 arc:"gun_talk" }                                                    // 看完就記下的旗標（可省略）
+      scene 是 PX.SCENES 裡的場景名（可省略，沒有就只有對話）；cast 的 id 可以是這一集的人物、C.looks，或 ARC.defineCast 定義的固定班底；"_you" 是偵探。
+      固定班底：ARC.defineCast({ wu:{ name:"吳……", look:{ skin:…, hair:…, top:… } } })，每一集的幕間都可以直接用。
+      幕間只能聊天、埋伏筆，不可以放破案必需的線索；沒看（跳過）也不影響任何一集。
+
    規則：主線線索只能是加分，任何一集沒有它也要破得了案；下一集一定要用 arcRecap 的 miss 把沒查到的人接回來。
    ========================================================= */
 const ARC = (() => {
@@ -27,7 +38,7 @@ const ARC = (() => {
   const load = () => {
     if (D) return D;
     try { D = JSON.parse(localStorage.getItem(SERIES_KEY)) || {}; } catch (e) { D = {}; }
-    D.flags = D.flags || {}; D.cases = D.cases || {};
+    D.flags = D.flags || {}; D.cases = D.cases || {}; D.seen = D.seen || {};
     return D;
   };
   const store = () => { try { localStorage.setItem(SERIES_KEY, JSON.stringify(D)); } catch (e) {} };
@@ -104,6 +115,52 @@ const ARC = (() => {
   }
   const define = o => Object.assign(info, o);
   const grade = id => (load().cases[id] || {}).grade || null;
-  const reset = () => { D = { flags:{}, cases:{} }; store(); };
-  return { has, found, set, is, test, sync, open, recap, recapHTML, list, notesHTML, define, grade, reset, entries, info, bind:fn => { engineHas = fn; } };
+  const reset = () => { D = { flags:{}, cases:{}, seen:{} }; store(); };
+  // 幕間看過沒、固定班底
+  const seen = k => !!load().seen[k];
+  const mark = k => { load(); if (!D.seen[k]){ D.seen[k] = 1; store(); } };
+  const cast = {};
+  const defineCast = o => Object.assign(cast, o);
+  const look = id => (cast[id] || {}).look || null;
+  const name = id => (cast[id] || {}).name || null;
+  return { has, found, set, is, test, sync, open, recap, recapHTML, list, notesHTML, define, grade, reset, entries, info, seen, mark, cast, defineCast, look, name, bind:fn => { engineHas = fn; } };
 })();
+
+/* ---------- 幕間：案件之間的對話場面（資料格式見最上面第 6 點） ---------- */
+let inter = null;   // { k:"before"|"after", i:第幾句, lines:[…] }
+const interOK = l => (!l.when || [].concat(l.when).some(has)) && (!l.unless || ![].concat(l.unless).some(has));
+// 條件符合而且還沒看過，就開始播；force＝重看
+function interMaybe(k, force){
+  const L = C[k]; if (!L || !L.lines) return false;
+  if (!force){
+    if (ARC.seen(C.id + ":" + k)) return false;
+    if (k === "after" && !(S.done && S.result && (S.result.verdict === "perfect" || S.revealed))) return false;
+    if (k === "before" && (S.asked.length || S.seen.length || S.phase || S.done)) return false;
+  }
+  const lines = L.lines.filter(interOK); if (!lines.length) return false;
+  inter = { k, i:0, lines, force:!!force };
+  return true;
+}
+function interReplay(k){ if (interMaybe(k, true)){ render(); scrollTo(0, 0); } }
+function interNext(end){
+  if (!inter) return;
+  if (!end && inter.i < inter.lines.length - 1){ inter.i++; render(); scrollTo(0, 0); return; }
+  const k = inter.k, L = C[k], force = inter.force; inter = null;
+  ARC.mark(C.id + ":" + k);
+  [].concat(L.arc || []).forEach(f => ARC.set(f, C.id, "found"));
+  if (k === "before" && !force){ if (fsMode()) { closeSheet(); return; } tab = art() ? (travel() ? "map" : "scene") : "brief"; }
+  render(); scrollTo(0, 0);
+}
+function vInter(){
+  const L = C[inter.k], st = inter.lines[inter.i], last = inter.i >= inter.lines.length - 1;
+  const sus = id => C.suspects.find(s => s.id === id);
+  const speaker = st.who === "you" ? "你" : st.who === "narr" ? "" : st.name || ARC.name(st.who) || (sus(st.who) || { name:"" }).name.replace(/（.*）/, "");
+  const cast = (L.cast || []).map(c => { const me = c.id === st.who || (c.id === "_you" && st.who === "you"); return { y:100, facing:1, ...c, pose: me && st.pose ? st.pose : c.pose || "stand", mark: me }; });
+  return `<div class="card" style="padding:12px"><div class="muted small" style="margin-bottom:8px">🎬 ${esc(L.title || "幕間")}（${inter.i + 1}／${inter.lines.length}）</div>
+    <div class="bubble court-bubble" data-type="${esc(st.text).replace(/"/g, "&quot;")}">${speaker ? `<b>${esc(speaker)}</b>` : "<b>　</b>"}<span class="say-text" style="white-space:pre-line"></span></div>
+    ${art() && L.scene ? sceneHTML(L.scene, { ...(L.opt || {}), phase:S.phase, cast }) : ""}
+    <button class="btn primary" style="margin-top:12px" onclick="interNext(${last ? 1 : 0})">${last ? (inter.k === "before" && !inter.force ? "開始調查 ▶" : "看完了") : "下一句 ▶"}</button>
+    ${last ? "" : `<button class="btn" style="text-align:center" onclick="interNext(1)">跳過</button>`}</div>`;
+}
+// 結案畫面上的「重看幕間」按鈕
+const interBtns = () => ["before", "after"].filter(k => C[k] && C[k].lines && ARC.seen(C.id + ":" + k)).map(k => `<button class="btn" style="text-align:center;margin-top:0" onclick="interReplay('${k}')">🎬 重看幕間：${esc(C[k].title || (k === "before" ? "開場" : "收工之後"))}</button>`).join("");
