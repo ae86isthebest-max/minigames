@@ -25,6 +25,8 @@ EP9.art = true;
     R(170, 14, 18, 40, "#c8d8e0"); fog(170, 14, 18, 40, 0.6);   // 霧濛濛的窗
     R(84, 8, 30, 10, "#3a2a1a"); txt("雲靄山莊", 86, 16, "#e8c878", "6px serif");
     R(10, 20, 20, 24, "#e8dcc0"); R(12, 22, 16, 20, "#6a8a6a"); R(14, 30, 12, 8, "#c8d8d8");   // 山水畫
+    R(136, 44, 14, 12, "#8a6a3a"); R(138, 46, 10, 9, "#f4f0e0"); for (let k = 0; k < 3; k++) R(139, 48 + k * 2, 8, 1, "#3a3a3a");   // 交班本
+    R(104, 48, 12, 4, "#2a2a2e"); P(106, 49, "#e04a3a");   // 總機
     lamp(96, 0, "#f8d898");
     floor(72, "#8a6a4a", "#7a5a3a");
   };
@@ -79,6 +81,7 @@ EP9.art = true;
     R(120, 40, 30, 16, "#c8a878"); for (let k = 0; k < 6; k++) R(122 + (k % 3) * 9, 42 + Math.floor(k / 3) * 7, 7, 5, "#f4f4f4");   // 警報器的箱子
     R(40, 54, 40, 16, "#d8e8ec"); R(44, 58, 30, 8, "#e8f0f4"); R(56, 60, 8, 5, "#2a2a2a"); R(36, 66, 50, 3, "#8a6a3a");   // 塑膠布、木條
     R(10, 40, 26, 30, "#c8a878");
+    R(104, 30, 12, 8, "#3a6ab8"); R(106, 31, 3, 6, "#f4f4f0");   // 說明書
     lamp(96, 0, "#e8e0c8");
     floor(72, "#6a5a4a", "#5a4a3a");
   };
@@ -88,6 +91,8 @@ EP9.art = true;
     R(60, 60, 80, 12, "#c8b890"); R(60, 56, 80, 6, "#f4f0e0"); R(62, 54, 20, 4, "#f4f4f4");   // 榻榻米上的被褥
     R(100, 56, 14, 8, "#6b4a2b"); R(102, 53, 6, 3, "#f4f4f4");   // 床頭櫃、藥
     R(26, 56, 28, 10, "#2a2a2e"); R(28, 54, 24, 3, "#f4f0e0");   // 公事包
+    R(146, 62, 18, 10, "#8a3a4a"); R(150, 58, 10, 4, "#6a2a3a"); R(148, 60, 14, 2, "#f4f0e0");   // 手提包（離婚協議書）
+    R(119, 58, 8, 5, "#f4f4f4"); R(120, 59, 6, 1, "#c23a2a");   // 降血壓藥
     R(150, 14, 30, 30, "#c8d8e0"); fog(150, 14, 30, 30, 0.6);
     R(20, 14, 30, 24, "#2a2a2e"); R(22, 16, 26, 18, "#3a5a7a");   // 電視
     lamp(96, 0, "#f8e8c8");
@@ -99,6 +104,7 @@ EP9.art = true;
     R(40, 20, 40, 30, "#1a1a1e"); R(42, 22, 36, 24, "#3a2a6a"); for (let k = 0; k < 3; k++) R(46, 28 + k * 5, 24 - k * 4, 2, "#e8c040");   // 螢幕
     R(100, 50, 70, 14, "#6b4a2b"); R(98, 48, 74, 3, "#8a6a3a"); for (let k = 0; k < 4; k++) R(106 + k * 16, 44, 6, 4, "#e8e0c8");
     R(20, 60, 50, 12, "#c23a5a"); R(18, 56, 54, 6, "#a82a4a");   // 沙發
+    R(25, 52, 16, 6, "#b8905a"); R(25, 52, 16, 1, "#8a6a3a");   // 牛皮紙袋
     for (let k = 0; k < 12; k++) P(10 + k * 16, 4 + (k % 3) * 3, ["#e8c040", "#3ac8e8", "#e83a8a"][k % 3]);
     floor(72, "#4a2a3a", "#3a2030");
   };
@@ -120,6 +126,7 @@ EP9.art = true;
               byPhase:{ 1:{ mood:"tired" }, 2:{ mood:"sad" } } },
     guorong:{ age:"old", skin:"#c8986a", hair:"#c8c8c0", hairStyle:"balding", top:"#5a6a5a", bottom:"#3a3a30", hello:"我做了四十年旅館。" },
     du:   { skin:"#f0c8a8", hair:"#3a2a20", hairStyle:"long", top:"#c8a8c8", bottom:"#4a3a4a", skirt:true, mood:"sad", hello:"他只是去泡個湯……" },
+    lan:  { age:"old", skin:"#d8a880", hair:"#5a5a5a", hairStyle:"bun", top:"#c8b8e8", bottom:"#3a3a3a", apron:"#f4f4f4", hello:"我只是掃地的，我什麼都不知道……好啦，我知道一點。" },
     hou:  { age:"old", skin:"#d8a880", hair:"#3a3a3a", hairStyle:"slick", top:"#c83a3a", bottom:"#2a2a30", hello:"我跟他吵架是一回事，我沒殺人！" },
     yun:  { skin:"#f4d4bc", hair:"#2a2220", hairStyle:"pony", top:"#3a5a4a", bottom:"#2a2a30", mood:"tired", hello:"我頭還有一點痛……" },
     ke:   { skin:"#e8c09a", hair:"#1a1410", hairStyle:"short", top:"#e86a2a", bottom:"#3a4a3a", hat:"cap", capColor:"#2a5a3a", hello:"我那時候以為是水太燙。" },
@@ -136,6 +143,7 @@ EP9.art = true;
     zhiming:[ { room:"ilobby", x:96, pose:"phone", doing:"在櫃台講電話，一直在擦汗。" }, { room:"icorr", x:140, pose:"stand", doing:"站在湯屋走廊，擋著不讓客人靠近。" }, { room:"ilobby", x:96, pose:"write", doing:"在櫃台寫退房的帳單，手在抖。" } ],
     guorong:[ null, { room:"ilobby", x:40, pose:"sit", doing:"坐在大廳的長椅上，看著窗外的霧。" }, { room:"iback", x:120, pose:"cross", doing:"站在屋後，盯著那面牆。" } ],
     du:   [ { room:"iroom", x:120, pose:"cry", doing:"坐在客房裡哭。" }, { room:"iroom", x:120, pose:"phone", doing:"在客房打電話通知家人。" }, { room:"ilobby", x:150, pose:"sit", doing:"坐在大廳，等檢察官上山。" } ],
+    lan:  [ null, { room:"izhu", x:90, pose:"broom", doing:"在刷湯屋「竹」的地板。" }, { room:"icorr", x:120, pose:"broom", doing:"在掃走廊，一直往「松」的門口看。" } ],
     hou:  [ { room:"ikara", x:60, pose:"sit", doing:"坐在卡拉 OK 的沙發上，一臉不高興。" }, { room:"ikara", x:60, pose:"smoke", doing:"在卡拉 OK 門口抽菸。" }, { room:"ilobby", x:170, pose:"cross", doing:"在大廳等著下山。" } ],
     yun:  [ { room:"ilobby", x:60, pose:"sit", doing:"坐在櫃台旁邊，臉色很白。" }, { room:"ilobby", x:60, pose:"stand", doing:"在櫃台值班，常常揉太陽穴。" }, { room:"ilobby", x:60, pose:"stand", doing:"在櫃台幫客人退房。" } ],
     ke:   [ { room:"ilobby", x:30, pose:"sit", doing:"抱著登山包坐在大廳。" }, { room:"ikara", x:140, pose:"read", doing:"在餐廳看地圖，等路通。" } ],
@@ -160,7 +168,8 @@ EP9.art = true;
   EP9.rooms = {
     inn: [
       { id:"ilobby", name:"大廳・櫃台", scene:"i_lobby", details:[
-        { id:"d9_cat", name:"櫃台的招財貓", hot:[20,46,10,6], text:"招財貓的手一直在招，招到一半卡住了。陳芸說，牠從上禮拜就這樣了。" } ] },
+        { id:"d9_cat", name:"櫃台的招財貓", hot:[20,46,10,6], text:"招財貓的手一直在招，招到一半卡住了。陳芸說，牠從上禮拜就這樣了。" },
+        { id:"d9_loan", name:"櫃台下面的信", hot:[64,60,20,6], text:"櫃台下面壓著一疊信，最上面一封是農會的：「貸款繳款通知　第三次」。" } ] },
       { id:"icorr", name:"湯屋走廊", scene:"i_corr", details:[
         { id:"d9_slip", name:"拖鞋架", hot:[66,58,26,8], text:"拖鞋架上少了一雙藍白拖。每一雙拖鞋背面都用奇異筆寫著員工的名字。" } ] },
       { id:"isong", name:"湯屋「松」", scene:"i_song", opt:(ph,has)=>({ body:ph===0, markers:ph===0, cold:ph>0 }), details:[
@@ -172,7 +181,8 @@ EP9.art = true;
       { id:"istore", name:"倉庫", scene:"i_store", details:[
         { id:"d9_shelf", name:"架上的箱子", hot:[100,10,80,40], text:"一箱一箱的浴巾、清酒、備用拖鞋。最上面一層有一個寫著「民國 75 年」的舊招牌：「雲靄旅社」。" } ] },
       { id:"iroom", name:"羅家的客房", scene:"i_room", details:[
-        { id:"d9_photo", name:"手機桌布", hot:[60,54,20,4], text:"被褥上放著羅文昌的另一支手機，桌布是他和一隻柴犬的合照。" } ] },
+        { id:"d9_photo", name:"手機桌布", hot:[60,54,20,4], text:"被褥上放著羅文昌的另一支手機，桌布是他和一隻柴犬的合照。" },
+        { id:"d9_ring", name:"洗手台", hot:[20,40,10,10], text:"洗手台邊放著一枚婚戒，是杜美玲的。她說：「我今天早上拿下來的。」" } ] },
       { id:"ikara", name:"卡拉 OK・餐廳", scene:"i_kara", details:[
         { id:"d9_mic", name:"麥克風", hot:[100,44,70,6], text:"桌上兩支麥克風，一支上面貼著「錢」，一支貼著「侯」。老錢說是侯老闆自己貼的，他不跟別人共用。" } ] }
     ],
@@ -258,10 +268,6 @@ EP9.art = true;
   EP9.world = {};
   EP9.locations.forEach(l => { EP9.world[l.id] = { auto:true, you:YOU }; });
   Object.assign(EP9.world.inn, {
-    extras: [
-      { id:"auntie9", name:"打掃阿姨", phase:1, x:RX(3) + 60, L:{ age:"old", skin:"#d8a880", hair:"#5a5a5a", hairStyle:"bun", top:"#c8b8e8", bottom:"#3a3a3a", apron:"#f4f4f4" }, pose:"broom", facing:1, lines:[
-        "「竹」昨天跟今天都有人吐，我刷到手都酸了。", "少東叫我今天早上先打掃「松」……可是你們說不能碰，我就沒碰。" ] }
-    ],
     intro: [
       { set:{ px:-60, bx:-80, cam:0 }, hide:true },
       { wait:0.4, hide:true },
