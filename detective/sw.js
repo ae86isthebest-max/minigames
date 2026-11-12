@@ -1,6 +1,6 @@
 // 離線用：第一次開啟就把所有檔案存起來。
 // 網頁本身（HTML）改成「先連網路」：有網路就一定拿到最新版，沒網路才用存起來的舊版。
-const CACHE = 'detective-tw-v20';
+const CACHE = 'detective-tw-v21';
 const FILES = ['./', 'index.html', 'pixel.js', 'cases.js', 'case2.js', 'case2_people.js', 'case2_people2.js', 'case2_people3.js', 'case2_items.js', 'case2_art.js', 'case1_art.js', 'world.js', 'worldkit.js', 'case2_world.js', 'case1_world.js', 'manifest.json', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => Promise.all(FILES.map(f => c.add(new Request(f, { cache: 'reload' })).catch(() => {})))).then(() => self.skipWaiting()));
