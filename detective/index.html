@@ -242,6 +242,9 @@ body.fs .toast{bottom:calc(14px + env(safe-area-inset-bottom))}
 <script src="case4_records.js"></script>
 <script src="case4_art.js"></script>
 <script src="case4_world.js"></script>
+<script src="case5.js"></script>
+<script src="case5_items.js"></script>
+<script src="case5_art.js"></script>
 <script>
 /* =========================================================
    遊戲邏輯（所有案件共用）
@@ -921,7 +924,8 @@ const searchLeft = () => travel()
   : Math.max(0, PH().searchLimit - S.seen.filter(id=>(S.sp[id]||0)===S.phase).length);
 const totalQLeft = () => C.suspects.reduce((n,s)=>n+qLeft(s),0);
 const allItems = () => [...C.cctv, ...C.evidence];
-const itemOpen = it => (it.phase||0) <= S.phase && (it.until===undefined || it.until >= S.phase);
+// untilTime："HH:MM"＝那一天到了這個時間就不能再做（例如綁匪來電前才能設好追蹤）。只在 until 那一天有效
+const itemOpen = it => (it.phase||0) <= S.phase && (it.until===undefined || it.until >= S.phase) && (!it.untilTime || S.phase < (it.until===undefined ? S.phase : it.until) || !timeReached(it.untilTime));
 const canDig = () => (CLK() ? timeLeft() > 0 && (totalQLeft()+searchLeft()) > 0 : totalQLeft()+searchLeft() > 0 || apLeft() > 0) || (multi() && !lastPhase());
 const evidencePool = () => [...allItems().filter(it=>S.seen.includes(it.id)), ...readyTests()];
 

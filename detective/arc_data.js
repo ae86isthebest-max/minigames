@@ -130,6 +130,14 @@ ARC.defineCast({
    "beard": true
   }
  },
+ "han": {
+  "name": "韓守義",
+  "look": {"age": "old", "skin": "#e0b48c", "hair": "#9a9a92", "hairStyle": "slick", "top": "#e9e4da", "coat": "#2a3a5a", "bottom": "#2a3a5a", "glasses": true}
+ },
+ "longshu": {
+  "name": "龍叔",
+  "look": {"age": "old", "skin": "#c08a60", "hair": "#d8d8d0", "hairStyle": "short", "top": "#f4f4f0", "bottom": "#3a3a3a"}
+ },
  "doufa": {
   "name": "豆花",
   "note": "拉布拉多鑑識犬，需要新做狗的 sprite"
