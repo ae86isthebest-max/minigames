@@ -110,6 +110,9 @@ details.past summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6p
 .world{position:relative;margin:0 -16px 10px;border-top:2px solid #000;border-bottom:2px solid #000;line-height:0;background:#000;overflow:hidden}
 .world canvas{width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;display:block;touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:pointer}
 .wsign{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-weight:800;letter-spacing:.08em;line-height:1;pointer-events:none;text-shadow:0 1px 0 rgba(0,0,0,.55);z-index:1}
+.wnav{position:absolute;transform:translate(-50%,-100%);font-size:12px;font-family:inherit;line-height:1.2;padding:3px 9px;background:rgba(20,16,12,.8);color:#ffe8a0;border:1.5px solid #ffd04a;border-radius:99px;white-space:nowrap;z-index:1;cursor:pointer;animation:wnavb 1.6s ease-in-out infinite}
+.wnav.secret{color:#e8d8ff;border-color:#b07aff;background:rgba(40,20,60,.82);letter-spacing:.1em}
+@keyframes wnavb{0%,100%{margin-top:0}50%{margin-top:-3px}}
 .wskip{position:absolute;right:8px;top:8px;z-index:3;background:rgba(20,16,12,.72);color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:99px;padding:4px 12px;font-size:12px;font-family:inherit;cursor:pointer}
 .wbubble{position:absolute;top:6px;max-width:78%;width:max-content;background:#fffdf7;color:#1b1512;border:2px solid #1b1512;box-shadow:3px 3px 0 #1b1512;padding:5px 9px;font-size:13.5px;line-height:1.5;pointer-events:none;z-index:2}
 .wbubble b{display:block;font-size:11px;color:#8a5a1a}
@@ -499,7 +502,7 @@ function worldView(l, def){
   else if (wTalk){ const s = C.suspects.find(x=>x.id===wTalk); panel = worldTalk(s); }
   else if (peek && peek.kind==="item"){ const it = allItems().find(x=>x.id===peek.id); panel = `<div class="look"><b>${it.cctv?"📹":"🧾"} ${esc(it.title)}</b>${itemBody(it, true)}</div>`; }
   else if (peek && peek.kind==="detail"){ const d = allDetails().find(x=>x.id===peek.id); panel = `<div class="look"><b>🔎 ${esc(d.name||"你注意到")}</b>${nl(d.text)}${peek.isNew?`<div class="found" style="margin-top:4px">發現小細節！（${(S.found||[]).length}／${nd}）</div>`:""}</div>`; }
-  else panel = `<p class="hint" style="margin:0 2px 12px">點地面走過去，按住不放就一直走（走路不花時間）。頭上箭嘴：<b style="color:#ffd04a">黃</b> 可以問話、<b style="color:#ff5a4a">紅</b> 有新的質問、<b style="color:#8a8a8a">灰</b> 不肯再答、<b style="color:#6ac8ff">藍</b> 鑑識人員或員警（問話不花時間）、<b style="color:#6fd46f">綠</b> 小吳。點人、點東西會先問你要不要做，確定了才會${CLK() ? "花時間" : "用掉次數"}。<span style="color:#ffd04a">✦</span> 是還沒查過的東西，其他地方也可能藏著小細節。</p>`;
+  else panel = `<p class="hint" style="margin:0 2px 12px">點地面走過去，或點畫面上的指示牌（⬆ 上二樓、🚪 進去、出去）自動走過去，走路不花時間。看到<b style="color:#b07aff">【···】</b>代表那裡好像有暗門或秘道。頭上箭嘴：<b style="color:#ffd04a">黃</b> 可以問話、<b style="color:#ff5a4a">紅</b> 有新的質問、<b style="color:#8a8a8a">灰</b> 不肯再答、<b style="color:#6ac8ff">藍</b> 鑑識人員或員警（問話不花時間）、<b style="color:#6fd46f">綠</b> 小吳。點人、點東西會先問你要不要做，確定了才會${CLK() ? "花時間" : "用掉次數"}。<span style="color:#ffd04a">✦</span> 是還沒查過的東西，其他地方也可能藏著小細節。</p>`;
   const seenHere = allItems().filter(it=>(it.loc||"_")===l.id && S.seen.includes(it.id));
   const lab = l.perVisit ? `<button class="wq" style="border-color:var(--accent)" onclick="wTalk=null;peek=peek&&peek.kind==='lab'?null:{kind:'lab'};render()">🧪 化驗櫃台（這次還能送 ${testsLeftAt(l)} 件）</button>` : "";
   return `<div class="wtop">${travel()?`<button class="back" onclick="leaveWorld()">‹ 地圖</button>`:""}<b>${esc(travel()?l.name:"案發現場")}</b>${CLK()?`<span>🕐 ${nowStr()}・剩 ${minLabel(timeLeft())}</span>`:`<span>🔍 還能查 ${sl} 項</span>`}<span class="found">🔎 ${(S.found||[]).length}／${nd}</span></div>
@@ -549,6 +552,7 @@ function worldHooks(l, def){
     script: ps && ps.steps,
     scriptDone: set => { if (set){ if (ps && ps.key){ S.introSeen = S.introSeen || {}; S.introSeen[ps.key] = 1; save(); } wArrive = null; wNews = []; } return !ps; },
     refresh: () => render(),
+    onSecret: q => { wTalk = null; wAct = null; peek = null; lastSaid = null; wSay = { who:"you", text:q.text || "這面牆後面好像是空的……" }; if (q.onFind) q.onFind(S); save(); render(); },
     areaSeen: id => (S.areas || []).includes(l.id + ":" + id + "@" + S.phase),
     onArea: id => { (S.areas = S.areas || []).push(l.id + ":" + id + "@" + S.phase); save(); }
   };

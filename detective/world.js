@@ -288,6 +288,47 @@ const WORLD = (() => {
     }
     g.restore();
   }
+  /* ---------- 可以點的指示牌：上樓／下樓、進去／出去、【···】秘道 ----------
+     不用按住拖著走：點一下指示牌，主角自己走過去。
+     def.secrets = [{ id, x, y, walk, fy, text, when(opt) }]：牆上出現【···】，代表這裡好像有秘道或暗門；
+     點了會走過去，觸發 hooks.onSecret(secret)（之後的劇本可以用它打開新的地方）。 */
+  function navList(s){
+    const out = [], onLv = v => Math.abs(s.py - v) < 1, curB = bldAt(s.px);
+    if (s.script || s.path.length) return out;
+    stairs().forEach((k, i) => {
+      const bi = bldAt((k.x0 + k.x1) / 2); if (bi >= 0 && (s.rv[bi] || 0) < 0.5) return;
+      const lo = k.y0 >= k.y1 ? [k.x0, k.y0] : [k.x1, k.y1], hi = k.y0 >= k.y1 ? [k.x1, k.y1] : [k.x0, k.y0];
+      if (onLv(lo[1])) out.push({ key:"su" + i, x:(lo[0] + hi[0]) / 2, y:(lo[1] + hi[1]) / 2 - 4, label:"⬆ 上二樓", to:hi });
+      if (onLv(hi[1])) out.push({ key:"sd" + i, x:(lo[0] + hi[0]) / 2, y:(lo[1] + hi[1]) / 2 + 10, label:"⬇ 下一樓", to:lo });
+    });
+    blds().forEach((b, i) => {
+      const covered = (s.rv[i] || 0) < 0.5;
+      [b.x0, b.x1].forEach((dx, j) => {
+        if (b.doors && b.doors[j] === false) return;
+        if (covered && curB !== i) out.push({ key:`d${i}_${j}`, x:dx + (j ? -6 : 6), y:GROUND - 45, label:"🚪 進去", to:[dx + (j ? -10 : 10), GROUND] });
+        else if (!covered && curB === i && onLv(GROUND)) out.push({ key:`o${i}_${j}`, x:dx + (j ? -8 : 8), y:GROUND - 45, label: j ? "出去 ➜" : "⬅ 出去", to:[dx + (j ? 14 : -14), GROUND] });
+      });
+    });
+    (cur.def.secrets || []).filter(q => !q.when || q.when(cur.hooks.opt())).forEach(q => out.push({ key:"x" + q.id, x:q.x, y:q.y, label:"【···】", secret:q, to:[q.walk ?? q.x, q.fy ?? GROUND] }));
+    return out;
+  }
+  function navButtons(s, cam, wrapEl, cw, chh){
+    cur.nav = cur.nav || {};
+    const list = navList(s), keep = new Set();
+    list.forEach(n => {
+      const sx = (n.x - cam) / VW * cw; if (sx < 10 || sx > cw - 10) return;
+      keep.add(n.key);
+      let el = cur.nav[n.key];
+      if (!el){
+        el = cur.nav[n.key] = document.createElement("button"); el.className = "wnav" + (n.secret ? " secret" : ""); wrapEl.appendChild(el);
+        el.onpointerdown = e => e.stopPropagation();
+      }
+      el.textContent = n.label;
+      el.onclick = e => { e.stopPropagation(); const q = n.secret; goThen(n.to[0], n.to[1], q ? () => cur.hooks.onSecret && cur.hooks.onSecret(q) : null); cur.hooks.onGround && !q && cur.hooks.onGround(); };
+      el.style.left = sx + "px"; el.style.top = (n.y / VH * chh) + "px"; el.hidden = false;
+    });
+    Object.keys(cur.nav).forEach(k => { if (!keep.has(k)) cur.nav[k].hidden = true; });
+  }
   // 頭上的小箭嘴：顏色代表狀態（hooks.people 給 arrow 顏色；mark＝正在跟你說話，箭嘴大一點、跳得比較快）
   function arrow(p, q, t){
     if (!q.arrow) return;
@@ -461,6 +502,7 @@ const WORLD = (() => {
       el.style.left = sx + "px"; el.style.top = (L.y / VH * chh) + "px";
       el.style.fontSize = ((L.size || 6.5) / VW * cw) + "px"; el.style.color = L.color || "#fff8e8";
     }));
+    navButtons(s, cam, wrapEl, cw, chh);
     if (cur.tip) cur.tip.textContent = s.script ? (step() && step().say ? "點一下跳到下一句 ▶" : "") : "";
     const sk = cur.canvas.parentNode.querySelector(".wskip"); if (sk) sk.hidden = !s.script;
   }
