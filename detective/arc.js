@@ -1,6 +1,6 @@
 /* =========================================================
    跨集記憶（主線用）：這一集查到的東西，下一集還記得
-   存在另一個存檔（SERIES_KEY），重玩某一集、換集數都不會消失。
+   存在另一個存檔（每個存檔位各一份，見 SLOT），重玩某一集、換集數都不會消失。
 
    寫劇本的人這樣用：
    1) 把某樣東西標成「主線線索」：在問題／證物／監視器／化驗／報告／突發事件／小細節上加 arc:"旗標名"（也可以是陣列）
@@ -31,17 +31,59 @@
 
    規則：主線線索只能是加分，任何一集沒有它也要破得了案；下一集一定要用 arcRecap 的 miss 把沒查到的人接回來。
    ========================================================= */
+/* ---------- 存檔位：每台裝置 3 個存檔，各自有自己的集數進度和主線紀錄 ----------
+   存檔 1 沿用原本的鍵名，所以以前的進度會自動變成存檔 1。 */
+const SLOT = (() => {
+  const CUR = "detective_tw3_slot", N = 3;
+  let cur = 1;
+  try { cur = Math.min(N, Math.max(1, parseInt(localStorage.getItem(CUR), 10) || 1)); } catch (e) {}
+  const pre = n => n === 1 ? "detective_tw3_" : `detective_tw3_s${n}_`;
+  const caseKey = (id, n) => pre(n || cur) + "save_" + id;
+  const seriesKey = n => pre(n || cur) + "series";
+  const read = k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
+  // 這個存檔位的概況：{ solved, open, empty }
+  function summary(n){
+    let solved = 0, open = 0;
+    CASES.forEach(c => { const s = read(caseKey(c.id, n)); if (!s || !s.asked) return;
+      if (s.done && s.result && s.revealed !== false) solved++; else if (s.asked.length || s.seen.length || s.phase || s.done) open++; });
+    return { solved, open, empty: !solved && !open && !read(seriesKey(n)) };
+  }
+  function wipe(n){
+    try { const ks = []; for (let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if (k && (k.startsWith(pre(n) + "save_") || k === seriesKey(n))) ks.push(k); }
+      ks.forEach(k => localStorage.removeItem(k)); } catch (e) {}
+  }
+  function use(n){ cur = n; try { localStorage.setItem(CUR, String(n)); } catch (e) {} }
+  return { N, cur:() => cur, caseKey, seriesKey, summary, wipe, use };
+})();
+// 換存檔、刪存檔之後：把記在記憶體裡的東西（主線紀錄、場景裡走到哪）清掉，從新存檔重新讀
+function slotRefresh(){
+  ARC.reload();
+  if (typeof WORLD !== "undefined") CASES.forEach(c => (c.locations ? c.locations.map(l => l.id) : ["_"]).forEach(id => WORLD.reset(id)));
+  inter = null; render(); scrollTo(0, 0);
+}
+function slotUse(n){ if (n === SLOT.cur()) return; SLOT.use(n); slotRefresh(); toast(`💾 現在用的是存檔 ${n}`); }
+async function slotDelete(n){
+  if (!await uiConfirm(`刪除存檔 ${n}？\n這個存檔裡每一集的進度和主線紀錄都會消失，不能復原。`)) return;
+  SLOT.wipe(n); slotRefresh(); toast(`🗑 存檔 ${n} 已刪除`);
+}
+// 首頁的存檔列
+function slotsHTML(){
+  return `<div class="card"><h3 style="margin:0 0 6px">💾 存檔</h3><p class="muted small" style="margin:0 0 8px">這台裝置有 ${SLOT.N} 個存檔，各玩各的。點一個來用；想重新玩，就開一個空白的，或把舊的刪掉。</p>
+    ${[1, 2, 3].slice(0, SLOT.N).map(n => { const m = SLOT.summary(n), on = n === SLOT.cur();
+      const txt = m.empty ? "空白" : [m.solved ? `已結案 ${m.solved} 集` : "", m.open ? `調查中 ${m.open} 集` : ""].filter(Boolean).join("・") || "剛開始";
+      return `<div class="pick ${on ? "on" : ""}" onclick="slotUse(${n})" style="align-items:center"><span class="box">${on ? "✓" : ""}</span><span style="flex:1"><b>存檔 ${n}</b>　<span class="muted small">${txt}${on ? "・使用中" : ""}</span></span>${m.empty ? "" : `<button class="tag" style="border:0;cursor:pointer;padding:5px 10px;margin:0;color:#ff9a8a" onclick="event.stopPropagation();slotDelete(${n})">🗑 刪除</button>`}</div>`; }).join("")}</div>`;
+}
+
 const ARC = (() => {
-  const SERIES_KEY = "detective_tw3_series";
   let D = null;
   const info = {};
   const load = () => {
     if (D) return D;
-    try { D = JSON.parse(localStorage.getItem(SERIES_KEY)) || {}; } catch (e) { D = {}; }
+    try { D = JSON.parse(localStorage.getItem(SLOT.seriesKey())) || {}; } catch (e) { D = {}; }
     D.flags = D.flags || {}; D.cases = D.cases || {}; D.seen = D.seen || {};
     return D;
   };
-  const store = () => { try { localStorage.setItem(SERIES_KEY, JSON.stringify(D)); } catch (e) {} };
+  const store = () => { try { localStorage.setItem(SLOT.seriesKey(), JSON.stringify(D)); } catch (e) {} };
   const has = f => !!load().flags[f];
   const found = f => has(f) && D.flags[f].how === "found";
   // how："found" 自己查到、"told" 前情提要告知、"auto" 結案紀錄。told 之後自己查到會升級成 found
@@ -116,6 +158,7 @@ const ARC = (() => {
   const define = o => Object.assign(info, o);
   const grade = id => (load().cases[id] || {}).grade || null;
   const reset = () => { D = { flags:{}, cases:{}, seen:{} }; store(); };
+  const reload = () => { D = null; };   // 換存檔之後重新讀
   // 幕間看過沒、固定班底
   const seen = k => !!load().seen[k];
   const mark = k => { load(); if (!D.seen[k]){ D.seen[k] = 1; store(); } };
@@ -123,7 +166,7 @@ const ARC = (() => {
   const defineCast = o => Object.assign(cast, o);
   const look = id => (cast[id] || {}).look || null;
   const name = id => (cast[id] || {}).name || null;
-  return { has, found, set, is, test, sync, open, recap, recapHTML, list, notesHTML, define, grade, reset, entries, info, seen, mark, cast, defineCast, look, name, bind:fn => { engineHas = fn; } };
+  return { has, found, set, is, test, sync, open, recap, recapHTML, list, notesHTML, define, grade, reset, reload, entries, info, seen, mark, cast, defineCast, look, name, bind:fn => { engineHas = fn; } };
 })();
 
 /* ---------- 幕間：案件之間的對話場面（資料格式見最上面第 6 點） ---------- */
