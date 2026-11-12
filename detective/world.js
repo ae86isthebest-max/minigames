@@ -316,22 +316,48 @@ const WORLD = (() => {
         else if (!covered && curB === i && onLv(GROUND)) out.push({ key:`o${i}_${j}`, x:dx + (j ? -8 : 8), y:GROUND - 45, label: j ? "出去 ➜" : "⬅ 出去", to:[dx + (j ? 14 : -14), GROUND] });
       });
     });
+    if (cur.hooks.noFreeWalk && cur.def.areas) out.push(...areaArrows(s));
     (cur.def.secrets || []).filter(q => !q.when || q.when(cur.hooks.opt())).forEach(q => out.push({ key:"x" + q.id, x:q.x, y:q.y, label:"【···】", secret:q, to:[q.walk ?? q.x, q.fy ?? GROUND] }));
+    return out;
+  }
+  // 不能隨便走的時候：畫面上出現往旁邊區域的箭嘴（⬅ 客廳、🚪 大門 ➜、⬆ 二樓書房），點了就走過去
+  function areaArrows(s){
+    const A = cur.def.areas.filter(a => !a.hide && !(a.when && !a.when(cur.hooks.opt()))), ay = a => a.y ?? GROUND;
+    const here = A.find(a => s.px >= a.x0 && s.px <= a.x1 && Math.abs(s.py - ay(a)) < 2);
+    if (!here) return [];
+    const nm = a => a.name || (cur.hooks.areaName ? cur.hooks.areaName(a.id) : a.id);
+    const door = x => blds().some(b => Math.abs(b.x0 - x) < 8 || Math.abs(b.x1 - x) < 8);
+    const mid = a => [(a.x0 + a.x1) / 2, ay(a)], out = [], fy = ay(here);
+    const same = A.filter(a => a !== here && ay(a) === fy);
+    const L = same.filter(a => a.x1 <= here.x0 + 2 && a.x1 >= here.x0 - 8)[0], R = same.filter(a => a.x0 >= here.x1 - 2 && a.x0 <= here.x1 + 8)[0];
+    if (L) out.push({ key:"aL" + L.id, x:here.x0 + 6, y:fy + 10, label:(door(here.x0) ? "🚪 " : "⬅ ") + nm(L), to:mid(L), edge:-1, area:L.id });
+    if (R) out.push({ key:"aR" + R.id, x:here.x1 - 6, y:fy + 10, label:nm(R) + (door(here.x1) ? " 🚪" : " ➜"), to:mid(R), edge:1, area:R.id });
+    stairs().forEach((k, i) => {
+      [[k.x0, k.y0, k.x1, k.y1], [k.x1, k.y1, k.x0, k.y0]].forEach(([ax, ayy, bx, by]) => {
+        if (Math.abs(ayy - fy) > 1 || ax < here.x0 - 4 || ax > here.x1 + 4) return;
+        const other = A.filter(a => Math.abs(ay(a) - by) < 2).sort((a, c) => Math.abs((a.x0 + a.x1) / 2 - bx) - Math.abs((c.x0 + c.x1) / 2 - bx))
+          .find(a => bx >= a.x0 - 4 && bx <= a.x1 + 4) || A.filter(a => Math.abs(ay(a) - by) < 2).sort((a, c) => Math.abs((a.x0 + a.x1) / 2 - bx) - Math.abs((c.x0 + c.x1) / 2 - bx))[0];
+        if (!other || out.some(o => o.area === other.id)) return;
+        out.push({ key:"aS" + i + other.id, x:(ax + bx) / 2, y:Math.min(ayy, by) + (by < ayy ? -6 : 18), label:(by < ayy ? "⬆ 上樓・" : "⬇ 下樓・") + nm(other), to:mid(other), area:other.id });
+      });
+    });
     return out;
   }
   function navButtons(s, cam, wrapEl, cw, chh){
     cur.nav = cur.nav || {};
     const list = navList(s), keep = new Set();
     list.forEach(n => {
-      const sx = (n.x - cam) / VW * cw; if (sx < 10 || sx > cw - 10) return;
+      let sx = (n.x - cam) / VW * cw;
+      if (!n.edge && (sx < 10 || sx > cw - 10)) return;
       keep.add(n.key);
       let el = cur.nav[n.key];
       if (!el){
-        el = cur.nav[n.key] = document.createElement("button"); el.className = "wnav" + (n.secret ? " secret" : ""); wrapEl.appendChild(el);
+        el = cur.nav[n.key] = document.createElement("button"); el.className = "wnav" + (n.secret ? " secret" : "") + (n.area ? " go" : ""); wrapEl.appendChild(el);
         el.onpointerdown = e => e.stopPropagation();
       }
       el.textContent = n.label;
-      el.onclick = e => { e.stopPropagation(); const q = n.secret; goThen(n.to[0], n.to[1], q ? () => cur.hooks.onSecret && cur.hooks.onSecret(q) : null); cur.hooks.onGround && !q && cur.hooks.onGround(); };
+      el.onclick = e => { e.stopPropagation(); const q = n.secret; cur.hooks.onGround && !q && cur.hooks.onGround(); goThen(n.to[0], n.to[1], q ? () => cur.hooks.onSecret && cur.hooks.onSecret(q) : n.area && cur.hooks.onArrive ? () => cur.hooks.onArrive(n.area) : null); };
+      if (n.edge){ const cov = (cur.hooks.cover ? cur.hooks.cover() : 0) * cw, hw = (el.offsetWidth || 120) / 2 + 6; sx = Math.max(hw, Math.min(cw - cov - hw, sx)); }   // 往旁邊的箭嘴：走到畫面外就貼在邊上
       el.style.left = sx + "px"; el.style.top = (n.y / VH * chh) + "px"; el.hidden = false;
     });
     Object.keys(cur.nav).forEach(k => { if (!keep.has(k)) cur.nav[k].hidden = true; });

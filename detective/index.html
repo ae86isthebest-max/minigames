@@ -111,13 +111,14 @@ details.past summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6p
 .world canvas{width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;display:block;touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:pointer}
 .wsign{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-weight:800;letter-spacing:.08em;line-height:1;pointer-events:none;text-shadow:0 1px 0 rgba(0,0,0,.55);z-index:1}
 .wnav{position:absolute;transform:translate(-50%,-100%);font-size:12px;font-family:inherit;line-height:1.2;padding:3px 9px;background:rgba(20,16,12,.8);color:#ffe8a0;border:1.5px solid #ffd04a;border-radius:99px;white-space:nowrap;z-index:1;cursor:pointer;animation:wnavb 1.6s ease-in-out infinite}
+.wnav.go{font-size:14px;font-weight:700;padding:6px 13px;color:#fff;background:rgba(30,60,30,.88);border:2px solid #6fd46f;box-shadow:0 2px 8px rgba(0,0,0,.55);z-index:2}
 .wnav.secret{color:#e8d8ff;border-color:#b07aff;background:rgba(40,20,60,.82);letter-spacing:.1em}
 @keyframes wnavb{0%,100%{margin-top:0}50%{margin-top:-3px}}
 .wskip{position:absolute;right:8px;top:8px;z-index:3;background:rgba(20,16,12,.72);color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:99px;padding:4px 12px;font-size:12px;font-family:inherit;cursor:pointer}
 .wbubble{position:absolute;top:6px;max-width:78%;width:max-content;background:#fffdf7;color:#1b1512;border:2px solid #1b1512;box-shadow:3px 3px 0 #1b1512;padding:5px 9px;font-size:13.5px;line-height:1.5;pointer-events:none;z-index:2}
 .wbubble b{display:block;font-size:11px;color:#8a5a1a}
 .wbubble::after{content:"";position:absolute;left:var(--tail,50%);bottom:-9px;margin-left:-6px;border:6px solid transparent;border-top-color:#1b1512;border-bottom:0}
-.wbtns{position:absolute;left:8px;bottom:8px;z-index:3;display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;max-width:75%;pointer-events:none}
+.wbtns{position:absolute;left:8px;top:8px;z-index:3;display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;max-width:75%;pointer-events:none}
 .wbtns button{pointer-events:auto}
 .wgo{background:rgba(20,16,12,.82);color:#fff;border:1.5px solid #6fd46f;border-radius:99px;padding:6px 12px;font-size:13px;font-family:inherit;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.5)}
 .wgo[hidden]{display:none}
@@ -173,6 +174,7 @@ body.fs .toast{bottom:calc(14px + env(safe-area-inset-bottom))}
 .fs-root .wbubble{font-size:max(13.5px,1.2cqw);max-width:min(78%,60em)}
 .fs-root .wbubble b{font-size:max(11px,.9cqw)}
 .fs-root .wnav{font-size:max(12px,1.05cqw)}
+.fs-root .wnav.go{font-size:max(14px,1.3cqw)}
 .fs-root .wskip{font-size:max(12px,1cqw)}
 .fs-root .wtip{font-size:max(11px,.9cqw)}
 .fs-root .wroom,.fs-root .wgo{font-size:max(13px,1.15cqw)}
@@ -493,9 +495,9 @@ function buddyHint(l){
   const s = C.suspects.find(x=>x.id==="wu");
   const tail = s && !reachable(s) ? "要問我問題，就到鑑識中心找我。" : "";
   if (S.done) return "案子已經結了，辛苦了。";
-  if (CLK()) return `${timeTag()}。${fresh ? "點左下角的「📍」看這裡有什麼可以查，「🚶 去哪裡」換地方。" : "這裡看得到的東西都查過了。"}看錄影、查證物、問話都要花時間，挑重要的做。` + tail;
+  if (CLK()) return `${timeTag()}。${fresh ? "點左下角的「📍」看這裡有什麼可以查，點畫面上的箭嘴換地方。" : "這裡看得到的東西都查過了。"}看錄影、查證物、問話都要花時間，挑重要的做。` + tail;
   if (sl <= 0) return "這裡今天查不了更多了，去問問人吧。" + tail;
-  return `這裡還可以查 ${sl} 樣東西。${fresh ? "點左下角的「📍」看這裡有什麼可以查，「🚶 去哪裡」換地方。" : "看得到的東西都查過了，換個地方吧。"}${tail}`;
+  return `這裡還可以查 ${sl} 樣東西。${fresh ? "點左下角的「📍」看這裡有什麼可以查，點畫面上的箭嘴換地方。" : "看得到的東西都查過了，換個地方吧。"}${tail}`;
 }
 // 不是嫌疑人、但在現場可以說幾句話的人（鑑識人員、員警……）：def.extras = [{ id, name, x, y, L, pose, facing, lines, phase, until }]
 const extrasOf = def => (typeof def.extras === "function" ? def.extras(S.phase) : (def.extras || [])).filter(e=>(e.phase===undefined || S.phase>=e.phase) && (e.until===undefined || S.phase<=e.until));
@@ -649,7 +651,7 @@ function buddyMenu(l){
   </div>`;
 }
 function helpText(l){
-  return `移動：點左下角<b style="color:#6fd46f">「🚶 去哪裡」</b>選一個地方，你會自己走過去（上下樓、進出門都會自己走）。<b>走路不花時間。</b><br>
+  return `移動：點畫面上的箭嘴（<b style="color:#ffd04a">⬅ 客廳、大門 🚪、⬆ 二樓</b>），你會自己走過去。<b>走路不花時間。</b><br>
   看到<b style="color:#b07aff">【···】</b>代表那裡好像有暗門或秘道。<br>
   頭上箭嘴：<b style="color:#ffd04a">黃</b> 可以問話、<b style="color:#ff5a4a">紅</b> 有新的質問、<b style="color:#8a8a8a">灰</b> 不肯再答、<b style="color:#6ac8ff">藍</b> 鑑識人員或員警（問話不花時間）、<b style="color:#6fd46f">綠</b> 小吳。<br>
   到了一個地方，點左下角<b style="color:#ffd04a">「📍 地名」</b>：那裡的人可以說話、可以調查的東西都列在裡面（黃色數字是還沒查的數量）。點人、點東西會先問你要不要做，確定了才會${CLK() ? "花時間" : "用掉次數"}。畫面上其他地方也可能藏著小細節，可以到處點點看。<br>
@@ -693,6 +695,7 @@ function updateRoomBtn(){
   if (busy || !curArea){ b.hidden = true; return; }
   const { open } = areaItems(l, def, curArea);
   const n = open.filter(it=>!S.seen.includes(it.id)).length, np = peopleIn(def, curArea).length;
+  if (!open.length && !np && !areaItems(l, def, curArea).locked){ b.hidden = true; return; }
   b.innerHTML = `📍 ${esc(areaName(def, curArea))}<span class="an">・在這裡做什麼？</span>${n ? `<span class="n">${n}</span>` : ""}${np ? `<span class="n pp">👤${np}</span>` : ""}`;
   b.hidden = false;
 }
@@ -748,8 +751,7 @@ function roomList(l, def){
     ${cctv.length ? `<button class="wq" ${cNew?'style="border-color:var(--accent)"':""} onclick="wAct={ids:[${cctv.map(it=>`'${it.id}'`).join(",")}]};render()">📹 監視器主機 <span class="tag">${cctv.length} 段錄影${cNew ? `・${cNew} 段沒看過` : "・都看過了"}</span></button>` : ""}
     ${rest.map(row).join("")}
     ${locked ? `<p class="muted small" style="margin:6px 2px 0">🔒 這裡好像還有 ${locked} 樣東西，現在還沒有理由去翻。</p>` : ""}
-    ${!open.length && !ppl.length ? `<p class="muted small" style="margin:6px 2px 0">這裡沒有人，也沒什麼可以查的。</p>` : ""}
-    <button class="wq" onclick="openGo()">🚶 去別的地方</button></div>`;
+    ${!open.length && !ppl.length ? `<p class="muted small" style="margin:6px 2px 0">這裡沒有人，也沒什麼可以查的。</p>` : ""}</div>`;
 }
 function worldViewFS(l, def){
   let panel = "";
@@ -761,7 +763,7 @@ function worldViewFS(l, def){
     panel = `<div class="look"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:6px">${back ? `<button class="back" style="margin:0;white-space:nowrap" onclick="${back}">‹ ${peek.from ? "監視器列表" : "返回"}</button>` : ""}<b style="margin:0;flex:1">${it.cctv?"📹":it.icon||"🧾"} ${esc(it.title)}</b><button class="back" style="margin:0" onclick="closePanel()">✕</button></div>${itemBody(it, true)}${peek.from ? `<button class="back" onclick="wAct={ids:peek.from};peek=null;render()">‹ 回到監視器列表</button>` : wRoom ? `<button class="back" onclick="peek=null;render()">‹ 回到${esc(areaName(def, wRoom))}</button>` : ""}</div>`; }
   else if (wGo) panel = goList(l, def);
   else if (wRoom) panel = roomList(l, def);
-  const stage = `<div class="world"><canvas id="worldcv"></canvas><div class="wbtns"><button class="wgo" hidden onclick="openGo()">🚶 去哪裡</button><button class="wroom" hidden onclick="openRoomList()"></button></div><div class="wbubble" hidden><b></b><span></span></div><div class="wtip"></div><button class="wskip" hidden>跳過 ⏭</button></div>`;
+  const stage = `<div class="world"><canvas id="worldcv"></canvas><div class="wbtns"><button class="wroom" hidden onclick="openRoomList()"></button></div><div class="wbubble" hidden><b></b><span></span></div><div class="wtip"></div><button class="wskip" hidden>跳過 ⏭</button></div>`;
   const extra = l.perVisit ? `<button class="hb go" onclick="wTalk=null;wBuddy=false;wSay=null;peek=peek&&peek.kind==='lab'?null:{kind:'lab'};render()">🧪 化驗</button>` : "";
   return fsFrame(l, stage, panel, extra);
 }
@@ -819,6 +821,7 @@ function worldHooks(l, def){
     cover: () => fsCover,
     noSpark: true,
     noFreeWalk: true,
+    areaName: aid => areaName(def, aid),
     areaNow: (aid, scr) => { curArea = aid; curScripting = !!scr; updateRoomBtn(); },
     onSecret: q => { wTalk = null; wAct = null; peek = null; lastSaid = null; wSay = { who:"you", text:q.text || "這面牆後面好像是空的……" }; if (q.onFind) q.onFind(S); save(); render(); },
     areaSeen: id => (S.areas || []).includes(l.id + ":" + id + "@" + S.phase),
