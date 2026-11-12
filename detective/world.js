@@ -237,10 +237,31 @@ const WORLD = (() => {
     else {
       const wall = b.wall || "#b8a58a", top = b.y0, night = typeof b.night === "function" ? b.night(cur.hooks.opt()) : b.night;
       R(b.x0, top, b.x1 - b.x0, GROUND - top, wall);
-      if (b.brick){ for (let y = top + 2; y < GROUND; y += 4) for (let x = b.x0 + ((y/4)%2)*5; x < b.x1 - 4; x += 10) R(x, y, 9, 1, shade(wall, -.08)); }
+      if (b.brick){
+        // 磚牆：一塊一塊，顏色有深有淺，有些缺角
+        const mort = shade(wall, -.22); p.seed(b.x0 * 3 + 1);
+        for (let y = top + 2, r = 0; y < GROUND - 1; y += 4, r++) {
+          R(b.x0, y + 3, b.x1 - b.x0, 1, mort);
+          for (let x = b.x0 + (r % 2) * 5 - 5; x < b.x1; x += 10){
+            const v = p.rnd(), bx = Math.max(b.x0, x), bw = Math.min(x + 9, b.x1) - bx; if (bw <= 0) continue;
+            R(x + 9, y, 1, 3, mort);
+            if (v < 0.25) R(bx, y, bw, 3, shade(wall, -.07)); else if (v > 0.85) R(bx, y, bw, 3, shade(wall, .07));
+            if (v > 0.97) R(bx + 1, y, 3, 2, shade(wall, -.3));
+            R(bx, y, bw, 1, shade(wall, .1));
+          }
+        }
+      }
       p.seed(b.x0); for (let k = 0; k < (b.x1 - b.x0) / 6; k++) dither(b.x0 + p.rnd()*(b.x1-b.x0-8), top + p.rnd()*(GROUND-top-10), 8, 6, shade(wall, -.12), 3);
       R(b.x0 - 4, top - 5, b.x1 - b.x0 + 8, 6, b.roof || shade(wall, -.5)); R(b.x0 - 4, top + 1, b.x1 - b.x0 + 8, 1, shade(wall, -.35));
-      (b.rows || []).forEach(y => { R(b.x0, y + 15, b.x1 - b.x0, 2, shade(wall, -.25)); for (let x = b.x0 + 18; x < b.x1 - 20; x += 30) { windowBox(x, y, 12, 13, night ? ((x/30|0)%3 ? "#ffd98a" : "#1a2030") : "#8fb0c4"); R(x - 2, y + 14, 16, 2, shade(wall, .15)); } });
+      (b.rows || []).forEach(y => { R(b.x0, y + 17, b.x1 - b.x0, 2, shade(wall, -.25)); R(b.x0, y + 17, b.x1 - b.x0, 1, shade(wall, .12));
+        for (let x = b.x0 + 18; x < b.x1 - 20; x += 30) {
+          const lit = night && (x/30|0)%3, glass = night ? (lit ? "#ffd98a" : "#1a2030") : "#8fb0c4";
+          R(x - 3, y - 3, 18, 2, shade(wall, -.3)); R(x - 2, y - 2, 16, 1, shade(wall, .18));
+          windowBox(x, y, 12, 13, glass);
+          if (!night){ R(x + 1, y + 1, 4, 1, "#d8ecf6"); R(x + 7, y + 8, 3, 1, "#d8ecf6"); } else if (lit){ R(x + 1, y + 1, 5, 5, "#ffe8b0"); p.dither(x - 4, y + 14, 20, 6, "#ffd98a", 4); }
+          if ((x/30|0)%2){ R(x - 4, y, 3, 13, shade(b.shutter || "#5a6a5a", 0)); R(x + 13, y, 3, 13, shade(b.shutter || "#5a6a5a", 0)); for (let k = 1; k < 13; k += 2){ R(x - 4, y + k, 3, 1, shade(b.shutter || "#5a6a5a", -.25)); R(x + 13, y + k, 3, 1, shade(b.shutter || "#5a6a5a", -.25)); } }
+          R(x - 2, y + 14, 16, 2, shade(wall, .15)); R(x - 2, y + 16, 16, 1, shade(wall, -.35));
+        } });
       // 雨水管、冷氣、門燈、牆角的髒污
       R(b.x1 - 7, top, 2, GROUND - top, shade(wall, -.4)); R(b.x1 - 8, GROUND - 3, 4, 3, shade(wall, -.45));
       (b.rows || []).slice(0, 1).forEach(y => { const ax = b.x0 + Math.floor((b.x1 - b.x0) * 0.62); R(ax, y + 3, 12, 8, "#c9cdd0"); R(ax, y + 3, 12, 1, "#e9eef0"); for (let k = 0; k < 3; k++) R(ax + 2, y + 5 + k*2, 8, 1, "#8a9094"); R(ax + 5, y + 11, 1, 6, "#6a7074"); });

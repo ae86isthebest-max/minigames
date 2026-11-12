@@ -15,7 +15,7 @@
     // 天空、遠山（視差）
     for (let y=0; y<72; y+=2) R(cam-2, y, 244, 2, mix(skyT, skyB, y/72));
     for (let x=0; x<248; x+=2){ const wx = x + cam*0.55; const h = 50 + Math.sin(wx/37)*7 + Math.sin(wx/13)*2; R(cam+x-4, h, 2, 80-h, hill1); }
-    for (let x=0; x<248; x+=2){ const wx = x + cam*0.75; const h = 64 + Math.sin(wx/23)*4; R(cam+x-4, h, 2, 70-h+20, hill2); }
+    for (let x=0; x<248; x+=2){ const wx = x + cam*0.75; const h = 64 + Math.sin(wx/23)*4; R(cam+x-4, h, 2, G-h+1, hill2); }
     // 茶樹（背景）
     const tea = (a,b) => { for (let r=0;r<3;r++) for (let x=a;x<b;x+=9){ R(x+(r%2)*4, 86+r*6, 8, 4, "#22382a"); R(x+(r%2)*4, 86+r*6, 8, 1, "#2e4a37"); } };
     tea(96,186); tea(474,560); tea(700,960);

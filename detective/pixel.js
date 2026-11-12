@@ -83,11 +83,12 @@ const PX = (() => {
     if (low){ add(3,18,4,4,bot); add(9,18,4,4,bot); add(2,21,5,2,shoe); add(9,21,5,2,shoe); if (L.skirt) add(3,17,10,4,bot); }
     else if (L.skirt){ add(3,17,10,5,bot); const a=pose==="walk1"?1:0, b=pose==="walk2"?1:0; add(4,22,2,4-a,skin); add(10,22,2,4-b,skin); add(3,25-a,4,2,shoe); add(9,25-b,4,2,shoe); }
     else { const a=pose==="walk1"?1:0, b=pose==="walk2"?1:0; add(4-b,18,3,8-a,bot); add(9+a,18,3,8-b,bot); add(3-b,25-a,4,2,shoe); add(9+a,25-b,4,2,shoe); }
+    if (!low && !L.skirt){ add(5,19,1,5,shade(bot,-.18)); add(10,19,1,5,shade(bot,-.18)); add(3,25,1,1,shade(shoe,.45)); add(9,25,1,1,shade(shoe,.45)); }
     const legEnd = parts.length;
     // 身體（領口、皮帶、衣服皺褶）
     add(3,10,10,9,top);
     if (!low && !L.skirt && !L.coat) add(3,18,10,1,shade(bot,-.35));
-    add(6,10,4,1,shade(top,.22)); add(5,15,1,2,shade(top,-.12));
+    add(6,10,4,1,shade(top,.22)); add(5,15,1,2,shade(top,-.12)); add(4,11,1,6,shade(top,.12)); add(3,17,10,1,shade(top,-.2));
     if (L.coat) { add(3,10,3,10,L.coat); add(10,10,3,10,L.coat); add(6,10,1,3,shade(L.coat,.2)); add(9,10,1,3,shade(L.coat,.2)); add(4,15,1,1,shade(L.coat,-.3)); add(11,15,1,1,shade(L.coat,-.3)); }
     if (L.apron) add(5,12,6,8,L.apron);
     if (L.tie) add(7,11,2,5,L.tie);
@@ -96,76 +97,79 @@ const PX = (() => {
     // 手（左手 x=1，右手 x=13；面向右時右手在前）
     const armDown = (x,sw) => { add(x,11,2,7+(sw||0),sl); add(x,18+(sw||0),2,2,hand); };
     const L1 = () => armDown(1, pose==="walk2"?-1:0);
-    if (pose==="drink"||pose==="smoke"){ L1(); add(13,11,2,4,sl); add(10,10,4,2,sl); add(9,8,2,2,hand); if(pose==="drink") add(8,5,3,4,"#e9e4da"); else { add(7,8,3,1,"#e9e4da"); add(6,7,1,1,"#e25a2a"); } }
+    if (pose==="drink"||pose==="smoke"){ L1(); add(13,11,2,4,sl); add(10,10,4,2,sl); add(9,8,2,2,hand); if(pose==="drink"){ add(8,4,3,5,L.cupColor||"#e9e4da"); add(8,4,3,1,shade(L.cupColor||"#e9e4da",-.3)); } else { add(6,7,4,1,"#e9e4da"); add(5,7,1,1,"#e25a2a"); } }
     else if (pose==="cup"){ L1(); add(13,11,2,4,sl); add(10,14,4,2,sl); add(9,13,2,2,hand); add(8,11,3,4,L.cupColor||"#e9e4da"); add(8,11,3,1,shade(L.cupColor||"#e9e4da",-.25)); }
     else if (pose==="cig"){ L1(); armDown(13); add(15,19,2,1,"#e9e4da"); add(17,19,1,1,"#e25a2a"); }
     else if (pose==="broom2"){ L1(); add(13,11,2,6,sl); add(12,17,2,2,hand); add(11,6,1,7,"#8a6338"); add(12,13,1,7,"#8a6338"); add(13,20,1,5,"#8a6338"); add(11,24,6,3,"#c9a35a"); }
     else if (pose==="brush"||pose==="brush2"){ L1(); add(13,11,2,4,sl); add(14,14,3,2,sl); add(17,pose==="brush"?14:16,2,2,hand); add(19,pose==="brush"?13:15,1,3,"#e6c34a"); }
-    else if (pose==="cam"){ add(1,11,2,5,sl); add(13,11,2,3,sl); add(12,7,2,4,sl); add(3,12,2,4,sl); add(4,8,2,4,sl); add(5,4,7,4,"#2a2a2e"); add(10,5,2,2,"#9ab0c8"); add(6,3,2,1,"#5a5a5e"); }
+    else if (pose==="cam"){ add(1,11,2,5,sl); add(13,11,2,3,sl); add(12,7,2,4,sl); add(3,12,2,4,sl); add(4,8,2,4,sl); add(5,2,7,5,"#2a2a2e"); add(10,3,2,2,"#9ab0c8"); add(6,1,2,1,"#5a5a5e"); }
     else if (pose==="write"){ add(1,11,2,5,sl); add(13,11,2,5,sl); add(3,15,3,2,hand); add(10,14,3,2,hand); add(3,13,6,5,"#f1ead8"); add(4,14,4,1,"#7a8a9a"); add(11,11,1,4,"#2a3a8a"); }
-    else if (pose==="phone"){ L1(); add(13,11,2,3,sl); add(13,6,2,5,sl); add(12,5,2,2,hand); add(12,2,1,5,"#111"); }
+    else if (pose==="phone"){ L1(); add(13,11,2,3,sl); add(13,6,2,5,sl); add(12,5,2,2,hand); add(13,1,2,6,"#111"); add(13,2,1,3,"#3a5a7a"); }
     else if (pose==="point"){ L1(); add(13,11,7,2,sl); add(20,11,2,2,hand); }
-    else if (pose==="cry"){ add(1,11,2,4,sl); add(13,11,2,4,sl); add(2,8,3,3,sl); add(11,8,3,3,sl); add(4,5,3,3,hand); add(9,5,3,3,hand); }
+    else if (pose==="cry"){ add(1,11,2,4,sl); add(13,11,2,4,sl); add(2,8,3,3,sl); add(11,8,3,3,sl); add(4,3,3,4,hand); add(9,3,3,4,hand); }
     else if (pose==="hold"||pose==="read"){ add(1,11,2,5,sl); add(13,11,2,5,sl); add(3,15,3,2,hand); add(10,15,3,2,hand); if(pose==="read") add(4,12,8,5,"#f1ead8"); else if (L.prop==="pot") { add(5,14,6,4,"#8a5a3a"); add(11,15,2,1,"#8a5a3a"); } else if (L.prop) add(4,14,8,4,L.prop); }
     else if (pose==="cross"){ add(1,11,2,5,sl); add(13,11,2,5,sl); add(3,14,10,3,sl); add(3,14,2,2,hand); add(11,15,2,2,hand); }
     else if (pose==="broom"){ L1(); add(13,11,2,7,sl); add(13,18,2,2,hand); add(15,6,1,20,"#8a6338"); add(14,24,4,3,"#c9a35a"); }
     else { L1(); armDown(13, pose==="walk1"?-1:0); }
-    // 頭
-    add(3,0,10,10,skin);
-    const hs = L.hairStyle||"short";
-    if (hs==="long"){ add(2,0,12,3,hair); add(2,0,2,17,hair); add(12,0,2,17,hair); }
-    else if (hs==="bob"){ add(2,0,12,3,hair); add(2,0,2,8,hair); add(12,0,2,8,hair); }
-    else if (hs==="pony"){ add(3,0,10,3,hair); add(13,1,3,7,hair); }
-    else if (hs==="bun"){ add(3,0,10,3,hair); add(6,-3,4,3,hair); }
-    else if (hs==="bald"){ add(3,0,10,1,shade(skin,-.1)); }
-    else if (hs==="balding"){ add(3,3,1,3,hair); add(12,3,1,3,hair); }
-    else if (hs==="slick"){ add(3,0,10,2,hair); add(3,0,2,4,hair); add(11,0,2,3,hair); }
-    else if (hs==="spiky"){ add(3,0,10,2,hair); add(4,-1,2,1,hair); add(8,-1,2,1,hair); add(11,-1,1,1,hair); }
-    else add(3,0,10,3,hair);
-    if (L.hood){ add(2,-1,12,4,L.hood); add(2,-1,2,10,L.hood); add(12,-1,2,10,L.hood); }
-    if (L.hat==="douli"){ add(0,-2,16,2,"#c9a35a"); add(4,-4,8,2,"#c9a35a"); add(7,-5,2,1,"#c9a35a"); }
-    if (L.hat==="cap"){ add(3,-1,10,2,L.capColor||"#c23a2a"); add(11,0,4,1,L.capColor||"#c23a2a"); }
-    if (L.hat==="nurse"){ add(5,-2,6,2,"#ffffff"); }
-    if (L.hat==="fedora"){ add(1,-1,14,2,L.hatColor||"#4a3a2a"); add(4,-4,8,3,L.hatColor||"#4a3a2a"); add(4,-2,8,1,"#2a1a10"); }
-    if (L.hat==="police"){ add(3,-2,10,3,"#24324e"); add(2,0,12,1,"#1a2236"); add(7,-1,2,1,"#e6c34a"); }
-    if (L.back){ add(3,0,10,9, L.hood||hair); }
+    const armEnd = parts.length;
+    // 頭（Q 版大頭：12×11，比身體寬；耳朵、臉頰陰影、頭髮亮面）
+    add(2,-1,12,11,skin); add(1,3,1,3,shade(skin,-.08)); add(14,3,1,3,shade(skin,-.15));
+    const hs = L.hairStyle||"short", hl = shade(hair,.28), hd = shade(hair,-.25);
+    if (hs==="long"){ add(1,-2,14,3,hair); add(1,-1,2,18,hair); add(13,-1,2,18,hair); add(1,8,1,9,hd); add(4,-2,5,1,hl); }
+    else if (hs==="bob"){ add(1,-2,14,3,hair); add(1,-1,2,9,hair); add(13,-1,2,9,hair); add(2,1,3,1,hair); add(4,-2,5,1,hl); }
+    else if (hs==="pony"){ add(2,-2,12,3,hair); add(2,0,1,3,hair); add(14,-1,3,9,hair); add(15,1,1,6,hd); add(4,-2,5,1,hl); }
+    else if (hs==="bun"){ add(2,-2,12,3,hair); add(2,0,1,3,hair); add(13,0,1,3,hair); add(6,-5,4,3,hair); add(7,-5,2,1,hl); }
+    else if (hs==="bald"){ add(3,-1,10,1,shade(skin,.12)); add(2,2,1,3,shade(hair,.1)); add(13,2,1,3,shade(hair,.1)); }
+    else if (hs==="balding"){ add(2,1,1,4,hair); add(13,1,1,4,hair); add(5,-1,5,1,shade(skin,.15)); }
+    else if (hs==="slick"){ add(2,-2,12,2,hair); add(2,-2,2,5,hair); add(12,-2,2,4,hair); add(5,-2,6,1,hl); add(9,-1,3,1,hd); }
+    else if (hs==="spiky"){ add(2,-2,12,3,hair); add(3,-3,2,1,hair); add(7,-4,2,2,hair); add(11,-3,2,1,hair); add(2,0,1,3,hair); add(13,0,1,3,hair); add(5,-2,3,1,hl); }
+    else { add(2,-2,12,3,hair); add(2,0,1,3,hair); add(13,0,1,3,hair); add(4,-2,5,1,hl); add(10,0,3,1,hd); }
+    if (L.hood){ add(1,-3,14,4,L.hood); add(1,-3,2,12,L.hood); add(13,-3,2,12,L.hood); add(3,-3,9,1,shade(L.hood,.15)); }
+    if (L.hat==="douli"){ add(-1,-3,18,2,"#c9a35a"); add(4,-5,8,2,"#c9a35a"); add(7,-6,2,1,"#c9a35a"); add(0,-2,16,1,"#a8843a"); }
+    if (L.hat==="cap"){ add(2,-3,12,3,L.capColor||"#c23a2a"); add(12,-1,5,1,L.capColor||"#c23a2a"); add(4,-3,4,1,shade(L.capColor||"#c23a2a",.25)); }
+    if (L.hat==="nurse"){ add(5,-4,6,2,"#ffffff"); add(7,-4,2,2,"#e04a3a"); }
+    if (L.hat==="fedora"){ const hc = L.hatColor||"#4a3a2a"; add(0,-2,16,2,hc); add(3,-6,10,4,hc); add(3,-3,10,1,"#2a1a10"); add(4,-6,4,1,shade(hc,.25)); add(7,-6,2,1,shade(hc,-.3)); }
+    if (L.hat==="police"){ add(2,-4,12,4,"#24324e"); add(1,-1,14,1,"#1a2236"); add(7,-3,2,2,"#e6c34a"); add(3,-4,5,1,"#34446a"); }
+    if (L.back){ add(2,-2,12,11, L.hood||hair); add(4,-2,5,1,hl); }
     // 臉：表情（L.mood：sad 傷心、worried 擔心、angry 生氣、shock 嚇到、tired 疲倦、smile 微笑、smug 得意）、眨眼、說話
-    const ey = L.back ? -99 : 5, closed = pose==="cry"||legs==="lie"||legs==="fall"||L.blink, mood = L.mood || (pose==="cry" ? "sad" : "");
+    const ey = L.back ? -99 : 4, closed = pose==="cry"||legs==="lie"||legs==="fall"||L.blink, mood = L.mood || (pose==="cry" ? "sad" : "");
     if (!L.back){
-      add(4,9,8,1,shade(skin,-.12)); add(8,6,1,2,shade(skin,-.14));
-      if (hs!=="bald" && hs!=="balding") add(5,0,4,1,shade(hair,.3));
+      add(3,8,10,1,shade(skin,-.12)); add(12,1,1,7,shade(skin,-.1)); add(8,5,1,2,shade(skin,-.16));
       const bc = shade(hair,-.15);
-      if (mood==="angry"){ add(4,3,2,1,bc); add(6,4,1,1,bc); add(9,4,1,1,bc); add(10,3,2,1,bc); }
-      else if (mood==="sad"||mood==="worried"){ add(4,4,1,1,bc); add(5,3,2,1,bc); add(9,3,2,1,bc); add(11,4,1,1,bc); }
-      else if (mood==="shock"){ add(4,3,3,1,bc); add(9,3,3,1,bc); }
+      if (mood==="angry"){ add(4,2,2,1,bc); add(6,3,1,1,bc); add(9,3,1,1,bc); add(10,2,2,1,bc); }
+      else if (mood==="sad"||mood==="worried"){ add(4,3,1,1,bc); add(5,2,2,1,bc); add(9,2,2,1,bc); add(11,3,1,1,bc); }
+      else if (mood==="shock"){ add(4,1,3,1,bc); add(9,1,3,1,bc); }
+      else { add(4,2,2,1,bc); add(10,2,2,1,bc); }
     }
-    if (L.sunglasses){ add(4,ey-1,8,2,"#111"); }
+    if (L.sunglasses){ add(3,ey-1,10,3,"#111"); add(4,ey-1,2,1,"#5a6a7a"); }
     else if (pose!=="cry" && !L.back) {
       if (closed){ add(4,ey+1,3,1,INK); add(9,ey+1,3,1,INK); }
       else if (mood==="shock"){ add(4,ey-1,3,3,"#ffffff"); add(9,ey-1,3,3,"#ffffff"); add(5,ey,1,1,INK); add(10,ey,1,1,INK); }
-      else if (mood==="tired"){ add(4,ey,3,1,shade(skin,-.3)); add(9,ey,3,1,shade(skin,-.3)); add(5,ey+1,1,1,INK); add(10,ey+1,1,1,INK); add(4,ey+2,3,1,shade(skin,-.18)); add(9,ey+2,3,1,shade(skin,-.18)); }
-      else { add(5,ey,1,2,INK); add(10,ey,1,2,INK); add(6,ey,1,1,"#ffffff"); add(11,ey,1,1,"#ffffff"); }
-      if (L.glasses){ add(4,ey-1,3,1,"#888"); add(9,ey-1,3,1,"#888"); add(7,ey-1,2,1,"#888"); }
+      else if (mood==="tired"){ add(4,ey,3,1,shade(skin,-.3)); add(9,ey,3,1,shade(skin,-.3)); add(5,ey+1,1,1,INK); add(10,ey+1,1,1,INK); add(4,ey+2,3,1,shade(skin,-.2)); add(9,ey+2,3,1,shade(skin,-.2)); }
+      else { add(5,ey,1,2,INK); add(10,ey,1,2,INK); add(4,ey,1,2,"#ffffff"); add(11,ey,1,2,"#ffffff"); }
+      if (L.glasses){ add(3,ey-1,4,1,"#7a7a7a"); add(9,ey-1,4,1,"#7a7a7a"); add(7,ey-1,2,1,"#7a7a7a"); add(3,ey-1,1,3,"#7a7a7a"); add(12,ey-1,1,3,"#7a7a7a"); }
     }
     const mc = L.mouth||shade(skin,-.4);
     if (L.back) {}
-    else if (L.mask) add(4,7,8,3,L.mask);
+    else if (L.mask){ add(3,6,10,3,L.mask); add(3,6,10,1,shade(L.mask,.15)); }
     else if (pose!=="drink"&&pose!=="smoke"){
-      if (L.talk) add(7,8,2,2,"#5a2424");
-      else if (mood==="sad"){ add(6,9,1,1,mc); add(7,8,2,1,mc); add(9,9,1,1,mc); }
-      else if (mood==="worried"){ add(7,8,2,1,mc); add(9,9,1,1,mc); }
-      else if (mood==="angry") add(6,8,4,1,mc);
-      else if (mood==="shock") add(7,8,2,2,"#3a1a1a");
-      else if (mood==="smile"){ add(6,8,1,1,mc); add(7,9,2,1,mc); add(9,8,1,1,mc); }
-      else if (mood==="smug"){ add(7,8,2,1,mc); add(9,7,1,1,mc); }
-      else add(7,8,2,1,mc);
+      if (L.talk){ add(7,7,2,2,"#5a2424"); add(7,8,2,1,"#c25a5a"); }
+      else if (mood==="sad"){ add(6,8,1,1,mc); add(7,7,2,1,mc); add(9,8,1,1,mc); }
+      else if (mood==="worried"){ add(7,7,2,1,mc); add(9,8,1,1,mc); }
+      else if (mood==="angry") add(6,7,4,1,mc);
+      else if (mood==="shock") add(7,7,2,2,"#3a1a1a");
+      else if (mood==="smile"){ add(6,7,1,1,mc); add(7,8,2,1,mc); add(9,7,1,1,mc); }
+      else if (mood==="smug"){ add(7,7,2,1,mc); add(9,6,1,1,mc); }
+      else add(7,7,2,1,mc);
     }
-    if (!L.back && (mood==="sad" && L.tear || pose==="cry")){ add(5,8,1,2,"#9fd0ff"); add(10,8,1,2,"#9fd0ff"); }
-    if (!L.back && L.sweat){ add(13,2,1,2,"#9fd0ff"); }
-    if (L.beard) add(4,7,8,2,shade(hair,.15));
-    if (L.bruise) add(10,6,2,2,"#7a4a8a");
-    if (old) { add(4,3,2,1,shade(skin,-.15)); add(10,3,2,1,shade(skin,-.15)); }
-    if (L.blush) add(4,7,1,1,"#e88a8a"); if (L.blush) add(11,7,1,1,"#e88a8a");
+    if (!L.back && (mood==="sad" && L.tear || pose==="cry")){ add(5,6,1,2,"#9fd0ff"); add(10,6,1,2,"#9fd0ff"); }
+    if (!L.back && L.sweat){ add(14,0,1,2,"#9fd0ff"); add(13,2,1,1,"#9fd0ff"); }
+    if (L.beard){ add(3,6,10,3,shade(hair,.15)); add(6,7,4,1,shade(skin,-.3)); }
+    if (L.bruise){ add(10,5,2,2,"#7a4a8a"); add(11,6,1,1,"#5a3a6a"); }
+    if (old) { add(4,6,2,1,shade(skin,-.15)); add(10,6,2,1,shade(skin,-.15)); add(6,0,4,1,shade(skin,-.1)); }
+    if (L.blush){ add(4,6,1,1,"#e88a8a"); add(11,6,1,1,"#e88a8a"); }
+    // 手如果舉到臉前面（喝東西、哭、講電話……），要畫在臉上面
+    for (let i=legEnd;i<armEnd;i++) if (parts[i][1] < 10 && pose!=="stand" && !/walk/.test(pose)) parts.push(parts[i].slice());
     if (L.cane && !low) add(15,10,1,16,"#6b4a2b");
     if (L.case && !low) add(14,17,6,5,"#4a3424");
     if (L.wet){ add(2,17,1,2,"#7fb6ff"); add(13,18,1,2,"#7fb6ff"); }
@@ -467,21 +471,23 @@ const PX = (() => {
     const hx = [9,7,5,7][f];
     add(6,11,3,5,shade(sl,-.1)); add(hx,15,3,3,sl); add(hx+(f===0?1:0),18,2,2,L.gloves||skin);
     if (L.case) add(hx-1,19,6,5,"#4a3424");
-    // 頭（側面）
-    add(4,1,7,9,skin); add(11,5,1,2,skin); add(5,8,5,1,shade(skin,-.12));
-    add(9,4,1,2,INK); if (L.glasses) add(8,3,4,1,"#888"); if (L.sunglasses) add(8,3,4,2,"#111");
-    add(10,7,1,1,shade(skin,-.35)); add(6,4,1,2,shade(skin,-.2));
+    // 頭（側面，Q 版大頭）
+    const hl = shade(hair,.28);
+    add(3,-1,10,10,skin); add(13,4,1,2,skin); add(4,7,7,1,shade(skin,-.12));
+    add(10,3,1,2,INK); add(11,3,1,2,"#ffffff"); if (L.glasses){ add(9,2,4,1,"#7a7a7a"); add(9,2,1,3,"#7a7a7a"); } if (L.sunglasses) add(9,2,5,2,"#111");
+    add(12,6,1,1,shade(skin,-.4)); add(6,3,2,2,shade(skin,-.18)); add(9,1,3,1,shade(hair,-.15));
     const hs = L.hairStyle||"short";
-    if (hs==="bald"){ add(4,0,7,1,shade(skin,-.1)); }
-    else if (hs==="balding"){ add(4,3,2,3,hair); }
-    else { add(4,0,7,2,hair); add(3,1,3,5,hair); if (hs==="long") add(3,1,3,15,hair); if (hs==="bob") add(3,1,3,8,hair); if (hs==="pony") add(1,2,3,7,hair); if (hs==="bun") add(2,-1,4,3,hair); if (hs==="spiky"){ add(5,-1,2,1,hair); add(8,-1,2,1,hair); } if (hs==="slick") add(8,0,3,1,shade(hair,.2)); }
-    if (L.hood){ add(3,-1,8,3,L.hood); add(3,-1,3,10,L.hood); }
-    if (L.hat==="douli"){ add(1,-2,13,2,"#c9a35a"); add(4,-4,7,2,"#c9a35a"); }
-    if (L.hat==="cap"){ add(4,-1,7,2,L.capColor||"#c23a2a"); add(10,0,3,1,L.capColor||"#c23a2a"); }
-    if (L.hat==="fedora"){ add(2,-1,11,2,L.hatColor||"#4a3a2a"); add(4,-4,7,3,L.hatColor||"#4a3a2a"); add(4,-2,7,1,"#2a1a10"); }
-    if (L.hat==="nurse") add(5,-2,5,2,"#ffffff");
-    if (L.mask) add(8,6,4,3,L.mask);
-    if (L.beard) add(7,7,4,2,shade(hair,.15));
+    if (hs==="bald"){ add(3,-1,10,1,shade(skin,.12)); add(3,2,2,3,hair); }
+    else if (hs==="balding"){ add(3,2,3,4,hair); }
+    else { add(3,-2,10,2,hair); add(2,-1,4,7,hair); add(5,-2,5,1,hl); if (hs==="long") add(2,-1,4,17,hair); if (hs==="bob") add(2,-1,4,10,hair); if (hs==="pony") add(-1,0,4,8,hair); if (hs==="bun") add(1,-4,5,3,hair); if (hs==="spiky"){ add(5,-3,2,1,hair); add(9,-3,2,1,hair); } if (hs==="slick") add(9,-2,4,1,hl); }
+    if (L.hood){ add(2,-3,11,3,L.hood); add(2,-3,4,12,L.hood); }
+    if (L.hat==="douli"){ add(0,-3,16,2,"#c9a35a"); add(4,-5,8,2,"#c9a35a"); }
+    if (L.hat==="cap"){ add(3,-3,10,2,L.capColor||"#c23a2a"); add(12,-2,4,1,L.capColor||"#c23a2a"); }
+    if (L.hat==="fedora"){ const hc = L.hatColor||"#4a3a2a"; add(1,-2,14,2,hc); add(3,-6,10,4,hc); add(3,-3,10,1,"#2a1a10"); add(4,-6,4,1,shade(hc,.25)); }
+    if (L.hat==="police"){ add(3,-4,10,4,"#24324e"); add(11,-1,4,1,"#1a2236"); add(9,-3,2,2,"#e6c34a"); }
+    if (L.hat==="nurse") add(5,-3,5,2,"#ffffff");
+    if (L.mask) add(9,5,5,4,L.mask);
+    if (L.beard) add(7,6,6,3,shade(hair,.15));
     const ox = Math.round(x - 7), oy = Math.round(y - 27 + bob);
     const F = (px,py,w,h,c) => R(ox + (facing>0?px:14-px-w), oy+py, w, h, c);
     parts.forEach(([px,py,w,h]) => F(px-1,py-1,w+2,h+2,INK));
