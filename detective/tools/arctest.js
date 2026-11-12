@@ -61,12 +61,16 @@ out.E = await p.evaluate(async()=>{ const r={}; const wait = ms => new Promise(f
   interPick(1); seq.push(interLine().text); interNext(0); seq.push(interLine().text); interNext(0); seq.push(interLine().text); interNext(0);
   seq.push(interLine().text, !!inter.deadline, document.querySelector('.ibar') ? "bar" : "nobar"); await wait(900);
   seq.push(interLine().text); interNext(0); seq.push(interLine().text); interNext(0); seq.push(interLine().text); interNext(0);
-  r.seq=seq; r.end=[!!inter, has("arc:t_b"), has("arc:t_a"), has("pick:fast"), has("pick:slow")];
-  interReplay('after'); interNext(0); r.replay=[interLine().text, interOpen(interLine()), document.body.innerText.includes("你的選擇：乙")]; interNext(1); r.replayEnd=!!inter;
+  r.seq=seq; r.end0=1; r.end=[!!inter, has("arc:t_b"), has("arc:t_a"), has("pick:fast"), has("pick:slow")];
+  // 關掉倒數：同一題不會自動選
+  OPT.setTimed(false); interPlay({ title:"t", lines:[{ who:"narr", text:"TQ", time:0.3, choices:[{ text:"a", mark:"ta" }, { text:"b", mark:"tb" }] }] }, "t_off"); await wait(700);
+  r.off=[!!inter && interOpen(interLine()), !!(inter && inter.deadline), has("pick:ta"), has("pick:tb")]; interPick(0); OPT.setTimed(true); r.off.push(!!inter, has("pick:ta"));
+  CASES[0].before = { title:"x", lines:[{ who:"narr", text:"q", time:5, choices:[{ text:"a" }] }] }; _anyTimed = undefined; goHome(); r.optShown = document.body.innerText.includes("限時行動要倒數"); openCase(0); if (inter){ interPick(0); } 
+  openSheet('accuse'); interReplay('after'); interNext(0); r.replay=[interLine().text, interOpen(interLine()), document.body.innerText.includes("你的選擇：乙")]; interNext(1); r.replayEnd=!!inter;
   return r; });
 console.log(JSON.stringify(out,null,1));
 const E = out.E, okE = E.scene[0] && E.scene[1]==="測試場面" && E.scene[3] && E.sceneSkip[0]==="SQ" && E.sceneSkip[1] && E.cantSkip==="SQ" && E.sceneBranch==="S-ONE" && !E.sceneEnd[0] && E.sceneEnd[1] && E.sceneEnd[2] && !E.sceneEnd[3] && E.sceneEnd[4] && E.sceneEnd[5]
-  && E.seq.join("|")==="L1|Q1|2|SAY-B1|SAY-B2|ONLY-B|Q2|true|bar|你來不及決定——|SAY-FAST|END" && !E.end[0] && E.end[1] && !E.end[2] && E.end[3] && !E.end[4] && E.replay[0]==="Q1" && !E.replay[1] && E.replay[2] && !E.replayEnd;
+  && E.seq.join("|")==="L1|Q1|2|SAY-B1|SAY-B2|ONLY-B|Q2|true|bar|你來不及決定——|SAY-FAST|END" && !E.end[0] && E.end[1] && !E.end[2] && E.end[3] && !E.end[4] && E.off.join()==="true,false,false,false,false,true" && E.optShown && E.replay[0]==="Q1" && !E.replay[1] && E.replay[2] && !E.replayEnd;
 const ok = okE && out.A.after[0] && out.A.after[1] && !out.A.before[0] && out.A.ep2[0][0]==="FOUND 版本" && out.A.ep2[1] && out.A.ep2[2] && out.A.briefHas && out.A.again[0]==="FOUND 版本"
   && out.B.ep2[0][0]==="MISS 版本" && out.B.ep2[1] && !out.B.ep2[2] && out.B.again[0]==="MISS 版本" && out.B.upgraded[0] && out.B.stillMiss[0]==="MISS 版本"
   && out.D.before[0] && out.D.before[2] && out.D.before[3] && !out.D.beforeEnd[0] && out.D.beforeEnd[1]==="scene" && out.D.beforeEnd[2] && !out.D.beforeAgain

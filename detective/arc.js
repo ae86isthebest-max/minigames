@@ -33,6 +33,7 @@
           choices:[ { text:"追上去", set:"ep7_chased", say:"你翻過圍牆追了上去。" },      // set＝記下跨集旗標（之後用 "arc:ep7_chased"）
                     { text:"叫支援", mark:"called", say:[ { who:"wu", text:"我馬上叫！" } ] },   // mark＝只記在這一集（之後用 "pick:called"）
                     { text:"先保護人質", say:"你停下腳步。", when:"pick:found_kid" } ] }       // 選項也可以有 when／unless
+      玩家可以在首頁把「限時行動要倒數」關掉（OPT.timed()）：關掉後同一個場面照樣出現，只是不倒數，所以劇情不可以依賴「一定會超時」。
       選完會接著說 say（字串＝旁白，或 { who, text }），之後的台詞可以用 when:"arc:…"／"pick:…" 分支。選擇題不能跳過；重看時不能改選。
       案件進行中也可以播這種場面：突發事件加 scene:{ title, scene, cast, lines }，事件一發生就播（搭配 atTime 就是「幾點幾分突然……」）；
       程式裡用 interPlay(def, "這一集裡不重複的名字")。選擇的後果要寫成之後的台詞、問題或事件，不要讓任何一個選項把案子變成破不了。
@@ -64,6 +65,22 @@ const SLOT = (() => {
   function use(n){ cur = n; try { localStorage.setItem(CUR, String(n)); } catch (e) {} }
   return { N, cur:() => cur, caseKey, seriesKey, summary, wipe, use };
 })();
+/* ---------- 設定（跟著裝置，不跟存檔）：限時行動要不要倒數 ---------- */
+const OPT = (() => {
+  const K = "detective_tw3_opt_timed";
+  let timed = true; try { timed = localStorage.getItem(K) !== "0"; } catch (e) {}
+  return { timed:() => timed, setTimed(v){ timed = !!v; try { localStorage.setItem(K, timed ? "1" : "0"); } catch (e) {} } };
+})();
+function optTimed(v){ OPT.setTimed(v); render(); toast(v ? "⏱ 限時行動：有倒數" : "⏱ 限時行動：不倒數，可以慢慢選"); }
+// 有沒有任何一集用到限時的選擇（都沒有就不用顯示這個設定）
+let _anyTimed;
+function anyTimed(){
+  if (_anyTimed !== undefined) return _anyTimed;
+  const t = d => !!(d && d.lines && d.lines.some(l => l.choices && l.time));
+  return (_anyTimed = CASES.some(c => t(c.before) || t(c.after) || (c.events || []).some(e => t(e.scene)) || Object.values(c.scenes || {}).some(t)));
+}
+const optHTML = () => !anyTimed() ? "" : `<div class="card"><h3 style="margin:0 0 6px">⚙️ 設定</h3>
+  <div class="pick ${OPT.timed() ? "on" : ""}" onclick="optTimed(${OPT.timed() ? 0 : 1})"><span class="box">${OPT.timed() ? "✓" : ""}</span><span><b>⏱ 限時行動要倒數</b><br><span class="muted small">${OPT.timed() ? "有些緊急場面要在幾秒內決定，來不及就當作你猶豫了。點一下可以關掉。" : "已關掉：緊急場面一樣會出現，但不倒數，可以慢慢選。"}</span></span></div></div>`;
 // 換存檔、刪存檔之後：把記在記憶體裡的東西（主線紀錄、場景裡走到哪）清掉，從新存檔重新讀
 function slotRefresh(){
   ARC.reload();
@@ -80,7 +97,7 @@ function slotsHTML(){
   return `<div class="card"><h3 style="margin:0 0 6px">💾 存檔</h3><p class="muted small" style="margin:0 0 8px">這台裝置有 ${SLOT.N} 個存檔，各玩各的。點一個來用；想重新玩，就開一個空白的，或把舊的刪掉。</p>
     ${[1, 2, 3].slice(0, SLOT.N).map(n => { const m = SLOT.summary(n), on = n === SLOT.cur();
       const txt = m.empty ? "空白" : [m.solved ? `已結案 ${m.solved} 集` : "", m.open ? `調查中 ${m.open} 集` : ""].filter(Boolean).join("・") || "剛開始";
-      return `<div class="pick ${on ? "on" : ""}" onclick="slotUse(${n})" style="align-items:center"><span class="box">${on ? "✓" : ""}</span><span style="flex:1"><b>存檔 ${n}</b>　<span class="muted small">${txt}${on ? "・使用中" : ""}</span></span>${m.empty ? "" : `<button class="tag" style="border:0;cursor:pointer;padding:5px 10px;margin:0;color:#ff9a8a" onclick="event.stopPropagation();slotDelete(${n})">🗑 刪除</button>`}</div>`; }).join("")}</div>`;
+      return `<div class="pick ${on ? "on" : ""}" onclick="slotUse(${n})" style="align-items:center"><span class="box">${on ? "✓" : ""}</span><span style="flex:1"><b>存檔 ${n}</b>　<span class="muted small">${txt}${on ? "・使用中" : ""}</span></span>${m.empty ? "" : `<button class="tag" style="border:0;cursor:pointer;padding:5px 10px;margin:0;color:#ff9a8a" onclick="event.stopPropagation();slotDelete(${n})">🗑 刪除</button>`}</div>`; }).join("")}</div>${optHTML()}`;
 }
 
 const ARC = (() => {
@@ -225,7 +242,7 @@ function interPlay(def, key, force){
 function interArm(){
   clearTimeout(inter.timer); inter.deadline = null;
   const l = interLine();
-  if (interOpen(l) && l.time && !inter.force){
+  if (interOpen(l) && l.time && !inter.force && OPT.timed()){
     const me = inter; me.deadline = Date.now() + l.time * 1000;
     me.timer = setTimeout(() => { if (inter === me && interOpen(interLine())){ const cs = interChoices(l); interPick(l.timeout !== undefined ? l.timeout : cs[cs.length - 1].j, true); } }, l.time * 1000);
   }
