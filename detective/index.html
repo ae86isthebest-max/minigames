@@ -264,7 +264,7 @@ body.fs .toast{bottom:calc(14px + env(safe-area-inset-bottom))}
 let C = null, KEY = null, S = null;
 let screen = "home", tab = "brief", openSuspect = null, openLoc = null, noteView = "key", noteWho = "all", accusePick = freshPick();
 
-const saveKey = c => "detective_tw3_save_" + c.id;
+const saveKey = c => SLOT.caseKey(c.id);   // 每個存檔位各一份（arc.js 的 SLOT）；存檔 1 就是原本的 "detective_tw3_save_" + id
 const phasesOf = c => c.phases || [{ title:null, short:"", questionLimit:c.questionLimit, searchLimit:c.searchLimit }];
 const multi = () => !!C.phases;
 const travel = () => !!C.locations;
@@ -1003,6 +1003,7 @@ const nl = s => esc(s).replace(/\n/g,"<br>");
 /* ---------- 選集首頁 ---------- */
 function vHome(){
   return `<div class="card intro"><h2>🕵️ 偵探檔案</h2><p class="muted small" style="margin:0">選一個案件開始調查。進度會自動儲存，隨時可以回來繼續。</p></div>`
+  + slotsHTML()
   + CASES.map((c,i)=>{
     const s = loadFor(c), tag = c.tag || (i===0 ? "新手教學" : "");
     let st = "未開始";
