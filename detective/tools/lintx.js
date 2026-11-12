@@ -32,7 +32,7 @@ const r=await p.evaluate((CID)=>{ localStorage.clear(); window.uiConfirm=async()
   const nQ=C.suspects.reduce((n,s)=>n+s.questions.length,0);
   out.push('questions '+nQ+', items '+allItems().length+' (objects '+allItems().filter(i=>i.obj).length+'), tests '+tests().length+' (records '+tests().filter(t=>t.rec).length+'), hits '+hits.size+', details '+allDetails().length);
   out.push('per suspect: '+C.suspects.map(s=>s.id+':'+s.questions.length).join(' '));
-  ph.forEach((x,i)=>{ const k=x.clock; const toMin=t=>{const [h,m]=t.split(':').map(Number); return h*60+m;}; let len=toMin(k.end)-toMin(k.start);
+  ph.forEach((x,i)=>{ const k=x.clock; const toMin=t=>{const [h,m]=t.split(':').map(Number); return h*60+m;}; let len=toMin(k.end)-toMin(k.start); if(len<0) len+=1440;
     const its=allItems().filter(it=>(it.phase===undefined||i>=it.phase)&&(it.until===undefined||i<=it.until));
     const itemMin=its.reduce((n,it)=>n+(it.mins||(it.cctv?k.cctv:k.item)||0),0);
     const ppl=C.suspects.filter(s=>{ const w=s.where[Math.min(i,s.where.length-1)]; return !!w; });
