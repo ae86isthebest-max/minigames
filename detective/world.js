@@ -211,6 +211,19 @@ const WORLD = (() => {
         if (!s.path.length){ s.walking = false; const cb = s.after; s.after = null; cb && cb(); if (s.script && step() && step().walk && step().walk[0]==="you") next(); }
       }
     } else s.walking = false;
+    // 走進一個新的地方：主角自己說一句（第一次才說；沒什麼特別的地方也會說）
+    if (!s.script && cur.def.areas){
+      const ar = cur.def.areas.find(a => s.px >= a.x0 && s.px <= a.x1 && Math.abs(s.py - (a.y ?? GROUND)) < 2);
+      const aid = ar ? ar.id : null;
+      if (aid !== s.lastArea){
+        s.lastArea = aid;
+        if (ar && !(cur.hooks.areaSeen && cur.hooks.areaSeen(ar.id))){
+          const ph = (cur.hooks.opt() || {}).phase || 0;
+          const text = typeof ar.text === "function" ? ar.text(ph) : Array.isArray(ar.text) ? ar.text[Math.min(ph, ar.text.length - 1)] : ar.text;
+          if (text){ s.areaSay = { text, until: s.t + 2 + text.length / 7 }; cur.hooks.onArea && cur.hooks.onArea(ar.id); }
+        }
+      }
+    }
     // 路徑記錄（助手照著走）
     const lt = s.trail[s.trail.length-1];
     if (Math.hypot(s.px - lt[0], s.py - lt[1]) > 1){ s.trail.push([s.px, s.py]); if (s.trail.length > 400) s.trail.splice(0, 100); }
@@ -254,7 +267,10 @@ const WORLD = (() => {
   function bubbleNow(){
     const s = cur.s;
     if (s.script){ const k = step(); return k && k.say ? { who:k.say[0], text:k.say[1], name:k.name } : null; }
-    return cur.hooks.bubble();
+    const hb = cur.hooks.bubble();
+    if (hb) return hb;
+    if (s.areaSay && s.t < s.areaSay.until) return { who:"you", text:s.areaSay.text, name:"你" };
+    return null;
   }
 
   /* ---------- 地面的質感：有深度、有碎石裂縫，近處暗一點 ---------- */
@@ -271,6 +287,18 @@ const WORLD = (() => {
       if (h % 41 === 0){ g.globalAlpha = 0.35; p.R(x, GROUND + 6 + (h % 3), 2, 2, "#000000"); g.globalAlpha = 0.25; p.R(x, GROUND + 6 + (h % 3), 1, 1, "#ffffff"); }   // 小石頭
     }
     g.restore();
+  }
+  // 頭上的小箭嘴：顏色代表狀態（hooks.people 給 arrow 顏色；mark＝正在跟你說話，箭嘴大一點、跳得比較快）
+  function arrow(p, q, t){
+    if (!q.arrow) return;
+    const sit = /sit|kneel/.test(q.pose || ""), top = q.y - (sit ? 33 : 40) + (q.dy || 0);
+    const bob = Math.round(Math.sin(t * (q.mark ? 7 : 3.5) + q.x * 0.1) * (q.mark ? 1.5 : 1)), y = top + bob, c = q.arrow;
+    if (q.blink && Math.floor(t * 3) % 3 === 0) return;
+    const ink = "#1b1512";
+    p.R(q.x - 4, y - 1, 9, 1, ink); p.R(q.x - 4, y, 9, 2, c); p.R(q.x - 5, y, 1, 2, ink); p.R(q.x + 5, y, 1, 2, ink);
+    p.R(q.x - 3, y + 2, 7, 1, c); p.R(q.x - 2, y + 3, 5, 1, c); p.R(q.x - 1, y + 4, 3, 1, c); p.P(q.x, y + 5, c);
+    p.P(q.x - 4, y + 2, ink); p.P(q.x + 4, y + 2, ink); p.P(q.x - 3, y + 3, ink); p.P(q.x + 3, y + 3, ink); p.P(q.x - 2, y + 4, ink); p.P(q.x + 2, y + 4, ink); p.P(q.x - 1, y + 5, ink); p.P(q.x + 1, y + 5, ink); p.P(q.x, y + 6, ink);
+    p.R(q.x - 3, y, 2, 1, "#ffffff");
   }
   // 腳下的影子
   function shadowAt(p, g, x, y, w){ g.save(); g.globalAlpha = 0.3; p.R(x - w/2, y - 1, w, 2, "#000000"); g.globalAlpha = 0.18; p.R(x - w/2 + 2, y + 1, w - 4, 1, "#000000"); g.restore(); }
@@ -382,12 +410,13 @@ const WORLD = (() => {
         const moving = q.kind==="you" ? s.walking : s.bmove, face = q.kind==="you" ? s.face : s.bface;
         if (moving) PX.profile(q.x, q.y, q.L, Math.floor(s.t*8) + (q.kind==="buddy"?1:0), face);
         else { const a = alive({ x:q.x, pose:q.kind==="buddy" ? "hold" : "stand" }, s.t, talking); PX.person(q.x, q.y, { ...q.L, ...a.fx }, 1, face, a.pose); }
+        if (q.kind==="buddy" && !s.script) arrow(p, { ...q, arrow:"#6fd46f" }, s.t);
         return;
       }
       const a = alive(q, s.t, talking);
       PX.person(q.x, q.y + (q.dy||0), { ...q.L, ...a.fx, mood: q.mood || q.L.mood, tear: q.tear, sweat: q.sweat }, 1, q.facing||1, a.pose);
       if (a.puff) smoke(p, q.x + (q.facing||1)*-1, q.y - 30, s.t);
-      if (q.mark) { p.R(q.x-2, q.y-38 + (Math.floor(s.t*3)%2), 5, 3, "#ffd04a"); p.R(q.x-1, q.y-35 + (Math.floor(s.t*3)%2), 3, 2, "#ffd04a"); }
+      arrow(p, q, s.t);
     };
     // 先畫建築裡面的人，再蓋上外牆，最後畫外面的人
     list.filter(q => bldAt(q.x) >= 0).forEach(drawOne);

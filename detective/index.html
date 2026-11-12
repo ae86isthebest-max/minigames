@@ -438,6 +438,15 @@ function buddyHint(l){
 }
 // 不是嫌疑人、但在現場可以說幾句話的人（鑑識人員、員警……）：def.extras = [{ id, name, x, y, L, pose, facing, lines, phase, until }]
 const extrasOf = def => (typeof def.extras === "function" ? def.extras(S.phase) : (def.extras || [])).filter(e=>(e.phase===undefined || S.phase>=e.phase) && (e.until===undefined || S.phase<=e.until));
+// 人物頭上的箭嘴顏色：黃＝可以問話、紅（閃）＝有新的質問可以問、灰＝不肯再回答、藍＝鑑識人員／員警（問話不花時間）、綠＝小吳
+const ARROW = { ask:"#ffd04a", press:"#ff5a4a", done:"#8a8a8a", extra:"#6ac8ff", buddy:"#6fd46f" };
+function arrowOf(s){
+  if (S.done || qLeft(s) <= 0) return { arrow: ARROW.done };
+  const open = s.questions.filter(q=>unlocked(q) && !S.asked.includes(q.id));
+  if (!open.length) return { arrow: ARROW.done };
+  if (open.some(q=>/^（出示|^（質問/.test(textOf(q).q))) return { arrow: ARROW.press, blink: true };
+  return { arrow: ARROW.ask };
+}
 // 表情：依今天在做什麼，問話時被質問會嚇一跳、冒汗
 function moodOf(s, pl){
   const pose = String(pl.pose || ""), d = dailyOf(s);
@@ -490,7 +499,7 @@ function worldView(l, def){
   else if (wTalk){ const s = C.suspects.find(x=>x.id===wTalk); panel = worldTalk(s); }
   else if (peek && peek.kind==="item"){ const it = allItems().find(x=>x.id===peek.id); panel = `<div class="look"><b>${it.cctv?"📹":"🧾"} ${esc(it.title)}</b>${itemBody(it, true)}</div>`; }
   else if (peek && peek.kind==="detail"){ const d = allDetails().find(x=>x.id===peek.id); panel = `<div class="look"><b>🔎 ${esc(d.name||"你注意到")}</b>${nl(d.text)}${peek.isNew?`<div class="found" style="margin-top:4px">發現小細節！（${(S.found||[]).length}／${nd}）</div>`:""}</div>`; }
-  else panel = `<p class="hint" style="margin:0 2px 12px">點地面走過去，按住不放就一直走（走路不花時間）。點人、點東西會先問你要不要做，確定了才會${CLK() ? "花時間" : "用掉次數"}。<span style="color:#ffd04a">✦</span> 是還沒查過的東西，其他地方也可能藏著小細節。</p>`;
+  else panel = `<p class="hint" style="margin:0 2px 12px">點地面走過去，按住不放就一直走（走路不花時間）。頭上箭嘴：<b style="color:#ffd04a">黃</b> 可以問話、<b style="color:#ff5a4a">紅</b> 有新的質問、<b style="color:#8a8a8a">灰</b> 不肯再答、<b style="color:#6ac8ff">藍</b> 鑑識人員或員警（問話不花時間）、<b style="color:#6fd46f">綠</b> 小吳。點人、點東西會先問你要不要做，確定了才會${CLK() ? "花時間" : "用掉次數"}。<span style="color:#ffd04a">✦</span> 是還沒查過的東西，其他地方也可能藏著小細節。</p>`;
   const seenHere = allItems().filter(it=>(it.loc||"_")===l.id && S.seen.includes(it.id));
   const lab = l.perVisit ? `<button class="wq" style="border-color:var(--accent)" onclick="wTalk=null;peek=peek&&peek.kind==='lab'?null:{kind:'lab'};render()">🧪 化驗櫃台（這次還能送 ${testsLeftAt(l)} 件）</button>` : "";
   return `<div class="wtop">${travel()?`<button class="back" onclick="leaveWorld()">‹ 地圖</button>`:""}<b>${esc(travel()?l.name:"案發現場")}</b>${CLK()?`<span>🕐 ${nowStr()}・剩 ${minLabel(timeLeft())}</span>`:`<span>🔍 還能查 ${sl} 項</span>`}<span class="found">🔎 ${(S.found||[]).length}／${nd}</span></div>
@@ -508,9 +517,9 @@ function worldHooks(l, def){
       ...C.suspects.filter(s=>!isGone(s) && (!travel() || whereOf(s)===l.id) && s.id!==(def.buddy || "wu")).map(s=>{
         const pl = (def.placeFor ? def.placeFor(s, S.phase) : (def.place||{})[s.id]) || {};
         const m = moodOf(s, pl);
-        return { id:s.id, x: pl.x ?? 140, y: pl.y, pose: pl.pose, facing: pl.facing, L: lookOf(s), mark: wTalk===s.id, ...m };
+        return { id:s.id, x: pl.x ?? 140, y: pl.y, pose: pl.pose, facing: pl.facing, L: lookOf(s), mark: wTalk===s.id, ...arrowOf(s), ...m };
       }),
-      ...extrasOf(def).map(e=>({ ...e, mark: wSay && wSay.who===e.id }))
+      ...extrasOf(def).map(e=>({ ...e, mark: wSay && wSay.who===e.id, arrow: ARROW.extra }))
     ],
     spots: () => {
       const groups = {};
@@ -539,7 +548,9 @@ function worldHooks(l, def){
     opt: () => ({ phase:S.phase }),
     script: ps && ps.steps,
     scriptDone: set => { if (set){ if (ps && ps.key){ S.introSeen = S.introSeen || {}; S.introSeen[ps.key] = 1; save(); } wArrive = null; wNews = []; } return !ps; },
-    refresh: () => render()
+    refresh: () => render(),
+    areaSeen: id => (S.areas || []).includes(l.id + ":" + id + "@" + S.phase),
+    onArea: id => { (S.areas = S.areas || []).push(l.id + ":" + id + "@" + S.phase); save(); }
   };
 }
 
