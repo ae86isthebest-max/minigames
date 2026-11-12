@@ -186,7 +186,7 @@ const WK = (() => {
         R(ox + 20, 104, 30, 4, shade(fac[1], -.1)); for (let k = 0; k < 6; k++) R(ox + 20 + k*5, 100, 4, 4, k%2 ? "#e9e4da" : fac[1]); }
     }));
     // 每個房間第一次走進去說的話（C.roomDesc[房間 id]），街上也說一句
-    const areas = rooms.map(r => ({ id:r.id, x0:pos[r.id] - GAP, x1:pos[r.id] + RW + GAP - 1, text:(C.roomDesc || {})[r.id] || `${r.name}。看起來沒什麼特別的。` }));
+    const areas = rooms.map(r => ({ id:r.id, name:r.name, x0:pos[r.id] - GAP, x1:pos[r.id] + RW + GAP - 1, text:(C.roomDesc || {})[r.id] || `${r.name}。看起來沒什麼特別的。` }));
     if (buildings.length) areas.push({ id:"_street", x0:0, x1:buildings[0].x0 - 1, text:"街上。這裡沒什麼特別的。" });
     return { auto:true, areas, w, spawn:o.spawn || 70, park:o.park ?? 8, draw, front, spots, details, placeFor, buddy:o.buddy || "wu", you:o.you, intro:o.intro, rooms, pos, buildings, extras:o.extras };
   }

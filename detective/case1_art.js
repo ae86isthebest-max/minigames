@@ -30,8 +30,9 @@
     chen:   { age:"old", skin:"#e0b48c", hair:"#9a9a92", hairStyle:"slick", top:"#f4f6f6", coat:"#5a2a1a", bottom:"#2a2a30", glasses:true },
     ho_b:   Object.assign({}, LOOK.ho, { prop:"bucket" }),
     kevin:  { skin:"#d8a880", hair:"#2a2a2a", hairStyle:"short", top:"#4a5a6a", bottom:"#2a2f3a", hat:"cap", capColor:"#2a2a2a" },
-    masked: Object.assign({}, LOOK.chow, { top:"#1e1e22", coat:"#1e1e22", mask:"#e9e4da", hairStyle:"short", hair:"#1e1e22" }),
-    chowb:  Object.assign({}, LOOK.chow, { top:"#1e1e22", coat:"#1e1e22" })
+    masked: Object.assign({}, LOOK.chow, { top:"#1e1e22", coat:"#1e1e22", mask:"#e9e4da", hairStyle:"short", hair:"#1e1e22", prop:"bucket" }),
+    chowb:  Object.assign({}, LOOK.chow, { top:"#1e1e22", coat:"#1e1e22", prop:"bucket" }),
+    wong_m: Object.assign({}, LOOK.wong, { prop:"#f4f0e6" })
   };
 
   const W = 192;
@@ -107,14 +108,15 @@
     cctv_back: { scene:"vback", cam:"CAM5 後門", date:D, beats:[
       { t:"22:59:00", d:3, cap:"陳浩下樓，打開後門。", m:{ ho:[114,76,null,-1,52,22,[[14,72]]] } },
       { t:"23:00:00", d:3, cap:"一名穿黑色外套、戴口罩的女子進入屋內。", m:{ masked:[64,14,null,1,96,72,[[60,86],[16,72]]] }, out:["masked"] },
-      { t:"23:12:00", d:3, cap:"黑外套女子從後門離開。", m:{ masked:[96,72,null,1,64,14,[[16,72],[60,86]]] }, out:["masked"] },
-      { t:"23:12:30", d:2, cap:"陳浩把門鎖上。", m:{ ho:[114,76,"point",-1] } }
+      { t:"23:12:00", d:3, cap:"黑外套女子拿著一個冰桶下樓，走到後門。", m:{ masked:[100,76,"hold",1,64,14,[[16,72],[60,86]]] }, out:["ho"] },
+      { t:"23:12:20", d:2, cap:"她把冰桶交給陳浩，從後門離開。", m:{ masked:[96,70,null,-1], ho_b:[114,76,"hold",-1,114,76] }, out:["masked"] },
+      { t:"23:12:30", d:2.5, cap:"陳浩把門鎖上，拿著冰桶往廚房走。", m:{ ho_b:[-12,92,"hold",-1,114,76] }, out:["ho_b"] }
     ] },
     cctv_hall: { scene:"vstudyhall", cam:"CAM2 書房走廊", date:D, beats:[
       { t:"23:02:00", d:2.5, cap:"一名穿黑色外套的女子走到書房門口。", m:{ masked:[97,76,null,1,-12,92] }, out:["masked"] },
       { t:"23:02:20", d:3, cap:"她拿下口罩——是周曉晴。她輸入密碼，走進書房。", m:{ chowb:[97,76,"point",1] }, out:["chowb"] },
-      { t:"23:08:00", d:2.5, cap:"周曉晴離開書房，下樓往後門走去。", m:{ chowb:[-12,92,null,-1,97,72] }, out:["chowb"] },
-      { t:"23:30:00", d:3, cap:"黃伯用鑰匙開門，進入書房。", m:{ wong:[97,72,"hold",1,-12,92] }, out:["wong"] }
+      { t:"23:08:00", d:2.5, cap:"周曉晴離開書房，手上拿著一個冰桶，下樓往後門走去。", m:{ chowb:[-12,92,"hold",-1,97,72] }, out:["chowb"] },
+      { t:"23:30:00", d:3, cap:"黃伯端著熱牛奶，用鑰匙開門，進入書房。", m:{ wong_m:[97,72,"hold",1,-12,92] }, out:["wong_m"] }
     ] }
   };
   [...EP1.cctv, ...EP1.evidence].forEach(it => {
@@ -128,7 +130,7 @@
     title: "凌晨・別墅客廳", scene: "vhall",
     who: ["wong","lam","ho","chow"],
     detective: null,
-    open: "律師的車燈出現在山路上之前，你請所有人到客廳集合。落地鐘剛敲過三點。",
+    open: "律師的車燈出現在山路上之前，你請所有人到客廳集合。落地鐘剛敲過四點。",
     kindLine: {
       suicide: "我的結論是——陳先生是自殺的。",
       murder: "我的結論是——陳先生不是自殺。他是被人殺死的。",
@@ -149,14 +151,14 @@
       intruder: "（沒有人回答。窗外只有風聲。）"
     },
     replayText: "那天晚上十點，書房裡到底發生了什麼事——",
-    replay: { scene:"vstudy", opt:{ body:false, bucketAt:3.6 }, clean:true, cam:"案發經過重現", date:D, beats:[
+    replay: { scene:"vstudy", opt:{ body:false, bucketAt:3.6, bucketUntil:24.8 }, clean:true, cam:"案發經過重現", date:D, beats:[
       { t:"21:57:00", d:3, cap:"陳浩搶著把冰桶送進書房，放在書桌上。", m:{ chen:[108,96,"sit",1], ho_b:[132,94,"hold",-1,61,72] } },
       { t:"21:58:00", d:2, cap:"陳浩很快就離開了。", m:{ ho_b:[61,72,null,-1] }, out:["ho_b"] },
       { t:"22:00:00", d:4, cap:"十點，陳先生照常倒了一杯威士忌，加了冰塊。", m:{ chen:[108,96,["sit","sit+drink","sit","sit+drink"],1] } },
       { t:"22:15:00", d:5, cap:"冰塊慢慢融化，毒發了。", m:{ chen:[108,96,["sit+cry","stand+cry","kneel+cry","fall"],1] } },
       { t:"23:02:00", d:3, cap:"周曉晴從後門回來，輸入密碼，走進書房。", m:{ chowb:[160,96,null,1,61,72] } },
       { t:"23:05:00", d:3, cap:"她用電腦印出一張「遺書」，放在印表機旁。", m:{ chowb:[160,96,"point",1] } },
-      { t:"23:08:00", d:2.5, cap:"然後離開了。", m:{ chowb:[61,72,null,-1] }, out:["chowb"] }
+      { t:"23:08:00", d:3.5, cap:"離開前，她把桌上的冰桶也帶走了。", m:{ chowb:[61,72,"hold",-1,160,96,[[122,94]]] }, out:["chowb"] }
     ] },
     endGood: "陳浩低著頭，周曉晴別過臉去。窗外，律師的車燈正沿著山路開上來。\n這不是自殺。你沒有讓它被當成自殺結案。",
     endBad: "沒有人說話。落地鐘滴答滴答地走著。\n你總覺得，有人悄悄鬆了一口氣。"

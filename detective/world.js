@@ -30,6 +30,7 @@ const WORLD = (() => {
     if (s.px > def.w - 8){ s.px = def.w - 30; s.py = GROUND; resetTrail(s); }
     if (!s.car && def.park !== undefined) s.car = { x:def.park, from:def.park, to:def.park, d:0, c:"#e9e4da" };
     if (hooks.script && !s.script && !hooks.scriptDone()){ s.script = hooks.script; s.si = 0; s.sT = 0; startStep(); }
+    if (hooks.areaNow) hooks.areaNow(s.script ? null : (s.lastArea ?? null));
     // 操作：按下去就有反應；按住或拖著，主角就一路跟著手指走
     canvas.onclick = null;
     canvas.onpointerdown = e => {
@@ -217,6 +218,7 @@ const WORLD = (() => {
       const aid = ar ? ar.id : null;
       if (aid !== s.lastArea){
         s.lastArea = aid;
+        cur.hooks.areaNow && cur.hooks.areaNow(aid);
         if (ar && !(cur.hooks.areaSeen && cur.hooks.areaSeen(ar.id))){
           const ph = (cur.hooks.opt() || {}).phase || 0;
           const text = typeof ar.text === "function" ? ar.text(ph) : Array.isArray(ar.text) ? ar.text[Math.min(ph, ar.text.length - 1)] : ar.text;
@@ -434,7 +436,7 @@ const WORLD = (() => {
     def.draw(p, s.t, hooks.opt(), cam, g);
     if (!def.noGroundFx) groundFx(p, g, cam);
     // 還沒查的證物：閃光（在外面看不到建築裡面的）
-    hooks.spots().forEach(q => { const cx = q.r[0]+q.r[2]/2; if (q.k==="item" && q.fresh && !hiddenAt(s, cx, q.r[1]+q.r[3]/2) && Math.floor(s.t*2 + q.r[0]) % 3 !== 0) p.spark(cx, q.r[1]+2); });
+    if (!hooks.noSpark) hooks.spots().forEach(q => { const cx = q.r[0]+q.r[2]/2; if (q.k==="item" && q.fresh && !hiddenAt(s, cx, q.r[1]+q.r[3]/2) && Math.floor(s.t*2 + q.r[0]) % 3 !== 0) p.spark(cx, q.r[1]+2); });
     // 車
     if (s.car){ p.OBJ.car(s.car.x, GROUND-20, s.car.c); if (s.car.c==="#e9e4da"){ p.R(s.car.x+14,GROUND-22,4,2, Math.floor(s.t*4)%2?"#e04a3a":"#3a6ae0"); p.R(s.car.x+18,GROUND-22,4,2, Math.floor(s.t*4)%2?"#3a6ae0":"#e04a3a"); p.R(s.car.x,GROUND-11,40,2,"#2a3a6a"); } }
     // 人

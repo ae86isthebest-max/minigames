@@ -329,7 +329,7 @@ const PX = (() => {
       R(104,62,16,3,"#2a2a2e");
       // 威士忌酒瓶、冰桶（重演時冰桶要等陳浩放下才出現）
       R(137,50,4,16,"#7a3a1a"); R(138,46,2,4,"#5a2a10"); R(137,56,4,4,"#e9d8a8");
-      if (!o.bucketAt || (o.t||0) >= o.bucketAt){ R(114,58,9,8,"#9aa6ae"); R(114,58,9,1,"#e9f2f6"); R(115,62,7,1,"#7a868e"); }
+      if (o.bucketAt && (o.t||0) >= o.bucketAt && !(o.bucketUntil && (o.t||0) >= o.bucketUntil)){ R(114,58,9,8,"#9aa6ae"); R(114,58,9,1,"#e9f2f6"); R(115,62,7,1,"#7a868e"); }
       if (o.body!==false){ R(90,56,11,9,"#d8a880"); R(90,55,11,3,"#9a9a92"); R(100,62,10,3,"#e9e4da"); }
       lamp(40,0); },
     vkitchen(o){ wall(66,"#e6e2d6",false); for(let x=0;x<W;x+=8) for(let y=30;y<66;y+=8) R(x,y,7,7,"#d6d2c6"); floor(66,"#9a9a90","#8a8a80");
