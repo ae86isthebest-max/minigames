@@ -260,6 +260,7 @@ const nowMin = () => toMin(CLK().start) + usedNow();
 const nowStr = () => fmtMin(nowMin());
 const tiredOf = () => { const k = CLK(); return !k || !k.tired ? 0 : k.tired.filter(([t]) => nowMin() >= clkAt(k, t)).reduce((n, [, d]) => n + d, 0); };
 function spend(m){ if (!CLK() || !m) return; const tb = tiredOf(); (S.used = S.used || {})[S.phase] = usedNow() + m;
+  if ((C.events||[]).some(e=>e.atTime && S.ev[e.id]===undefined)) setTimeout(checkEvents, 0);
   if (tiredOf() > tb) setTimeout(()=>toast(`🕐 ${nowStr()} 了，大家都累了，每個人願意回答的題數少了 ${tiredOf()-tb} 題。`), 1200); }
 const costAsk = () => CLK() ? (CLK().ask || 5) : 0;
 const costItem = it => CLK() ? (it.mins || (it.cctv ? (CLK().cctv || 10) : (CLK().item || 10))) : 0;
@@ -848,9 +849,14 @@ ARC.bind(has0);
 function checkEvents(){
   let fired = [], changed = true;
   while (changed){ changed = false;
-    for (const e of (C.events||[])) if (S.ev[e.id]===undefined && unlocked(e) && (!e.atLoc || here(e.atLoc)) && (!e.unless || !e.unless.some(has))){ S.ev[e.id] = S.phase; fired.push(e); changed = true; }
+    for (const e of (C.events||[])) if (S.ev[e.id]===undefined && unlocked(e) && (!e.atLoc || here(e.atLoc)) && (!e.atTime || timeReached(e.atTime)) && (!e.unless || !e.unless.some(has))){ S.ev[e.id] = S.phase; fired.push(e); changed = true; }
   }
-  if (fired.length){ save(); setTimeout(()=>toast("📢 " + fired.map(e=>e.title).join("、") + "（詳情在「案情」）"), 900); }
+  if (fired.length){ save();
+    // atTime / popup：時間一到就跳出來（例如綁匪打電話來），不是只在角落提示
+    const pop = fired.filter(e=>e.atTime || e.popup);
+    if (pop.length) setTimeout(()=>pop.forEach(e=>uiAlert(`📞 ${nowStr()}　${e.title}\n\n${String(e.text).replace(/<[^>]+>/g,"")}`)), 700);
+    const rest = fired.filter(e=>!e.atTime && !e.popup);
+    if (rest.length) setTimeout(()=>toast("📢 " + rest.map(e=>e.title).join("、") + "（詳情在「案情」）"), 900); }
   return fired;
 }
 const isGone = s => (s.gone !== undefined && S.phase >= s.gone);
@@ -886,6 +892,19 @@ function renderClock(){
   document.getElementById("clock").classList.toggle("low", frac <= .25);
 }
 /* ---------- 站內確認框（不用瀏覽器 confirm，在 App 內也能用） ---------- */
+/* atTime：那一天的時鐘到了這個時間就發生（必須同一個 phase）。沒有時鐘的案件不會觸發 */
+const timeReached = t => !!CLK() && nowMin() >= clkAt(CLK(), t);
+let alertQ = Promise.resolve();
+function uiAlert(msg){
+  alertQ = alertQ.then(()=>new Promise(res=>{
+    const d = document.createElement("div"); d.className = "dlg";
+    d.innerHTML = `<div class="dlg-box"><div class="dlg-msg" style="white-space:pre-line"></div><div class="dlg-btns"><button class="btn primary" style="margin:0" data-v="1">知道了</button></div></div>`;
+    d.querySelector(".dlg-msg").textContent = msg;
+    d.onclick = e=>{ if (!(e.target.dataset && e.target.dataset.v)) return; d.remove(); res(); };
+    document.body.appendChild(d); d.querySelector('[data-v="1"]').focus();
+  }));
+  return alertQ;
+}
 function uiConfirm(msg){
   return new Promise(res=>{
     const d = document.createElement("div"); d.className = "dlg";
