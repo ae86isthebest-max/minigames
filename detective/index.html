@@ -130,6 +130,38 @@ details.past summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6p
 .dlg-box{background:var(--panel);border:3px solid #1b1512;box-shadow:4px 4px 0 #000;border-radius:10px;padding:18px;max-width:340px;width:100%}
 .dlg-msg{white-space:pre-line;line-height:1.6;margin-bottom:14px}
 .dlg-btns{display:flex;gap:10px;justify-content:flex-end}
+/* 全螢幕模式：揀咗案件之後，畫面填滿，對話、選單浮喺旁邊／下面 */
+body.fs{padding:0;overflow:hidden;overscroll-behavior:none}
+body.fs header, body.fs #nav{display:none}
+body.fs .toast{bottom:calc(14px + env(safe-area-inset-bottom))}
+.fs-root{position:fixed;inset:0;z-index:4;display:flex;flex-direction:column;background:#000}
+.fs-hud{flex:none;display:flex;gap:6px;align-items:center;padding:4px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left));padding-top:max(4px,env(safe-area-inset-top));background:#14100c;color:#cfc6b8;font-size:12px;line-height:1.2;min-height:34px;white-space:nowrap;overflow:hidden;border-bottom:1px solid #2a221b}
+.fs-hud .hn{color:var(--text);font-size:13px;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+.fs-hud .sp{flex:1 1 0}
+.hb{flex:none;background:#2a221b;color:#f1e6d4;border:1px solid #4a3c2e;border-radius:99px;padding:5px 10px;font-size:12.5px;font-family:inherit;line-height:1.1;cursor:pointer}
+.hb.buddy{background:#1f3a24;border-color:#6fd46f;color:#d8ffd8;font-weight:700}
+.hb.go{border-color:var(--accent);color:var(--accent)}
+.fs-body{flex:1;min-height:0;display:flex;flex-direction:column}
+.fs-stage{flex:none;display:flex;align-items:center;justify-content:center;background:#000}
+.fs-root .world{margin:0;border:0;width:100%}
+.fs-panel{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--bg);padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
+.fs-panel .card{margin-bottom:8px}
+.fs-panel .wq{margin:5px 0;padding:9px 12px}
+.wq.accent{border-color:var(--accent);color:var(--accent);font-weight:700}
+@media (orientation:portrait){ .fs-stage{height:56.25vw} }
+@media (orientation:landscape){ .fs-empty{display:none} }
+@media (orientation:landscape){
+  .fs-body{flex-direction:row}
+  .fs-stage{flex:1 1 0;min-width:0;container-type:size}
+  .fs-stage .world{width:min(100cqw,177.78cqh)}
+  .fs-panel{flex:none;width:clamp(260px,38vw,420px);border-left:2px solid #000}
+}
+.fs-sheet{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--bg)}
+.fs-sheet > .in{max-width:720px;margin:0 auto;padding:14px 16px calc(20px + env(safe-area-inset-bottom))}
+.wusay{display:flex;gap:10px;align-items:flex-start;margin:0 0 10px}
+.wusay .who{flex:none;font-size:26px;line-height:1}
+.wusay .t{background:#fffdf7;color:#1b1512;border:2px solid #1b1512;box-shadow:3px 3px 0 #1b1512;padding:6px 10px;font-size:14px;line-height:1.55}
+.wusay .t b{display:block;font-size:11px;color:#8a5a1a}
 </style>
 </head>
 <body>
@@ -225,10 +257,12 @@ function openCase(i){
   accusePick = freshPick(); openSuspect = null; openLoc = null; screen = "case"; tab = "brief"; checkEvents();
   wTalk = null; wSay = null; peek = null; mapFrom = null;
   // 有畫面的案件：一揀完就直接進現場（第一晚的開場動畫會自動播）
+  wBuddy = false; sheetFrom = null;
   if (art()){ if (travel()){ tab = "map"; openLoc = PH().startAt || null; } else tab = "scene"; }
   render(); scrollTo(0,0);
+  if (fsMode()){ goFull(); if (!S.fsTip){ S.fsTip = 1; save(); setTimeout(()=>toast("💡 筆記、案情、結案：點小吳或右上角「💬 小吳」"), 1500); } }
 }
-function goHome(){ screen = "home"; render(); scrollTo(0,0); }
+function goHome(){ screen = "home"; wBuddy = false; exitFull(); render(); scrollTo(0,0); }
 
 /* ---------- 地點與行動點 ---------- */
 const LOC = id => C.locations.find(l=>l.id===id);
@@ -359,7 +393,7 @@ function tapPerson(id){ if (!travel()) tab = "suspects"; openSuspect = id; lastS
 function tapSpot(h){
   const l = travel() ? LOC(openLoc) : HOME;
   if (h.k==="go"){ goRoom(l.id, h.to); return; }
-  if (h.k==="detail"){ S.found = S.found || []; const isNew = !S.found.includes(h.id); if (isNew){ S.found.push(h.id); save(); } peek = { kind:"detail", id:h.id, isNew }; render(); return; }
+  if (h.k==="detail"){ S.found = S.found || []; const isNew = !S.found.includes(h.id); if (isNew){ S.found.push(h.id); save(); } peek = { kind:"detail", id:h.id, isNew }; render(); if (isNew && fsMode()) toast(`🔎 發現小細節！（${S.found.length}／${allDetails().length}）`); return; }
   if (h.k==="item"){
     const ids = h.ids, fresh = ids.find(id=>!S.seen.includes(id));
     // 不會一點就查：先跳出確認（要花多少時間／次數），監視器可以選要看哪一段
@@ -495,6 +529,7 @@ function worldTalk(s){
     ${lockedN && !off && wChat ? `<p class="muted small" style="margin:6px 0 0">🔒 還有 ${lockedN} 個問題，要先得到相關線索才能問。</p>` : ""}</div>`;
 }
 function worldView(l, def){
+  if (fsMode()) return worldViewFS(l, def);
   const sl = travel() ? searchLeftAt(l) : searchLeft(), nd = allDetails().length;
   let panel;
   if (wAct) panel = actCard(l);
@@ -509,6 +544,96 @@ function worldView(l, def){
   <div class="world"><canvas id="worldcv"></canvas><div class="wbubble" hidden><b></b><span></span></div><div class="wtip"></div><button class="wskip" hidden>跳過 ⏭</button></div>
   ${panel}${lab}
   ${seenHere.length ? `<div class="card"><h3>🧾 這裡查到的東西</h3>${seenHere.map(it=>`<button class="wq" onclick="wTalk=null;peek={kind:'item',id:'${it.id}'};render()">${it.cctv?"📹":"🧾"} ${esc(it.title)}</button>`).join("")}</div>` : ""}`;
+}
+/* ---------- 全螢幕：畫面填滿，撳小吳出選單（提示、筆記、案情、結案…） ---------- */
+let wBuddy = false, sheetFrom = null;
+const SHEETS = ["notes","brief","accuse"];
+const fsMode = () => screen==="case" && art() && typeof WORLD !== "undefined" && typeof WK !== "undefined";
+// 小吳是不是在場（第 1 集用預設的小吳；第 2 集小吳是劇中角色）
+function buddyId(){ const s = C.suspects.find(x=>x.id==="wu"); if (s) return isGone(s) ? null : s.id; return BUDDY.id; }
+function openBuddy(){
+  const l = curLoc(), bid = buddyId();
+  wTalk = null; wAct = null; peek = null; lastSaid = null; wBuddy = true;
+  wSay = l && bid ? { who:bid, text:buddyHint(l) } : null;
+  render();
+}
+function closePanel(){ wBuddy = false; wTalk = null; wAct = null; peek = null; wSay = null; lastSaid = null; render(); }
+function openSheet(t){ if (!SHEETS.includes(tab)) sheetFrom = openLoc; wBuddy = false; tab = t; openSuspect = null; lastSaid = null; wTalk = null; wSay = null; peek = null; wAct = null; render(); }
+function closeSheet(){ tab = travel() ? "map" : "scene"; openLoc = travel() ? sheetFrom : null; sheetFrom = null; wBuddy = false; render(); }
+function goFull(){
+  const d = document.documentElement, rq = d.requestFullscreen || d.webkitRequestFullscreen;
+  try { const r = rq && rq.call(d, { navigationUI:"hide" }); if (r && r.then) r.then(()=>{ try { screen.orientation.lock("landscape").catch(()=>{}); } catch(e){} render(); }).catch(()=>{}); } catch(e){}
+}
+function exitFull(){ try { if (document.fullscreenElement) document.exitFullscreen(); else if (document.webkitFullscreenElement) document.webkitExitFullscreen(); } catch(e){} }
+const isFull = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+const canFull = () => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+function hudHTML(l, extra){
+  const nd = allDetails().length, bid = buddyId();
+  const name = l ? (travel() ? l.name.replace(/（.*?）/g,"") : "案發現場") : (PH().title || C.title);
+  return `<div class="fs-hud"><button class="hb" onclick="goHome()" aria-label="回到案件列表">‹</button>
+    ${travel() && l ? `<button class="hb" onclick="leaveWorld()">🗺️ 地圖</button>` : ""}
+    <b class="hn">${esc(name)}</b>
+    ${CLK() ? `<span>🕐 ${nowStr()}・剩 <b style="color:${timeLeft() <= 30 ? "var(--red)" : "var(--accent)"}">${minLabel(timeLeft())}</b></span>` : travel() ? `<span>🚗 ${apLeft()} 點</span>` : `<span>🔍 ${searchLeft()}</span>`}
+    ${l && nd ? `<span class="found">🔎 ${(S.found||[]).length}／${nd}</span>` : ""}
+    <span class="sp"></span>${extra || ""}
+    ${canFull() && !isFull() ? `<button class="hb" onclick="goFull()" aria-label="全螢幕">⛶</button>` : ""}
+    <button class="hb buddy" onclick="openBuddy()">${bid ? "💬 小吳" : "☰ 選單"}</button></div>`;
+}
+function fsFrame(l, stage, panel, extra){
+  return `<div class="fs-root">${hudHTML(l, extra)}<div class="fs-body"><div class="fs-stage">${stage}</div>${panel ? `<div class="fs-panel">${panel}</div>` : `<div class="fs-panel fs-empty"><p class="hint" style="margin:6px 2px">📱 把手機打橫，畫面會更大。<br>點人、點東西會先問你要不要做；點小吳（<b style="color:#6fd46f">綠色箭嘴</b>）或右上角「💬 小吳」，可以翻筆記、看案情、結案。</p></div>`}</div></div>`;
+}
+function wuSay(text){ return `<div class="wusay"><div class="who">🧑‍🔬</div><div class="t"><b>小吳</b>${esc(text)}</div></div>`; }
+function buddyMenu(l){
+  const wu = C.suspects.find(x=>x.id==="wu"), bid = buddyId();
+  const canAsk = l && wu && reachable(wu) && !S.done;
+  const seenHere = l ? allItems().filter(it=>(it.loc||"_")===l.id && S.seen.includes(it.id)) : [];
+  const pending = tests().filter(t=>S.labq[t.id]!==undefined && !testReady(t));
+  const B = (ic, txt, js, sub, cls) => `<button class="wq ${cls||""}" onclick="${js}">${ic} ${txt}${sub ? `<div class="muted small" style="font-weight:400">${sub}</div>` : ""}</button>`;
+  const head = `<div style="display:flex;justify-content:space-between;align-items:center"><b>${bid ? "🧑‍🔬 小吳" : "☰ 調查選單"}</b><button class="back" style="margin:0" onclick="closePanel()">✕ 關閉</button></div>`;
+  if (wBuddy === "items") return `<div class="card">${head}<p class="muted small" style="margin:4px 0">這裡查過的東西：</p>
+    ${seenHere.map(it=>`<button class="wq" onclick="wBuddy=false;wSay=null;peek={kind:'item',id:'${it.id}'};render()">${it.cctv?"📹":"🧾"} ${esc(it.title)}</button>`).join("")}
+    <button class="back" onclick="wBuddy=true;render()">‹ 返回</button></div>`;
+  if (wBuddy === "help") return `<div class="card">${head}<p class="small" style="margin:6px 0;line-height:1.7">${helpText(l)}</p><button class="back" onclick="wBuddy=true;render()">‹ 返回</button></div>`;
+  const nx = multi() && !lastPhase() && !S.done ? phasesOf(C)[S.phase+1] : null;
+  return `<div class="card">${head}
+    ${!l && bid ? `<p class="muted small" style="margin:4px 0">${CLK() ? timeTag() + "。" : ""}點地圖上的地點開車過去。</p>` : ""}
+    ${canAsk ? B("🗣️", "問小吳問題", "wBuddy=false;wChat=false;wSay=null;wTalk='wu';render()") : ""}
+    ${B("📓", "翻筆記", "openSheet('notes')", "問過的話、看過的證物、時間線都記在這裡")}
+    ${seenHere.length ? B("🧾", `重看這裡查到的東西（${seenHere.length}）`, "wBuddy='items';render()") : ""}
+    ${l && l.perVisit ? B("🧪", `化驗櫃台（這次還能送 ${testsLeftAt(l)} 件）`, "wBuddy=false;wSay=null;peek={kind:'lab'};render()") : ""}
+    ${pending.length ? `<p class="small muted" style="margin:6px 2px">⏳ 化驗中：${pending.map(t=>`${esc(t.title)}（${S.labq[t.id]+t.days-S.phase} 天後）`).join("、")}</p>` : ""}
+    ${B("📁", "案情・玩法", "openSheet('brief')")}
+    ${travel() && l ? B("🗺️", "回地圖，開車去別的地方", "wBuddy=false;leaveWorld()") : ""}
+    ${nx ? B("🌙", `結束今天，進入「${esc(nx.short)}」`, "nextPhase()") : ""}
+    ${B("❓", "操作說明", "wBuddy='help';render()")}
+    ${B("⚖️", S.done ? "看結案結果" : "我知道真相了！跟小吳結案", "openSheet('accuse')", S.done ? "" : "隨時都可以結案；推理錯了不會公布真相，可以繼續查", "accent")}
+  </div>`;
+}
+function helpText(l){
+  return `走路：點地面走過去，按住或拖著就一路跟著走；點畫面上的指示牌（⬆ 上二樓、🚪 進去、出去）會自動走過去。<b>走路不花時間。</b><br>
+  看到<b style="color:#b07aff">【···】</b>代表那裡好像有暗門或秘道。<br>
+  頭上箭嘴：<b style="color:#ffd04a">黃</b> 可以問話、<b style="color:#ff5a4a">紅</b> 有新的質問、<b style="color:#8a8a8a">灰</b> 不肯再答、<b style="color:#6ac8ff">藍</b> 鑑識人員或員警（問話不花時間）、<b style="color:#6fd46f">綠</b> 小吳。<br>
+  點人、點東西會先問你要不要做，確定了才會${CLK() ? "花時間" : "用掉次數"}。<span style="color:#ffd04a">✦</span> 是還沒查過的東西，其他地方也可能藏著小細節。<br>
+  筆記、案情、結案：點小吳或右上角「💬 小吳」。`;
+}
+function worldViewFS(l, def){
+  let panel = "";
+  if (wAct) panel = actCard(l);
+  else if (wBuddy) panel = buddyMenu(l);
+  else if (peek && peek.kind==="lab") panel = labCard(l);
+  else if (wTalk){ const s = C.suspects.find(x=>x.id===wTalk); panel = worldTalk(s); }
+  else if (peek && peek.kind==="item"){ const it = allItems().find(x=>x.id===peek.id); panel = `<div class="look"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><b style="margin:0">${it.cctv?"📹":"🧾"} ${esc(it.title)}</b><button class="back" style="margin:0" onclick="closePanel()">✕</button></div>${itemBody(it, true)}</div>`; }
+  const stage = `<div class="world"><canvas id="worldcv"></canvas><div class="wbubble" hidden><b></b><span></span></div><div class="wtip"></div><button class="wskip" hidden>跳過 ⏭</button></div>`;
+  const extra = l.perVisit ? `<button class="hb go" onclick="wTalk=null;wBuddy=false;wSay=null;peek=peek&&peek.kind==='lab'?null:{kind:'lab'};render()">🧪 化驗</button>` : "";
+  return fsFrame(l, stage, panel, extra);
+}
+const sheetKey = () => `${tab}:${S.done?1:0}:${S.court ?? ""}`;
+function sheetWrap(v){
+  const t = { notes:"📓 筆記", brief:"📁 案情", accuse: S.done ? "⚖️ 結案" : "⚖️ 跟小吳結案" }[tab];
+  const lead = tab==="accuse" && !S.done && buddyId() ? wuSay("好，把你想到的都說出來吧。就算推理錯了也不會公布真相，我們還可以回去再查。")
+    : tab==="notes" && buddyId() ? wuSay("這是我幫你記下來的東西，按重點、時間線、人物、證物都可以翻。") : "";
+  return `<div class="fs-root"><div class="fs-hud"><button class="hb go" onclick="closeSheet()">✕ 回到${travel() && !sheetFrom ? "地圖" : "現場"}</button><b class="hn">${t}</b><span class="sp"></span>
+    ${CLK() ? `<span>🕐 ${nowStr()}・剩 ${minLabel(timeLeft())}</span>` : ""}</div><div class="fs-sheet" data-tab="${sheetKey()}"><div class="in">${lead}${v}</div></div></div>`;
 }
 function worldHooks(l, def){
   const sus = id => C.suspects.find(x=>x.id===id), ps = pendingScript(l, def);
@@ -535,11 +660,12 @@ function worldHooks(l, def){
     },
     onPerson: id => {
       const e = extrasOf(def).find(x=>x.id===id);
+      wBuddy = false;
       if (e){ S.xl = S.xl || {}; const i = S.xl[id] || 0; S.xl[id] = i + 1; save(); wTalk = null; wAct = null; peek = null; lastSaid = null; wSay = { who:id, text:e.lines[i % e.lines.length] }; render(); return; }
       if (wTalk !== id) wChat = false; wTalk = id; wAct = null; wSay = null; peek = null; lastSaid = null; render(); },
-    onBuddy: id => { wAct = null; const s = sus(id); if (s && reachable(s) && !S.done){ if (wTalk !== id) wChat = false; wTalk = id; wSay = null; peek = null; lastSaid = null; render(); return; } wTalk = null; peek = null; wSay = { who:id, text:buddyHint(l) }; render(); },
-    onSpot: h => { wTalk = null; wSay = null; wAct = null; lastSaid = null; tapSpot(h); },
-    onGround: () => { if (wTalk || peek || wSay || wAct){ wTalk = null; peek = null; wSay = null; wAct = null; lastSaid = null; render(); } },
+    onBuddy: id => { if (fsMode()){ openBuddy(); return; } wAct = null; const s = sus(id); if (s && reachable(s) && !S.done){ if (wTalk !== id) wChat = false; wTalk = id; wSay = null; peek = null; lastSaid = null; render(); return; } wTalk = null; peek = null; wSay = { who:id, text:buddyHint(l) }; render(); },
+    onSpot: h => { wBuddy = false; wTalk = null; wSay = null; wAct = null; lastSaid = null; tapSpot(h); },
+    onGround: () => { if (wTalk || peek || wSay || wAct || wBuddy){ wBuddy = false; wTalk = null; peek = null; wSay = null; wAct = null; lastSaid = null; render(); } },
     bubble: () => {
       if (wSay) return wSay;
       if (wTalk){ const s = sus(wTalk); const q = lastSaid && lastSaid.sid===wTalk ? s.questions.find(x=>x.id===lastSaid.qid) : null;
@@ -748,6 +874,10 @@ function mapView(){
   }).join("");
   const pending = tests().filter(t=>S.labq[t.id]!==undefined && !testReady(t));
   const next = multi() && !lastPhase() && !S.done ? `<button class="btn" style="text-align:center;border-color:var(--accent);color:var(--accent)" onclick="nextPhase()">🌙 結束今天，進入「${esc(phasesOf(C)[S.phase+1].short)}」 ›</button>` : "";
+  if (fsMode()){
+    const nxBtn = multi() && !lastPhase() && !S.done ? `<button class="hb go" onclick="nextPhase()">🌙 下一天</button>` : "";
+    return fsFrame(null, `<div class="world wmap"><canvas id="mapcv"></canvas>${labels}</div>`, wBuddy ? buddyMenu(null) : "", nxBtn);
+  }
   return `<div class="wtop"><b>${esc(P.title||C.title)}</b>${CLK()?`<span>🕐 ${nowStr()}・剩 <b style="color:var(--accent)">${minLabel(timeLeft())}</b></span>`:`<span>🚗 行動點 <b style="color:var(--accent)">${apLeft()}</b>／${P.actions||0}</span>`}</div>
   <div class="world wmap"><canvas id="mapcv"></canvas>${labels}</div>
   <p class="hint" style="margin:0 2px 10px">${CLK() ? "點地點，會先問你要不要開車過去。開車要花時間，越遠越久。" : "點地點，開車過去（用行動點）。📍 今天已經去過的地方，可以免費回去。"}${hidden?`<br>🔒 還有 ${hidden} 個地方，要先查到相關線索才會出現在地圖上。`:""}</p>
@@ -1087,7 +1217,10 @@ async function restart(skipConfirm){
   if (art() && typeof WORLD !== "undefined"){ (travel() ? C.locations.map(l=>l.id) : ["_"]).forEach(id=>WORLD.reset(id)); openCase(CASES.indexOf(C)); return; }
   go("brief");
 }
-function go(t){ if (openLoc) mapFrom = openLoc; tab=t; openSuspect=null; lastSaid=null; wTalk=null; wSay=null; peek=null; if(t!=="map" || art()) openLoc=null; render(); scrollTo(0,0); }
+function go(t){
+  if (fsMode()){ if (SHEETS.includes(t)){ openSheet(t); return; }
+    if (SHEETS.includes(tab) && (t==="map" || t==="scene")){ closeSheet(); return; } }
+  if (openLoc) mapFrom = openLoc; tab=t; openSuspect=null; lastSaid=null; wTalk=null; wSay=null; peek=null; if(t!=="map" || art()) openLoc=null; render(); scrollTo(0,0); }
 function renderNav(){
   const tabs = art()
     ? [[travel()?"map":"scene", travel()?"🗺️":"🏠", travel()?"地圖":"現場"],["notes","📓","筆記"],["brief","📁","案情"],["accuse","⚖️","推理"]]
@@ -1099,15 +1232,20 @@ function renderNav(){
   nav.querySelectorAll("button").forEach(b=>b.onclick=()=>go(b.dataset.tab));
 }
 function render(){
-  const home = screen==="home";
+  const home = screen==="home", fs = !home && fsMode();
+  document.body.classList.toggle("fs", fs);
   document.getElementById("homeBtn").style.display = home ? "none" : "";
   document.getElementById("clock").style.display = home ? "none" : "";
   document.getElementById("nav").style.display = home ? "none" : "";
   document.getElementById("caseTitle").textContent = home ? "🕵️ 偵探檔案" : C.title;
   if (home){ document.getElementById("view").innerHTML = vHome(); return; }
   renderClock(); renderNav();
-  const v = { brief:vBrief, suspects:vSuspects, search:vSearch, map:vMap, notes:vNotes, accuse:vAccuse, scene:()=>openSuspect?vSuspects():worldView(HOME, worldDef(HOME)) }[tab]();
+  let v = { brief:vBrief, suspects:vSuspects, search:vSearch, map:vMap, notes:vNotes, accuse:vAccuse, scene:()=>openSuspect?vSuspects():worldView(HOME, worldDef(HOME)) }[tab]();
+  if (fs && SHEETS.includes(tab)) v = sheetWrap(v);
+  // 全螢幕的頁面（筆記、推理…）自己捲動：重畫時保持原本捲到的位置
+  const prev = document.querySelector(".fs-sheet"), prevTab = prev && prev.dataset.tab, prevTop = prev ? prev.scrollTop : 0;
   document.getElementById("view").innerHTML = v;
+  const sh = document.querySelector(".fs-sheet"); if (sh && prevTab===sheetKey()) sh.scrollTop = prevTop;
   if (art()) drawScenes();
 }
 render();
