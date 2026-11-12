@@ -781,8 +781,8 @@ function worldViewFS(l, def){
 }
 const sheetKey = () => `${tab}:${S.done?1:0}:${S.court ?? ""}`;
 function sheetWrap(v){
-  const t = { notes:"📓 筆記", brief:"📁 案情", accuse: S.done ? "⚖️ 結案" : "⚖️ 跟小吳結案" }[tab];
-  const lead = tab==="accuse" && !S.done && buddyId() ? wuSay("好，把你想到的都說出來吧。就算推理錯了也不會公布真相，我們還可以回去再查。")
+  const t = { notes:"📓 筆記", brief:"📁 案情", accuse: inter ? "🎬 " + (inter.L.title || "幕間") : S.done ? "⚖️ 結案" : "⚖️ 跟小吳結案" }[tab];
+  const lead = inter ? "" : tab==="accuse" && !S.done && buddyId() ? wuSay("好，把你想到的都說出來吧。就算推理錯了也不會公布真相，我們還可以回去再查。")
     : tab==="notes" && buddyId() ? wuSay("這是我幫你記下來的東西，按重點、時間線、人物、證物都可以翻。") : "";
   return `<div class="fs-root"><div class="fs-hud"><button class="hb go" onclick="closeSheet()">✕ 回到${travel() && !sheetFrom ? "地圖" : "現場"}</button><b class="hn">${t}</b><span class="sp"></span>
     ${CLK() ? `<span>🕐 ${nowStr()}・剩 ${minLabel(timeLeft())}</span>` : ""}</div><div class="fs-sheet" data-tab="${sheetKey()}"><div class="in">${lead}${v}</div></div></div>`;
@@ -855,9 +855,11 @@ function checkEvents(){
   }
   if (fired.length){ save();
     // atTime / popup：時間一到就跳出來（例如綁匪打電話來），不是只在角落提示
-    const pop = fired.filter(e=>e.atTime || e.popup);
+    const sc = fired.filter(e=>e.scene);   // 有 scene 的事件：播一段場面（可以有選擇、限時行動，見 arc.js）
+    if (sc.length) setTimeout(()=>sc.forEach(e=>interPlay(e.scene, "ev:" + e.id)), 700);
+    const pop = fired.filter(e=>(e.atTime || e.popup) && !e.scene);
     if (pop.length) setTimeout(()=>pop.forEach(e=>uiAlert(`📞 ${nowStr()}　${e.title}\n\n${String(e.text).replace(/<[^>]+>/g,"")}`)), 700);
-    const rest = fired.filter(e=>!e.atTime && !e.popup);
+    const rest = fired.filter(e=>!e.atTime && !e.popup && !e.scene);
     if (rest.length) setTimeout(()=>toast("📢 " + rest.map(e=>e.title).join("、") + "（詳情在「案情」）"), 900); }
   return fired;
 }
