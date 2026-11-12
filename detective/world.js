@@ -251,7 +251,9 @@ const WORLD = (() => {
       [b.x0, b.x1].forEach((dx, j) => { const near = [s.px, s.bx].some(v => Math.abs(v - dx) < 9) && s.py > GROUND - 2; const k = i+"_"+j; s.door[k] = (s.door[k]||0) + ((near?1:0) - (s.door[k]||0)) * Math.min(1, dt*8); });
     });
     // 鏡頭
-    const target = Math.max(0, Math.min(def.w - VW, (s.car && s.script && step() && step().hide ? s.car.x+20 : s.px) - VW/2));
+    // 右邊有選單蓋住畫面時，鏡頭往右移一點，讓主角和對話的人留在看得到的地方
+    const cov = cur.hooks.cover ? cur.hooks.cover() : 0;
+    const target = Math.max(0, Math.min(def.w - VW, (s.car && s.script && step() && step().hide ? s.car.x+20 : s.px) - VW/2 + cov*VW/2));
     s.cam += (target - s.cam) * Math.min(1, dt*4);
     // 對話框打字效果
     const b = bubbleNow();
@@ -483,7 +485,9 @@ const WORLD = (() => {
         bub.hidden = false;
         bub.querySelector("b").textContent = name;
         bub.querySelector("span").textContent = s.typed;
-        const ww = canvas.clientWidth, wh = canvas.clientHeight, bw = bub.offsetWidth, bh = bub.offsetHeight, hx = (who.x - cam) / VW * ww;
+        const cw0 = canvas.clientWidth, ww = cw0 * (1 - (hooks.cover ? hooks.cover() : 0));
+        bub.style.maxWidth = Math.round(ww * 0.9) + "px";
+        const wh = canvas.clientHeight, bw = bub.offsetWidth, bh = bub.offsetHeight, hx = (who.x - cam) / VW * cw0;
         const left = Math.max(4, Math.min(ww - bw - 4, hx - bw/2));
         const headY = (who.y - 34) / VH * wh;
         const top = Math.max(4, Math.min(headY - bh - 8, wh - bh - 4));

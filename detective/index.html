@@ -151,10 +151,12 @@ body.fs .toast{bottom:calc(14px + env(safe-area-inset-bottom))}
 @media (orientation:portrait){ .fs-stage{height:56.25vw} }
 @media (orientation:landscape){ .fs-empty{display:none} }
 @media (orientation:landscape){
-  .fs-body{flex-direction:row}
-  .fs-stage{flex:1 1 0;min-width:0;container-type:size}
+  /* 打橫：畫面大小固定不變，問話、選單浮在畫面右邊（不會一開一關畫面就縮放） */
+  .fs-body{position:relative}
+  .fs-stage{flex:1 1 0;min-height:0;container-type:size}
   .fs-stage .world{width:min(100cqw,177.78cqh)}
-  .fs-panel{flex:none;width:clamp(260px,38vw,420px);border-left:2px solid #000}
+  .fs-panel{position:absolute;top:8px;right:max(8px,env(safe-area-inset-right));width:clamp(260px,36vw,420px);max-height:calc(100% - 16px);background:none;padding:0;z-index:3;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.55)}
+  .fs-panel > .card{margin:0;background:rgba(31,26,23,.96)} .fs-panel > .look{margin:0 4px 4px 0}
 }
 /* 大螢幕（電腦、iPad）：畫面放大時，對話框、指示牌、地圖標籤的字也跟著放大 */
 .fs-root .world{container-type:inline-size}
@@ -594,6 +596,16 @@ function hudHTML(l, extra){
     ${canFull() && !isFull() ? `<button class="hb" onclick="goFull()" aria-label="全螢幕">⛶</button>` : ""}
     <button class="hb buddy" onclick="openBuddy()">${bid ? "💬 小吳" : "☰ 選單"}</button></div>`;
 }
+// 打橫時選單蓋住畫面右邊多少（0～1），給鏡頭和對話框避開
+let fsCover = 0;
+function calcCover(){
+  fsCover = 0;
+  const p = document.querySelector(".fs-panel:not(.fs-empty)"), cv = document.getElementById("worldcv");
+  if (!p || !cv || getComputedStyle(p).position !== "absolute") return;
+  const pr = p.getBoundingClientRect(), cr = cv.getBoundingClientRect();
+  if (cr.width) fsCover = Math.max(0, Math.min(.6, (cr.right - pr.left + 6) / cr.width));
+}
+addEventListener("resize", ()=>{ if (fsMode()) calcCover(); });
 function fsFrame(l, stage, panel, extra){
   return `<div class="fs-root">${hudHTML(l, extra)}<div class="fs-body"><div class="fs-stage">${stage}</div>${panel ? `<div class="fs-panel">${panel}</div>` : `<div class="fs-panel fs-empty"><p class="hint" style="margin:6px 2px">📱 把手機打橫，畫面會更大。<br>點人、點東西會先問你要不要做；點小吳（<b style="color:#6fd46f">綠色箭嘴</b>）或右上角「💬 小吳」，可以翻筆記、看案情、結案。</p></div>`}</div></div>`;
 }
@@ -693,6 +705,7 @@ function worldHooks(l, def){
     script: ps && ps.steps,
     scriptDone: set => { if (set){ if (ps && ps.key){ S.introSeen = S.introSeen || {}; S.introSeen[ps.key] = 1; save(); } wArrive = null; wNews = []; } return !ps; },
     refresh: () => render(),
+    cover: () => fsCover,
     onSecret: q => { wTalk = null; wAct = null; peek = null; lastSaid = null; wSay = { who:"you", text:q.text || "這面牆後面好像是空的……" }; if (q.onFind) q.onFind(S); save(); render(); },
     areaSeen: id => (S.areas || []).includes(l.id + ":" + id + "@" + S.phase),
     onArea: id => { (S.areas = S.areas || []).push(l.id + ":" + id + "@" + S.phase); save(); }
@@ -1262,6 +1275,7 @@ function render(){
   document.getElementById("view").innerHTML = v;
   const sh = document.querySelector(".fs-sheet"); if (sh && prevTab===sheetKey()) sh.scrollTop = prevTop;
   if (art()) drawScenes();
+  if (fs) calcCover();
 }
 render();
 if ("serviceWorker" in navigator) {
