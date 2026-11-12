@@ -30,7 +30,7 @@ const WORLD = (() => {
     if (s.px > def.w - 8){ s.px = def.w - 30; s.py = GROUND; resetTrail(s); }
     if (!s.car && def.park !== undefined) s.car = { x:def.park, from:def.park, to:def.park, d:0, c:"#e9e4da" };
     if (hooks.script && !s.script && !hooks.scriptDone()){ s.script = hooks.script; s.si = 0; s.sT = 0; startStep(); }
-    if (hooks.areaNow) hooks.areaNow(s.script ? null : (s.lastArea ?? null));
+    if (hooks.areaNow) hooks.areaNow(s.script ? null : (s.lastArea ?? null), !!s.script);
     // 操作：按下去就有反應；按住或拖著，主角就一路跟著手指走
     canvas.onclick = null;
     canvas.onpointerdown = e => {
@@ -133,8 +133,10 @@ const WORLD = (() => {
     if (outSpot) return goThen(outSpot.walk, GROUND, () => hooks.onSpot(outSpot));
     // 還沒進去的建築：先走到門口，進去
     const bi = bldAt(x), inside = bldAt(s.px);
-    if (bi >= 0 && bi === inside && hiddenAt(s, x, y)){ s.lastTap = "ground"; hooks.onGround && hooks.onGround(); return goThen(x, floorAt(x, y), null); }
+    const free = !hooks.noFreeWalk;
+    if (bi >= 0 && bi === inside && hiddenAt(s, x, y)){ s.lastTap = "ground"; hooks.onGround && hooks.onGround(); return free ? goThen(x, floorAt(x, y), null) : null; }
     if (bi >= 0 && bi !== inside && (s.rv[bi]||0) < 0.5){
+      if (!free){ s.lastTap = "ground"; hooks.onGround && hooks.onGround(); return; }
       const b = blds()[bi], d = Math.abs(s.px - b.x0) < Math.abs(s.px - b.x1) ? b.x0 + 10 : b.x1 - 10;
       s.lastTap = "ground"; hooks.onGround && hooks.onGround();
       return goThen(d, GROUND, null);
@@ -159,6 +161,7 @@ const WORLD = (() => {
     if (near){ const [tx,ty] = target(near); return goThen(tx, ty, () => hooks.onSpot(near)); }
     s.lastTap = "ground";
     hooks.onGround && hooks.onGround();
+    if (!free) return;   // 不能隨便亂走：用「🚶 去哪裡」選地方
     const fy = floorAt(x, y);
     goThen(x, fy, null);
   }
@@ -192,7 +195,7 @@ const WORLD = (() => {
     const wasX = s.px, wasY = s.py;
     // 按住／拖著：一直往手指的位置走（手指放在畫面邊緣，就會一直走下去）
     const h = cur.hold;
-    if (h && !s.script && (h.moved || (h.kind === "ground" && performance.now() - h.t > 280))){
+    if (h && !s.script && !cur.hooks.noFreeWalk && (h.moved || (h.kind === "ground" && performance.now() - h.t > 280))){
       const r = cur.canvas.getBoundingClientRect();
       const hx = (h.cx - r.left) * VW / r.width + s.cam, hy = (h.cy - r.top) * VH / r.height;
       const fy = floorAt(hx, hy), last = s.path[s.path.length-1];
@@ -218,7 +221,7 @@ const WORLD = (() => {
       const aid = ar ? ar.id : null;
       if (aid !== s.lastArea){
         s.lastArea = aid;
-        cur.hooks.areaNow && cur.hooks.areaNow(aid);
+        cur.hooks.areaNow && cur.hooks.areaNow(aid, false);
         if (ar && !(cur.hooks.areaSeen && cur.hooks.areaSeen(ar.id))){
           const ph = (cur.hooks.opt() || {}).phase || 0;
           const text = typeof ar.text === "function" ? ar.text(ph) : Array.isArray(ar.text) ? ar.text[Math.min(ph, ar.text.length - 1)] : ar.text;
@@ -299,13 +302,13 @@ const WORLD = (() => {
   function navList(s){
     const out = [], onLv = v => Math.abs(s.py - v) < 1, curB = bldAt(s.px);
     if (s.script || s.path.length) return out;
-    stairs().forEach((k, i) => {
+    if (!cur.hooks.noFreeWalk) stairs().forEach((k, i) => {
       const bi = bldAt((k.x0 + k.x1) / 2); if (bi >= 0 && (s.rv[bi] || 0) < 0.5) return;
       const lo = k.y0 >= k.y1 ? [k.x0, k.y0] : [k.x1, k.y1], hi = k.y0 >= k.y1 ? [k.x1, k.y1] : [k.x0, k.y0];
       if (onLv(lo[1])) out.push({ key:"su" + i, x:(lo[0] + hi[0]) / 2, y:(lo[1] + hi[1]) / 2 - 4, label:"⬆ 上二樓", to:hi });
       if (onLv(hi[1])) out.push({ key:"sd" + i, x:(lo[0] + hi[0]) / 2, y:(lo[1] + hi[1]) / 2 + 10, label:"⬇ 下一樓", to:lo });
     });
-    blds().forEach((b, i) => {
+    if (!cur.hooks.noFreeWalk) blds().forEach((b, i) => {
       const covered = (s.rv[i] || 0) < 0.5;
       [b.x0, b.x1].forEach((dx, j) => {
         if (b.doors && b.doors[j] === false) return;
@@ -515,5 +518,7 @@ const WORLD = (() => {
 
   // (x, y) 是不是在一棟「現在看得到裡面」的建築裡（雨不要下在室內）：回傳 0～1
   function indoor(x, y){ if (!cur) return 0; const i = bldAt(x); if (i < 0) return 0; const b = blds()[i]; if (y < (b.y0 ?? 0)) return 0; if ((b.open || []).some(r => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3])) return 0; const k = levelAt(b, y); return lvVis(cur.s, i, k < 0 ? 0 : k); }
-  return { mount, state, indoor, levelVis:(i, k) => cur ? lvVis(cur.s, i, k) : 0, skip:() => cur && cur.s.script && skip(), VW, VH, GROUND, reset:(lid)=>{ delete st[lid]; } };
+  // 外面叫主角走到某個地方（選地方移動用）：到了再呼叫 cb
+  function goTo(x, y, cb){ if (!cur || cur.s.script) return false; goThen(x, y ?? GROUND, cb); return true; }
+  return { mount, state, indoor, goTo, walking:() => !!(cur && cur.s.path.length), levelVis:(i, k) => cur ? lvVis(cur.s, i, k) : 0, skip:() => cur && cur.s.script && skip(), VW, VH, GROUND, reset:(lid)=>{ delete st[lid]; } };
 })();

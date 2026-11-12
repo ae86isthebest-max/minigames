@@ -117,11 +117,16 @@ details.past summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6p
 .wbubble{position:absolute;top:6px;max-width:78%;width:max-content;background:#fffdf7;color:#1b1512;border:2px solid #1b1512;box-shadow:3px 3px 0 #1b1512;padding:5px 9px;font-size:13.5px;line-height:1.5;pointer-events:none;z-index:2}
 .wbubble b{display:block;font-size:11px;color:#8a5a1a}
 .wbubble::after{content:"";position:absolute;left:var(--tail,50%);bottom:-9px;margin-left:-6px;border:6px solid transparent;border-top-color:#1b1512;border-bottom:0}
-.wroom{position:absolute;left:8px;bottom:8px;z-index:3;background:rgba(20,16,12,.82);color:#fff;border:1.5px solid #ffd04a;border-radius:99px;padding:6px 12px;font-size:13px;font-family:inherit;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.5);display:flex;align-items:center;gap:2px}
+.wbtns{position:absolute;left:8px;bottom:8px;z-index:3;display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;max-width:75%;pointer-events:none}
+.wbtns button{pointer-events:auto}
+.wgo{background:rgba(20,16,12,.82);color:#fff;border:1.5px solid #6fd46f;border-radius:99px;padding:6px 12px;font-size:13px;font-family:inherit;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.wgo[hidden]{display:none}
+.wroom{background:rgba(20,16,12,.82);color:#fff;border:1.5px solid #ffd04a;border-radius:99px;padding:6px 12px;font-size:13px;font-family:inherit;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.5);display:flex;align-items:center;gap:2px}
 .wroom[hidden]{display:none}
 .wroom .an{font-weight:400;opacity:.85}
 .wroom .n{background:#ffd04a;color:#2a1f10;border-radius:99px;min-width:18px;padding:0 5px;margin-left:4px;font-size:12px;text-align:center}
 .wroom .n.ok{background:#6fd46f}
+.wroom .n.pp{background:#e9e4da}
 .wtip{position:absolute;right:8px;bottom:6px;font-size:11px;color:#fff;line-height:1.2;text-shadow:0 1px 2px #000;pointer-events:none}
 .wtop{display:flex;gap:12px;align-items:center;margin-bottom:8px;font-size:13px;color:var(--muted)}
 .wtop .back{margin:0}
@@ -153,7 +158,7 @@ body.fs .toast{bottom:calc(14px + env(safe-area-inset-bottom))}
 .fs-panel .card{margin-bottom:8px}
 .fs-panel .wq{margin:5px 0;padding:9px 12px}
 .wq.accent{border-color:var(--accent);color:var(--accent);font-weight:700}
-@media (orientation:portrait){ .fs-stage{height:56.25vw} }
+@media (orientation:portrait){ .fs-stage{height:auto} .fs-stage .world canvas{height:56.25vw} .fs-root .wbtns{position:static;max-width:none;padding:6px 8px 2px;pointer-events:auto} }
 @media (orientation:landscape){ .fs-empty{display:none} }
 @media (orientation:landscape){
   /* 打橫：畫面大小固定不變，問話、選單浮在畫面右邊（不會一開一關畫面就縮放） */
@@ -170,7 +175,7 @@ body.fs .toast{bottom:calc(14px + env(safe-area-inset-bottom))}
 .fs-root .wnav{font-size:max(12px,1.05cqw)}
 .fs-root .wskip{font-size:max(12px,1cqw)}
 .fs-root .wtip{font-size:max(11px,.9cqw)}
-.fs-root .wroom{font-size:max(13px,1.15cqw)}
+.fs-root .wroom,.fs-root .wgo{font-size:max(13px,1.15cqw)}
 .fs-root .wmap .mlab{font-size:max(10.5px,1.05cqw)}
 .fs-root .wmap .mlab i{font-size:max(9.5px,.9cqw)}
 @media (min-width:1200px) and (min-height:700px){ .fs-hud{font-size:14.5px;min-height:42px} .fs-hud .hn{font-size:15.5px} .hb{font-size:14.5px;padding:6px 14px} .fs-panel{font-size:17px} }
@@ -273,7 +278,7 @@ function openCase(i){
   C = CASES[i]; KEY = saveKey(C); S = loadFor(C) || fresh();
   (C.cctv||[]).forEach(c=>{ c.cctv = true; });   // 監視器畫面：顯示成 REC 畫面、選單用 📹
   accusePick = freshPick(); openSuspect = null; openLoc = null; screen = "case"; tab = "brief"; checkEvents();
-  wTalk = null; wSay = null; peek = null; mapFrom = null; wRoom = null;
+  wTalk = null; wSay = null; peek = null; mapFrom = null; wRoom = null; wGo = false; talkFrom = null;
   // 有畫面的案件：一揀完就直接進現場（第一晚的開場動畫會自動播）
   wBuddy = false; sheetFrom = null;
   if (art()){ if (travel()){ tab = "map"; openLoc = PH().startAt || null; } else tab = "scene"; }
@@ -324,7 +329,7 @@ async function visit(id){
   }
   if (art() && mapCtl && document.getElementById("mapcv")){ if (mapBusy) return; mapBusy = true; renderClock(); await new Promise(r=>mapCtl.drive(id, r)); mapBusy = false; }
   wArrive = art() && mapFrom && id !== mapFrom ? id : null;
-  openLoc = id; openSuspect = null; peek = null; wRoom = null; wTalk = null; wSay = null; render(); scrollTo(0,0);
+  openLoc = id; openSuspect = null; peek = null; wRoom = null; wGo = false; wTalk = null; wSay = null; render(); scrollTo(0,0);
 }
 async function submitTest(id, sure){
   const t = tests().find(x=>x.id===id), l = LOC(t.loc);
@@ -380,7 +385,7 @@ function drawScenes(){
     }
   });
   const wc = document.getElementById("worldcv");
-  if (wc){ const l = curLoc(), def = worldDef(l); if (def) WORLD.mount(wc, def, l.id, worldHooks(l, def)); }
+  if (wc){ const l = curLoc(), def = worldDef(l); if (def) WORLD.mount(wc, def, l.id, curHooks = worldHooks(l, def)); }
   const mc = document.getElementById("mapcv");
   if (mc) mapCtl = WK.drawMap(mc, mapFrom || PH().startAt || C.locations[0].id);
   document.querySelectorAll("canvas[data-anim]").forEach(cv=>{
@@ -421,10 +426,11 @@ function tapSpot(h){
 }
 function doAct(id){
   const it = allItems().find(x=>x.id===id);
-  if (S.seen.includes(id)){ wAct = null; peek = { kind:"item", id }; render(); return; }
+  if (S.seen.includes(id)){ const from = wAct && wAct.ids.length > 1 ? wAct.ids : null; wAct = null; peek = { kind:"item", id, from }; render(); return; }
   const l = travel() ? LOC(openLoc) : HOME;
   if ((travel() ? searchLeftAt(l) : searchLeft()) <= 0){ toast(CLK() ? "⏰ 沒時間了" : "這裡今天已經查不了更多了。"); return; }
-  inspectById(id); if (S.seen.includes(id)){ wAct = null; peek = { kind:"item", id }; render(); }
+  const from = wAct && wAct.ids.length > 1 ? wAct.ids : null;
+  inspectById(id); if (S.seen.includes(id)){ wAct = null; peek = { kind:"item", id, from }; render(); }
 }
 function actCard(l){
   const its = wAct.ids.map(id=>allItems().find(x=>x.id===id)).filter(Boolean);
@@ -479,7 +485,7 @@ function worldDef(l){
   if (w && !w.auto && (!w.when || w.when(S.phase))) return w;
   return WK.autoWorld(l, w || {});
 }
-function leaveWorld(){ mapFrom = openLoc || mapFrom; openLoc = null; wRoom = null; wTalk = null; wSay = null; peek = null; lastSaid = null; tab = "map"; render(); scrollTo(0,0); }
+function leaveWorld(){ mapFrom = openLoc || mapFrom; openLoc = null; wRoom = null; wGo = false; wTalk = null; wSay = null; peek = null; lastSaid = null; tab = "map"; render(); scrollTo(0,0); }
 const BUDDY = { id:"_wu", name:"小吳", look:{ skin:"#e8c09a", hair:"#2a2a2a", hairStyle:"spiky", top:"#8ab4d8", coat:"#f4f6f6", bottom:"#3a4152", glasses:true, gloves:"#4a8ad8" } };
 function buddyHint(l){
   const sl = travel() ? searchLeftAt(l) : searchLeft();
@@ -487,9 +493,9 @@ function buddyHint(l){
   const s = C.suspects.find(x=>x.id==="wu");
   const tail = s && !reachable(s) ? "要問我問題，就到鑑識中心找我。" : "";
   if (S.done) return "案子已經結了，辛苦了。";
-  if (CLK()) return `${timeTag()}。${fresh ? "走進每個房間，左下角的「🔍 調查這裡」會列出還沒查的東西。" : "這裡看得到的東西都查過了。"}看錄影、查證物、問話都要花時間，挑重要的做。` + tail;
+  if (CLK()) return `${timeTag()}。${fresh ? "點左下角的「📍」看這裡有什麼可以查，「🚶 去哪裡」換地方。" : "這裡看得到的東西都查過了。"}看錄影、查證物、問話都要花時間，挑重要的做。` + tail;
   if (sl <= 0) return "這裡今天查不了更多了，去問問人吧。" + tail;
-  return `這裡還可以查 ${sl} 樣東西。${fresh ? "走進每個房間，左下角的「🔍 調查這裡」會列出還沒查的東西。" : "看得到的東西都查過了，換個地方吧。"}${tail}`;
+  return `這裡還可以查 ${sl} 樣東西。${fresh ? "點左下角的「📍」看這裡有什麼可以查，「🚶 去哪裡」換地方。" : "看得到的東西都查過了，換個地方吧。"}${tail}`;
 }
 // 不是嫌疑人、但在現場可以說幾句話的人（鑑識人員、員警……）：def.extras = [{ id, name, x, y, L, pose, facing, lines, phase, until }]
 const extrasOf = def => (typeof def.extras === "function" ? def.extras(S.phase) : (def.extras || [])).filter(e=>(e.phase===undefined || S.phase>=e.phase) && (e.until===undefined || S.phase<=e.until));
@@ -539,7 +545,7 @@ function worldTalk(s){
   const qs = s.questions.filter(unlocked), notAsked = qs.filter(q=>!S.asked.includes(q.id));
   const left = qLeft(s), off = left<=0 || S.done, lockedN = s.questions.length - qs.length;
   const said = lastSaid && lastSaid.sid===s.id ? s.questions.find(q=>q.id===lastSaid.qid) : null;
-  return `<div class="card" style="padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center"><b>${s.av} ${esc(s.name)}</b><button class="back" style="margin:0" onclick="wTalk=null;lastSaid=null;render()">結束對話 ✕</button></div>
+  return `<div class="card" style="padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center"><b>${s.av} ${esc(s.name)}</b><button class="back" style="margin:0" onclick="wTalk=null;lastSaid=null;if(talkFrom){wRoom=talkFrom;talkFrom=null;}render()">${talkFrom ? "‹ 結束對話" : "結束對話 ✕"}</button></div>
     <div class="muted small">${esc(s.role)}・<span style="color:${left?"var(--accent)":"var(--red)"}">${left?`還願意回答 ${left} 題`:"今天不肯再回答了"}</span></div>
     ${said && said.note ? `<div class="note" style="margin-top:6px">${esc(said.note)}</div>` : ""}
     ${!off && !wChat ? `<button class="wq" style="border-color:var(--accent);text-align:center" onclick="wChat=true;render()">🗣️ 開始問話${CLK() ? `（每題約 ${costAsk()} 分鐘）` : ""}</button>${CLK() ? `<p class="muted small" style="margin:4px 0 0">${timeTag()}。</p>` : ""}` : ""}
@@ -571,12 +577,12 @@ const fsMode = () => screen==="case" && art() && typeof WORLD !== "undefined" &&
 function buddyId(){ const s = C.suspects.find(x=>x.id==="wu"); if (s) return isGone(s) ? null : s.id; return BUDDY.id; }
 function openBuddy(){
   const l = curLoc(), bid = buddyId();
-  wRoom = null; wTalk = null; wAct = null; peek = null; lastSaid = null; wBuddy = true;
+  wGo = false; wRoom = null; wTalk = null; wAct = null; peek = null; lastSaid = null; wBuddy = true;
   wSay = l && bid ? { who:bid, text:buddyHint(l) } : null;
   render();
 }
-function closePanel(){ wRoom = null; wBuddy = false; wTalk = null; wAct = null; peek = null; wSay = null; lastSaid = null; render(); }
-function openSheet(t){ if (!SHEETS.includes(tab)) sheetFrom = openLoc; wRoom = null; wBuddy = false; tab = t; openSuspect = null; lastSaid = null; wTalk = null; wSay = null; peek = null; wAct = null; render(); }
+function closePanel(){ wGo = false; talkFrom = null; wRoom = null; wBuddy = false; wTalk = null; wAct = null; peek = null; wSay = null; lastSaid = null; render(); }
+function openSheet(t){ if (!SHEETS.includes(tab)) sheetFrom = openLoc; wGo = false; wRoom = null; wBuddy = false; tab = t; openSuspect = null; lastSaid = null; wTalk = null; wSay = null; peek = null; wAct = null; render(); }
 function closeSheet(){ tab = travel() ? "map" : "scene"; openLoc = travel() ? sheetFrom : null; sheetFrom = null; wBuddy = false; render(); }
 function goFull(){
   const d = document.documentElement, rq = d.requestFullscreen || d.webkitRequestFullscreen;
@@ -585,7 +591,7 @@ function goFull(){
 // 電腦：Esc 關掉問話／選單／筆記，回到現場
 addEventListener("keydown", e=>{
   if (e.key !== "Escape" || !fsMode() || document.querySelector(".dlg")) return;
-  if (SHEETS.includes(tab)) closeSheet(); else if (wRoom || wBuddy || wTalk || wAct || peek || wSay) closePanel();
+  if (SHEETS.includes(tab)) closeSheet(); else if (wGo || wRoom || wBuddy || wTalk || wAct || peek || wSay) closePanel();
 });
 function exitFull(){ try { if (document.fullscreenElement) document.exitFullscreen(); else if (document.webkitFullscreenElement) document.webkitExitFullscreen(); } catch(e){} }
 const isFull = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
@@ -643,10 +649,10 @@ function buddyMenu(l){
   </div>`;
 }
 function helpText(l){
-  return `走路：點地面走過去，按住或拖著就一路跟著走；點畫面上的指示牌（⬆ 上二樓、🚪 進去、出去）會自動走過去。<b>走路不花時間。</b><br>
+  return `移動：點左下角<b style="color:#6fd46f">「🚶 去哪裡」</b>選一個地方，你會自己走過去（上下樓、進出門都會自己走）。<b>走路不花時間。</b><br>
   看到<b style="color:#b07aff">【···】</b>代表那裡好像有暗門或秘道。<br>
   頭上箭嘴：<b style="color:#ffd04a">黃</b> 可以問話、<b style="color:#ff5a4a">紅</b> 有新的質問、<b style="color:#8a8a8a">灰</b> 不肯再答、<b style="color:#6ac8ff">藍</b> 鑑識人員或員警（問話不花時間）、<b style="color:#6fd46f">綠</b> 小吳。<br>
-  走進一個房間或一個區域，左下角會出現<b style="color:#ffd04a">「🔍 調查這裡」</b>，這裡能查的東西都列在裡面（數字是還沒查的數量）。點人、點東西會先問你要不要做，確定了才會${CLK() ? "花時間" : "用掉次數"}。畫面上其他地方也可能藏著小細節，可以到處點點看。<br>
+  到了一個地方，點左下角<b style="color:#ffd04a">「📍 地名」</b>：那裡的人可以說話、可以調查的東西都列在裡面（黃色數字是還沒查的數量）。點人、點東西會先問你要不要做，確定了才會${CLK() ? "花時間" : "用掉次數"}。畫面上其他地方也可能藏著小細節，可以到處點點看。<br>
   筆記、案情、結案：點小吳或右上角「💬 小吳」。`;
 }
 /* ---------- 走進一個房間／區域：列出這裡可以查的東西 ---------- */
@@ -672,17 +678,56 @@ function areaItems(l, def, aid){
   const locked = all.filter(it=>!S.seen.includes(it.id) && itemOpen(it) && !unlocked(it)).length;
   return { open, locked };
 }
+let wGo = false, curHooks = null, curScripting = false;   // wGo：「去哪裡」清單；curHooks：現在走動畫面的 hooks
+const areaY = a => a.y ?? FLOOR;
+const areaList = def => (def.areas || []).filter(a=>!a.hide);
+function peopleIn(def, aid){
+  const a = (def.areas||[]).find(x=>x.id===aid); if (!a || !curHooks) return [];
+  return curHooks.people().filter(q=>q.x>=a.x0-2 && q.x<=a.x1+2 && Math.abs((q.y ?? FLOOR) - areaY(a)) < 3);
+}
 function updateRoomBtn(){
-  const b = document.querySelector(".wroom"); if (!b) return;
+  const b = document.querySelector(".wroom"), g = document.querySelector(".wgo"); if (!b) return;
   const l = curLoc(), def = l && worldDef(l);
-  if (!def || !curArea || wRoom){ b.hidden = true; return; }
-  const { open, locked } = areaItems(l, def, curArea);
-  if (!open.length && !locked){ b.hidden = true; return; }
-  const n = open.filter(it=>!S.seen.includes(it.id)).length;
-  b.innerHTML = `🔍 調查這裡<span class="an">（${esc(areaName(def, curArea))}）</span>${n ? `<span class="n">${n}</span>` : `<span class="n ok">✓</span>`}`;
+  const busy = !def || curScripting || wRoom || wGo;
+  if (g) g.hidden = !def || curScripting || wGo;
+  if (busy || !curArea){ b.hidden = true; return; }
+  const { open } = areaItems(l, def, curArea);
+  const n = open.filter(it=>!S.seen.includes(it.id)).length, np = peopleIn(def, curArea).length;
+  b.innerHTML = `📍 ${esc(areaName(def, curArea))}<span class="an">・在這裡做什麼？</span>${n ? `<span class="n">${n}</span>` : ""}${np ? `<span class="n pp">👤${np}</span>` : ""}`;
   b.hidden = false;
 }
-function openRoomList(){ if (!curArea) return; wBuddy = false; wTalk = null; wSay = null; wAct = null; peek = null; lastSaid = null; wRoom = curArea; render(); }
+function openRoomList(aid){ aid = aid || curArea; if (!aid) return; wGo = false; wBuddy = false; wTalk = null; wSay = null; wAct = null; peek = null; lastSaid = null; wRoom = aid; render(); }
+function openGo(){ wRoom = null; wBuddy = false; wTalk = null; wSay = null; wAct = null; peek = null; lastSaid = null; wGo = true; render(); }
+// 選一個地方：主角自己走過去，到了就打開那裡的清單
+function goArea(aid){
+  const l = curLoc(), def = l && worldDef(l), a = def && (def.areas||[]).find(x=>x.id===aid); if (!a) return;
+  wGo = false; wRoom = null; render();
+  if (aid === curArea && !(WORLD.walking && WORLD.walking())){ openRoomList(aid); return; }
+  WORLD.goTo((a.x0 + a.x1) / 2, areaY(a), () => openRoomList(aid));
+}
+// 從清單跟人說話：先走到那個人旁邊
+function talkTo(id){
+  const l = curLoc(), def = l && worldDef(l); if (!curHooks) return;
+  const q = curHooks.people().find(x=>x.id===id); if (!q) return;
+  const from = wRoom; wRoom = null; render();
+  const st = WORLD.state(l.id), side = st.px < q.x ? -16 : 16;
+  WORLD.goTo(q.x + side, q.y ?? FLOOR, () => { st.face = side < 0 ? 1 : -1; curHooks.onPerson(id); talkFrom = from; render(); });
+}
+let talkFrom = null;
+function goList(l, def){
+  const here = curArea, all = areaList(def);
+  const row = a => {
+    const { open } = areaItems(l, def, a.id), n = open.filter(it=>!S.seen.includes(it.id)).length, np = peopleIn(def, a.id).length;
+    const sub = [np ? `👤 ${np} 人` : "", n ? `🔍 ${n} 樣沒查` : open.length ? "✓ 都查過了" : ""].filter(Boolean).join("・");
+    return `<button class="wq ${a.id===here?"":""}" ${a.id===here?'style="border-color:#6fd46f"':""} onclick="goArea('${a.id}')">${a.id===here?"📍":"🚶"} ${esc(areaName(def, a.id))}${a.id===here?' <span class="tag">你在這裡</span>':""}${sub?`<div class="muted small" style="font-weight:400">${sub}</div>`:""}</button>`;
+  };
+  const g1 = all.filter(a=>areaY(a)===FLOOR), g2 = all.filter(a=>areaY(a)!==FLOOR);
+  return `<div class="card" style="padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center"><b>🚶 要去哪裡？</b><button class="back" style="margin:0" onclick="closePanel()">✕</button></div>
+    <div class="muted small" style="margin:2px 0 6px">選一個地方，你會自己走過去。走路不花時間。</div>
+    ${g2.length ? `<div class="muted small" style="margin:6px 2px 2px">一樓・外面</div>` : ""}${g1.map(row).join("")}
+    ${g2.length ? `<div class="muted small" style="margin:8px 2px 2px">二樓</div>${g2.map(row).join("")}` : ""}
+    ${travel() ? `<button class="wq" onclick="wGo=false;leaveWorld()">🗺️ 回地圖，開車去別的地方</button>` : ""}</div>`;
+}
 function roomList(l, def){
   const { open, locked } = areaItems(l, def, wRoom);
   const cctv = open.filter(it=>it.cctv), rest = open.filter(it=>!it.cctv);
@@ -692,12 +737,19 @@ function roomList(l, def){
   const row = it => S.seen.includes(it.id)
     ? `<button class="wq" onclick="peek={kind:'item',id:'${it.id}'};render()">✓ ${it.icon||"🧾"} ${esc(it.title)} <span class="tag">重看</span></button>`
     : `<button class="wq" style="border-color:var(--accent)" ${S.done?"disabled":""} onclick="wAct={ids:['${it.id}']};render()">${it.icon||"🔍"} ${esc(it.title)} <span class="tag cost">${cost(it)}</span></button>`;
-  return `<div class="card" style="padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center"><b>🔍 ${esc(areaName(def, wRoom))}</b><button class="back" style="margin:0" onclick="closePanel()">✕</button></div>
-    <div class="muted small" style="margin:2px 0 6px">${CLK() ? timeTag() + "。" : `${travel() ? "這裡這次" : ""}還能查 ${sl} 項。`}這裡看得到的東西，點了會先問你要不要查。</div>
+  const ppl = peopleIn(def, wRoom), bid = buddyId();
+  const pRow = q => { const sx = C.suspects.find(x=>x.id===q.id), nm = curHooks.nameOf(q.id);
+    const st = sx ? (qLeft(sx) && !S.done ? `還肯回答 ${qLeft(sx)} 題` : "今天不肯再說了") : "問話不花時間";
+    return `<button class="wq" ${sx && qLeft(sx) && !S.done ? 'style="border-color:#ffd04a"' : ""} onclick="talkTo('${q.id}')">🗣️ 跟${esc(nm)}說話 <span class="tag">${st}</span></button>`; };
+  return `<div class="card" style="padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center"><b>📍 ${esc(areaName(def, wRoom))}</b><button class="back" style="margin:0" onclick="closePanel()">✕</button></div>
+    <div class="muted small" style="margin:2px 0 6px">${CLK() ? timeTag() + "。" : `${travel() ? "這裡這次" : ""}還能查 ${sl} 項。`}要做什麼？點了會先問你，確定了才算數。</div>
+    ${ppl.length ? `<div class="muted small" style="margin:6px 2px 2px">👤 這裡的人</div>${ppl.map(pRow).join("")}` : ""}
+    ${open.length ? `<div class="muted small" style="margin:6px 2px 2px">🔍 可以調查的東西</div>` : ""}
     ${cctv.length ? `<button class="wq" ${cNew?'style="border-color:var(--accent)"':""} onclick="wAct={ids:[${cctv.map(it=>`'${it.id}'`).join(",")}]};render()">📹 監視器主機 <span class="tag">${cctv.length} 段錄影${cNew ? `・${cNew} 段沒看過` : "・都看過了"}</span></button>` : ""}
     ${rest.map(row).join("")}
     ${locked ? `<p class="muted small" style="margin:6px 2px 0">🔒 這裡好像還有 ${locked} 樣東西，現在還沒有理由去翻。</p>` : ""}
-    ${!open.length ? `<p class="muted small" style="margin:6px 2px 0">這裡暫時沒有可以查的東西。</p>` : ""}</div>`;
+    ${!open.length && !ppl.length ? `<p class="muted small" style="margin:6px 2px 0">這裡沒有人，也沒什麼可以查的。</p>` : ""}
+    <button class="wq" onclick="openGo()">🚶 去別的地方</button></div>`;
 }
 function worldViewFS(l, def){
   let panel = "";
@@ -705,9 +757,11 @@ function worldViewFS(l, def){
   else if (wBuddy) panel = buddyMenu(l);
   else if (peek && peek.kind==="lab") panel = labCard(l);
   else if (wTalk){ const s = C.suspects.find(x=>x.id===wTalk); panel = worldTalk(s); }
-  else if (peek && peek.kind==="item"){ const it = allItems().find(x=>x.id===peek.id); panel = `<div class="look"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><b style="margin:0">${it.cctv?"📹":it.icon||"🧾"} ${esc(it.title)}</b><button class="back" style="margin:0" onclick="closePanel()">✕</button></div>${itemBody(it, true)}${wRoom ? `<button class="back" onclick="peek=null;render()">‹ 回到清單</button>` : ""}</div>`; }
+  else if (peek && peek.kind==="item"){ const it = allItems().find(x=>x.id===peek.id); const back = peek.from ? `wAct={ids:peek.from};peek=null;render()` : wRoom ? `peek=null;render()` : "";
+    panel = `<div class="look"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:6px">${back ? `<button class="back" style="margin:0;white-space:nowrap" onclick="${back}">‹ ${peek.from ? "監視器列表" : "返回"}</button>` : ""}<b style="margin:0;flex:1">${it.cctv?"📹":it.icon||"🧾"} ${esc(it.title)}</b><button class="back" style="margin:0" onclick="closePanel()">✕</button></div>${itemBody(it, true)}${peek.from ? `<button class="back" onclick="wAct={ids:peek.from};peek=null;render()">‹ 回到監視器列表</button>` : wRoom ? `<button class="back" onclick="peek=null;render()">‹ 回到${esc(areaName(def, wRoom))}</button>` : ""}</div>`; }
+  else if (wGo) panel = goList(l, def);
   else if (wRoom) panel = roomList(l, def);
-  const stage = `<div class="world"><canvas id="worldcv"></canvas><button class="wroom" hidden onclick="openRoomList()"></button><div class="wbubble" hidden><b></b><span></span></div><div class="wtip"></div><button class="wskip" hidden>跳過 ⏭</button></div>`;
+  const stage = `<div class="world"><canvas id="worldcv"></canvas><div class="wbtns"><button class="wgo" hidden onclick="openGo()">🚶 去哪裡</button><button class="wroom" hidden onclick="openRoomList()"></button></div><div class="wbubble" hidden><b></b><span></span></div><div class="wtip"></div><button class="wskip" hidden>跳過 ⏭</button></div>`;
   const extra = l.perVisit ? `<button class="hb go" onclick="wTalk=null;wBuddy=false;wSay=null;peek=peek&&peek.kind==='lab'?null:{kind:'lab'};render()">🧪 化驗</button>` : "";
   return fsFrame(l, stage, panel, extra);
 }
@@ -744,12 +798,12 @@ function worldHooks(l, def){
     },
     onPerson: id => {
       const e = extrasOf(def).find(x=>x.id===id);
-      wBuddy = false; wRoom = null;
+      wBuddy = false; wRoom = null; wGo = false;
       if (e){ S.xl = S.xl || {}; const i = S.xl[id] || 0; S.xl[id] = i + 1; save(); wTalk = null; wAct = null; peek = null; lastSaid = null; wSay = { who:id, text:e.lines[i % e.lines.length] }; render(); return; }
       if (wTalk !== id) wChat = false; wTalk = id; wAct = null; wSay = null; peek = null; lastSaid = null; render(); },
     onBuddy: id => { if (fsMode()){ openBuddy(); return; } wAct = null; const s = sus(id); if (s && reachable(s) && !S.done){ if (wTalk !== id) wChat = false; wTalk = id; wSay = null; peek = null; lastSaid = null; render(); return; } wTalk = null; peek = null; wSay = { who:id, text:buddyHint(l) }; render(); },
-    onSpot: h => { wRoom = null; wBuddy = false; wTalk = null; wSay = null; wAct = null; lastSaid = null; tapSpot(h); },
-    onGround: () => { if (wRoom || wTalk || peek || wSay || wAct || wBuddy){ wRoom = null; wBuddy = false; wTalk = null; peek = null; wSay = null; wAct = null; lastSaid = null; render(); } },
+    onSpot: h => { wGo = false; wRoom = null; wBuddy = false; wTalk = null; wSay = null; wAct = null; lastSaid = null; tapSpot(h); },
+    onGround: () => { if (wGo || wRoom || wTalk || peek || wSay || wAct || wBuddy){ wGo = false; wRoom = null; wBuddy = false; wTalk = null; peek = null; wSay = null; wAct = null; lastSaid = null; render(); } },
     bubble: () => {
       if (wSay) return wSay;
       if (wTalk){ const s = sus(wTalk); const q = lastSaid && lastSaid.sid===wTalk ? s.questions.find(x=>x.id===lastSaid.qid) : null;
@@ -764,7 +818,8 @@ function worldHooks(l, def){
     refresh: () => render(),
     cover: () => fsCover,
     noSpark: true,
-    areaNow: aid => { curArea = aid; updateRoomBtn(); },
+    noFreeWalk: true,
+    areaNow: (aid, scr) => { curArea = aid; curScripting = !!scr; updateRoomBtn(); },
     onSecret: q => { wTalk = null; wAct = null; peek = null; lastSaid = null; wSay = { who:"you", text:q.text || "這面牆後面好像是空的……" }; if (q.onFind) q.onFind(S); save(); render(); },
     areaSeen: id => (S.areas || []).includes(l.id + ":" + id + "@" + S.phase),
     onArea: id => { (S.areas = S.areas || []).push(l.id + ":" + id + "@" + S.phase); save(); }
@@ -942,7 +997,7 @@ async function nextPhase(){
     : travel() ? (apLeft() ? `\n今天還有 ${apLeft()} 個行動點，進入下一天就不能再用了。` : "")
     : ((totalQLeft()+searchLeft()) ? `\n今天還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查，進入下一天就不能再用了。` : "");
   if (!await uiConfirm(`進入「${nx.title}」？${left}`)) return;
-  S.phase++; checkEvents(); save(); openSuspect = null; openLoc = null; wRoom = null; tab = "brief"; wTalk = null; wSay = null; peek = null;
+  S.phase++; checkEvents(); save(); openSuspect = null; openLoc = null; wRoom = null; wGo = false; tab = "brief"; wTalk = null; wSay = null; peek = null;
   if (art()){ tab = travel() ? "map" : "scene"; if (travel()){ mapFrom = null; openLoc = PH().startAt || null; } }
   render(); scrollTo(0,0);
   setTimeout(()=>toast("📅 " + nx.title), 300);
