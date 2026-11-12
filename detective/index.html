@@ -1230,6 +1230,11 @@ function textOf(q){
 }
 const allPeople = () => [...C.suspects.filter(s=>!s.witness && unlocked({requires:s.knownBy})), ...C.extraPeople.filter(unlocked)];
 const kindOf = id => C.kinds.find(k=>k.id===id);
+/* 要不要選「是誰」：他殺一定要；其他結局（失竊、綁架、自殺被人動過手腳……）在 kinds 裡寫 who:"題目" 就會問。
+   推理題可以寫 kinds:["murder","theft"] 限定哪些結局才出現（沒寫＝所有會問「是誰」的結局都出現） */
+const whoKind = id => { const k = kindOf(id); return !!k && (id==="murder" || !!k.who); };
+const whoTitle = id => (kindOf(id)||{}).who || "兇手是誰？（可以複選，甚至全部都選）";
+const reasonFor = (r, kind) => unlocked(r) && (!r.kinds || r.kinds.includes(kind));
 
 /* ---------- 推理 ---------- */
 /* ---------- 結案：所有人聚在一起，你說出推理 ---------- */
@@ -1242,10 +1247,10 @@ function courtSteps(){
   steps.push({ who:"narr", text: (typeof K.open==="function" ? K.open(S.phase) : K.open) || "所有人都被叫到了一起。大家看著你，等你開口。" });
   const kd = C.kinds.find(k=>k.id===P.kind);
   steps.push({ who:"you", text: (K.kindLine && K.kindLine[P.kind]) || `我的結論是——${kd ? kd.label.replace(/^(.{2,4})：/,"$1。") : "……"}` });
-  if (P.kind==="murder"){
-    C.reasoning.forEach((q,i)=>{ if (unlocked(q) && P.reasoning[i]!==undefined) steps.push({ who:"you", text:`${q.q}\n——${q.options[P.reasoning[i]]}。` }); });
+  if (whoKind(P.kind)){
+    C.reasoning.forEach((q,i)=>{ if (reasonFor(q, P.kind) && P.reasoning[i]!==undefined) steps.push({ who:"you", text:`${q.q}\n——${q.options[P.reasoning[i]]}。` }); });
     if ((K.murmur||[]).length) steps.push({ who:"narr", text:K.murmur[(S.tries||1) % K.murmur.length] });
-    steps.push({ who:"you", text:`這一切的兇手，就是——${P.culprits.map(nm).join("、")}！`, focus:P.culprits });
+    steps.push({ who:"you", text:`${(kd && kd.whoLine) || "這一切的兇手，就是"}——${P.culprits.map(nm).join("、")}！`, focus:P.culprits });
     P.culprits.forEach(id=>{
       const guilty = sol.culprits.includes(id);
       const line = guilty ? (r.verdict==="perfect" ? (K.confess||{})[id] : (K.cornered||{})[id]) : (K.deny||{})[id];
@@ -1285,8 +1290,8 @@ function vAccuse(){
   const kinds = C.kinds.filter(unlocked);
   const lockedKinds = C.kinds.length - kinds.length;
   const people = allPeople();
-  const murder = P.kind==="murder";
-  const lockedR = C.reasoning.filter(r=>!unlocked(r)).length;
+  const murder = whoKind(P.kind);
+  const lockedR = C.reasoning.filter(r=>!unlocked(r) && (!r.kinds || r.kinds.includes(P.kind))).length;
   let n = 1;
   const leftTxt = travel() ? (apLeft()?`你今天還有 ${apLeft()} 個行動點。`:"") : (totalQLeft()+searchLeft()>0?`你${multi()?"今天":""}還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查。`:"");
   return `<div class="card"><h2>⚖️ 推理真相</h2><p class="muted small" style="margin:0">隨時都可以來這裡推理。推理錯了不會直接公布真相，可以回去繼續調查再推理一次。${leftTxt}${multi()&&!lastPhase()?`案件還有 ${phasesOf(C).length-1-S.phase} 天可以調查。`:""}<br>你查到越多線索，能選的可能性就越多。</p></div>
@@ -1294,11 +1299,11 @@ function vAccuse(){
     ${kinds.map(k=>`<div class="pick ${P.kind===k.id?"on":""}" onclick="pickKind('${k.id}')"><span class="box">${P.kind===k.id?"✓":""}</span>${esc(k.label)}</div>`).join("")}
     ${lockedKinds?`<p class="muted small">🔒 還有 ${lockedKinds} 種可能性，要先發現相關線索才會出現。</p>`:""}
   </div>
-  ${murder?`<div class="card"><h3>${n++}. 兇手是誰？（可以複選，甚至全部都選）</h3>
+  ${murder?`<div class="card"><h3>${n++}. ${esc(whoTitle(P.kind))}</h3>
     ${people.map(s=>`<div class="pick ${P.culprits.includes(s.id)?"on":""}" onclick="toggleCulprit('${s.id}')"><span class="box">${P.culprits.includes(s.id)?"✓":""}</span>${s.av} ${esc(s.name)}</div>`).join("")}
     <p class="muted small">🔒 調查中出現的其他人物，也會加進這裡。</p>
   </div>
-  ${C.reasoning.map((r,i)=>!unlocked(r)?"":`<div class="card"><h3>${n++}. ${esc(r.q)}</h3>
+  ${C.reasoning.map((r,i)=>!reasonFor(r, P.kind)?"":`<div class="card"><h3>${n++}. ${esc(r.q)}</h3>
     ${r.options.map((o,j)=>`<div class="pick ${P.reasoning[i]===j?"on":""}" onclick="pickReason(${i},${j})"><span class="box">${P.reasoning[i]===j?"✓":""}</span>${esc(o)}</div>`).join("")}</div>`).join("")}
   ${lockedR?`<div class="card"><p class="muted small" style="margin:0">🔒 還有 ${lockedR} 題推理題，要先發現相關線索才會出現。沒出現的題目不會得分。</p></div>`:""}`:""}
   ${P.kind===null?"":`<div class="card"><h3>${n++}. 選最多 3 項關鍵證據</h3>
@@ -1307,14 +1312,14 @@ function vAccuse(){
   </div>
   <button class="btn primary" onclick="submitAccuse()">確定提交</button>`}`;
 }
-function pickKind(v){ accusePick.kind=v; if(v!=="murder") accusePick.culprits=[]; render(); }
+function pickKind(v){ accusePick.kind=v; if(!whoKind(v)) accusePick.culprits=[]; render(); }
 function toggleCulprit(id){ const c=accusePick.culprits; c.includes(id)?c.splice(c.indexOf(id),1):c.push(id); render(); }
 function pickReason(i,j){ accusePick.reasoning[i]=j; render(); }
 function toggleEv(id){ const e=accusePick.evidence; if(e.includes(id)) e.splice(e.indexOf(id),1); else if(e.length<3) e.push(id); else toast("最多選 3 項"); render(); }
 async function submitAccuse(){
-  const P = accusePick, murder = P.kind==="murder";
-  if (murder && !P.culprits.length){ toast("請至少選一名兇手"); return; }
-  if (murder && C.reasoning.some((r,i)=>unlocked(r) && P.reasoning[i]===undefined)){ toast("推理題還沒答完"); return; }
+  const P = accusePick, murder = whoKind(P.kind);
+  if (murder && !P.culprits.length){ toast(P.kind==="murder" ? "請至少選一名兇手" : "請至少選一個人"); return; }
+  if (murder && C.reasoning.some((r,i)=>reasonFor(r, P.kind) && P.reasoning[i]===undefined)){ toast("推理題還沒答完"); return; }
   if (!await uiConfirm("確定提交你的推理？")) return;
   const sol = C.solution;
   let verdict;
@@ -1326,8 +1331,8 @@ async function submitAccuse(){
     verdict = (right===sol.culprits.length && !wrongN) ? "perfect" : right>0 ? "partial" : "wrong";
   }
   const evHits = P.evidence.filter(e=>sol.keyEvidence.includes(e)).length;
-  const reasonHits = murder ? C.reasoning.filter((r,i)=>unlocked(r) && P.reasoning[i]===r.answer).length : 0;
-  const pts = evHits + reasonHits, max = 3 + C.reasoning.length;   // 第 1 集：滿分 6
+  const reasonHits = murder ? C.reasoning.filter((r,i)=>reasonFor(r, P.kind) && P.reasoning[i]===r.answer).length : 0;
+  const pts = evHits + reasonHits, max = 3 + C.reasoning.filter(r=>!r.kinds || r.kinds.includes(sol.kind)).length;   // 第 1 集：滿分 6
   let grade;
   if (verdict==="perfect") grade = pts>=max ? "S" : pts>=Math.ceil(max*2/3) ? "A" : "B";
   else if (verdict==="partial") grade = pts>=Math.ceil(max/2) ? "C" : "D";
@@ -1344,12 +1349,13 @@ async function submitAccuse(){
   save(); render(); scrollTo(0,0);
 }
 function vResult(){
-  const r = S.result, sol = C.solution, murder = r.pick.kind==="murder";
+  const r = S.result, sol = C.solution, murder = whoKind(r.pick.kind);
+  const rq = C.reasoning.map((q,i)=>[q,i]).filter(([q])=>!q.kinds || q.kinds.includes(r.pick.kind));
   const msg = { perfect:"完全正確！你揪出了所有兇手。", partial:"抓到部分真相，但有兇手逃過一劫，或是你冤枉了好人。", wrong:"推理錯誤，真兇逍遙法外。" }[r.verdict];
   const everyone = [...C.suspects, ...C.extraPeople];
-  const pickName = murder ? "他殺：" + r.pick.culprits.map(id=>everyone.find(s=>s.id===id).name).join("、") : kindOf(r.pick.kind).label;
+  const pickName = murder ? (r.pick.kind==="murder" ? "他殺：" : kindOf(r.pick.kind).label.replace(/：.*/,"") + "：") + r.pick.culprits.map(id=>everyone.find(s=>s.id===id).name).join("、") : kindOf(r.pick.kind).label;
   const shown = S.revealed !== false;   // 舊存檔沒有這個欄位，視為已公布
-  const answers = !murder || !shown ? "" : `<div class="card"><h3>🧩 推理題</h3>${C.reasoning.map((q,i)=>{
+  const answers = !murder || !shown ? "" : `<div class="card"><h3>🧩 推理題</h3>${rq.map(([q,i])=>{
     const mine = r.pick.reasoning[i], ok = mine===q.answer;
     return `<p style="margin:6px 0">${ok?"✅":"❌"} ${esc(q.q)}<br><span class="muted small">答案：${esc(q.options[q.answer])}${ok?"":`（${mine===undefined?"你沒有作答":"你選："+esc(q.options[mine])}）`}</span></p>`;}).join("")}</div>`;
   const dig = canDig();
@@ -1368,7 +1374,7 @@ function vResult(){
   return `${art()?`<button class="btn" style="text-align:center;margin-top:0" onclick="S.court=0;save();render();scrollTo(0,0)">🎬 重看結案過程</button>`:""}<div class="card" style="text-align:center"><div class="muted small">評級</div>
     <div class="grade" style="color:${r.grade==="F"?"var(--red)":r.grade==="S"?"var(--accent)":"var(--text)"}">${r.grade}</div>
     <p style="margin:4px 0">${msg}</p>
-    <p class="muted small" style="margin:0">你的推理：${esc(pickName)}<br>關鍵證據 ${r.evHits}/3${murder?`　推理題 ${r.reasonHits}/${C.reasoning.length}`:""}<br>問了 ${r.qUsed} 題、查了 ${r.sUsed} 項${allDetails().length ? `、發現小細節 ${(S.found||[]).length}／${allDetails().length}` : ""}<br>第 ${S.tries||1} 次推理${(S.tries||1) > 1 && r.verdict==="perfect" ? "（第一次就全對才有 S）" : ""}</p></div>
+    <p class="muted small" style="margin:0">你的推理：${esc(pickName)}<br>關鍵證據 ${r.evHits}/3${murder?`　推理題 ${r.reasonHits}/${rq.length}`:""}<br>問了 ${r.qUsed} 題、查了 ${r.sUsed} 項${allDetails().length ? `、發現小細節 ${(S.found||[]).length}／${allDetails().length}` : ""}<br>第 ${S.tries||1} 次推理${(S.tries||1) > 1 && r.verdict==="perfect" ? "（第一次就全對才有 S）" : ""}</p></div>
   ${tail}`;
 }
 function retry(){ S.done=false; S.result=null; accusePick=freshPick(); save(); go(travel()?"brief":totalQLeft()+searchLeft()>0?"notes":multi()&&!lastPhase()?"brief":"accuse"); }
