@@ -6,7 +6,7 @@
    - 開場可以跑一段劇情（車開進來、助手交代案情）
    ========================================================= */
 const WORLD = (() => {
-  const VW = 240, VH = 135, GROUND = 124, SPEED = 52;
+  const VW = 240, VH = 135, GROUND = 124, SPEED = 60;
   const st = {};
   let cur = null;
   const P = () => PX.prim;
@@ -20,6 +20,8 @@ const WORLD = (() => {
     canvas.width = VW; canvas.height = VH;
     const wrap = canvas.parentNode, bub = wrap.querySelector(".wbubble"), tip = wrap.querySelector(".wtip");
     cur = { canvas, def, lid, hooks, s, bub, tip };
+    if (s.px > def.w - 8) s.px = def.w - 30;
+    if (!s.car && def.park !== undefined) s.car = { x:def.park, from:def.park, to:def.park, d:0, c:"#e9e4da" };
     if (hooks.script && !s.script && !hooks.scriptDone()){ s.script = hooks.script; s.si = 0; s.sT = 0; startStep(); }
     canvas.onclick = e => tap(e);
     let last = performance.now();
@@ -57,7 +59,7 @@ const WORLD = (() => {
     if (fresh) return goThen(fresh.walk ?? (fresh.r[0]+fresh.r[2]/2), () => hooks.onSpot(fresh));
     const p = ppl.find(q => inBox(q.x-9, GROUND-31, 18, 32));
     if (p) return goThen(p.x + (s.px < p.x ? -16 : 16), () => { s.face = s.px < p.x ? 1 : -1; hooks.onPerson(p.id); });
-    if (buddy && inBox(s.bx-9, GROUND-31, 18, 32)) return hooks.onPerson(buddy.id);
+    if (buddy && inBox(s.bx-9, GROUND-31, 18, 32)) return hooks.onBuddy ? hooks.onBuddy(buddy.id) : hooks.onPerson(buddy.id);
     const h = spots.filter(q => inBox(...q.r)).sort((a,b)=>a.r[2]*a.r[3]-b.r[2]*b.r[3])[0];
     if (h) return goThen(h.walk ?? (h.r[0]+h.r[2]/2), () => hooks.onSpot(h));
     hooks.onGround && hooks.onGround();
@@ -82,7 +84,7 @@ const WORLD = (() => {
     if (s.car && s.car.d){ const k = Math.min(1, s.sT / s.car.d); s.car.x = s.car.from + (s.car.to - s.car.from) * (1 - (1-k)*(1-k)); if (k>=1 && step() && step().car){ s.car.d = 0; next(); } }
     if (s.script && step() && step().wait && s.sT >= step().wait) next();
     // 鏡頭
-    const target = Math.max(0, Math.min(def.w - VW, (s.car && s.script ? s.car.x+20 : s.px) - VW/2));
+    const target = Math.max(0, Math.min(def.w - VW, (s.car && s.script && step() && step().hide ? s.car.x+20 : s.px) - VW/2));
     s.cam += (target - s.cam) * Math.min(1, dt*4);
     // 對話框打字效果
     const b = bubbleNow();
@@ -103,7 +105,7 @@ const WORLD = (() => {
     g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,VW,VH);
     const cam = Math.round(s.cam);
     g.translate(-cam, 0);
-    def.draw(p, s.t, hooks.opt(), cam);
+    def.draw(p, s.t, hooks.opt(), cam, g);
     // 還沒查的證物：閃光
     hooks.spots().forEach(q => { if (q.k==="item" && q.fresh && Math.floor(s.t*2 + q.r[0]) % 3 !== 0) p.spark(q.r[0]+q.r[2]/2, q.r[1]+2); });
     // 車
@@ -130,7 +132,7 @@ const WORLD = (() => {
     // 對話框（HTML，字才清楚）
     const b = bubbleNow(), bub = cur.bub;
     if (b && bub){
-      const who = b.who==="you" ? { x:s.px } : buddy && b.who===buddy.id ? { x:s.bx } : hooks.people().find(q=>q.id===b.who) || null;
+      const who = b.who==="you" ? { x:s.px } : buddy && (b.who===buddy.id || b.who==="wu") ? { x:s.bx } : hooks.people().find(q=>q.id===b.who) || null;
       const name = b.name || (b.who==="you" ? "你" : hooks.nameOf(b.who));
       if (who){
         bub.hidden = false;
