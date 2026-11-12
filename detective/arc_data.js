@@ -2,7 +2,8 @@
    1) ARC.defineCast：固定班底。幕間 cast 用這些 id；案件中出場也可以 look:ARC.look("xu")。
    2) ARC.define：主線旗標的標題和筆記內容。ARC_SETS 寫明哪一集的哪樣東西要加 arc:旗標；下一集的 arcRecap 對這些旗標寫 text/miss。
    3) ARC_INTER[集數].after：貼到該集 C.after。scene 只用 PX.SCENES 現有的；sceneWanted＝建議新做的場景（麵攤、高鐵、安全屋、告別式），做好之前只有對話。
-   幕間只聊天、埋伏筆，不放破案線索。 */
+   幕間只聊天、埋伏筆，不放破案線索。
+   4) 選擇（arc.js 第 7 點格式）：c_ep5_vow（第 5 集）、c_xu_overnight（第 8 集，許知夏羈絆）、c_zhao_promise（第 12 集，第 15 集幕間會用到）。全部不影響破案；之後的季度和結局會讀這些旗標，見 劇透_主線聖經.md「選擇旗標表」。 */
 ARC.defineCast({
  "wu": {
   "name": "吳子豪",
@@ -309,6 +310,27 @@ var ARC_INTER = {
      "text": "吃麵。案子破了，孩子平安，就好。"
     },
     {
+     "who": "you",
+     "text": "（要不要說出你的想法？）",
+     "id": "ep5_vow",
+     "choices": [
+      {
+       "text": "「那通電話，我會查到是誰打的。」",
+       "set": "c_ep5_vow",
+       "say": [
+        {
+         "who": "zhou",
+         "text": "……先把麵吃完再說。"
+        }
+       ]
+      },
+      {
+       "text": "（不說話，低頭吃麵）",
+       "say": "你把話吞了回去。"
+      }
+     ]
+    },
+    {
      "who": "ayue",
      "text": "你們這些警察，連吃飯都在講案子。"
     },
@@ -444,6 +466,32 @@ var ARC_INTER = {
     {
      "who": "qian",
      "text": "（探頭）誰要鳳梨酥？我太太烤太多了。"
+    },
+    {
+     "who": "xu",
+     "text": "酸蝕要有人整晚顧著。你要回家睡覺嗎？",
+     "id": "ep8_stay",
+     "choices": [
+      {
+       "text": "「我留下來陪妳顧。」",
+       "set": "c_xu_overnight",
+       "say": [
+        {
+         "who": "xu",
+         "text": "……隨便你。咖啡自己泡。"
+        }
+       ]
+      },
+      {
+       "text": "「明天見。」",
+       "say": [
+        {
+         "who": "xu",
+         "text": "嗯，明天見。"
+        }
+       ]
+      }
+     ]
     }
    ],
    "arc": "gun_lab_sent",
@@ -587,11 +635,29 @@ var ARC_INTER = {
     },
     {
      "who": "you",
-     "text": "你自己跟她說。"
-    },
-    {
-     "who": "zhao",
-     "text": "……好。"
+     "text": "（他看著你，等你回答。）",
+     "id": "ep12_promise",
+     "choices": [
+      {
+       "text": "「好，我答應你。」",
+       "set": "c_zhao_promise",
+       "say": [
+        {
+         "who": "zhao",
+         "text": "謝謝。"
+        }
+       ]
+      },
+      {
+       "text": "「你自己跟她說。」",
+       "say": [
+        {
+         "who": "zhao",
+         "text": "……好。"
+        }
+       ]
+      }
+     ]
     },
     {
      "who": "narr",
@@ -697,6 +763,11 @@ var ARC_INTER = {
     {
      "who": "ayue",
      "text": "他每次都點乾麵加蛋。"
+    },
+    {
+     "who": "narr",
+     "text": "（你想起安全屋門口，你答應過他的事。）",
+     "when": "arc:c_zhao_promise"
     },
     {
      "who": "narr",
