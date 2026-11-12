@@ -109,6 +109,7 @@ details.past summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6p
 .found{font-size:12px;color:var(--accent)}
 .world{position:relative;margin:0 -16px 10px;border-top:2px solid #000;border-bottom:2px solid #000;line-height:0;background:#000;overflow:hidden}
 .world canvas{width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;display:block;touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:pointer}
+.wsign{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-weight:800;letter-spacing:.08em;line-height:1;pointer-events:none;text-shadow:0 1px 0 rgba(0,0,0,.55);z-index:1}
 .wskip{position:absolute;right:8px;top:8px;z-index:3;background:rgba(20,16,12,.72);color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:99px;padding:4px 12px;font-size:12px;font-family:inherit;cursor:pointer}
 .wbubble{position:absolute;top:6px;max-width:78%;width:max-content;background:#fffdf7;color:#1b1512;border:2px solid #1b1512;box-shadow:3px 3px 0 #1b1512;padding:5px 9px;font-size:13.5px;line-height:1.5;pointer-events:none;z-index:2}
 .wbubble b{display:block;font-size:11px;color:#8a5a1a}
@@ -185,8 +186,28 @@ const travel = () => !!C.locations;
 const PH = () => phasesOf(C)[S.phase];
 const lastPhase = () => S.phase >= phasesOf(C).length - 1;
 const at = (arr, i) => Array.isArray(arr) ? arr[Math.min(i, arr.length-1)] : arr;
+/* ---------- 時間制（clock）：問話、看監視器、查證物、送化驗、開車都會花時間 ----------
+   C.clock（單一階段）或 phases[i].clock：{ start:"00:00", end:"02:00", ask:5, item:10, cctv:10, test:10, travel:60, tired:[["01:30",1]] }
+   證物 / 監視器可以用 mins 指定要花幾分鐘；地點可以用 mins 指定車程。tired：到了那個時間，每個人願意回答的題數少幾題。 */
+const CLK = () => (C.phases ? PH().clock : C.clock) || null;
+const toMin = t => { const [h,m] = t.split(":").map(Number); return h*60 + m; };
+const fmtMin = m => { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m/60)).padStart(2,"0") + ":" + String(m%60).padStart(2,"0"); };
+const clkAt = (k, t) => { let m = toMin(t); if (m < toMin(k.start)) m += 1440; return m; };
+const usedNow = () => ((S.used || {})[S.phase]) || 0;
+const timeLeft = () => { const k = CLK(); return k ? Math.max(0, clkAt(k, k.end) - toMin(k.start) - usedNow()) : Infinity; };
+const nowMin = () => toMin(CLK().start) + usedNow();
+const nowStr = () => fmtMin(nowMin());
+const tiredOf = () => { const k = CLK(); return !k || !k.tired ? 0 : k.tired.filter(([t]) => nowMin() >= clkAt(k, t)).reduce((n, [, d]) => n + d, 0); };
+function spend(m){ if (!CLK() || !m) return; const tb = tiredOf(); (S.used = S.used || {})[S.phase] = usedNow() + m;
+  if (tiredOf() > tb) setTimeout(()=>toast(`🕐 ${nowStr()} 了，大家都累了，每個人願意回答的題數少了 ${tiredOf()-tb} 題。`), 1200); }
+const costAsk = () => CLK() ? (CLK().ask || 5) : 0;
+const costItem = it => CLK() ? (it.mins || (it.cctv ? (CLK().cctv || 10) : (CLK().item || 10))) : 0;
+const costTest = () => CLK() ? (CLK().test || 10) : 0;
+const costTravel = l => CLK() ? (l.mins || (l.cost || 1) * (CLK().travel || 60)) : 0;
+const minLabel = m => m >= 60 ? `${Math.floor(m/60)} 小時${m%60 ? ` ${m%60} 分` : ""}` : `${m} 分鐘`;
+const timeTag = () => CLK() ? `現在 ${nowStr()}，${C.clockEnd || "時間到"}還有 ${minLabel(timeLeft())}` : "";
 
-function fresh(){ return { asked:[], seen:[], qp:{}, sp:{}, phase:0, visits:{}, labq:{}, ev:{}, done:false, result:null }; }
+function fresh(){ return { asked:[], seen:[], qp:{}, sp:{}, phase:0, visits:{}, labq:{}, ev:{}, used:{}, done:false, result:null }; }
 function freshPick(){ return { kind:null, culprits:[], evidence:[], reasoning:{} }; }
 function loadFor(c){
   try{ const s = JSON.parse(localStorage.getItem(saveKey(c)));
@@ -197,6 +218,7 @@ function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} 
 
 function openCase(i){
   C = CASES[i]; KEY = saveKey(C); S = loadFor(C) || fresh();
+  (C.cctv||[]).forEach(c=>{ c.cctv = true; });   // 監視器畫面：顯示成 REC 畫面、選單用 📹
   accusePick = freshPick(); openSuspect = null; openLoc = null; screen = "case"; tab = "brief"; checkEvents();
   wTalk = null; wSay = null; peek = null; mapFrom = null;
   // 有畫面的案件：一揀完就直接進現場（第一晚的開場動畫會自動播）
@@ -210,33 +232,51 @@ const LOC = id => C.locations.find(l=>l.id===id);
 const tests = () => C.tests || [];
 const visitsToday = () => S.visits[S.phase] || [];
 const here = id => !!id && (PH().startAt===id || visitsToday().includes(id));
-const apLeft = () => travel() ? PH().actions - visitsToday().reduce((n,id)=>n+(LOC(id).cost||1),0) : 0;
+const apLeft = () => !travel() ? 0 : CLK() ? (timeLeft() > 0 ? 99 : 0) : PH().actions - visitsToday().reduce((n,id)=>n+(LOC(id).cost||1),0);
 const locOpen = l => (l.phase||0) <= S.phase && (l.until===undefined || l.until >= S.phase) && unlocked(l);
 const whereOf = s => s.where ? at(s.where, S.phase) : null;
 const testOpen = t => (t.phase||0) <= S.phase && (t.until===undefined || t.until >= S.phase) && unlocked(t);
 const testReady = t => S.labq[t.id] !== undefined && S.phase >= S.labq[t.id] + t.days;
 const readyTests = () => tests().filter(testReady);
 const searchCap = l => at(l.search === undefined ? 99 : l.search, S.phase);
-const searchLeftAt = l => Math.max(0, searchCap(l) - S.seen.filter(id=>(S.sp[id]||0)===S.phase && (allItems().find(x=>x.id===id)||{}).loc===l.id).length);
+const searchLeftAt = l => CLK() ? (timeLeft() > 0 ? 99 : 0) : Math.max(0, searchCap(l) - S.seen.filter(id=>(S.sp[id]||0)===S.phase && (allItems().find(x=>x.id===id)||{}).loc===l.id).length);
 const testsLeftAt = l => Math.max(0, (l.perVisit||0) - tests().filter(t=>t.loc===l.id && S.labq[t.id]===S.phase).length);
 
 async function visit(id){
   const l = LOC(id);
   if (mapBusy) return;
+  const from = mapFrom || PH().startAt;
+  if (CLK() && here(id) && id !== from && !S.done){
+    // 時間制：開車回今天去過的地方也要花時間
+    const m = costTravel(l);
+    if (timeLeft() < m){ toast(`來不及了：開過去要 ${minLabel(m)}`); return; }
+    if (!await uiConfirm(`開回「${l.name}」？\n開車要 ${minLabel(m)}。\n${timeTag()}。`)) return;
+    spend(m); save();
+  }
   if (!here(id)){
     if (S.done) return;
     const cost = l.cost||1;
-    if (apLeft() < cost){ toast("今天的行動點不夠了"); return; }
-    if (!await uiConfirm(`前往「${l.name}」？\n會用掉 ${cost} 個行動點（今天還剩 ${apLeft()} 點）。`)) return;
+    if (CLK()){
+      const m = costTravel(l);
+      if (timeLeft() < m){ toast(`來不及了：開過去要 ${minLabel(m)}`); return; }
+      if (!await uiConfirm(`前往「${l.name}」？\n開車要 ${minLabel(m)}。\n${timeTag()}。`)) return;
+      spend(m);
+    } else {
+      if (apLeft() < cost){ toast("今天的行動點不夠了"); return; }
+      if (!await uiConfirm(`前往「${l.name}」？\n會用掉 ${cost} 個行動點（今天還剩 ${apLeft()} 點）。`)) return;
+    }
     (S.visits[S.phase] = S.visits[S.phase] || []).push(id); save(); wNews = checkEvents().filter(e=>e.atLoc===id);
   }
   if (art() && mapCtl && document.getElementById("mapcv")){ if (mapBusy) return; mapBusy = true; renderClock(); await new Promise(r=>mapCtl.drive(id, r)); mapBusy = false; }
   wArrive = art() && mapFrom && id !== mapFrom ? id : null;
   openLoc = id; openSuspect = null; peek = null; wTalk = null; wSay = null; render(); scrollTo(0,0);
 }
-function submitTest(id){
+async function submitTest(id, sure){
   const t = tests().find(x=>x.id===id), l = LOC(t.loc);
   if (S.done || !here(l.id) || S.labq[id]!==undefined || testsLeftAt(l)<=0 || !testOpen(t)) return;
+  if (CLK() && timeLeft() < costTest()){ toast("今天來不及了"); return; }
+  if (!sure && !await uiConfirm(`送去化驗「${t.title}」？\n結果要等 ${t.days} 天才會出來。這次還能送 ${testsLeftAt(l)} 件。${CLK() ? `\n填單、交件要 ${minLabel(costTest())}。${timeTag()}。` : ""}`)) return;
+  spend(costTest());
   S.labq[id] = S.phase; checkEvents(); save(); render();
   toast(`🧪 已送出，${t.days} 天後會有結果`);
 }
@@ -319,12 +359,28 @@ function tapSpot(h){
   if (h.k==="detail"){ S.found = S.found || []; const isNew = !S.found.includes(h.id); if (isNew){ S.found.push(h.id); save(); } peek = { kind:"detail", id:h.id, isNew }; render(); return; }
   if (h.k==="item"){
     const ids = h.ids, fresh = ids.find(id=>!S.seen.includes(id));
-    if (fresh){
-      if (S.done) return;
-      if ((travel() ? searchLeftAt(l) : searchLeft()) <= 0){ toast("這裡今天已經查不了更多了。"); return; }
-      inspectById(fresh); if (S.seen.includes(fresh)){ peek = { kind:"item", id:fresh }; render(); }
-    } else { peek = { kind:"item", id:ids[ids.length-1] }; render(); }
+    // 不會一點就查：先跳出確認（要花多少時間／次數），監視器可以選要看哪一段
+    if (fresh && !S.done){ peek = null; wAct = { ids }; render(); return; }
+    peek = { kind:"item", id:ids[ids.length-1] }; render();
   }
+}
+function doAct(id){
+  const it = allItems().find(x=>x.id===id);
+  if (S.seen.includes(id)){ wAct = null; peek = { kind:"item", id }; render(); return; }
+  const l = travel() ? LOC(openLoc) : HOME;
+  if ((travel() ? searchLeftAt(l) : searchLeft()) <= 0){ toast(CLK() ? "⏰ 沒時間了" : "這裡今天已經查不了更多了。"); return; }
+  inspectById(id); if (S.seen.includes(id)){ wAct = null; peek = { kind:"item", id }; render(); }
+}
+function actCard(l){
+  const its = wAct.ids.map(id=>allItems().find(x=>x.id===id)).filter(Boolean);
+  const cctv = its.some(it=>it.cctv), sl = travel() ? searchLeftAt(l) : searchLeft();
+  const cost = it => CLK() ? `約 ${minLabel(costItem(it))}` : "用 1 次";
+  const left = CLK() ? `${timeTag()}。` : `${travel() ? "這裡這次" : ""}還能查 ${sl} 項。`;
+  return `<div class="card" style="padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center"><b>${cctv ? "📹 監視器主機" : "🧾 " + esc(its[0].title)}</b><button class="back" style="margin:0" onclick="wAct=null;render()">先不要 ✕</button></div>
+    <div class="muted small" style="margin:2px 0 4px">${cctv ? "要看哪一段？有些錄影可能什麼都沒拍到。" : "要調查這個嗎？"}${left}</div>
+    ${its.map(it=>S.seen.includes(it.id)
+      ? `<button class="wq" onclick="doAct('${it.id}')">${it.cctv?"📹":"🧾"} ${esc(it.title)} <span class="tag">看過了・重看不用時間</span></button>`
+      : `<button class="wq" style="border-color:var(--accent)" ${S.done||sl<=0||(CLK()&&timeLeft()<costItem(it))?"disabled":""} onclick="doAct('${it.id}')">${it.cctv?"▶️ 看":"🔍 調查"}「${esc(it.title)}」 <span class="tag cost">${cost(it)}</span></button>`).join("")}</div>`;
 }
 function itemBody(it, auto){
   return `${art() && it.anim ? animHTML(it, auto) : art() && it.scene ? sceneHTML(it.scene, it.sceneOpt) : ""}${it.cctv?`<div class="cctv"><span class="rec">● REC</span>\n${esc(it.text)}</div>`:`<div class="muted">${nl(it.text)}</div>`}`;
@@ -358,6 +414,7 @@ function roomBlock(l){
 }
 
 /* ---------- 走動模式（橫向動畫場景） ---------- */
+let wAct = null, wChat = false;   // wAct：點到東西後先問要不要查（{ ids }）；wChat：已經按了「開始問話」
 let wTalk = null, wSay = null, wArrive = null, wNews = [], mapFrom = null, mapCtl = null, mapBusy = false;
 const curLoc = () => travel() ? (openLoc ? LOC(openLoc) : null) : HOME;
 // 每個地點都有走動畫面：有手畫的就用手畫的（C.world[id]），沒有就把房間自動排成剖面建築
@@ -375,6 +432,7 @@ function buddyHint(l){
   const s = C.suspects.find(x=>x.id==="wu");
   const tail = s && !reachable(s) ? "要問我問題，就到鑑識中心找我。" : "";
   if (S.done) return "案子已經結了，辛苦了。";
+  if (CLK()) return `${timeTag()}。${fresh ? "閃光的地方是還沒查過的。" : "這裡看得到的東西都查過了。"}看錄影、查證物、問話都要花時間，挑重要的做。` + tail;
   if (sl <= 0) return "這裡今天查不了更多了，去問問人吧。" + tail;
   return `這裡還可以查 ${sl} 樣東西。${fresh ? "閃光的地方是還沒查過的。" : "看得到的東西都查過了，換個地方吧。"}${tail}`;
 }
@@ -420,20 +478,22 @@ function worldTalk(s){
   return `<div class="card" style="padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center"><b>${s.av} ${esc(s.name)}</b><button class="back" style="margin:0" onclick="wTalk=null;lastSaid=null;render()">結束對話 ✕</button></div>
     <div class="muted small">${esc(s.role)}・<span style="color:${left?"var(--accent)":"var(--red)"}">${left?`還願意回答 ${left} 題`:"今天不肯再回答了"}</span></div>
     ${said && said.note ? `<div class="note" style="margin-top:6px">${esc(said.note)}</div>` : ""}
-    ${off ? "" : notAsked.map(q=>`<button class="wq" onclick="askById('${s.id}','${q.id}')">${/^（出示/.test(textOf(q).q)?'<span class="tag new">質問</span>':(q.requires||q.requiresAll)?'<span class="tag new">追問</span>':''}${esc(textOf(q).q)}</button>`).join("")}
-    ${lockedN && !off ? `<p class="muted small" style="margin:6px 0 0">🔒 還有 ${lockedN} 個問題，要先得到相關線索才能問。</p>` : ""}</div>`;
+    ${!off && !wChat ? `<button class="wq" style="border-color:var(--accent);text-align:center" onclick="wChat=true;render()">🗣️ 開始問話${CLK() ? `（每題約 ${costAsk()} 分鐘）` : ""}</button>${CLK() ? `<p class="muted small" style="margin:4px 0 0">${timeTag()}。</p>` : ""}` : ""}
+    ${off || !wChat ? "" : notAsked.map(q=>`<button class="wq" onclick="askById('${s.id}','${q.id}')">${/^（出示/.test(textOf(q).q)?'<span class="tag new">質問</span>':(q.requires||q.requiresAll)?'<span class="tag new">追問</span>':''}${esc(textOf(q).q)}</button>`).join("")}
+    ${lockedN && !off && wChat ? `<p class="muted small" style="margin:6px 0 0">🔒 還有 ${lockedN} 個問題，要先得到相關線索才能問。</p>` : ""}</div>`;
 }
 function worldView(l, def){
   const sl = travel() ? searchLeftAt(l) : searchLeft(), nd = allDetails().length;
   let panel;
-  if (peek && peek.kind==="lab") panel = labCard(l);
+  if (wAct) panel = actCard(l);
+  else if (peek && peek.kind==="lab") panel = labCard(l);
   else if (wTalk){ const s = C.suspects.find(x=>x.id===wTalk); panel = worldTalk(s); }
-  else if (peek && peek.kind==="item"){ const it = allItems().find(x=>x.id===peek.id); panel = `<div class="look"><b>🧾 ${esc(it.title)}</b>${itemBody(it, true)}</div>`; }
+  else if (peek && peek.kind==="item"){ const it = allItems().find(x=>x.id===peek.id); panel = `<div class="look"><b>${it.cctv?"📹":"🧾"} ${esc(it.title)}</b>${itemBody(it, true)}</div>`; }
   else if (peek && peek.kind==="detail"){ const d = allDetails().find(x=>x.id===peek.id); panel = `<div class="look"><b>🔎 ${esc(d.name||"你注意到")}</b>${nl(d.text)}${peek.isNew?`<div class="found" style="margin-top:4px">發現小細節！（${(S.found||[]).length}／${nd}）</div>`:""}</div>`; }
-  else panel = `<p class="hint" style="margin:0 2px 12px">點地面走過去。點人問話，點東西調查，<span style="color:#ffd04a">✦</span> 是還沒查過的東西。其他地方也可能藏著小細節。</p>`;
+  else panel = `<p class="hint" style="margin:0 2px 12px">點地面走過去，按住不放就一直走（走路不花時間）。點人、點東西會先問你要不要做，確定了才會${CLK() ? "花時間" : "用掉次數"}。<span style="color:#ffd04a">✦</span> 是還沒查過的東西，其他地方也可能藏著小細節。</p>`;
   const seenHere = allItems().filter(it=>(it.loc||"_")===l.id && S.seen.includes(it.id));
   const lab = l.perVisit ? `<button class="wq" style="border-color:var(--accent)" onclick="wTalk=null;peek=peek&&peek.kind==='lab'?null:{kind:'lab'};render()">🧪 化驗櫃台（這次還能送 ${testsLeftAt(l)} 件）</button>` : "";
-  return `<div class="wtop">${travel()?`<button class="back" onclick="leaveWorld()">‹ 地圖</button>`:""}<b>${esc(travel()?l.name:"案發現場")}</b><span>🔍 還能查 ${sl} 項</span><span class="found">🔎 ${(S.found||[]).length}／${nd}</span></div>
+  return `<div class="wtop">${travel()?`<button class="back" onclick="leaveWorld()">‹ 地圖</button>`:""}<b>${esc(travel()?l.name:"案發現場")}</b>${CLK()?`<span>🕐 ${nowStr()}・剩 ${minLabel(timeLeft())}</span>`:`<span>🔍 還能查 ${sl} 項</span>`}<span class="found">🔎 ${(S.found||[]).length}／${nd}</span></div>
   <div class="world"><canvas id="worldcv"></canvas><div class="wbubble" hidden><b></b><span></span></div><div class="wtip"></div><button class="wskip" hidden>跳過 ⏭</button></div>
   ${panel}${lab}
   ${seenHere.length ? `<div class="card"><h3>🧾 這裡查到的東西</h3>${seenHere.map(it=>`<button class="wq" onclick="wTalk=null;peek={kind:'item',id:'${it.id}'};render()">${it.cctv?"📹":"🧾"} ${esc(it.title)}</button>`).join("")}</div>` : ""}`;
@@ -463,11 +523,11 @@ function worldHooks(l, def){
     },
     onPerson: id => {
       const e = extrasOf(def).find(x=>x.id===id);
-      if (e){ S.xl = S.xl || {}; const i = S.xl[id] || 0; S.xl[id] = i + 1; save(); wTalk = null; peek = null; lastSaid = null; wSay = { who:id, text:e.lines[i % e.lines.length] }; render(); return; }
-      wTalk = id; wSay = null; peek = null; lastSaid = null; render(); },
-    onBuddy: id => { const s = sus(id); if (s && reachable(s) && !S.done){ wTalk = id; wSay = null; peek = null; lastSaid = null; render(); return; } wTalk = null; peek = null; wSay = { who:id, text:buddyHint(l) }; render(); },
-    onSpot: h => { wTalk = null; wSay = null; lastSaid = null; tapSpot(h); },
-    onGround: () => { if (wTalk || peek || wSay){ wTalk = null; peek = null; wSay = null; lastSaid = null; render(); } },
+      if (e){ S.xl = S.xl || {}; const i = S.xl[id] || 0; S.xl[id] = i + 1; save(); wTalk = null; wAct = null; peek = null; lastSaid = null; wSay = { who:id, text:e.lines[i % e.lines.length] }; render(); return; }
+      if (wTalk !== id) wChat = false; wTalk = id; wAct = null; wSay = null; peek = null; lastSaid = null; render(); },
+    onBuddy: id => { wAct = null; const s = sus(id); if (s && reachable(s) && !S.done){ if (wTalk !== id) wChat = false; wTalk = id; wSay = null; peek = null; lastSaid = null; render(); return; } wTalk = null; peek = null; wSay = { who:id, text:buddyHint(l) }; render(); },
+    onSpot: h => { wTalk = null; wSay = null; wAct = null; lastSaid = null; tapSpot(h); },
+    onGround: () => { if (wTalk || peek || wSay || wAct){ wTalk = null; peek = null; wSay = null; wAct = null; lastSaid = null; render(); } },
     bubble: () => {
       if (wSay) return wSay;
       if (wTalk){ const s = sus(wTalk); const q = lastSaid && lastSaid.sid===wTalk ? s.questions.find(x=>x.id===lastSaid.qid) : null;
@@ -498,20 +558,24 @@ function checkEvents(){
 const isGone = s => (s.gone !== undefined && S.phase >= s.gone);
 const askedNow = s => s.questions.filter(q=>S.asked.includes(q.id) && (S.qp[q.id]||0)===S.phase).length;
 const reachable = s => !isGone(s) && (!travel() || here(whereOf(s)));
-const qLeft = s => !reachable(s) ? 0 : Math.max(0, PH().questionLimit - askedNow(s));
+const qLeft = s => !reachable(s) ? 0 : Math.max(0, PH().questionLimit - tiredOf() - askedNow(s));
 const searchLeft = () => travel()
   ? C.locations.filter(l=>here(l.id)).reduce((n,l)=>n+searchLeftAt(l),0)
+  : CLK() ? (timeLeft() > 0 ? 99 : 0)
   : Math.max(0, PH().searchLimit - S.seen.filter(id=>(S.sp[id]||0)===S.phase).length);
 const totalQLeft = () => C.suspects.reduce((n,s)=>n+qLeft(s),0);
 const allItems = () => [...C.cctv, ...C.evidence];
 const itemOpen = it => (it.phase||0) <= S.phase && (it.until===undefined || it.until >= S.phase);
-const canDig = () => totalQLeft()+searchLeft() > 0 || apLeft() > 0 || (multi() && !lastPhase());
+const canDig = () => (CLK() ? timeLeft() > 0 && (totalQLeft()+searchLeft()) > 0 : totalQLeft()+searchLeft() > 0 || apLeft() > 0) || (multi() && !lastPhase());
 const evidencePool = () => [...allItems().filter(it=>S.seen.includes(it.id)), ...readyTests()];
 
 function renderClock(){
   const P = PH();
   let t, frac;
-  if (travel()){
+  if (CLK()){
+    t = `${P.short ? P.short + "　" : ""}🕐 ${nowStr()}　⏳${minLabel(timeLeft())}`;
+    frac = timeLeft() / (clkAt(CLK(), CLK().end) - toMin(CLK().start));
+  } else if (travel()){
     t = `${P.short}　🚗${apLeft()}`;
     frac = P.actions ? apLeft()/P.actions : (totalQLeft()+searchLeft() ? 1 : 0);
   } else {
@@ -539,13 +603,16 @@ function toast(msg){
 }
 function afterSpend(){
   checkEvents(); save(); renderClock();
-  if (!travel() && totalQLeft()===0 && searchLeft()===0) setTimeout(()=>toast(
+  const out = CLK() ? timeLeft() < Math.min(costAsk(), CLK().item || 10) : (!travel() && totalQLeft()===0 && searchLeft()===0);
+  if (out) setTimeout(()=>toast(
     multi() && !lastPhase() ? "🌙 今天能做的都做完了，到「案情」進入下一天。" : (C.endToast || "⏰ 律師到了！調查結束，請進行指認。")), 300);
 }
 
 function ask(sus, q){
   if (S.asked.includes(q.id) || qLeft(sus) <= 0 || S.done || !unlocked(q)) return;
+  if (CLK() && timeLeft() < costAsk()){ toast("⏰ 沒時間了"); return; }
   const before = availCount();
+  spend(costAsk());
   (S.variant = S.variant || {})[q.id] = q.alt && q.alt.when.some(has) ? "alt" : "base";
   S.asked.push(q.id); S.qp[q.id] = S.phase; lastSaid = { sid:sus.id, qid:q.id }; afterSpend(); render();
   if (availCount() > before) setTimeout(()=>toast("🔓 聽到新線索，可以拿去問其他人"), 400);
@@ -554,7 +621,9 @@ function ask(sus, q){
 function inspect(item){
   if (S.seen.includes(item.id) || S.done || !itemOpen(item) || !unlocked(item)) return;
   if (travel() ? (!here(item.loc) || searchLeftAt(LOC(item.loc))<=0) : searchLeft()<=0) return;
+  if (CLK() && timeLeft() < costItem(item)){ toast(`⏰ 時間不夠：這個要 ${minLabel(costItem(item))}`); return; }
   const before = availCount();
+  spend(costItem(item));
   S.seen.push(item.id); S.sp[item.id] = S.phase; afterSpend(); render();
   if (availCount() > before) setTimeout(()=>toast("🔓 有新的問題或地方可以查了"), 400);
 }
@@ -593,7 +662,15 @@ function vBrief(){
     ? `${art()&&P.scene?sceneHTML(P.scene, P.sceneOpt||{phase:S.phase}):""}<div class="card intro"><span class="phase">📅 ${esc(P.title)}</span><h2>${S.phase===0?esc(C.title):esc(P.headline||P.short)}</h2>${phaseBlock(S.phase)}</div>
        ${S.phase>0?phasesOf(C).slice(0,S.phase).map((p,i)=>`<details class="past card"><summary>回顧：${esc(p.title)}</summary>${phaseBlock(i)}</details>`).reverse().join(""):""}`
     : `<div class="card intro"><h2>${C.title}</h2>${C.intro.map(p=>`<p>${p}</p>`).join("")}</div>`;
-  const rules = travel()
+  const rules = travel() && CLK()
+    ? `🕐 時間：每天 ${P.clock.start} 到 ${P.clock.end} 可以調查。<b>走路不花時間</b>；開車去別的地方要花時間（越遠越久），問一題約 ${costAsk()} 分鐘，查一樣證物約 ${P.clock.item||10} 分鐘，看監視器要看錄影長度，送化驗約 ${costTest()} 分鐘。時間用完，今天就結束了。<br>
+       🗣️ 問話：每個人每天最多只肯回答你 ${P.questionLimit} 題。有人會說謊。人每天會在不同的地方。<br>
+       🧪 化驗：把證物送到鑑識中心，<b>要等 1–2 天才有結果</b>，結果會在早上由小吳告訴你。想清楚先送什麼。<br>
+       📅 案件一共 ${phasesOf(C).length} 天，準備好了就「進入下一天」。<br>
+       💡 有些問題、地點要先聽到或看到相關線索才會出現。<br>
+       📓 筆記：可以按重點、時間線、人物或證物整理。<br>
+       ⚖️ 推理：隨時都可以推理。推理錯了不會公布真相，可以繼續調查再試。`
+    : travel()
     ? `🗺️ 地點：每天有幾個<b>行動點</b>（今天 ${P.actions} 點）。去一個地方要用行動點，到了那裡就可以問在場的人、查那裡的證物。${P.startAt?`今天一開始你在「${esc(LOC(P.startAt).name)}」，不用行動點。`:""}<br>
        🗣️ 問話：每個人每天只會回答你 ${P.questionLimit} 題。有人會說謊。人每天會在不同的地方。<br>
        🔍 搜證：每個地點每次能查的證物有限。有些證物過幾天就會消失。<br>
@@ -607,6 +684,12 @@ function vBrief(){
        🔍 搜證：鑑識人員今天能幫你處理 ${P.searchLimit} 項。<b>沒用完的次數不會留到隔天。</b><br>
        📅 案件分成 ${phasesOf(C).length} 天。準備好了就到這一頁「進入下一天」。<br>
        💡 有些問題要先從別人口中聽到相關的事、或看過相關證物才問得出來。<br>
+       ⚖️ 推理：隨時都可以推理。推理錯了不會公布真相，可以繼續調查再試。`
+    : CLK()
+    ? `🕐 時間：${esc(C.clockRule || "")}你只有 ${minLabel(clkAt(CLK(), CLK().end) - toMin(CLK().start))}。<b>走路不花時間</b>，但問一題約 ${costAsk()} 分鐘，查一樣證物約 ${CLK().item||10} 分鐘，看監視器要看錄影長度（有些錄影什麼都沒拍到，白白浪費時間）。<br>
+       🗣️ 問話：每個人最多只肯回答 ${P.questionLimit} 題；越晚大家越累，${(CLK().tired||[]).map(([t,d])=>`${t} 以後每人少答 ${d} 題`).join("、")}。有人會說謊。<br>
+       💡 有些問題要先從別人口中聽到相關的事、或看過證物才問得出來，所以先做什麼很重要。<br>
+       📓 筆記：自動記錄你問過、看過的內容。<br>
        ⚖️ 推理：隨時都可以推理。推理錯了不會公布真相，可以繼續調查再試。`
     : `🗣️ 問話：每位嫌疑人有很多問題可以問，但只會回答你 ${P.questionLimit} 題。有人會說謊。<br>
        🔍 搜證：調閱監視器、檢查證物，總共只能查 ${P.searchLimit} 項。找到關鍵證據會解鎖新的質問問題（質問也算一題）。<br>
@@ -627,7 +710,8 @@ function vBrief(){
 }
 async function nextPhase(){
   const nx = phasesOf(C)[S.phase+1];
-  const left = travel() ? (apLeft() ? `\n今天還有 ${apLeft()} 個行動點，進入下一天就不能再用了。` : "")
+  const left = CLK() ? (timeLeft() > 0 ? `\n今天還有 ${minLabel(timeLeft())}，進入下一天就不能再用了。` : "")
+    : travel() ? (apLeft() ? `\n今天還有 ${apLeft()} 個行動點，進入下一天就不能再用了。` : "")
     : ((totalQLeft()+searchLeft()) ? `\n今天還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查，進入下一天就不能再用了。` : "");
   if (!await uiConfirm(`進入「${nx.title}」？${left}`)) return;
   S.phase++; checkEvents(); save(); openSuspect = null; openLoc = null; tab = "brief"; wTalk = null; wSay = null; peek = null;
@@ -643,14 +727,15 @@ function mapView(){
   const hidden = C.locations.filter(l=>!mapKnown(l)).length;
   const labels = C.locations.filter(mapKnown).map(l=>{
     const [x,y,side] = pos[l.id] || [120,70,"d"], isOpen = locOpen(l), n = C.suspects.filter(s=>!isGone(s) && whereOf(s)===l.id && s.id!=="wu").length;
-    const tag = !isOpen ? "去不了" : here(l.id) ? "📍 免費" : `🚗 ${l.cost||1} 點`;
+    const cur = mapFrom || PH().startAt;
+    const tag = !isOpen ? "去不了" : CLK() ? (l.id===cur ? "📍 你在這裡" : `🚗 ${minLabel(costTravel(l))}`) : here(l.id) ? "📍 免費" : `🚗 ${l.cost||1} 點`;
     return `<button class="mlab ${side||"d"}${isOpen?"":" off"}${here(l.id)?" here":""}" style="left:${(x/2.4).toFixed(1)}%;top:${(y/1.35).toFixed(1)}%" ${isOpen?`onclick="visit('${l.id}')"`:`onclick="toast('${esc(l.closedText||"現在去不了")}')"`}>${l.icon} ${esc(l.name.replace(/（.*?）|・.*/g,""))}<i>${tag}${n&&isOpen?`・👤${n}`:""}</i></button>`;
   }).join("");
   const pending = tests().filter(t=>S.labq[t.id]!==undefined && !testReady(t));
   const next = multi() && !lastPhase() && !S.done ? `<button class="btn" style="text-align:center;border-color:var(--accent);color:var(--accent)" onclick="nextPhase()">🌙 結束今天，進入「${esc(phasesOf(C)[S.phase+1].short)}」 ›</button>` : "";
-  return `<div class="wtop"><b>${esc(P.title||C.title)}</b><span>🚗 行動點 <b style="color:var(--accent)">${apLeft()}</b>／${P.actions||0}</span></div>
+  return `<div class="wtop"><b>${esc(P.title||C.title)}</b>${CLK()?`<span>🕐 ${nowStr()}・剩 <b style="color:var(--accent)">${minLabel(timeLeft())}</b></span>`:`<span>🚗 行動點 <b style="color:var(--accent)">${apLeft()}</b>／${P.actions||0}</span>`}</div>
   <div class="world wmap"><canvas id="mapcv"></canvas>${labels}</div>
-  <p class="hint" style="margin:0 2px 10px">點地點，開車過去（用行動點）。📍 今天已經去過的地方，可以免費回去。${hidden?`<br>🔒 還有 ${hidden} 個地方，要先查到相關線索才會出現在地圖上。`:""}</p>
+  <p class="hint" style="margin:0 2px 10px">${CLK() ? "點地點，會先問你要不要開車過去。開車要花時間，越遠越久。" : "點地點，開車過去（用行動點）。📍 今天已經去過的地方，可以免費回去。"}${hidden?`<br>🔒 還有 ${hidden} 個地方，要先查到相關線索才會出現在地圖上。`:""}</p>
   ${pending.length?`<div class="card"><h3>⏳ 化驗中</h3>${pending.map(t=>`<p class="small" style="margin:4px 0">🧪 ${esc(t.title)}<span class="muted">（${S.labq[t.id]+t.days-S.phase} 天後）</span></p>`).join("")}</div>`:""}
   ${next}`;
 }

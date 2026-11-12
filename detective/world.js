@@ -401,9 +401,22 @@ const WORLD = (() => {
         bub.style.setProperty("--tail", Math.max(10, Math.min(bw - 10, hx - left)) + "px");
       } else bub.hidden = true;
     } else if (bub) bub.hidden = true;
+    // 招牌上的字（HTML，中文才看得清楚）：building.labels = [{ x, y, text, color, size, when:"out"|"in" }]
+    const wrapEl = canvas.parentNode, cw = canvas.clientWidth, chh = canvas.clientHeight;
+    cur.lab = cur.lab || {};
+    blds().forEach((bd, i) => (bd.labels || []).forEach((L, j) => {
+      const key = i + "_" + j; let el = cur.lab[key];
+      if (!el){ el = cur.lab[key] = document.createElement("div"); el.className = "wsign"; el.textContent = L.text; wrapEl.appendChild(el); }
+      const rv = s.rv[i] || 0, a = L.when === "in" ? rv : 1 - rv, sx = (L.x - cam) / VW * cw;
+      el.style.opacity = a < 0.05 || sx < -80 || sx > cw + 80 ? 0 : a;
+      el.style.left = sx + "px"; el.style.top = (L.y / VH * chh) + "px";
+      el.style.fontSize = ((L.size || 6.5) / VW * cw) + "px"; el.style.color = L.color || "#fff8e8";
+    }));
     if (cur.tip) cur.tip.textContent = s.script ? (step() && step().say ? "點一下跳到下一句 ▶" : "") : "";
     const sk = cur.canvas.parentNode.querySelector(".wskip"); if (sk) sk.hidden = !s.script;
   }
 
-  return { mount, state, skip:() => cur && cur.s.script && skip(), VW, VH, GROUND, reset:(lid)=>{ delete st[lid]; } };
+  // (x, y) 是不是在一棟「現在看得到裡面」的建築裡（雨不要下在室內）：回傳 0～1
+  function indoor(x, y){ if (!cur) return 0; const i = bldAt(x); if (i < 0) return 0; const b = blds()[i]; if (y < (b.y0 ?? 0)) return 0; if ((b.open || []).some(r => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3])) return 0; const k = levelAt(b, y); return lvVis(cur.s, i, k < 0 ? 0 : k); }
+  return { mount, state, indoor, levelVis:(i, k) => cur ? lvVis(cur.s, i, k) : 0, skip:() => cur && cur.s.script && skip(), VW, VH, GROUND, reset:(lid)=>{ delete st[lid]; } };
 })();

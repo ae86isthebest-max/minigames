@@ -34,6 +34,25 @@ const WK = (() => {
     const c = document.createElement("canvas"); PX.draw(c, scene, opt);
     return cache[k] = c;
   }
+  // 戶外場景：把它自己的天空挖掉，改用這個地點當天的天色（下雨天就不會出現晴天的天空）
+  function noSky(src){
+    const k = src; if (src._ns) return src._ns;
+    const c = document.createElement("canvas"); c.width = src.width; c.height = src.height;
+    const g = c.getContext("2d"); g.drawImage(src, 0, 0);
+    const d = g.getImageData(0, 0, c.width, c.height), px = d.data, W = c.width, H = c.height;
+    const at = (x, y) => (px[(y*W + x)*4] << 16) | (px[(y*W + x)*4 + 1] << 8) | px[(y*W + x)*4 + 2];
+    const ref = [];
+    for (let y = 0; y < H; y++){ const n = {}; let best = 0, bc = 0; for (let x = 0; x < W; x++){ const v = at(x, y); n[v] = (n[v]||0) + 1; if (n[v] > best){ best = n[v]; bc = v; } } ref.push(best > W * 0.25 ? bc : -1); }
+    const near = (a, b) => b >= 0 && Math.abs((a>>16) - (b>>16)) + Math.abs(((a>>8)&255) - ((b>>8)&255)) + Math.abs((a&255) - (b&255)) < 18;
+    const sky = (x, y) => { const v = at(x, y); return (near(v, ref[y]) || (y && near(v, ref[y-1])) || near(v, ref[y+1] ?? -1)) && (v & 255) >= (v >> 16); };
+    for (let x = 0; x < W; x++) for (let y = 0; y < H * 0.75; y++){
+      // 天空是偏藍、一整排同色；中間夾著雨滴之類的幾個點也算天空，碰到真的不是天空的東西就停
+      if (!sky(x, y)){ let k = 1; while (k <= 6 && y + k < H && !sky(x, y + k)) k++; if (k > 6) break; for (let j = 0; j < k; j++) px[((y+j)*W + x)*4 + 3] = 0; y += k - 1; continue; }
+      px[(y*W + x)*4 + 3] = 0;
+    }
+    g.putImageData(d, 0, 0);
+    return src._ns = c;
+  }
   const roomOpt = r => ({ ...(typeof r.opt === "function" ? r.opt(S.phase, has) : (r.opt || {})), phase:S.phase });
 
   /* ---------- 背景 ---------- */
@@ -59,6 +78,15 @@ const WK = (() => {
     if (setting === "town" || setting === "city") for (let x = 6; x < w; x += 20) R(x, G + 6, 10, 1, "#c9c9a0");
     // 路燈
     for (let x = 40; x < w; x += 170){ R(x, 78, 2, 46, "#4a4e54"); R(x - 4, 76, 8, 3, "#4a4e54"); R(x - 3, 79, 6, 2, night ? "#ffe8a0" : "#cfd6d6"); if (night) p.dither(x - 10, 81, 22, 42, "#ffe8a0", 4); }
+  }
+
+  // 雨：室內（看得到裡面的建築）不下雨
+  function drawRain(p, t, rain, cam){
+    for (let i = 0; i < (rain > 1 ? 120 : 45); i++){
+      const x = cam + ((i * 37 + t * 30) % 252) - 6, y = (i * 53 + t * (rain > 1 ? 230 : 120)) % 140 - 4;
+      if (WORLD.indoor(x, y + 2) > 0.5) continue;
+      p.R(x, y, 1, rain > 1 ? 4 : 3, "#8fa4b8");
+    }
   }
 
   /* ---------- 自動建出一個地點的走動場景 ---------- */
@@ -93,7 +121,12 @@ const WK = (() => {
         if (ox > cam + 250 || ox + RW < cam - 10) return;
         const img = roomImg(r.scene, roomOpt(r)); p.ctx(g);
         if (OUT.has(r.scene)){
-          g.drawImage(img, 0, 0, RW, 20, ox, 0, RW, OY + 20); g.drawImage(img, 0, 20, RW, 88, ox, OY + 20, RW, 88);
+          const im2 = noSky(img);
+          g.drawImage(im2, 0, 0, RW, 20, ox, 0, RW, OY + 20); g.drawImage(im2, 0, 20, RW, 88, ox, OY + 20, RW, 88);
+          // 陰天、下雨、晚上：草地跟著變暗；左右兩邊用樹籬接到背景，不會一刀切
+          const sk = skyOf(ph);
+          if (sk[4] || sk[5]){ g.save(); g.globalAlpha = sk[5] ? 0.45 : 0.22; R(ox, 0, RW, G, sk[5] ? "#0b0f1c" : sk[1]); g.restore(); }
+          [ox - 3, ox + RW - 4].forEach(hx => { R(hx, 66, 7, G - 66, shade(sk[3], -.25)); R(hx - 1, 62, 9, 6, shade(sk[3], -.1)); for (let y = 70; y < G; y += 7) R(hx + 1 + (y % 3), y, 2, 2, shade(sk[3], .15)); });
           return;
         }
         // 外牆（二樓）＋屋頂
@@ -103,7 +136,6 @@ const WK = (() => {
           R(ox + 66, 6, 62, 14, fac[1]); R(ox + 66, 6, 62, 1, shade(fac[1], .3)); R(ox + 66, 19, 62, 1, shade(fac[1], -.4));
           if (l.id === "hospital"){ R(ox + 72, 9, 8, 2, "#e04a3a"); R(ox + 75, 7, 2, 6, "#e04a3a"); }
           if (l.id === "police"){ R(ox + 72, 8, 6, 6, "#f2d03b"); R(ox + 74, 7, 2, 8, "#f2d03b"); }
-          for (let k = 0; k < 5; k++) R(ox + 84 + k * 8, 10, 6, 6, "#f4f0e0");
         }
         g.drawImage(img, ox, OY);
         // 房間之間的牆（下面是門口）
@@ -119,18 +151,20 @@ const WK = (() => {
     }
     function front(p, t, op, cam){
       const rain = skyOf(op.phase || 0)[4];
-      if (rain) for (let i = 0; i < (rain > 1 ? 120 : 45); i++){ const x = cam + ((i * 37 + t * 30) % 252) - 6, y = (i * 53 + t * (rain > 1 ? 230 : 120)) % 140 - 4; p.R(x, y, 1, rain > 1 ? 4 : 3, "#8fa4b8"); }
+      if (rain) drawRain(p, t, rain, cam);
     }
     // 室內的房間連在一起就是一棟建築：在外面只看得到外牆
     const buildings = [], shade = PX.prim.shade;
     rooms.forEach(r => { if (OUT.has(r.scene)) return; const a = pos[r.id] - GAP, b = pos[r.id] + RW + GAP, last = buildings[buildings.length-1];
       if (last && Math.abs(last.x1 - a) < GAP + 1) last.x1 = b; else buildings.push({ x0:a, x1:b }); });
-    buildings.forEach((b, i) => Object.assign(b, { y0:4, wall:fac[0], roof:shade(fac[0], -.5), brick: setting !== "city", rows:[8, 88], door:"#5a3e24",
+    const signText = l.sign || l.name.replace(/（.*?）|\(.*?\)/g, "").replace(/・.*/, "");
+    const fs = Math.min(7, 60 / Math.max(3, signText.length));
+    buildings.forEach((b, i) => Object.assign(b, {
+      labels: i ? [] : [ { x: b.x0 + GAP + 100, y: 38.5, text: signText, size: fs, when:"out" }, { x: b.x0 + GAP + 101, y: 13.5, text: signText, size: Math.min(6.5, fs), when:"in" } ], y0:4, wall:fac[0], roof:shade(fac[0], -.5), brick: setting !== "city", rows:[8, 88], door:"#5a3e24",
       night: op => skyOf(op.phase||0)[5],
       sign: i ? null : (p) => { const { R, shade } = p, ox = b.x0 + GAP; R(ox + 60, 30, 72, 16, fac[1]); R(ox + 60, 30, 72, 1, shade(fac[1], .3)); R(ox + 60, 45, 72, 1, shade(fac[1], -.4));
         if (l.id === "hospital"){ R(ox + 66, 35, 8, 2, "#e04a3a"); R(ox + 69, 32, 2, 8, "#e04a3a"); }
         if (l.id === "police"){ R(ox + 66, 33, 6, 6, "#f2d03b"); R(ox + 68, 32, 2, 8, "#f2d03b"); }
-        for (let k = 0; k < 5; k++) R(ox + 80 + k * 9, 35, 7, 6, "#f4f0e0");
         R(ox + 20, 104, 30, 4, shade(fac[1], -.1)); for (let k = 0; k < 6; k++) R(ox + 20 + k*5, 100, 4, 4, k%2 ? "#e9e4da" : fac[1]); }
     }));
     return { auto:true, w, spawn:o.spawn || 70, park:o.park ?? 8, draw, front, spots, details, placeFor, buddy:o.buddy || "wu", you:o.you, intro:o.intro, rooms, pos, buildings, extras:o.extras };
@@ -155,7 +189,7 @@ const WK = (() => {
     (p.reports || []).forEach(r => { say("wu", `報告：${r.title}`); chunks(r.text).forEach(c => say("wu", c)); });
     (C.events || []).filter(e => S.ev[e.id] === i).forEach(e => { say("wu", `出事了：${e.title}`); chunks(e.text).forEach(c => say("wu", c)); });
     tests().filter(t => S.labq[t.id] !== undefined && S.labq[t.id] + t.days === i).forEach(t => { say("wu", `化驗結果出來了：${t.title}`); chunks(t.text).forEach(c => say("wu", c)); });
-    if (travel()) say("wu", `今天有 ${p.actions} 個行動點。要去別的地方，就點左上角的「地圖」。`);
+    if (travel()) say("wu", p.clock ? `今天 ${p.clock.start} 到 ${p.clock.end} 可以調查。開車要花時間，越遠越久。要去別的地方，就點左上角的「地圖」。` : `今天有 ${p.actions} 個行動點。要去別的地方，就點左上角的「地圖」。`);
     return steps;
   }
   function arrive(def){
@@ -205,5 +239,5 @@ const WK = (() => {
     return { drive(to, cb){ const a = pt(from), b = pt(to); from = to; anim = { a, b, t0:performance.now(), d:Math.min(1400, 500 + Math.hypot(b[0] - a[0], b[1] - a[1]) * 9), cb }; } };
   }
 
-  return { autoWorld, morning, arrive, drawMap, chunks, skyOf, SKY, OY, G };
+  return { autoWorld, morning, arrive, drawMap, drawRain, chunks, skyOf, SKY, OY, G };
 })();

@@ -18,24 +18,24 @@ const EP2 = {
     "22:10，老製茶師傅<b>土伯</b>發現林振宗倒在製茶房通往閣樓的木梯下，後腦重傷，已經沒有呼吸。",
     "你和鑑識員<b>小吳</b> 23:20 趕到。23:40，茶園下方的山路坍方，唯一的對外道路斷了。今晚，誰都離不開這座山。",
     "茶園裡現在有六個人：妻子<b>蘇雅琴</b>、兒子<b>林家豪</b>、女兒<b>林家欣</b>、老師傅<b>土伯</b>、員工<b>張佩如</b>，以及來談生意的度假村經理<b>何志明</b>。晚餐時，林振宗的弟弟<b>林振德</b>也在，但他八點半前就開車下山回鹿谷了。",
-    "<b>這是長篇案件，你有六天時間。</b>今晚你只能待在茶園：每個人只肯回答你 <b>3 題</b>，小吳也只能幫你看 <b>4 樣</b>現場的東西。路通了以後，你就可以開車去其他地方調查，但每天的時間有限。"
+    "<b>這是長篇案件，你有六天時間。</b>今晚你只能待在茶園，到凌晨 03:10 大家就撐不住了：每個人最多只肯回答你 <b>3 題</b>，<b>問一題約 5 分鐘、查一樣東西約 15 分鐘</b>。路通了以後，每天 09:00 到 17:00 可以開車去其他地方調查，<b>開車也要花時間</b>，越遠越久。走路不花時間。"
   ],
   goal: "查出林振宗的死因與真兇，以及這幾天發生的每一件怪事背後的真相。可能是意外、自殺，也可能是謀殺；兇手可能不只一個。",
   phases: [
-    { title:"第一晚　10月17日（五）23:40", short:"第一晚", actions:0, startAt:"farm", questionLimit:3,
+    { title:"第一晚　10月17日（五）23:40", short:"第一晚", actions:0, startAt:"farm", questionLimit:3, clock:{ start:"23:40", end:"03:10", ask:5, item:15, cctv:15 },
       reports:[
         { id:"r1_scene", title:"小吳的現場初步報告",
           text:"林振宗倒在製茶房通往閣樓的木梯下，後腦有一處重傷，旁邊散落一袋從閣樓掉下來的茶葉。看起來像是爬梯子時摔下來。\n屍體還有餘溫，依體溫推算，死亡時間大約在 21:00–21:40。\n小吳補充：「焙茶機一直開著，屍體離它不到一公尺，室內很熱。體溫推算可能不準，要等解剖才能確定。」",
           clue:"現場推估死亡時間 21:00–21:40（但焙茶機很熱，可能不準）",
           tl:[["10/17 22:10","土伯在製茶房發現林振宗的屍體"],["10/17 23:20","你和小吳抵達茶園"],["10/17 23:40","山路坍方，對外道路中斷"]] }
       ]},
-    { title:"第二天　10月18日（六）", short:"第二天", headline:"第二天：清晨的蓄水池", actions:3, startAt:"farm", questionLimit:4,
+    { title:"第二天　10月18日（六）", short:"第二天", headline:"第二天：清晨的蓄水池", actions:3, startAt:"farm", questionLimit:4, clock:{ start:"09:00", end:"17:00", ask:5, item:15, cctv:15, test:10 },
       intro:[
         "你和小吳在製茶房旁的辦公室守了一夜。風雨聲大得嚇人，凌晨 02:40 整座茶園停電，監視器全部停止錄影。",
         "清晨 06:30，佩如尖叫著跑回主屋——<b>土伯浮在後山的蓄水池裡。</b>家豪和何志明把他拉上岸時，他已經沒有呼吸了。",
         "昨晚他說「明天一定跟你說」的事，你永遠聽不到了。",
         "09:00，颱風比預期提早離開，搶修隊打通了一線道路。兩具遺體都送下山交給法醫。何志明說公司有急事，先回台中了。",
-        "<b>從今天起，你可以開車去其他地方。</b>今天有 <b>3 個行動點</b>，每去一個地方用 1 點。你現在人在茶園，查茶園不用行動點。鑑識中心的化驗要等 1–2 天才有結果。"
+        "<b>從今天起，你可以開車去其他地方。</b>今天 09:00 到 17:00 可以調查。開車要花時間，越遠越久；問話、查證物也都要花時間。你現在人在茶園。鑑識中心的化驗要等 1–2 天才有結果。"
       ],
       reports:[
         { id:"r2_tu", title:"土伯的遺體（小吳初步檢查）",
@@ -43,38 +43,37 @@ const EP2 = {
           clue:"土伯凌晨死在蓄水池；手電筒是關著的；指甲縫裡有皮膚組織",
           tl:[["10/18 02:40","颱風造成全茶園停電，監視器停止錄影"],["10/18 06:30","佩如在蓄水池發現土伯的遺體"]] }
       ]},
-    { title:"第三天　10月19日（日）", short:"第三天", headline:"第三天", actions:4, startAt:"police", questionLimit:4,
+    { title:"第三天　10月19日（日）", short:"第三天", headline:"第三天", actions:4, startAt:"police", questionLimit:4, clock:{ start:"09:00", end:"17:00", ask:5, item:15, cctv:15, test:10 },
       intro:[
-        "你搬回山下的南投分局，從今天起每天早上都從分局出發，在分局查資料不用行動點。",
-        "茶園的電力昨晚恢復了。今天有 <b>4 個行動點</b>。"
+        "你搬回山下的南投分局，從今天起每天早上 09:00 都從分局出發。",
+        "茶園的電力昨晚恢復了。"
       ]},
-    { title:"第四天　10月20日（一）", short:"第四天", headline:"第四天：守靈", actions:4, startAt:"police", questionLimit:4,
+    { title:"第四天　10月20日（一）", short:"第四天", headline:"第四天：守靈", actions:4, startAt:"police", questionLimit:4, clock:{ start:"09:00", end:"17:00", ask:5, item:15, cctv:15, test:10 },
       intro:[
         "茶園今天為林振宗和土伯設了靈堂，親友陸續上山。林振德、何志明都會到茶園守靈。",
-        "外面下著小雨。今天有 <b>4 個行動點</b>。"
+        "外面下著小雨。"
       ]},
-    { title:"第五天　10月21日（二）", short:"第五天", headline:"第五天", actions:4, startAt:"police", questionLimit:4,
+    { title:"第五天　10月21日（二）", short:"第五天", headline:"第五天", actions:4, startAt:"police", questionLimit:4, clock:{ start:"09:00", end:"17:00", ask:5, item:15, cctv:15, test:10 },
       intro:[
         "分局長把你叫進辦公室：「檢察官 22 日晚上要看到結論。你還有兩天。」",
-        "今天有 <b>4 個行動點</b>。"
       ]},
-    { title:"第六天　10月22日（三）", short:"最後一天", headline:"最後一天", actions:3, startAt:"police", questionLimit:4,
+    { title:"第六天　10月22日（三）", short:"最後一天", headline:"最後一天", actions:3, startAt:"police", questionLimit:4, clock:{ start:"09:00", end:"17:00", ask:5, item:15, cctv:15, test:10 },
       intro:[
         "今天是最後一天。晚上檢察官就要看你的結論。",
-        "今天只有 <b>3 個行動點</b>。用完以後，就要做出你的推理。"
+        "今天 17:00 以後，就要做出你的推理。"
       ]}
   ],
   locations: [
-    { id:"farm", name:"振宗茶園", icon:"🍃", desc:"山上的老茶園：主屋、製茶房、工寮、後山的蓄水池", search:[4,4,3,3,3,3] },
-    { id:"police", name:"南投分局", icon:"🚓", desc:"你辦公的地方。可以調閱資料、申請通聯和銀行紀錄", phase:1, search:3, perVisit:2, closedText:"道路中斷，今晚下不了山" },
-    { id:"lab", name:"南投鑑識中心", icon:"🧪", desc:"送化驗的地方，小吳在這裡", phase:1, search:2, perVisit:3, closedText:"道路中斷，今晚下不了山" },
-    { id:"office", name:"宏遠開發（台中）", icon:"🏢", desc:"何志明的公司，度假村開發案的負責單位", phase:1, search:2, closedText:"道路中斷，今晚下不了山" },
-    { id:"shop", name:"振德茶行（鹿谷）", icon:"🫖", desc:"林振德開的茶行，離茶園半小時車程", phase:1, search:2, closedText:"道路中斷，今晚下不了山" },
-    { id:"lawyer", name:"王律師事務所（南投市）", icon:"⚖️", desc:"林振宗的律師", phase:1, requires:["ev_body","y2","p9","de2"], search:2 },
-    { id:"hospital", name:"台中榮民總醫院・腫瘤科", icon:"🏥", desc:"林振宗上個月看病的醫院", phase:1, requires:["t6","ev_hospital","y10","w7"], search:1 },
-    { id:"shark", name:"宏發當鋪（草屯）", icon:"💰", desc:"表面是當鋪，其實放高利貸", phase:1, requires:["ev_garage","h4","pol_phone","de12"], search:2 },
-    { id:"care", name:"埔里慈恩安養院", icon:"🏡", desc:"林家以前的管家淑芳阿姨住在這裡", phase:1, requires:["h11","de6","y13"], search:1 },
-    { id:"taipei", name:"台北仁愛醫院・急診室", icon:"🚄", desc:"林家欣工作的醫院。來回台北很花時間", phase:1, cost:2, requires:["x2","x1b","dr4"], search:2 }
+    { id:"farm", mins:50, name:"振宗茶園", icon:"🍃", desc:"山上的老茶園：主屋、製茶房、工寮、後山的蓄水池", search:[4,4,3,3,3,3] },
+    { id:"police", mins:40, name:"南投分局", icon:"🚓", desc:"你辦公的地方。可以調閱資料、申請通聯和銀行紀錄", phase:1, search:3, perVisit:2, closedText:"道路中斷，今晚下不了山" },
+    { id:"lab", mins:30, name:"南投鑑識中心", icon:"🧪", desc:"送化驗的地方，小吳在這裡", phase:1, search:2, perVisit:3, closedText:"道路中斷，今晚下不了山" },
+    { id:"office", mins:80, name:"宏遠開發（台中）", icon:"🏢", desc:"何志明的公司，度假村開發案的負責單位", phase:1, search:2, closedText:"道路中斷，今晚下不了山" },
+    { id:"shop", mins:40, name:"振德茶行（鹿谷）", icon:"🫖", desc:"林振德開的茶行，離茶園半小時車程", phase:1, search:2, closedText:"道路中斷，今晚下不了山" },
+    { id:"lawyer", mins:30, name:"王律師事務所（南投市）", icon:"⚖️", desc:"林振宗的律師", phase:1, requires:["ev_body","y2","p9","de2"], search:2 },
+    { id:"hospital", mins:80, name:"台中榮民總醫院・腫瘤科", icon:"🏥", desc:"林振宗上個月看病的醫院", phase:1, requires:["t6","ev_hospital","y10","w7"], search:1 },
+    { id:"shark", mins:40, name:"宏發當鋪（草屯）", icon:"💰", desc:"表面是當鋪，其實放高利貸", phase:1, requires:["ev_garage","h4","pol_phone","de12"], search:2 },
+    { id:"care", mins:50, name:"埔里慈恩安養院", icon:"🏡", desc:"林家以前的管家淑芳阿姨住在這裡", phase:1, requires:["h11","de6","y13"], search:1 },
+    { id:"taipei", mins:180, name:"台北仁愛醫院・急診室", icon:"🚄", desc:"林家欣工作的醫院。來回台北很花時間", phase:1, cost:2, requires:["x2","x1b","dr4"], search:2 }
   ],
   events: [
     { id:"e_study", phase:2, title:"書房被人撬開了",
