@@ -156,6 +156,16 @@ body.fs .toast{bottom:calc(14px + env(safe-area-inset-bottom))}
   .fs-stage .world{width:min(100cqw,177.78cqh)}
   .fs-panel{flex:none;width:clamp(260px,38vw,420px);border-left:2px solid #000}
 }
+/* 大螢幕（電腦、iPad）：畫面放大時，對話框、指示牌、地圖標籤的字也跟著放大 */
+.fs-root .world{container-type:inline-size}
+.fs-root .wbubble{font-size:max(13.5px,1.2cqw);max-width:min(78%,60em)}
+.fs-root .wbubble b{font-size:max(11px,.9cqw)}
+.fs-root .wnav{font-size:max(12px,1.05cqw)}
+.fs-root .wskip{font-size:max(12px,1cqw)}
+.fs-root .wtip{font-size:max(11px,.9cqw)}
+.fs-root .wmap .mlab{font-size:max(10.5px,1.05cqw)}
+.fs-root .wmap .mlab i{font-size:max(9.5px,.9cqw)}
+@media (min-width:1200px) and (min-height:700px){ .fs-hud{font-size:14.5px;min-height:42px} .fs-hud .hn{font-size:15.5px} .hb{font-size:14.5px;padding:6px 14px} .fs-panel{font-size:17px} }
 .fs-sheet{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--bg)}
 .fs-sheet > .in{max-width:720px;margin:0 auto;padding:14px 16px calc(20px + env(safe-area-inset-bottom))}
 .wusay{display:flex;gap:10px;align-items:flex-start;margin:0 0 10px}
@@ -564,6 +574,11 @@ function goFull(){
   const d = document.documentElement, rq = d.requestFullscreen || d.webkitRequestFullscreen;
   try { const r = rq && rq.call(d, { navigationUI:"hide" }); if (r && r.then) r.then(()=>{ try { screen.orientation.lock("landscape").catch(()=>{}); } catch(e){} render(); }).catch(()=>{}); } catch(e){}
 }
+// 電腦：Esc 關掉問話／選單／筆記，回到現場
+addEventListener("keydown", e=>{
+  if (e.key !== "Escape" || !fsMode() || document.querySelector(".dlg")) return;
+  if (SHEETS.includes(tab)) closeSheet(); else if (wBuddy || wTalk || wAct || peek || wSay) closePanel();
+});
 function exitFull(){ try { if (document.fullscreenElement) document.exitFullscreen(); else if (document.webkitFullscreenElement) document.webkitExitFullscreen(); } catch(e){} }
 const isFull = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
 const canFull = () => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
