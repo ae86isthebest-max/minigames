@@ -65,6 +65,18 @@ const WORLD = (() => {
     return GROUND;
   }
   const bldAt = x => blds().findIndex(b => x > b.x0 && x < b.x1);
+  // 一棟建築的樓層（由上到下）：{ y0, y1, fy 地板 }；沒寫就整棟一層
+  const levelsOf = b => b.levels || [{ y0:-99, y1:GROUND + 20, fy:GROUND }];
+  const levelAt = (b, y) => levelsOf(b).findIndex(L => y >= L.y0 && y <= L.y1);
+  // 現在看得到哪一層：在這棟裡面、而且人在那一層（走樓梯途中兩層都看得到）
+  function levelShown(s, i, k){
+    const b = blds()[i], L = levelsOf(b)[k];
+    if (!(s.px > b.x0 && s.px < b.x1)) return false;
+    const onAny = levelsOf(b).some(M => Math.abs(M.fy - s.py) < 1);
+    return !onAny || Math.abs(L.fy - s.py) < 1;
+  }
+  const lvVis = (s, i, k) => Math.min(s.rv[i]||0, s.rv[i+"L"+k] ?? 0);
+  function hiddenAt(s, x, y){ const i = bldAt(x); if (i < 0) return false; const k = levelAt(blds()[i], y); return lvVis(s, i, k < 0 ? 0 : k) < 0.5; }
   // 從 (x0,y0) 走到 (x,y)：換樓層就先走到樓梯
   function route(x0, y0, x, y){
     if (Math.abs(y - y0) < 2) return [[x, y]];
@@ -92,6 +104,7 @@ const WORLD = (() => {
     if (outSpot) return goThen(outSpot.walk, GROUND, () => hooks.onSpot(outSpot));
     // 還沒進去的建築：先走到門口，進去
     const bi = bldAt(x), inside = bldAt(s.px);
+    if (bi >= 0 && bi === inside && hiddenAt(s, x, y)){ hooks.onGround && hooks.onGround(); return goThen(x, floorAt(x, y), null); }
     if (bi >= 0 && bi !== inside && (s.rv[bi]||0) < 0.5){
       const b = blds()[bi], d = Math.abs(s.px - b.x0) < Math.abs(s.px - b.x1) ? b.x0 + 10 : b.x1 - 10;
       hooks.onGround && hooks.onGround();
@@ -116,8 +129,16 @@ const WORLD = (() => {
   function goThen(x, y, cb){
     const s = cur.s; x = clampX(x, y);
     s.after = cb;
-    if (Math.abs(x - s.px) < 2 && Math.abs(y - s.py) < 2){ s.path = []; cb && cb(); return; }
-    s.path = route(s.px, s.py, x, y).map(([a,b]) => [clampX(a,b), b]);
+    let sx = s.px, sy = s.py, pre = [];
+    const onLevel = v => Math.abs(v - GROUND) < 1 || floors().some(f => Math.abs(f.y - v) < 1);
+    if (!onLevel(sy)){
+      // 正在樓梯上：先走到樓梯的上端或下端，再照常走
+      const k = stairs().find(k => sx >= Math.min(k.x0,k.x1) - 1 && sx <= Math.max(k.x0,k.x1) + 1);
+      if (k){ const end = Math.abs(k.y1 - y) < Math.abs(k.y0 - y) ? [k.x1, k.y1] : [k.x0, k.y0]; pre = [end]; sx = end[0]; sy = end[1]; }
+      else { s.py = sy = GROUND; }
+    }
+    if (!pre.length && Math.abs(x - sx) < 2 && Math.abs(y - sy) < 2){ s.path = []; cb && cb(); return; }
+    s.path = [...pre, ...route(sx, sy, x, y).map(([a,b]) => [clampX(a,b), b])];
   }
 
   /* ---------- 更新 ---------- */
@@ -167,6 +188,7 @@ const WORLD = (() => {
     blds().forEach((b, i) => {
       const inside = s.px > b.x0 && s.px < b.x1;
       s.rv[i] = (s.rv[i]||0) + ((inside ? 1 : 0) - (s.rv[i]||0)) * Math.min(1, dt*5);
+      levelsOf(b).forEach((L, k) => { const key = i+"L"+k, v = s.rv[key] ?? (levelShown(s, i, k) ? 1 : 0); s.rv[key] = v + ((levelShown(s, i, k) ? 1 : 0) - v) * Math.min(1, dt*5); });
       [b.x0, b.x1].forEach((dx, j) => { const near = [s.px, s.bx].some(v => Math.abs(v - dx) < 9) && s.py > GROUND - 2; const k = i+"_"+j; s.door[k] = (s.door[k]||0) + ((near?1:0) - (s.door[k]||0)) * Math.min(1, dt*8); });
     });
     // 鏡頭
@@ -249,9 +271,8 @@ const WORLD = (() => {
     const cam = Math.round(s.cam);
     g.translate(-cam, 0);
     def.draw(p, s.t, hooks.opt(), cam, g);
-    const covered = x => { const i = bldAt(x); return i >= 0 && (s.rv[i]||0) < 0.5; };
     // 還沒查的證物：閃光（在外面看不到建築裡面的）
-    hooks.spots().forEach(q => { const cx = q.r[0]+q.r[2]/2; if (q.k==="item" && q.fresh && !covered(cx) && Math.floor(s.t*2 + q.r[0]) % 3 !== 0) p.spark(cx, q.r[1]+2); });
+    hooks.spots().forEach(q => { const cx = q.r[0]+q.r[2]/2; if (q.k==="item" && q.fresh && !hiddenAt(s, cx, q.r[1]+q.r[3]/2) && Math.floor(s.t*2 + q.r[0]) % 3 !== 0) p.spark(cx, q.r[1]+2); });
     // 車
     if (s.car){ p.OBJ.car(s.car.x, GROUND-20, s.car.c); if (s.car.c==="#e9e4da"){ p.R(s.car.x+14,GROUND-22,4,2, Math.floor(s.t*4)%2?"#e04a3a":"#3a6ae0"); p.R(s.car.x+18,GROUND-22,4,2, Math.floor(s.t*4)%2?"#3a6ae0":"#e04a3a"); p.R(s.car.x,GROUND-11,40,2,"#2a3a6a"); } }
     // 人
@@ -278,7 +299,15 @@ const WORLD = (() => {
     };
     // 先畫建築裡面的人，再蓋上外牆，最後畫外面的人
     list.filter(q => bldAt(q.x) >= 0).forEach(drawOne);
-    blds().forEach((bd, i) => { const a = 1 - (s.rv[i]||0); if (a > 0.02 && bd.x1 > cam - 20 && bd.x0 < cam + VW + 20) facade(p, bd, s.t, i, a); });
+    // 外牆：在外面整棟蓋住；在裡面只蓋住不在的那一層
+    blds().forEach((bd, i) => {
+      if (bd.x1 < cam - 20 || bd.x0 > cam + VW + 20) return;
+      levelsOf(bd).forEach((L, k) => {
+        const a = 1 - lvVis(s, i, k); if (a <= 0.02) return;
+        g.save(); g.beginPath(); g.rect(bd.x0 - 12, Math.max(-40, L.y0), bd.x1 - bd.x0 + 24, L.y1 - Math.max(-40, L.y0) + (k === levelsOf(bd).length - 1 ? 12 : 0)); g.clip();
+        facade(p, bd, s.t, i, a); g.restore();
+      });
+    });
     list.filter(q => bldAt(q.x) < 0).forEach(drawOne);
     if (def.front) def.front(p, s.t, hooks.opt(), cam, s);
     g.setTransform(1,0,0,1,0,0);

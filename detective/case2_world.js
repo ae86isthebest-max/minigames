@@ -177,7 +177,7 @@
       w: WD, spawn: 74, park: 30, when: ON, draw, front, overlay, spots: SPOTS, details: DETAILS, placeFor, buddy: "wu",
       // 主屋、製茶房、工寮：在外面只看得到外牆，進門才看得到裡面
       buildings: [
-        { x0:184, x1:478, y0:24, wall:"#a89478", roof:"#3a2a22", rows:[44, 92], brick:true, door:"#5a3e24", night:o=>!(o.phase||0) },
+        { x0:184, x1:478, y0:24, wall:"#a89478", roof:"#3a2a22", rows:[44, 92], brick:true, door:"#5a3e24", night:o=>!(o.phase||0), levels:[ { y0:-99, y1:79, fy:76 }, { y0:79, y1:G, fy:G } ] },
         { x0:556, x1:708, y0:52, wall:"#5a4a3c", roof:"#2a221e", rows:[86], brick:true, door:"#4a3424", night:o=>!(o.phase||0) },
         { x0:720, x1:800, y0:88, wall:"#6a5a46", roof:"#2a221a", rows:[], door:"#5a3e24", doors:[true, false] }
       ],
