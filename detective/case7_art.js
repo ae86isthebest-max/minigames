@@ -463,6 +463,10 @@ EP7.art = true;
       say("wu", "想去哪裡，就點畫面上的箭嘴。到了以後點" + (typeof pinWhere === "function" ? pinWhere() : "左上角") + "的「📍」。要找我就點我。", "小吳")
     ]
   });
+  EP7.world.lab.extras = [
+    { id:"xu7", name:"許知夏", phase:1, x:RX(0) + 150, L:(typeof ARC !== "undefined" && ARC.look && ARC.look("xu")) || FOR, pose:"read", facing:-1, lines:[
+      "沈警官。我上禮拜才報到，桌子還沒整理好，你的證物先放小吳那邊。", "電梯導軌的油？石墨潤滑脂，黏到衣服上很難洗掉。誰碰過，手上一定也有。" ] }
+  ];
   EP7.mapPos = { tower:[120,60,"u"], police:[150,96,"r"], lab:[176,84,"u"], yongsheng:[60,90,"l"], mahjong:[96,40,"u"], hongyuan:[160,40,"r"], liuhome:[40,116,"l"] };
   EP7.mapRoads = [["tower","police"],["police","lab"],["tower","mahjong"],["tower","hongyuan"],["police","yongsheng"],["yongsheng","liuhome"],["tower","yongsheng"]];
   EP7.mapDraw = (p, t) => {
