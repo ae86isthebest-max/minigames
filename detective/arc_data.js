@@ -201,6 +201,30 @@ ARC.defineCast({
    "bottom": "#3a3430",
    "beard": true
   }
+ },
+ "su": {
+  "name": "蘇律師",
+  "look": {
+   "skin": "#e8c09a",
+   "hair": "#2a2a2a",
+   "hairStyle": "slick",
+   "top": "#f4f6f6",
+   "coat": "#1e2a4a",
+   "bottom": "#1e2a4a",
+   "glasses": true
+  }
+ },
+ "abin": {
+  "name": "阿彬",
+  "look": {
+   "skin": "#d8a880",
+   "hair": "#2a2a2a",
+   "hairStyle": "short",
+   "top": "#e85a3a",
+   "bottom": "#3a4a6a",
+   "hat": "cap",
+   "capColor": "#2a2a2a"
+  }
  }
 });
 
@@ -431,12 +455,34 @@ var ARC_INTER = {
      "text": "那個案子，最後是誰做的？"
     },
     {
-     "who": "you",
-     "text": "結案了。"
-    },
-    {
      "who": "barista",
-     "text": "……好，好，不問。"
+     "text": "那個案子，最後是誰做的？",
+     "id": "ep3_tell",
+     "choices": [
+      {
+       "text": "「結案了。」",
+       "say": [
+        {
+         "who": "barista",
+         "text": "……好，好，不問。"
+        }
+       ]
+      },
+      {
+       "text": "跟他講個大概",
+       "set": "m_leak_cafe_3",
+       "say": [
+        {
+         "who": "barista",
+         "text": "原來如此……你們真辛苦。"
+        },
+        {
+         "who": "narr",
+         "text": "（他聽得很專心，連杯子都忘了擦。）"
+        }
+       ]
+      }
+     ]
     }
    ]
   }
@@ -970,6 +1016,31 @@ var ARC_INTER = {
     {
      "who": "xu",
      "text": "人很好的人，最會看別人的筆記。"
+    },
+    {
+     "who": "you",
+     "text": "（要不要說他？）",
+     "id": "ep8_note",
+     "choices": [
+      {
+       "text": "「老闆，下次別碰我的筆記。」",
+       "set": "c_warn_barista",
+       "say": [
+        {
+         "who": "barista",
+         "text": "是是是，對不起。"
+        }
+       ]
+      },
+      {
+       "text": "（算了，不說）",
+       "set": "m_leak_cafe_8",
+       "say": {
+        "who": "narr",
+        "text": "（你把筆記本收進外套。老闆笑著走回櫃台。）"
+       }
+      }
+     ]
     }
    ]
   }
@@ -1293,6 +1364,40 @@ var ARC_INTER = {
      ]
     },
     {
+     "who": "zhao",
+     "text": "（壓低聲音）我可以告訴你那個戴帽子的人在漁港叫什麼外號。條件是，你把我銀行那筆三十萬從報告裡拿掉。我女兒不能知道。",
+     "id": "ep12_deal",
+     "choices": [
+      {
+       "text": "答應",
+       "set": [
+        "m_rule_minus_12",
+        "c_zhao_deal"
+       ],
+       "say": [
+        {
+         "who": "zhao",
+         "text": "……「阿帽」。大家都這樣叫他。"
+        },
+        {
+         "who": "narr",
+         "text": "（你在筆記本上寫下兩個字，然後把報告的那一頁折起來。）"
+        }
+       ]
+      },
+      {
+       "text": "拒絕：「報告不能改。」",
+       "set": "m_rule_plus_12",
+       "say": [
+        {
+         "who": "zhao",
+         "text": "……我就知道。你跟你舅舅一樣。"
+        }
+       ]
+      }
+     ]
+    },
+    {
      "who": "narr",
      "text": "（門關上。）"
     }
@@ -1315,6 +1420,10 @@ var ARC_INTER = {
     {
      "id": "xu",
      "x": 90
+    },
+    {
+     "id": "su",
+     "x": 120
     }
    ],
    "lines": [
@@ -1337,6 +1446,10 @@ var ARC_INTER = {
     {
      "who": "narr",
      "text": "（店裡的電視正在播：巡佐失聯，家屬報案。外面桌的你們同時放下杯子。）"
+    },
+    {
+     "who": "su",
+     "text": "（隔壁桌的男人放下報紙，客氣地笑）巡佐失聯？這年頭當警察真不容易。我姓蘇，在對面事務所上班，常來。"
     }
    ],
    "opt": {
@@ -1373,6 +1486,36 @@ var ARC_INTER = {
     {
      "who": "narr",
      "text": "（第一次叫他名字，不是「沈警官」。）"
+    },
+    {
+     "who": "ye",
+     "text": "沈岳……那份案件報告，可不可以不要寫我弟弟的名字？只寫「另一名送醫者」。",
+     "id": "ep13_ye",
+     "choices": [
+      {
+       "text": "「好。」",
+       "set": [
+        "m_rule_minus_13",
+        "c_cover_ye"
+       ],
+       "say": [
+        {
+         "who": "ye",
+         "text": "……我欠你一次。"
+        }
+       ]
+      },
+      {
+       "text": "「我不能。但我會寫得很小心。」",
+       "set": "m_rule_plus_13",
+       "say": [
+        {
+         "who": "ye",
+         "text": "……我知道。是我不該問。"
+        }
+       ]
+      }
+     ]
     }
    ],
    "arc": "ye_first_name",
@@ -1513,6 +1656,37 @@ var ARC_INTER = {
     {
      "who": "wu",
      "text": "明天我帶我媽做的滷肉飯給你。不准拒絕。"
+    },
+    {
+     "who": "wu",
+     "text": "學長……那個……你可以借我三萬嗎？下個月就還。",
+     "id": "ep14_loan",
+     "choices": [
+      {
+       "text": "「好。」不問原因",
+       "set": "c_lend_wu",
+       "say": [
+        {
+         "who": "wu",
+         "text": "……謝謝學長。真的。"
+        }
+       ]
+      },
+      {
+       "text": "「先告訴我要做什麼。」",
+       "set": "c_ask_wu",
+       "say": [
+        {
+         "who": "wu",
+         "text": "……沒事啦，我自己想辦法。"
+        },
+        {
+         "who": "narr",
+         "text": "（他笑了一下，但沒有再看你。）"
+        }
+       ]
+      }
+     ]
     }
    ],
    "opt": {
@@ -1575,9 +1749,17 @@ var ARC_INTER = {
     {
      "id": "_you",
      "x": 60
+    },
+    {
+     "id": "abin",
+     "x": 90
     }
    ],
    "lines": [
+    {
+     "who": "abin",
+     "text": "老闆，咖啡豆放門口喔！（對小吳）欸，上次那關你過了沒？"
+    },
     {
      "who": "narr",
      "text": "（葉晴約你在咖啡店外面坐。她的手機桌布是弟弟小時候的照片。）"
@@ -1650,6 +1832,40 @@ var ARC_INTER = {
     {
      "who": "narr",
      "text": "（他在本子上寫了一行字，你看不到。）"
+    },
+    {
+     "who": "li",
+     "text": "你的隊長有沒有叫你們不要碰這件事？",
+     "id": "ep16_li",
+     "choices": [
+      {
+       "text": "照實說：「他說過交給督察組。」",
+       "set": "c_told_li_zhou",
+       "say": [
+        {
+         "who": "li",
+         "text": "謝謝。這樣比較省事。"
+        }
+       ]
+      },
+      {
+       "text": "「沒有。」",
+       "set": [
+        "m_rule_minus_16",
+        "c_cover_zhou"
+       ],
+       "say": [
+        {
+         "who": "li",
+         "text": "……好。"
+        },
+        {
+         "who": "narr",
+         "text": "（他看了你很久。）"
+        }
+       ]
+      }
+     ]
     },
     {
      "who": "zhou",
@@ -1811,6 +2027,36 @@ var ARC_INTER = {
      "text": "沈警官，我不是在問你要新聞。我是在問你，你站哪一邊。"
     },
     {
+     "who": "he",
+     "text": "給我彈道報告的照片就好。我不寫你的名字。",
+     "id": "ep17_he",
+     "choices": [
+      {
+       "text": "給他",
+       "set": [
+        "m_rule_minus_17",
+        "c_help_he"
+       ],
+       "say": [
+        {
+         "who": "he",
+         "text": "……謝了。你會知道你沒有選錯邊。"
+        }
+       ]
+      },
+      {
+       "text": "不給",
+       "set": "m_rule_plus_17",
+       "say": [
+        {
+         "who": "he",
+         "text": "好。那我自己挖。"
+        }
+       ]
+      }
+     ]
+    },
+    {
      "who": "narr",
      "text": "（他走進散場的人群裡。）"
     }
@@ -1892,12 +2138,50 @@ var ARC_INTER = {
     {
      "id": "xu",
      "x": 120
+    },
+    {
+     "id": "wu",
+     "x": 120
     }
    ],
    "lines": [
     {
      "who": "narr",
      "text": "（新郎新娘在門口送客。小吳喝醉了，抱著豆花說話。）"
+    },
+    {
+     "who": "narr",
+     "text": "（新郎阿翔把你拉到一邊，塞給你一個紅包。）「沈警官，志偉是我從小的兄弟，錢都回來了，可不可以不要報警？這是一點心意。」",
+     "id": "ep18_deal",
+     "choices": [
+      {
+       "text": "「依法處理。」把紅包推回去",
+       "set": "m_rule_plus_18",
+       "say": {
+        "who": "narr",
+        "text": "（阿翔低下頭。小吳不敢看你。）"
+       }
+      },
+      {
+       "text": "不報警，紅包推回去",
+       "set": "m_rule_minus_18",
+       "say": {
+        "who": "narr",
+        "text": "（阿翔一直鞠躬。志偉站在遠處，眼睛紅了。）"
+       }
+      },
+      {
+       "text": "不報警，收下紅包",
+       "set": [
+        "m_rule_minus_18",
+        "m_greed_18"
+       ],
+       "say": {
+        "who": "narr",
+        "text": "（紅包很厚。你把它放進西裝內袋。）"
+       }
+      }
+     ]
     },
     {
      "who": "kui",
@@ -2111,6 +2395,14 @@ var ARC_INTER = {
     {
      "who": "narr",
      "text": "（那時候沒人知道，兩天後那攤會上新聞。）"
+    },
+    {
+     "who": "barista",
+     "text": "（擦著桌子，很隨意地）對了，那個常來的記者，最近在查什麼？",
+     "when": [
+      "arc:m_leak_cafe_3",
+      "arc:m_leak_cafe_8"
+     ]
     }
    ],
    "opt": {
@@ -2127,6 +2419,10 @@ var ARC_INTER = {
     {
      "id": "wu",
      "x": 80
+    },
+    {
+     "id": "li",
+     "x": 90
     }
    ],
    "lines": [
@@ -2169,6 +2465,32 @@ var ARC_INTER = {
     {
      "who": "he",
      "text": "我也想知道。"
+    },
+    {
+     "who": "you",
+     "text": "（何沛恩的隨身碟在你口袋裡。）",
+     "id": "ep20_usb",
+     "choices": [
+      {
+       "text": "交給督察組黎光耀",
+       "set": [
+        "m_rule_plus_20",
+        "c_usb_li"
+       ],
+       "say": {
+        "who": "narr",
+        "text": "（黎光耀接過隨身碟，只說了一句：「明智。」）"
+       }
+      },
+      {
+       "text": "自己留著",
+       "set": "c_usb_keep",
+       "say": {
+        "who": "narr",
+        "text": "（你把它鎖進家裡的抽屜。）"
+       }
+      }
+     ]
     }
    ],
    "sceneWanted": "apartment"
