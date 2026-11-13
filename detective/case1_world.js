@@ -228,7 +228,7 @@
     w: WD, spawn: 70, park: 8, draw, front,
     buildings: [ { x0:X0, x1:X1, y0:22, ext:EXT, door:"#5a3e24", levels:[ { y0:-99, y1:81, fy:F2 }, { y0:81, y1:G, fy:G } ] } ],
     floors: [ { y:F2, x0:240, x1:X1-4 } ],
-    stairs: [ { x0:314, y0:G, x1:366, y1:F2 } ],
+    stairs: [ { x0:314, y0:G, x1:366, y1:F2, steps:10 } ],
     spots: SPOTS, details: DETAILS,
     // 每個地方第一次走進去，主角會說一句（沒什麼特別的地方也寫出來）
     areas: [

@@ -6,7 +6,8 @@
    ========================================================= */
 const PX = (() => {
   const W = 192, H = 108, INK = "#1b1512";
-  let g = null, T = 0, NIGHT = false;
+  let g = null, T = 0, NIGHT = false, RES = 1;   // RES＝畫布比 192×108 細幾倍（場景圖和重播用 4 倍，人物才不會變形）
+  const HI = 4;
   const R = (x,y,w,h,c) => { if (c){ g.fillStyle = c; g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h)); } };
   const P = (x,y,c) => R(x,y,1,1,c);
   // 固定亂數（同一場景每次畫出來都一樣）
@@ -35,9 +36,9 @@ const PX = (() => {
   const OBJ = {
     ladder(x,y,h){ R(x,y,1,h,"#6b4a2b"); R(x+7,y,1,h,"#6b4a2b"); for(let j=2;j<h;j+=5) R(x,y+j,8,1,"#8a6338"); },
     dryer(x,y,hot){ R(x-1,y-1,30,24,INK); R(x,y,28,22,"#7d8288"); R(x+2,y+3,24,12,"#4c5157"); R(x+3,y+4,22,10,hot?"#c4472f":"#3a3e43");
-      if(hot){ dither(x+3,y+4,22,10,"#f29a3c",2); for(let i=0;i<4;i++) R(x+30+i*3,y+6+i,2,1,"#f2b25c"); } R(x+20,y+17,5,3,"#2a2d31"); P(x+22,y+18,hot?"#ff4a3a":"#6fd46f"); },
+      if(hot){ dither(x+3,y+4,22,10,"#f29a3c",2); for(let i=0;i<4;i++) R(x-4-i*3,y+6+i,2,1,"#f2b25c"); } R(x+20,y+17,5,3,"#2a2d31"); P(x+22,y+18,hot?"#ff4a3a":"#6fd46f"); },
     rack(x,y,shiny){ R(x,y,2,30,"#5a3e24"); R(x+26,y,2,30,"#5a3e24"); [0,10,20].forEach(j=>R(x,y+j,28,2,"#7a5533"));
-      R(x+3,y-5,7,5,"#b4a78c"); R(x+12,y-4,8,4,"#9b8a6a"); R(x+4,y+5,5,5,"#8b6a3a"); R(x+18,y+6,6,4, shiny?"#f2c94c":"#8a6a2c"); if(shiny){ P(x+19,y+6,"#fff6c8"); P(x+22,y+7,"#fff6c8"); }
+      R(x+3,y-5,7,5,"#b4a78c"); R(x+12,y-4,8,4,"#9b8a6a"); R(x+4,y+5,5,5,"#8b6a3a"); if (shiny !== "off") R(x+18,y+6,6,4, shiny?"#f2c94c":"#8a6a2c"); if(shiny && shiny !== "off"){ P(x+19,y+6,"#fff6c8"); P(x+22,y+7,"#fff6c8"); }
       R(x+3,y+15,10,5,"#a08a5c"); R(x+16,y+14,8,6,"#6d6d6d"); },
     tape(x,y,w){ for(let i=0;i<w;i+=6){ R(x+i,y,3,2,"#f2d03b"); R(x+i+3,y,3,2,INK); } },
     outline(x,y){ const c="#e9e4da"; R(x,y,4,1,c); R(x+4,y+1,9,1,c); R(x+13,y,6,1,c); R(x,y,1,5,c); R(x,y+5,6,1,c); R(x+6,y+5,1,3,c); R(x+6,y+8,10,1,c); R(x+16,y+5,1,3,c); R(x+16,y+5,5,1,c); R(x+19,y,1,5,c); },
@@ -69,18 +70,151 @@ const PX = (() => {
     suitcase(x,y){ R(x,y,24,18,"#2c3e5c"); R(x+9,y-3,6,3,INK); R(x+3,y+8,8,6,"#e9e4da"); R(x+5,y+9,4,4,"#d23a3a"); R(x+6,y+10,2,2,"#e9e4da"); }
   };
 
+  /* ---------- 姿勢字串、手上的物件 ----------
+     姿勢＝「腿+手:慣用手@物件/顏色」，後面三段都可以省略。例如：
+       "drink"            站著喝（用這個人的慣用手，look.hand:"left" 就是左撇子，沒寫＝右手）
+       "sit+drink:L@glass" 坐著，用左手拿玻璃杯喝
+       "reach@bottle"     伸手去拿／放下瓶子          "strike@weight"  往下砸
+       "push@cart/#2a6ad8" 推推車（車上的東西是藍色）   "carry:R@bag"    右手提著袋子
+       "door@key&bucket"  一手拿鑰匙開門，另一隻手提著桶子（& 後面＝另一隻手拿的東西，只有單手的動作可以用）
+     腿：stand walk1 walk2 sit kneel fall lie stumble prone back（back＝站著、背對鏡頭，例如面向牆邊的機器操作）
+         fall → lie＝往後倒、仰躺（頭在面向的反方向）；stumble → prone＝往前撲倒、趴著（頭在面向的那一邊，看到後腦）
+     單手（跟著慣用手；人轉身也不會換手）：drink cup eat smoke cig phone carry raise wave wave2 inspect pocket write sign broom broom2
+     單手、伸向面對的方向：point aim give reach strike pour knock knock2 wipe wipe2 brush brush2 door stretch（door＝伸手到門把／密碼鎖的高度；stretch＝伸長手去拿比較遠的東西）
+     雙手：hold read cross cry cam push drag type type2 handsup lift climb climb2 clutch polish polish2（clutch＝雙手抓住胸口、很痛苦；polish@物件＝拿布擦手上的東西）
+     物件：見下面 ITEMS；雙手捧的另外有 pot bucket bag box tray cooler；push 可以用 cart */
+  const LEGS = new Set(["stand","walk1","walk2","sit","kneel","fall","lie","stumble","prone","back"]);
+  const DIR = { point:[20,11], aim:[20,10], give:[19,13], reach:[18,15], strike:[19,17], pour:[18,9], stretch:[26,12], knock:[17,6], knock2:[18,7], door:[17,5], wipe:[17,14], wipe2:[19,14], brush:[17,14], brush2:[17,16] };
+  const ARM1 = new Set(["drink","cup","eat","smoke","cig","phone","carry","raise","wave","wave2","inspect","pocket","write","sign","broom","broom2"]);
+  const ARM2 = new Set(["hold","read","cross","cry","cam","push","drag","type","type2","handsup","lift","climb","climb2","clutch","polish","polish2"]);
+  const HOLDP = new Set(["pot","bucket","bag","box","tray","cooler"]);
+  // 走路時「到了才做」的動作：路上先正常走（手上有東西就拿著），走到才擺出動作
+  const ARRIVE = new Set([...Object.keys(DIR), "drink","eat","raise","wave","wave2","inspect","pocket","write","sign","cam","handsup","type","type2"]);
+  // 側面走路的人畫得出來的手部動作（其他的走路時還是用正面）
+  const PROF = new Set(["stand","walk1","walk2","carry","hold","read","push","drag","phone","cup","point","aim","give","reach","strike","pour","stretch","knock","knock2","door","wipe","wipe2","brush","brush2"]);
+  function parsePose(str){
+    let s = String(str || "stand"), item = null, col = null, hand = null, item2 = null, col2 = null;
+    const amp = s.indexOf("&"); if (amp >= 0){ item2 = s.slice(amp+1); s = s.slice(0, amp); const k = item2.indexOf("/"); if (k >= 0){ col2 = item2.slice(k+1); item2 = item2.slice(0, k); } }
+    const at = s.indexOf("@"); if (at >= 0){ item = s.slice(at+1); s = s.slice(0, at); const k = item.indexOf("/"); if (k >= 0){ col = item.slice(k+1); item = item.slice(0, k); } }
+    const m = /:([LR])$/.exec(s); if (m){ hand = m[1]; s = s.slice(0, -2); }
+    const i = s.indexOf("+"); let legs = i >= 0 ? s.slice(0, i) : s, arm = i >= 0 ? s.slice(i+1) : "";
+    if (!arm){ if (LEGS.has(legs)) arm = /^walk/.test(legs) ? legs : "stand"; else { arm = legs; legs = "stand"; } }
+    if (arm === "carry" && /^(box|tray|pot|cooler)$/.test(item||"")) arm = "hold";   // 大件的東西一定是兩隻手捧在身前
+    return { legs, arm, hand, item, col, item2, col2 };
+  }
+  // 檢查姿勢字串有沒有打錯（打錯的話人會變成只是站著，所以要先查）。回傳錯在哪裡，沒錯回傳 ""
+  function poseErr(str){
+    if (Array.isArray(str)) return str.map(poseErr).filter(Boolean)[0] || "";
+    const p = parsePose(str);
+    if (!LEGS.has(p.legs)) return "不認得的腿部姿勢：" + p.legs;
+    if (!(p.arm === "stand" || /^walk[12]$/.test(p.arm) || DIR[p.arm] || ARM1.has(p.arm) || ARM2.has(p.arm) || p.arm === "sniff")) return "不認得的動作：" + p.arm;
+    if (p.item && !(ITEMS[p.item] || HOLDP.has(p.item) || p.item === "cart")) return "不認得的物件：" + p.item;
+    if (p.item2 && !ITEMS[p.item2]) return "不認得的物件：" + p.item2;
+    if (p.item2 && (ARM2.has(p.arm) || p.arm === "write" || p.arm === "sign")) return "雙手的動作不能再用 & 拿第二樣東西：" + p.arm;
+    if (p.col && !/^#[0-9a-fA-F]{6}$/.test(p.col)) return "顏色要寫成 #rrggbb：" + p.col;
+    return "";
+  }
+  /* 手上的物件。seg＝長條的東西，從手往外一段一段畫 [長度, 顏色, 粗細]；w/h/c＝一小塊；f＝自己畫。main＝可以換顏色的那一段 */
+  const ITEMS = {
+    cup:      { w:3, h:4, c:"#e9e4da", d:(a,x,y,w,h,c)=>a(x,y,w,1,shade(c,-.3)) },
+    glass:    { w:3, h:4, c:"#cfe6f2", d:(a,x,y,w,h,c)=>a(x,y+2,w,2,"#c98a3a") },
+    bottle:   { seg:[[5,"#3f7a4a",2],[2,"#2f5a3a",1]], main:0 },
+    vial:     { seg:[[2,"#7a4a2a",2],[1,"#e9e4da",2]], main:0 },
+    can:      { w:2, h:3, c:"#d8b23a", d:(a,x,y,w,h,c)=>a(x,y,w,1,"#c8ced2") },
+    coat:     { f:(a,x,y,o,c)=>{ c = c || "#5a4a3a"; const by = o==="up" ? y-5 : y+1; a(x-1,by,4,6,c); a(x-1,by,4,1,shade(c,.2)); a(x+2,by+2,1,4,shade(c,-.25)); } },
+    pill:     { w:1, h:1, c:"#ffffff" },
+    ice:      { w:2, h:2, c:"#e9f6ff" },
+    knife:    { seg:[[1,"#5a3a22"],[4,"#d8dde0"]], main:1 },
+    scissors: { seg:[[2,"#c23a2a",2],[3,"#b8c0c4"]], main:0 },
+    wrench:   { seg:[[5,"#8a9094"],[2,"#aab0b4",2]], main:0 },
+    weight:   { seg:[[1,"#5a4a2a"],[3,"#c9a03a",3]], main:1 },
+    hammer:   { seg:[[4,"#8a6338"],[2,"#8a9094",3]], main:1 },
+    pipe:     { seg:[[8,"#8a9094"]], main:0 },
+    stick:    { seg:[[8,"#8a6338"]], main:0 },
+    syringe:  { seg:[[1,"#e9f2f6",2],[3,"#cfe6f2"],[1,"#8a9094"]], main:1 },
+    torch:    { seg:[[3,"#2a2a2e",2],[1,"#ffe27a",2]], main:0 },
+    key:      { seg:[[1,"#e6c34a",2],[2,"#e6c34a"]], main:0 },
+    pen:      { seg:[[3,"#2a3a8a"]], main:0 },
+    bolt:     { seg:[[1,"#8a9094",2],[2,"#aab0b4"]], main:1 },
+    rope:     { seg:[[6,"#c9a35a"]], main:0 },
+    lighter:  { seg:[[2,"#c23a2a"],[1,"#ffb03a"]], main:0 },
+    magnifier:{ seg:[[2,"#5a3a22"],[3,"#cfe6f2",3]], main:1 },
+    mop:      { seg:[[8,"#8a6338"],[2,"#e9e4da",3]], main:1 },
+    brush:    { seg:[[3,"#e6c34a"]], main:0 },
+    phone:    { w:2, h:4, c:"#111111", d:(a,x,y)=>a(x,y+1,1,2,"#3a5a7a") },
+    paper:    { w:4, h:3, c:"#f1ead8", d:(a,x,y)=>a(x+1,y+1,2,1,"#7a8a9a") },
+    envelope: { w:4, h:3, c:"#f4f6f6", d:(a,x,y,w,h,c)=>a(x,y,w,1,shade(c,-.2)) },
+    notebook: { w:3, h:4, c:"#2a3a6a", d:(a,x,y,w,h,c)=>a(x,y,1,h,shade(c,.35)) },
+    book:     { w:4, h:3, c:"#8a2a2a", d:(a,x,y,w,h,c)=>a(x,y+h-1,w,1,"#f1ead8") },
+    card:     { w:2, h:2, c:"#e8903a" },
+    cash:     { w:3, h:2, c:"#6aa85a" },
+    cloth:    { w:3, h:3, c:"#e9e4da" },
+    wallet:   { w:3, h:2, c:"#4a3424" },
+    remote:   { w:2, h:3, c:"#2a2a2e", d:(a,x,y)=>a(x,y,1,1,"#e04a3a") },
+    tape:     { w:2, h:2, c:"#222222" },
+    box:      { w:4, h:4, c:"#b8915a", d:(a,x,y,w,h,c)=>a(x,y,w,1,shade(c,.25)) },
+    bucket:   { f:(a,x,y,o,c)=>{ c = c || "#9aa6ae"; const by = o==="up" ? y-6 : y+2; a(x,by-1,2,1,"#6a767e"); a(x-2,by,6,5,c); a(x-2,by,6,1,"#e9f2f6"); } },
+    tray:     { f:(a,x,y,o,c)=>{ a(x-3,y-1,8,1,c||"#aab0b4"); a(x-1,y-4,3,3,"#f4f0e6"); } },
+    gun:      { f:(a,x,y,o,c)=>{ c = c || "#2a2a2e"; if (o==="down"){ a(x,y+2,2,4,c); a(x+1,y+1,2,1,c); } else if (o==="up"){ a(x,y-3,2,4,c); a(x+1,y,2,1,c); } else { a(x+1,y,5,2,c); a(x+1,y+1,1,2,c); } } },
+    bag:      { f:(a,x,y,o,c)=>{ c = c || "#cdbf9c"; const by = o==="up" ? y-7 : y+2; a(x,by-1,1,1,shade(c,-.3)); a(x+1,by-1,1,1,shade(c,-.3)); a(x-2,by,6,6,c); a(x-2,by,6,1,shade(c,-.2)); } },
+    case:     { f:(a,x,y,o,c)=>{ c = c || "#4a3424"; const by = o==="up" ? y-6 : y+2; a(x,by-1,2,1,INK); a(x-2,by,7,5,c); a(x-2,by+2,7,1,shade(c,.2)); } },
+    umbrella: { f:(a,x,y,o,c)=>{ c = c || "#2a3a6a"; if (o==="up"){ a(x+1,y-6,1,7,"#5a3a22"); a(x-5,y-8,13,3,c); a(x-3,y-10,9,2,c); a(x+1,y-11,1,1,c); } else if (o==="fwd"){ a(x+1,y,2,1,"#5a3a22"); a(x+3,y,7,2,c); } else { a(x,y+1,1,2,"#5a3a22"); a(x,y+3,2,7,c); } } },
+    ladder:   { f:(a,x,y,o)=>{ const c = "#8a6338", top = o==="down" ? y-6 : y-16; a(x,top,1,20,c); a(x+4,top,1,20,c); for (let j=2;j<20;j+=4) a(x,top+j,5,1,"#a8843a"); } }
+  };
+  // 把物件畫在手上。(x,y)＝手（2×2）的左上角；o＝up 立在手上、fwd 往前伸、down 往下垂
+  function putItem(add, name, x, y, o, col){
+    const it = ITEMS[name]; if (!it) return 0;
+    if (it.f){ it.f(add, x, y, o, col); return 0; }
+    if (it.seg){ let k = 0; it.seg.forEach(([len, c, t=1], j) => { const cc = col && j === it.main ? col : c, off = t >= 3 ? -1 : 0;
+        if (o==="up") add(x + off, y + 2 - k - len, t, len, cc); else if (o==="down") add(x + off, y + k, t, len, cc); else add(x + 1 + k, y + off, len, t, cc);
+        k += len; }); return k; }
+    const c = col || it.c, w = it.w, h = it.h;
+    const bx = o==="fwd" ? x + 1 : x + Math.floor((2-w)/2), by = o==="fwd" ? y + 1 - Math.ceil(h/2) : o==="down" ? y + 1 : y - h + 1;
+    add(bx, by, w, h, c); it.d && it.d(add, bx, by, w, h, c); return w;
+  }
+  // 雙手捧著的東西（座標是正面人物的；ox/oy 可以整個搬動，例如舉過頭、放在地上推）
+  function holdProp(add, name, col, ox=0, oy=0){
+    const a = (x,y,w,h,c) => add(x+ox, y+oy, w, h, c);
+    if (!name) return;
+    if (name==="pot"){ const c = col||"#8a5a3a"; a(5,14,6,4,c); a(11,15,2,1,c); }
+    else if (name==="bucket"){ a(4,13,8,6,col||"#9aa6ae"); a(4,13,8,1,"#e9f2f6"); a(5,16,6,1,shade(col||"#9aa6ae",-.2)); a(5,11,2,2,"#dff4ff"); a(8,11,2,2,"#cfeeff"); a(7,12,1,1,"#ffffff"); }
+    else if (name==="bag"){ const c = col||"#cdbf9c"; a(3,15,10,6,c); a(3,15,10,1,shade(c,-.2)); a(4,19,8,1,shade(c,-.1)); a(5,12,1,3,shade(c,-.2)); a(10,12,1,3,shade(c,-.2)); }
+    else if (name==="box"){ const c = col||"#b8915a"; a(3,12,10,7,c); a(3,12,10,1,shade(c,.25)); a(7,12,2,7,shade(c,-.2)); }
+    else if (name==="cooler"){ const c = col||"#2a6ad8"; a(3,12,10,7,c); a(3,12,10,2,"#e9f2f6"); a(7,10,2,2,"#e9f2f6"); }
+    else if (name==="tray"){ a(2,15,12,2,col||"#aab0b4"); a(4,12,3,3,"#e9e4da"); a(9,13,3,2,"#e9e4da"); a(4,12,3,1,"#c9c4ba"); }
+    else if (ITEMS[name]) putItem(add, name, 7+ox, 14+oy, "up", col);
+    else a(4,14,8,4,name);   // 舊寫法：look.prop 直接給顏色
+  }
+  // 推著走的東西：畫在人前面的地上
+  function pushProp(add, name, col, ox=0){
+    const a = (x,y,w,h,c) => add(x+ox, y, w, h, c);
+    if (name==="cart"){ a(20,11,1,10,"#8a9094"); a(21,20,13,2,"#8a9094"); a(21,14,13,1,"#aab0b4"); a(33,14,1,7,"#8a9094"); a(22,23,3,3,"#2a2a2e"); a(30,23,3,3,"#2a2a2e");
+      if (col){ a(22,7,11,7,col); a(22,7,11,2,shade(col,.3)); } else { a(23,11,2,3,"#e9e4da"); a(26,10,2,4,"#cfe6f2"); a(29,11,2,3,"#e9e4da"); } }
+    else if (name) holdProp(add, name, col, 17+ox, 8);
+  }
+  // 人物每一格的大小要對齊畫布的細格（RES），不然放大 1.3、1.4 倍時臉和眼鏡會變形
+  const snap = s => RES > 1 ? Math.max(1, Math.round(s*RES))/RES : s;
+  const RAW = (x,y,w,h,c) => { if (c){ g.fillStyle = c; g.fillRect(x,y,w,h); } };
+
   /* ---------- 人物 ---------- */
   function person(x, y, L, s=1, facing=1, pose){
-    // (x, y) ＝ 腳底中央；大約 16×28 像素。pose：stand walk1 walk2 drink smoke phone point cry hold read cross broom kneel sit fall lie
-    pose = pose || L.pose || "stand";
-    const [legs, arms] = pose.split("+");   // 例如 "sit+drink"：坐著喝
-    const parts = [], add = (px,py,w,h,c) => parts.push([px,py,w,h,c]);
+    // (x, y) ＝ 腳底中央；大約 16×28 像素。pose 的寫法見上面「姿勢字串」
+    if (L.kind === "dog") return dog(x, y, L, s, facing, pose);
+    const PP = parsePose(pose || L.pose), legs = PP.legs; pose = PP.arm;
+    const climb = pose === "climb" || pose === "climb2";
+    if (climb || legs === "back" || legs === "prone") L = { ...L, back:true };
+    // 做動作的是哪一隻手：人的右手永遠在畫面左邊（面向右時是 x=1 那邊，翻面後是 x=13 那邊）
+    // 背對鏡頭的時候左右相反（人的右手在畫面右邊）
+    // 背對鏡頭又往旁邊伸手：一定用伸出去那一邊的手（另一隻手會被身體擋住，畫不出來）
+    const near = (L.back && DIR[PP.arm]) ? true : (((PP.hand || (L.hand === "left" ? "L" : "R")) === "L") === (facing > 0)) !== !!L.back;
+    let LAY = 0;   // 1＝畫在最上層（橫過身體的手要有自己的外框，才看得出來）
+    const parts = [], add = (px,py,w,h,c) => parts.push([px,py,w,h,c,LAY]);
     const skin=L.skin||"#e8b98f", top=L.top||"#5577aa", bot=L.bottom||"#333a44", hair=L.hair||"#2a1d16", shoe=L.shoes||"#2a2320";
     const old = L.age==="old", sl = L.coat||L.sleeve||top, hand = L.gloves||skin;
-    const low = legs==="kneel"||legs==="sit"||legs==="fall";
-    if (arms) pose = arms;
+    const low = legs==="kneel"||legs==="sit"||legs==="fall"||legs==="stumble";
     // 腿
     if (low){ add(3,18,4,4,bot); add(9,18,4,4,bot); add(2,21,5,2,shoe); add(9,21,5,2,shoe); if (L.skirt) add(3,17,10,4,bot); }
+    else if (climb){ const a = pose==="climb" ? 3 : 0, b = 3 - a; add(4,18,3,8-a,bot); add(9,18,3,8-b,bot); add(3,25-a,4,2,shoe); add(9,25-b,4,2,shoe); if (L.skirt) add(3,17,10,5,bot); }
     else if (L.skirt){ add(3,17,10,5,bot); const a=legs==="walk1"?1:0, b=legs==="walk2"?1:0; add(4,22,2,4-a,skin); add(10,22,2,4-b,skin); add(3,25-a,4,2,shoe); add(9,25-b,4,2,shoe); }
     else { const a=legs==="walk1"?1:0, b=legs==="walk2"?1:0; add(4-b,18,3,8-a,bot); add(9+a,18,3,8-b,bot); add(3-b,25-a,4,2,shoe); add(9+a,25-b,4,2,shoe); }
     if (!low && !L.skirt){ add(5,19,1,5,shade(bot,-.18)); add(10,19,1,5,shade(bot,-.18)); add(3,25,1,1,shade(shoe,.45)); add(9,25,1,1,shade(shoe,.45)); }
@@ -94,24 +228,54 @@ const PX = (() => {
     if (L.tie) add(7,11,2,5,L.tie);
     if (L.chain) add(5,11,6,1,"#e6c34a");
     if (L.stetho) { add(4,10,1,5,"#555"); add(11,10,1,5,"#555"); add(5,15,6,1,"#555"); }
-    // 手（左手 x=1，右手 x=13；面向右時右手在前）
-    const armDown = (x,sw) => { add(x,11,2,7+(sw||0),sl); add(x,18+(sw||0),2,2,hand); };
-    const L1 = () => armDown(1, pose==="walk2"?-1:0);
-    if (pose==="drink"||pose==="smoke"){ L1(); add(13,11,2,4,sl); add(10,10,4,2,sl); add(9,8,2,2,hand); if(pose==="drink"){ add(8,4,3,5,L.cupColor||"#e9e4da"); add(8,4,3,1,shade(L.cupColor||"#e9e4da",-.3)); } else { add(6,7,4,1,"#e9e4da"); add(5,7,1,1,"#e25a2a"); } }
-    else if (pose==="cup"){ L1(); add(13,11,2,4,sl); add(10,14,4,2,sl); add(9,13,2,2,hand); add(8,11,3,4,L.cupColor||"#e9e4da"); add(8,11,3,1,shade(L.cupColor||"#e9e4da",-.25)); }
-    else if (pose==="cig"){ L1(); armDown(13); add(15,19,2,1,"#e9e4da"); add(17,19,1,1,"#e25a2a"); }
-    else if (pose==="broom2"){ L1(); add(13,11,2,6,sl); add(12,17,2,2,hand); add(11,6,1,7,"#8a6338"); add(12,13,1,7,"#8a6338"); add(13,20,1,5,"#8a6338"); add(11,24,6,3,"#c9a35a"); }
-    else if (pose==="brush"||pose==="brush2"){ L1(); add(13,11,2,4,sl); add(14,14,3,2,sl); add(17,pose==="brush"?14:16,2,2,hand); add(19,pose==="brush"?13:15,1,3,"#e6c34a"); }
+    // 手。先照「做動作的手在 x=13 那邊」畫，如果其實是另一隻手：沒有方向的動作整個左右對調，
+    // 有方向的動作（指、伸手、遞……）改成從另一邊肩膀橫過身體伸出去
+    const A0 = parts.length, hands = []; let H = null, H2 = null, mirror = false, orient = "up", dflt = null;
+    const hnd = (hx,hy,tag,act,w=2) => { add(hx,hy,w,2,hand); const o = { i:parts.length-1, tag }; hands.push(o); if (act) H = o; return o; };
+    const armDown = (ax,sw,act) => { add(ax,11,2,7+(sw||0),sl); const o = hnd(ax,18+(sw||0), ax<8?"F":"N", act); if (!act) H2 = o; };
+    const P1 = () => armDown(1, pose==="walk2"?-1:0);
+    const limb = (x0,y0,x1,y1) => { const n = Math.max(Math.abs(x1-x0), Math.abs(y1-y0)) || 1; for (let i=0;i<=n;i++) add(Math.round(x0+(x1-x0)*i/n), Math.round(y0+(y1-y0)*i/n), 2, 2, sl); };
+    const one = () => { mirror = !near; };
+    if (DIR[pose]){ const [hx,hy] = DIR[pose]; orient = /^knock|^door/.test(pose) ? "up" : "fwd"; dflt = pose==="aim" ? "gun" : /^wipe/.test(pose) ? "cloth" : /^brush/.test(pose) ? "brush" : null;
+      if (near){ P1(); limb(13,11,hx-2,hy); hnd(hx,hy,"N",1); } else { armDown(13); LAY = 1; limb(1,11,hx-2,hy); hnd(hx,hy,"F",1); LAY = 0; } }
+    else if (pose==="drink"||pose==="smoke"||pose==="eat"){ one(); P1(); add(13,11,2,4,sl); add(10,10,4,2,sl); hnd(9,8,"N",1); if (pose==="smoke"){ add(6,7,4,1,"#e9e4da"); add(5,7,1,1,"#e25a2a"); } else dflt = pose==="drink" ? "cup" : "pill"; }
+    else if (pose==="cup"){ one(); P1(); add(13,11,2,4,sl); add(10,14,4,2,sl); hnd(9,13,"N",1); dflt = "cup"; }
+    else if (pose==="cig"){ one(); P1(); armDown(13,0,1); add(15,19,2,1,"#e9e4da"); add(17,19,1,1,"#e25a2a"); }
+    else if (pose==="carry"){ one(); P1(); armDown(13,0,1); orient = "down"; }
+    else if (pose==="broom2"){ one(); P1(); add(13,11,2,6,sl); hnd(12,17,"N",1); add(11,6,1,7,"#8a6338"); add(12,13,1,7,"#8a6338"); add(13,20,1,5,"#8a6338"); add(11,24,6,3,"#c9a35a"); }
+    else if (pose==="broom"){ one(); P1(); armDown(13,0,1); add(15,6,1,20,"#8a6338"); add(14,24,4,3,"#c9a35a"); }
+    else if (pose==="phone"){ one(); P1(); add(13,11,2,3,sl); add(13,6,2,5,sl); hnd(12,5,"N",1); add(13,1,2,6,"#111"); add(13,2,1,3,"#3a5a7a"); }
+    else if (pose==="raise"){ one(); P1(); add(13,10,3,2,sl); add(15,3,2,8,sl); hnd(15,1,"N",1); }
+    else if (pose==="wave"||pose==="wave2"){ one(); P1(); add(13,11,4,2,sl); add(16,6,2,6,sl); hnd(pose==="wave"?16:17,4,"N",1); }
+    else if (pose==="inspect"){ one(); P1(); add(13,11,2,3,sl); add(12,8,2,4,sl); hnd(12,6,"N",1); dflt = "magnifier"; }
+    else if (pose==="pocket"){ one(); P1(); add(13,11,2,4,sl); LAY = 1; add(9,13,5,2,sl); hnd(7,13,"N",1); LAY = 0; }
+    else if (pose==="write"||pose==="sign"){ one(); add(1,11,2,5,sl); add(13,11,2,5,sl); hnd(3,15,"F",0,3); hnd(10,14,"N",0,3); add(3,13,6,5,"#f1ead8"); add(4,14,4,1,"#7a8a9a"); add(11,11,1,4,PP.col||"#2a3a8a"); }
     else if (pose==="cam"){ add(1,11,2,5,sl); add(13,11,2,3,sl); add(12,7,2,4,sl); add(3,12,2,4,sl); add(4,8,2,4,sl); add(5,2,7,5,"#2a2a2e"); add(10,3,2,2,"#9ab0c8"); add(6,1,2,1,"#5a5a5e"); }
-    else if (pose==="write"){ add(1,11,2,5,sl); add(13,11,2,5,sl); add(3,15,3,2,hand); add(10,14,3,2,hand); add(3,13,6,5,"#f1ead8"); add(4,14,4,1,"#7a8a9a"); add(11,11,1,4,"#2a3a8a"); }
-    else if (pose==="phone"){ L1(); add(13,11,2,3,sl); add(13,6,2,5,sl); add(12,5,2,2,hand); add(13,1,2,6,"#111"); add(13,2,1,3,"#3a5a7a"); }
-    else if (pose==="point"){ L1(); add(13,11,7,2,sl); add(20,11,2,2,hand); }
     else if (pose==="cry"){ add(1,11,2,4,sl); add(13,11,2,4,sl); add(2,8,3,3,sl); add(11,8,3,3,sl); add(4,3,3,4,hand); add(9,3,3,4,hand); }
-    else if (pose==="hold"||pose==="read"){ add(1,11,2,5,sl); add(13,11,2,5,sl); add(3,15,3,2,hand); add(10,15,3,2,hand); if(pose==="read") add(4,12,8,5,"#f1ead8"); else if (L.prop==="pot") { add(5,14,6,4,"#8a5a3a"); add(11,15,2,1,"#8a5a3a"); }
-      else if (L.prop==="bucket") { add(4,13,8,6,"#9aa6ae"); add(4,13,8,1,"#e9f2f6"); add(5,16,6,1,"#7a868e"); add(5,11,2,2,"#dff4ff"); add(8,11,2,2,"#cfeeff"); add(7,12,1,1,"#ffffff"); } else if (L.prop==="bag") { add(3,15,10,6,"#cdbf9c"); add(3,15,10,1,"#a8987a"); add(4,19,8,1,"#b8aa88"); add(5,12,1,3,"#a8987a"); add(10,12,1,3,"#a8987a"); } else if (L.prop) add(4,14,8,4,L.prop); }
-    else if (pose==="cross"){ add(1,11,2,5,sl); add(13,11,2,5,sl); add(3,14,10,3,sl); add(3,14,2,2,hand); add(11,15,2,2,hand); }
-    else if (pose==="broom"){ L1(); add(13,11,2,7,sl); add(13,18,2,2,hand); add(15,6,1,20,"#8a6338"); add(14,24,4,3,"#c9a35a"); }
-    else { L1(); armDown(13, pose==="walk1"?-1:0); }
+    else if (pose==="hold"||pose==="read"){ add(1,11,2,5,sl); add(13,11,2,5,sl); hnd(3,15,"F",0,3); hnd(10,15,"N",0,3);
+      if (pose==="hold") holdProp(add, PP.item || L.prop, PP.col);
+      else if (PP.item && PP.item !== "paper") putItem(add, PP.item, 7, 15, "up", PP.col); else add(4,12,8,5,PP.col||"#f1ead8"); }
+    else if (pose==="polish"||pose==="polish2"){ const k = pose==="polish2" ? 1 : 0; add(1,11,2,5,sl); add(13,11,2,5,sl); hnd(3,15,"F",0,3); hnd(10+k,14+k,"N",0,3);   // 一手拿著東西、另一手用布擦
+      putItem(add, PP.item || "cup", 5, 15, "up", PP.col); add(8+k,12+k*2,3,3,"#e9e4da"); add(8+k,12+k*2,3,1,"#c9c4ba"); }
+    else if (pose==="cross"){ add(1,11,2,5,sl); add(13,11,2,5,sl); add(3,14,10,3,sl); hnd(3,14,"N"); hnd(11,15,"F"); }
+    else if (pose==="push"){ LAY = 1; limb(1,11,15,13); hnd(17,13,"F"); LAY = 0; limb(13,11,17,12); hnd(19,12,"N",1); pushProp(add, PP.item, PP.col); }
+    else if (pose==="drag"){ LAY = 1; limb(1,11,14,17); hnd(16,18,"F"); LAY = 0; limb(13,11,16,16); hnd(18,17,"N",1); orient = "fwd"; }
+    else if (pose==="type"||pose==="type2"){ const k = pose==="type2" ? 1 : 0; LAY = 1; limb(1,11,12,14); hnd(14,15-k,"F"); LAY = 0; add(13,11,2,3,sl); limb(13,13,15,14); hnd(17,14+k,"N"); }
+    else if (pose==="handsup"){ add(13,10,3,2,sl); add(15,3,2,8,sl); hnd(15,1,"N"); add(0,10,3,2,sl); add(-1,3,2,8,sl); hnd(-1,1,"F"); }
+    else if (pose==="lift"){ add(13,10,3,2,sl); add(15,-3,2,14,sl); hnd(15,-5,"N"); add(0,10,3,2,sl); add(-1,-3,2,14,sl); hnd(-1,-5,"F");
+      if (HOLDP.has(PP.item)) holdProp(add, PP.item, PP.col, 0, -24); else if (PP.item) putItem(add, PP.item, 7, -5, "up", PP.col); }
+    else if (pose==="clutch"){ add(1,11,2,4,sl); add(13,11,2,4,sl); add(3,13,3,2,sl); add(10,13,3,2,sl); hnd(5,11,"F"); hnd(9,11,"N"); }
+    else if (climb){ const k = pose==="climb2"; add(1,k?7:4,2,k?5:8,sl); hnd(1,k?5:2,"F"); add(13,k?4:7,2,k?8:5,sl); hnd(13,k?2:5,"N"); }
+    else { P1(); armDown(13, pose==="walk1"?-1:0, 1); if (PP.item){ one(); orient = "down"; } }
+    // 手上的東西（只有單手的動作；雙手的在上面畫了）
+    const itemName = PP.item || dflt;
+    if (itemName && H && !ARM2.has(pose)){ const hp = parts[H.i]; const len = putItem(add, itemName, hp[0], hp[1], orient, PP.col || (itemName==="cup" ? L.cupColor : null));
+      if (pose==="pour"){ const tx = hp[0] + 2 + len; add(tx,hp[1]+2,1,1,"#9fd0ff"); add(tx,hp[1]+4,1,2,"#9fd0ff"); } }
+    // 另一隻手拿的東西（& 後面那個）：垂著的那隻手提著
+    if (PP.item2 && H2 && H2 !== H && !ARM2.has(pose)){ const hp = parts[H2.i]; putItem(add, PP.item2, hp[0], hp[1], ITEMS[PP.item2] && (ITEMS[PP.item2].seg || /^(bag|case|bucket|umbrella|gun)$/.test(PP.item2)) ? "down" : "up", PP.col2); }
+    if (mirror){ for (let i=A0;i<parts.length;i++) parts[i][0] = 16 - parts[i][0] - parts[i][2]; hands.forEach(h => h.tag = h.tag==="N" ? "F" : "N"); }
+    // 手上的記號（例如刺青）：look.handMark = { hand:"right"|"left", c:顏色 }
+    if (L.handMark && !L.gloves){ const want = (((L.handMark.hand === "left") === (facing > 0)) !== !!L.back) ? "N" : "F"; hands.filter(h => h.tag === want).forEach(h => { const hp = parts[h.i]; add(hp[0] + (hp[2] > 2 ? 1 : 0), hp[1], 1, 1, L.handMark.c || "#2a3a5a"); }); }
     const armEnd = parts.length;
     // 頭（Q 版大頭：12×11，比身體寬；耳朵、臉頰陰影、頭髮亮面）
     add(2,-1,12,11,skin); add(1,3,1,3,shade(skin,-.08)); add(14,3,1,3,shade(skin,-.15));
@@ -133,7 +297,7 @@ const PX = (() => {
     if (L.hat==="police"){ add(2,-4,12,4,"#24324e"); add(1,-1,14,1,"#1a2236"); add(7,-3,2,2,"#e6c34a"); add(3,-4,5,1,"#34446a"); }
     if (L.back){ add(2,-2,12,11, L.hood||hair); add(4,-2,5,1,hl); }
     // 臉：表情（L.mood：sad 傷心、worried 擔心、angry 生氣、shock 嚇到、tired 疲倦、smile 微笑、smug 得意）、眨眼、說話
-    const ey = L.back ? -99 : 4, closed = pose==="cry"||legs==="lie"||legs==="fall"||L.blink, mood = L.mood || (pose==="cry" ? "sad" : "");
+    const ey = L.back ? -99 : 4, closed = pose==="cry"||pose==="clutch"||legs==="lie"||legs==="fall"||legs==="stumble"||L.blink, mood = L.mood || (pose==="cry" ? "sad" : pose==="clutch" ? "shock" : "");
     if (!L.back){
       add(3,8,10,1,shade(skin,-.12)); add(12,1,1,7,shade(skin,-.1)); add(8,5,1,2,shade(skin,-.16));
       const bc = shade(hair,-.15);
@@ -153,7 +317,7 @@ const PX = (() => {
     const mc = L.mouth||shade(skin,-.4);
     if (L.back) {}
     else if (L.mask){ add(3,6,10,3,L.mask); add(3,6,10,1,shade(L.mask,.15)); }
-    else if (pose!=="drink"&&pose!=="smoke"){
+    else if (pose!=="drink"&&pose!=="smoke"&&pose!=="eat"){
       if (L.talk){ add(7,7,2,2,"#5a2424"); add(7,8,2,1,"#c25a5a"); }
       else if (mood==="sad"){ add(6,8,1,1,mc); add(7,7,2,1,mc); add(9,8,1,1,mc); }
       else if (mood==="worried"){ add(7,7,2,1,mc); add(9,8,1,1,mc); }
@@ -178,17 +342,38 @@ const PX = (() => {
     if (L.bob && !low) for (let i=legEnd;i<parts.length;i++) parts[i][1] -= 1;
     if (L.shake) parts.forEach(p=>p[0] += L.shake);
     // 外框 → 本體（kneel/sit 下沉 4 格；fall 斜倒；lie 橫躺）
-    const rot = legs==="lie" ? 90 : legs==="fall" ? 35 : 0;
-    const drop = low ? 4 : 0;
-    if (rot){ g.save(); g.translate(Math.round(x), Math.round(y - (rot>=90?8*s:0))); g.rotate(-facing*rot*Math.PI/180); }
-    const ox = rot ? -8*s : Math.round(x - 8*s), oy = rot ? -27*s + drop*s : Math.round(y - 27*s + drop*s);
-    const F = (px,py,w,h,c) => R(ox + (facing>0?px:16-px-w)*s, oy+py*s, w*s, h*s, c);
+    const rot = legs==="lie" ? 90 : legs==="prone" ? -90 : legs==="fall" ? 35 : legs==="stumble" ? -35 : 0;
+    const drop = low ? 4 : 0, q = snap(s), rr = v => RES > 1 ? Math.round(v*RES)/RES : Math.round(v), Rq = RES > 1 ? RAW : R;
+    if (rot){ g.save(); g.translate(Math.round(x), Math.round(y - (Math.abs(rot)>=90?8*q:0))); g.rotate(-facing*rot*Math.PI/180); }
+    const ox = rot ? -8*q : rr(x - 8*q), oy = rot ? -27*q + drop*q : rr(y - 27*q + drop*q);
+    const F = (px,py,w,h,c) => Rq(ox + (facing>0?px:16-px-w)*q, oy+py*q, w*q, h*q, c);
+    [0,1].forEach(lay => { const ps = parts.filter(p => (p[5]||0) === lay);
+      ps.forEach(([px,py,w,h]) => F(px-1,py-1,w+2,h+2,INK));
+      ps.forEach(p => F(p[0],p[1],p[2],p[3],p[4]));
+      if (!L.flat) ps.forEach(([px,py,w,h,c]) => { if (w>=3 && h>=3 && c && c[0]==="#" && c.length===7){ F(px+w-1,py,1,h,shade(c,-.3)); F(px,py,1,Math.min(h,2),shade(c,.18)); } }); });
+    if (rot) g.restore();
+    else Rq(ox+2*q, rr(y)-1*q, 12*q, 1*q, "#00000040");
+    return { x: Math.round(x-9*q), y: Math.round(y-29*q+drop*q), w: Math.round(18*q), h: Math.round((29-drop)*q) };
+  }
+
+  /* ---------- 狗（側面，大約 21×14；look.kind:"dog"）。姿勢：stand walk1 walk2 sit lie sniff ---------- */
+  function dog(x, y, L, s=1, facing=1, pose){
+    const p = parsePose(pose), ps = p.legs !== "stand" ? p.legs : p.arm;
+    const c = L.coat || L.top || "#e8d5a8", dk = shade(c,-.22), far = shade(c,-.12), parts = [], add = (px,py,w,h,cc) => parts.push([px,py,w,h,cc]);
+    if (ps==="sit"){ add(1,13,3,1,c); add(3,7,7,7,c); add(7,3,6,9,c); add(11,8,2,6,c); add(8,9,2,5,far); add(11,-2,5,5,c); add(15,0,3,2,c); add(17,0,1,1,INK); add(13,-1,1,1,INK); add(11,-2,2,3,dk); add(10,3,3,1,L.collar||"#c23a2a"); }
+    else if (ps==="lie"||ps==="fall"){ add(0,11,2,1,c); add(2,9,12,5,c); add(13,13,6,1,c); add(13,7,5,5,c); add(17,10,3,2,c); add(19,10,1,1,INK); add(15,9,2,1,INK); add(13,7,2,3,dk); }
+    else { const sn = ps==="sniff", a = ps==="walk1" ? 1 : ps==="walk2" ? -1 : 0;
+      add(6+a,10,2,4,far); add(10-a,10,2,4,far);
+      add(1,4,2,1,c); add(0,3,1,1,c); add(3,5,11,5,c); add(4-a,10,2,4,c); add(12+a,10,2,4,c);
+      if (sn){ add(12,6,3,5,c); add(14,9,5,4,c); add(18,11,3,2,c); add(20,11,1,1,INK); add(16,10,1,1,INK); add(14,9,2,3,dk); }
+      else { add(12,3,3,5,c); add(13,0,5,4,c); add(17,2,3,2,c); add(19,2,1,1,INK); add(15,1,1,1,INK); add(13,0,2,3,dk); add(12,4,2,1,L.collar||"#c23a2a"); } }
+    const q = snap(s), rr = v => RES > 1 ? Math.round(v*RES)/RES : Math.round(v), Rq = RES > 1 ? RAW : R;
+    const ox = rr(x - 10*q), oy = rr(y - 14*q);
+    const F = (px,py,w,h,cc) => Rq(ox + (facing>0?px:21-px-w)*q, oy+py*q, w*q, h*q, cc);
     parts.forEach(([px,py,w,h]) => F(px-1,py-1,w+2,h+2,INK));
     parts.forEach(p => F(...p));
-    if (!L.flat) parts.forEach(([px,py,w,h,c]) => { if (w>=3 && h>=3 && c && c[0]==="#" && c.length===7){ F(px+w-1,py,1,h,shade(c,-.3)); F(px,py,1,Math.min(h,2),shade(c,.18)); } });
-    if (rot) g.restore();
-    else R(ox+2*s, Math.round(y)-1*s+ (low?0:0), 12*s, 1*s, "#00000040");
-    return { x: Math.round(x-9*s), y: Math.round(y-29*s+drop*s), w: Math.round(18*s), h: Math.round((29-drop)*s) };
+    Rq(ox+2*q, rr(y)-1*q, 16*q, 1*q, "#00000040");
+    return { x: Math.round(x-11*q), y: Math.round(y-17*q), w: Math.round(22*q), h: Math.round(17*q) };
   }
 
   /* ---------- 場景 ---------- */
@@ -229,9 +414,14 @@ const PX = (() => {
       floor(74,"#c8d2d0","#b8c2c0"); R(70,58,50,6,"#e9eeee"); R(72,64,2,10,"#999"); R(116,64,2,10,"#999"); },
     // ---- 證物場景 ----
     tearoom(o){ const night = o.night!==false; wall(70, night?"#3d342c":"#7a6a58", true);
-      R(0,0,W,14,night?"#2a221c":"#5a4a3a"); R(0,14,W,2,"#6b4a2b"); R(44,16,14,6,"#4a3a2a"); OBJ.teaBag(46,12);
-      OBJ.stove(8,48,!!o.ash); OBJ.ladder(60,16,54); OBJ.dryer(76,46, o.hot!==false); OBJ.rack(130,40, true); windowBox(170,26,14,14, night?"#1d2a3a":"#9cc5e6");
+      R(0,0,W,14,night?"#2a221c":"#5a4a3a"); R(0,14,W,2,"#6b4a2b"); R(44,16,14,6,"#4a3a2a");
+      // 重播用的時間點（秒）：takeAt/backAt 秤錘被拿走／放回去、hotAt 焙茶機調高、bagAt 茶葉袋掉下來、bloodAt/wipeAt 地上的血出現／被擦掉
+      const tt = o.t||0, after = k => o[k] !== undefined && tt >= o[k], rp = !!o.replay;
+      if (!(rp && after("bagAt"))) OBJ.teaBag(46,12);
+      OBJ.stove(8,48,!!o.ash); OBJ.ladder(60,16,54); OBJ.dryer(76,46, rp && o.hotAt !== undefined ? after("hotAt") : o.hot!==false);
+      OBJ.rack(130,40, rp && o.takeAt !== undefined ? (!after("takeAt") ? false : !after("backAt") ? "off" : true) : true); windowBox(170,26,14,14, night?"#1d2a3a":"#9cc5e6");
       floor(70, night?"#4a4238":"#8a7a64");
+      if (rp){ if (after("bloodAt")){ if (after("wipeAt")) dither(134,73,18,8,"#6a6258",2); else OBJ.blood(136,74,14); } if (after("bagAt")) OBJ.teaBag(54,73); }
       if (!o.replay){
       if (o.body!==false) OBJ.outline(54,84);
       OBJ.blood(136,74,14); OBJ.blood(60,86,8,"#5a1612"); OBJ.teaBag(52,80); OBJ.hair(108,80);
@@ -277,7 +467,6 @@ const PX = (() => {
       R(108,60,42,10,"#7a2a2a"); R(108,54,42,7,"#6a2222"); R(106,56,4,14,"#5a1a1a"); R(148,56,4,14,"#5a1a1a");
       R(170,46,20,24,"#2a1f18"); R(170,46,20,2,"#5a3e24");
       for(let i=0;i<7;i++){ R(156+i*5,66-i*8,40,3,"#8a6338"); R(156+i*5,69-i*8,40,5,"#6b4a2b"); } R(154,14,2,56,"#5a3e24");
-      R(60,84,40,4,"#2f6a3a"); R(62,88,3,10,"#5a3e24"); R(95,88,3,10,"#5a3e24"); for(let i=0;i<6;i++) R(64+i*6,84,4,2,"#f1ead8");
       R(38,4,8,4,"#e9e4da"); R(44,6,3,2,INK); P(39,5,"#e04a3a");
       lamp(90,0, night?"#ffd98a":"#fff2c8"); if (night) dither(0,0,W,H,"#00000022",3); },
     backhall(o){ const ph=o.phase||0; wall(70,"#d6dad2",true); floor(70,"#aab0a8","#9aa098");
@@ -304,7 +493,7 @@ const PX = (() => {
       floor(74,"#2f2a22","#2a2520"); rain(90); },
     road(o){ sky("#0d1220","#26324a",108); hills(30,"#1d2a24","#16201b"); R(0,62,W,46,"#2a2a26"); for(let x=0;x<W;x+=16) R(x,84,8,2,"#c9c9a0");
       R(160,20,3,44,"#555b60"); R(152,16,20,10,"#3a3e44"); R(156,19,6,4,"#9ab0c8"); P(168,20,"#e04a3a"); rain(100); },
-    guestroom(o){ wall(108,"#c9b89a",true); windowBox(130,14,40,30,"#1d2a3a"); dither(130,14,40,30,"#9fb4c855",4); R(0,70,W,38,"#6b4a2b"); R(40,62,112,6,"#8a6338"); R(44,68,4,30,"#5a3e24"); R(144,68,4,30,"#5a3e24"); R(60,54,24,8,"#2a2a2e"); R(62,55,20,6,"#5aa0d8"); R(110,56,10,6,"#e9e4da"); },
+    guestroom(o){ wall(108,"#c9b89a",true); windowBox(130,14,40,30,"#1d2a3a"); dither(130,14,40,30,"#9fb4c855",4); R(0,70,W,38,"#6b4a2b"); },
     audio(o){ R(0,0,W,H,"#101418"); R(66,6,60,96,"#222"); R(68,10,56,86,"#0d1a12"); R(86,14,20,2,"#3a3a3e");
       const t = o.t||0; for(let i=0;i<24;i++){ const h = 4+Math.abs(Math.sin(i*1.7+t*6)*Math.cos(i*.6+t*2.3))*30; R(71+i*2,52-h/2,1,h,"#6fd46f"); } R(70,80,52,2,"#3a3a3e"); R(70,80,Math.min(52,52*(o.p||0)),2,"#e04a3a"); R(92,86,8,6,"#e9e4da"); },
     // ---- 第 1 集：半山別墅 ----
@@ -316,21 +505,19 @@ const PX = (() => {
       R(90,82,52,4,"#3a2418"); R(94,86,3,12,"#2a1a10"); R(135,86,3,12,"#2a1a10"); R(100,79,6,3,"#111"); R(101,79,4,1,"#5aa0d8"); R(118,76,14,6,"#8a8e94"); R(119,77,12,4,"#cfe3f2"); R(116,82,18,1,"#6a6e74");
       for(let i=0;i<7;i++){ R(156+i*5,66-i*8,40,3,"#e9e4da"); R(156+i*5,69-i*8,40,5,"#8a6a4a"); } R(154,14,2,56,"#4a2a1a");
       R(108,0,1,8,INK); R(100,8,18,4,"#e6c34a"); dither(98,12,22,6,"#fff2c8",2); },
+    /* 書房。書桌和桌上的東西是「前景」（SCENES.vstudy.front）：站在 y ≤ 84 的人在書桌後面。
+       重演用的選項（秒數＝動畫開始後幾秒）：chair 畫椅子、dx 椅子和遺體往右移幾格、bucketAt/bucketUntil 冰桶在桌上的時間、
+       pourAt 杯裡有酒、iceAt 杯裡有冰塊、glassOff/bottleOff:[從,到] 杯子／酒瓶被拿在手上、bodyAt 陳先生趴在桌上、noteAt 印表機旁有遺書 */
     vstudy(o){ wall(70,"#2f4a3a",false); dither(0,0,W,70,"#3a5a48",4); R(0,56,W,14,"#4a2a1a"); floor(70,"#3a2418","#30200f");
+      const t = o.t||0, dx = o.dx||0, dead = o.bodyAt !== undefined ? t >= o.bodyAt : o.body !== false;
       OBJ.shelf(4,14,42,6,["#7a2a2a","#2a3a6a","#c9a35a","#e9e4da"]); R(2,4,46,2,"#4a2a1a");
       door(52,22,18,48,"#4a2a1a"); R(72,40,4,6,"#222"); P(73,41,"#6fd46f");
       R(84,14,40,26,"#4a2a1a"); R(86,16,36,22,"#e9e4da"); for(let i=0;i<4;i++) R(88,19+i*5,30-(i%2)*8,1,"#5a6a8a"); R(110,30,8,6,"#5a6a8a");
       windowBox(150,10,34,30,"#0d1220"); R(146,8,6,36,"#7a2a2a"); R(182,8,6,36,"#7a2a2a");
       R(60,80,120,22,"#6a2a2a"); dither(64,84,112,14,"#8a3a3a",3);
-      R(146,58,42,4,"#5a3a2a"); R(148,62,3,10,"#4a2a1a"); R(183,62,3,10,"#4a2a1a"); R(150,50,22,8,"#d8d8d0"); R(152,48,18,2,"#b8b8b0"); R(154,46,12,3,"#f1ead8"); R(174,53,12,5,"#f1ead8"); R(176,55,8,1,"#888");
-      if (o.body!==false){ R(98,56,18,32,"#5a2a1a"); R(100,58,14,14,"#e9e4da"); R(100,58,4,14,"#4a3a2a"); R(110,58,4,14,"#4a3a2a"); }
-      R(78,66,62,4,"#5a3a2a"); R(78,66,62,1,"#7a5a3a"); R(80,70,4,22,"#4a2a1a"); R(134,70,4,22,"#4a2a1a");
-      R(82,61,14,5,"#7a2a2a"); R(84,62,10,1,"#e9e4da"); R(124,58,6,8,"#d8eef6"); R(125,61,4,4,"#c98a2a"); R(132,46,2,20,"#c9a35a"); R(128,42,10,5,"#3f7a4a"); dither(124,46,18,12,"#ffd98a",3);
-      R(104,62,16,3,"#2a2a2e");
-      // 威士忌酒瓶、冰桶（重演時冰桶要等陳浩放下才出現）
-      R(137,50,4,16,"#7a3a1a"); R(138,46,2,4,"#5a2a10"); R(137,56,4,4,"#e9d8a8");
-      if (o.bucketAt && (o.t||0) >= o.bucketAt && !(o.bucketUntil && (o.t||0) >= o.bucketUntil)){ R(114,58,9,8,"#9aa6ae"); R(114,58,9,1,"#e9f2f6"); R(115,62,7,1,"#7a868e"); }
-      if (o.body!==false){ R(90,56,11,9,"#d8a880"); R(90,55,11,3,"#9a9a92"); R(100,62,10,3,"#e9e4da"); }
+      R(146,58,42,4,"#5a3a2a"); R(148,62,3,10,"#4a2a1a"); R(183,62,3,10,"#4a2a1a"); R(150,50,22,8,"#d8d8d0"); R(152,48,18,2,"#b8b8b0"); R(154,46,12,3,"#f1ead8");
+      if (o.noteAt === undefined || t >= o.noteAt){ R(174,53,12,5,"#f1ead8"); R(176,55,8,1,"#888"); }
+      if (dead || o.chair) R(98+dx,56,18,32,"#5a2a1a");
       lamp(40,0); },
     vkitchen(o){ wall(66,"#e6e2d6",false); for(let x=0;x<W;x+=8) for(let y=30;y<66;y+=8) R(x,y,7,7,"#d6d2c6"); floor(66,"#9a9a90","#8a8a80");
       R(0,50,120,16,"#8a6a4a"); R(0,48,120,3,"#c9c4b4"); R(30,40,24,8,"#b8c0c8"); R(34,38,2,4,"#8a8e94"); R(44,42,8,6,"#c9d4dc"); R(45,43,6,4,"#e9f2f6"); dither(46,44,4,2,"#7fb6ff",2);
@@ -366,6 +553,31 @@ const PX = (() => {
       person(100,56,{skin:"#e8c8a8",top:"#e9e4da",bottom:"#4a5a8a",hair:"#2a1d16",hairStyle:"bob"},0.7); person(114,56,{skin:"#e8c8a8",top:"#3a7a4a",bottom:"#4a4a4a",hair:"#2a1d16"},0.75); for(let i=0;i<8;i++) R(60+i*9,70,6,1,INK); }
   };
 
+  // 客房的書桌是前景：坐在書桌後面的人（y ≤ 96）被桌面和筆電擋住
+  SCENES.guestroom.frontY = 96;
+  SCENES.guestroom.front = ()=>{ R(40,62,112,6,"#8a6338"); R(44,68,4,30,"#5a3e24"); R(144,68,4,30,"#5a3e24"); R(60,54,24,8,"#2a2a2e"); R(62,55,20,6,"#5aa0d8"); R(110,56,10,6,"#e9e4da"); };
+  // 茶園客廳的麻將桌是前景：坐在桌子後面的人（y ≤ 90）下半身被桌子擋住
+  SCENES.living.frontY = 90;
+  SCENES.living.front = (o)=>{ R(60,84,40,4,"#2f6a3a"); R(62,88,3,10,"#5a3e24"); R(95,88,3,10,"#5a3e24"); for(let i=0;i<6;i++) R(64+i*6,84,4,2,"#f1ead8"); if (!(o.phase||0)) dither(60,84,40,14,"#00000022",3); };
+  SCENES.vstudy.frontY = 84;
+  SCENES.vstudy.front = (o) => { const t = o.t||0, dx = o.dx||0, dead = o.bodyAt !== undefined ? t >= o.bodyAt : o.body !== false;
+    const off = r => r && t >= r[0] && t < r[1];
+    R(78,66,62,4,"#5a3a2a"); R(78,66,62,1,"#7a5a3a"); R(80,70,4,22,"#4a2a1a"); R(134,70,4,22,"#4a2a1a");
+    R(82,61,14,5,"#7a2a2a"); R(84,62,10,1,"#e9e4da");
+    R(137,46,2,20,"#c9a35a"); R(133,42,10,5,"#3f7a4a"); dither(128,46,18,12,"#ffd98a",3);      // 檯燈（在書桌右邊）
+    R(104,62,16,3,"#2a2a2e");                                                                   // 筆電
+    // 陳先生趴在書桌上（從正面看：頭頂、肩膀、兩隻手臂放在桌上，右手伸向酒杯那邊）。外框和比例跟會動的人物一樣
+    if (dead){ const cx = 107+dx, coat = "#5a2a1a", skin = "#e0b48c", hair = "#9a9a92";
+      R(cx-11,56,22,10,INK); R(cx-10,57,20,9,coat); R(cx-10,57,20,1,shade(coat,.18));                 // 背、肩膀
+      R(cx-15,61,7,5,INK); R(cx-14,62,5,3,coat); R(cx-17,61,4,5,INK); R(cx-16,62,2,3,skin);            // 左手臂
+      R(cx+8,61,10,5,INK); R(cx+9,62,8,3,coat); R(cx+17,61,4,5,INK); R(cx+17,62,3,3,skin);             // 右手臂（伸向酒杯）
+      R(cx-9,53,18,12,INK); R(cx-8,54,16,8,hair); R(cx-6,54,7,1,shade(hair,.28)); R(cx-8,60,16,2,shade(hair,-.2)); R(cx-8,62,16,2,skin); }
+    // 威士忌杯（重演時：先是空杯 → 倒了酒 → 加了冰塊；拿在手上時不畫）
+    if (!off(o.glassOff)){ R(124,58,6,8,"#d8eef6"); if (o.pourAt === undefined || t >= o.pourAt) R(125,61,4,4,"#c98a2a"); if (o.iceAt !== undefined && t >= o.iceAt){ R(125,60,2,2,"#f4fbff"); R(127,61,2,2,"#e4f2fa"); } }
+    // 威士忌酒瓶、冰桶（重演時冰桶要等陳浩放下才出現）
+    if (!off(o.bottleOff)){ R(132,50,4,16,"#7a3a1a"); R(133,46,2,4,"#5a2a10"); R(132,56,4,4,"#e9d8a8"); }
+    if (o.bucketAt !== undefined && t >= o.bucketAt && !(o.bucketUntil !== undefined && t >= o.bucketUntil)){ R(114,58,9,8,"#9aa6ae"); R(114,58,9,1,"#e9f2f6"); R(115,62,7,1,"#7a868e"); }
+  };
   // 在場景上畫一個閃光（還沒查過的證物）
   function spark(x,y){ R(x-1,y-3,3,7,INK); R(x-3,y-1,7,3,INK); R(x,y-2,1,5,"#ffe27a"); R(x-2,y,5,1,"#ffe27a"); P(x,y,"#ffffff"); }
   function drawStaff(list){
@@ -378,11 +590,17 @@ const PX = (() => {
     });
   }
   // 畫一個場景。opt.people：[{L, id, x, y, pose, facing}] 或舊格式（只有造型）；回傳每個人的點擊範圍
-  function draw(canvas, name, opt={}){
-    g = canvas.getContext("2d"); canvas.width = W; canvas.height = H; g.imageSmoothingEnabled = false;
+  // 畫布：邏輯大小還是 192×108，實際用 res 倍的細格（畫面上的畫布用 4 倍；離屏的用 1 倍，給世界地圖拼圖用）
+  function setup(canvas, res){
+    g = canvas.getContext("2d"); RES = res; canvas.width = W*res; canvas.height = H*res; g.imageSmoothingEnabled = false;
+    if (res !== 1) g.setTransform(res,0,0,res,0,0);
+  }
+  function draw(canvas, name, opt={}, res){
+    setup(canvas, res || (canvas.isConnected ? HI : 1));
     const f = SCENES[name] || SCENES.doc; f(opt);
-    drawStaff(opt.staff);
     const hits = [], SF = SCENES[name] || {}; let fronted = !SF.front;
+    const staffLast = SF.front && (SF.frontY||999) < 98;   // 鑑識人員站在 y=98：場景有前景（桌子、櫃台）時要畫在前景前面
+    if (!staffLast) drawStaff(opt.staff);
     (opt.people||[]).forEach((pp,i,arr)=>{
       if (!fronted && (pp.y !== undefined ? pp.y : 96) > (SF.frontY||999)){ SF.front(opt); fronted = true; }
       const n = arr.length, L = pp.L || pp;
@@ -394,6 +612,7 @@ const PX = (() => {
       if (pp.mark){ R(x-2, box.y-8, 5, 4, "#ffd04a"); R(x-1, box.y-4, 3, 2, "#ffd04a"); }
     });
     if (!fronted) SF.front(opt);
+    if (staffLast) drawStaff(opt.staff);
     (opt.marks||[]).forEach(([x,y])=>spark(x,y));
     if (opt.dim){ g.fillStyle = "#00000088"; g.fillRect(0,0,W,H); }
     return hits;
@@ -402,17 +621,32 @@ const PX = (() => {
   /* ---------- 監視器動畫 ----------
      A = { scene, opt, cam:"CAM1", date:"2026-10-17", beats:[ { t:"20:16:00", d:秒, cap:"字幕",
            m:{ 人:[到x, 到y, 姿勢, 面向, 從x, 從y] }, out:[離開的人], cars:{ 名:[到x, 從x, 顏色] } } ] }
-     姿勢可以是陣列：在這段時間內依序播放（例如喝水→跌倒）。 */
+     姿勢可以是陣列：在這段時間內依序播放（例如喝水→跌倒）。姿勢的寫法見「姿勢字串」。
+     - 走路：橫著走用側面走路的人；往畫面裡面走（y 變小、幾乎不橫移）看到背面；走出來看到正面。
+     - 單獨一個「到了才做」的動作（point、reach、drink……，還有 sit、kneel）：路上正常走，走到（這一段的 72%）才擺出動作／坐下。
+     - look.back:true 的人（不能讓玩家看到臉）永遠只畫背面，不會變成側面。
+     - beat.join:true：緊接著上一段，中間不快轉（同一句字幕分幾步做的時候用，字幕寫一樣的）。
+     - A.stairs:[[x0,y0,x1,y1,級數]]：場景裡的樓梯（下端 → 上端）。路線有一段沿著樓梯走，就會一級一級踏上去／下來。
+     - A.ladders:[[x,y上,y下]]：梯子。沿著梯子直上直下，就會變成背面爬梯子。 */
   function play(canvas, A, looks, onCap, auto=true){
     let alive = true, paused = !auto, t0 = performance.now(), pauseAt = auto ? 0 : 1.2, done = false, seeking = false;
-    const total = A.beats.reduce((n,b)=>n+b.d+0.5,0);
-    const toSec = s => { const [h,m,x] = s.split(":").map(Number); return h*3600+m*60+(x||0); };
+    const gapOf = b => b.join ? 0 : 0.5, total = A.beats.reduce((n,b)=>n+b.d+gapOf(b),0);   // beat.join:true＝緊接著上一段，中間不快轉（同一個動作分幾步做）
+    // beat.t 可以是 "HH:MM"、"HH:MM:SS"、"MM/DD HH:MM"（前面的日期會變成畫面上的日期）、或只有日期（時鐘留空）。beat.date 可以蓋過 A.date（跨過午夜的重播）。
+    const tOf = bt => { const s = String(bt.t||""), m = s.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+      return m ? { sec: +m[1]*3600 + +m[2]*60 + +(m[3]||0), date: bt.date || s.slice(0, m.index).trim() || null, label: m[1].padStart(2,"0")+":"+m[2] } : { sec:null, date: bt.date || s.trim() || null, label: s.trim() }; };
     const fmt = n => [Math.floor(n/3600)%24, Math.floor(n/60)%60, Math.floor(n)%60].map(v=>String(v).padStart(2,"0")).join(":");
     let lastCap = null;
+    const k0 = k => k[0];
+    // 這個點在不在樓梯那條斜線上（差 3 格以內）
+    const onLine = (k, q) => { const dx = k[2]-k[0], dy = k[3]-k[1], len = Math.hypot(dx,dy) || 1, t = ((q[0]-k[0])*dx + (q[1]-k[1])*dy)/(len*len);
+      return t > -0.1 && t < 1.1 && Math.abs((q[0]-k[0])*dy - (q[1]-k[1])*dx)/len <= 4; };
+    const one = (id, p, s) => { const L = looks(id); if (!L) return;
+      if (p.view === "side") profile(p.x, p.y, L, p.frame, p.facing, { s, arm:p.arm, near:p.near, item:p.item, col:p.col, item2:p.item2, col2:p.col2, stair:p.stair });
+      else person(p.x, p.y, p.view === "back" ? { ...L, back:true } : L, s, p.facing, p.pose); };
     function stateAt(sec){
       const st = {}, cars = {}; let el = 0, beat = null, k = 0, i = 0;
       for (; i<A.beats.length; i++){
-        const b = A.beats[i], start = el + 0.5, end = start + b.d;
+        const b = A.beats[i], start = el + gapOf(b), end = start + b.d;
         const p = sec < start ? 0 : Math.min(1, (sec-start)/b.d);
         Object.entries(b.m||{}).forEach(([id,v])=>{
           const prev = st[id] || {};
@@ -420,46 +654,67 @@ const PX = (() => {
           const tx = v[0], ty = v[1]||96;
           // v[6]：中途經過的點（例如先走到樓梯口，再沿著樓梯往上），照距離平均走
           const pts = [[fx,fy], ...(v[6]||[]), [tx,ty]], segs = pts.slice(1).map((q,j)=>Math.hypot(q[0]-pts[j][0], q[1]-pts[j][1])), tot = segs.reduce((a,b)=>a+b,0) || 1;
-          const moving = segs.some(x=>x>0.5) && p<1;
-          let d = p*tot, j = 0; while (j < segs.length-1 && d > segs[j]){ d -= segs[j]; j++; }
+          const raw = v[2] || "stand", single = !Array.isArray(raw), pp0 = single ? parsePose(raw) : null, L0 = looks(id) || {};
+          const travel = segs.some(x=>x>0.5);
+          // 單獨一個「到了才做」的動作：先走到，再做
+          const arrive = travel && single && (ARRIVE.has(pp0.arm) || /^(sit|kneel|back)$/.test(pp0.legs)) && !/^(lie|fall|prone|stumble)$/.test(pp0.legs);   // 坐下、跪下也是走到了才做
+          const pm = arrive ? Math.min(1, p/0.72) : p, moving = travel && pm < 1;
+          let d = pm*tot, j = 0; while (j < segs.length-1 && d > segs[j]){ d -= segs[j]; j++; }
           const q0 = pts[j], q1 = pts[j+1], u = segs[j] ? Math.min(1, d/segs[j]) : 1;
-          const cx = p>=1 ? tx : q0[0]+(q1[0]-q0[0])*u, cy = p>=1 ? ty : q0[1]+(q1[1]-q0[1])*u, dirX = q1[0]-q0[0];
-          let pose = v[2] || "stand";
-          if (Array.isArray(pose)) pose = pose[Math.min(pose.length-1, Math.floor(p*pose.length))];
-          // 走動時腳要走路，但手上拿著的東西不能不見（例如 hold＝捧著冰桶 → walk1+hold）
-          if (moving && !/^(lie|fall|sit|kneel)/.test(pose)){ const w = (Math.floor(sec*6)%2) ? "walk1" : "walk2", arm = pose.includes("+") ? pose.split("+")[1] : pose; pose = /^(stand|walk1|walk2)$/.test(arm) ? w : w + "+" + arm; }
-          st[id] = { x: cx, y: cy, pose, facing: (moving && dirX) ? (dirX<0?-1:1) : v[3] || (tx<fx?-1:tx>fx?1:(prev.facing||1)) };
+          let cx = pm>=1 ? tx : q0[0]+(q1[0]-q0[0])*u, cy = pm>=1 ? ty : q0[1]+(q1[1]-q0[1])*u; const dirX = q1[0]-q0[0], dirY = q1[1]-q0[1];
+          let pose = single ? raw : raw[Math.min(raw.length-1, Math.floor(p*raw.length))];
+          const facing = (moving && Math.abs(dirX) > 0.5 && !(v[3] && /(^|\+)drag|^(lie|fall|prone|stumble)/.test(String(pose)))) ? (dirX<0?-1:1) : v[3] || (tx<fx?-1:tx>fx?1:(prev.facing||1));
+          const o = { x: cx, y: cy, pose, facing, view: "front" };
+          const PPo = parsePose(pose);
+          if (moving && (arrive || !/^(lie|fall|prone|stumble|sit|kneel)$/.test(PPo.legs)) && L0.kind !== "dog"){
+            // 路上：手上有東西就拿著走，動作等走到再做
+            const arm = arrive ? ((PPo.item || (PPo.arm==="drink" ? "cup" : PPo.arm==="aim" ? "gun" : null)) ? "carry" : "stand") : PPo.arm;
+            const item = PPo.item || (arrive && PPo.arm==="drink" ? "cup" : arrive && PPo.arm==="aim" ? "gun" : null);
+            const hs = PPo.hand || (L0.hand === "left" ? "L" : "R"), dist = pm*tot;
+            const near = (hs === "R") === (facing > 0);   // 側面：面向右時靠近鏡頭的是右手
+            const stair = (A.stairs||[]).find(k => onLine(k, q0) && onLine(k, q1) && Math.abs(dirX) > 1 && Math.abs(dirY) > 1);
+            const ladder = (A.ladders||[]).find(k => Math.abs(q0[0]-k[0]) <= 3 && Math.abs(q1[0]-k[0]) <= 3 && Math.abs(dirY) > 1 && Math.abs(dirX) <= 3);
+            const w = (Math.floor(sec*6)%2) ? "walk1" : "walk2", suffix = (PPo.hand ? ":"+PPo.hand : "") + (item ? "@"+item+(PPo.col ? "/"+PPo.col : "") : "") + (PPo.item2 ? "&"+PPo.item2+(PPo.col2 ? "/"+PPo.col2 : "") : "");
+            const frontWalk = /^(stand|walk1|walk2)$/.test(arm) ? w + (item || PPo.item2 ? "+carry" + suffix : "") : w + "+" + arm + suffix;
+            if (ladder){ o.pose = Math.floor(dist/4)%2 ? "climb2" : "climb"; o.x = k0(ladder); }
+            else if (stair && PROF.has(arm) && !L0.back){ const r = stairAt(stair, cx, Math.sign(dirX) === Math.sign(stair[2]-stair[0]) ? 1 : -1);
+              Object.assign(o, { view:"side", y:r.y, frame:r.frame, stair:r.stair, arm, near, item, col:PPo.col, item2:PPo.item2, col2:PPo.col2 }); }
+            else if (Math.abs(dirY) > Math.abs(dirX)*1.2){ if (dirY < 0){ o.view = "back"; o.pose = w; } else o.pose = frontWalk; }   // 往裡面走：看到背面（手上的東西被身體擋住）
+            else if (PROF.has(arm) && !L0.back) Object.assign(o, { view:"side", frame:Math.floor(dist/3), arm, near, item, col:PPo.col, item2:PPo.item2, col2:PPo.col2 });
+            else o.pose = frontWalk;
+          } else if (moving && L0.kind === "dog") o.pose = (Math.floor(pm*tot/3)%2) ? "walk1" : "walk2";
+          st[id] = o;
         });
         Object.entries(b.cars||{}).forEach(([id,v])=>{ const fx = v[1]!==undefined ? v[1] : (cars[id]||{}).x ?? v[0]; cars[id] = { x: fx+(v[0]-fx)*p, c:v[2]||(cars[id]||{}).c }; });
         if (sec < end || i===A.beats.length-1){ beat = b; k = p; break; }
         (b.out||[]).forEach(id=>{ delete st[id]; delete cars[id]; });
         el = end;
       }
-      return { st, cars, beat, k, gap: sec < (el+0.5) && i>0 };
+      return { st, cars, beat, k, gap: i>0 && i<A.beats.length && sec < el+gapOf(A.beats[i]) };
     }
     function frame(now){
       if (!alive || !canvas.isConnected){ alive = false; return; }
       const sec = paused ? pauseAt : Math.min(total, (now - t0)/1000);
       const { st, cars, beat, k, gap } = stateAt(sec);
-      g = canvas.getContext("2d"); canvas.width = W; canvas.height = H; g.imageSmoothingEnabled = false;
+      setup(canvas, HI);
       (SCENES[A.scene]||SCENES.doc)({ ...(A.opt||{}), t:sec, p:sec/total });
       Object.values(cars).forEach(c=>OBJ.car(c.x, 80, c.c||"#7a8a6a"));
       // 場景可以有前景（例如櫃台、桌子）：SCENES[x].front(opt) 畫在 y ≤ frontY 的人前面、y 比較大的人後面
       const SF = SCENES[A.scene] || {}, fo = { ...(A.opt||{}), t:sec, p:sec/total }; let fronted = !SF.front;
-      Object.entries(st).sort((a,b)=>a[1].y-b[1].y).forEach(([id,p])=>{ if (!fronted && p.y > (SF.frontY||999)){ SF.front(fo); fronted = true; } const L = looks(id); if (L) person(p.x, p.y, L, A.s||1.3, p.facing, p.pose); });
+      Object.entries(st).sort((a,b)=>a[1].y-b[1].y).forEach(([id,p])=>{ if (!fronted && p.y > (SF.frontY||999)){ SF.front(fo); fronted = true; } one(id, p, A.s||1.3); });
       if (!fronted) SF.front(fo);
       // 監視器畫面效果
       if (!A.clean){ g.fillStyle = "rgba(30,60,40,.28)"; g.fillRect(0,0,W,H); for (let y=0;y<H;y+=2){ g.fillStyle="rgba(0,0,0,.16)"; g.fillRect(0,y,W,1); }
         seed = Math.floor(sec*10)+3; for (let i=0;i<40;i++) P(rnd()*W, rnd()*H, "#ffffff33"); }
       if (gap){ g.fillStyle = "rgba(0,0,0,.45)"; g.fillRect(0,0,W,H); g.fillStyle = "#e9f2e9"; g.font = "bold 10px monospace"; g.fillText("▶▶", 88, 58); }
-      const clock = beat ? toSec(beat.t) + (beat.speed||1)*k*beat.d : 0;
+      const bt = beat ? tOf(beat) : null, clock = bt && bt.sec !== null ? bt.sec + (beat.speed||1)*k*beat.d : null;
       g.font = "6px monospace"; g.fillStyle = "#000a"; g.fillRect(0,0,W,9);
-      g.fillStyle = "#e9f2e9"; g.fillText(`${(A.cam||"").replace(/[^\x20-\x7e]/g,"").trim()||"REC"}  ${A.date||""} ${beat?fmt(clock):""}`, 3, 7);
+      g.fillStyle = "#e9f2e9"; g.fillText(`${(A.cam||"").replace(/[^\x20-\x7e]/g,"").trim()||"REC"}  ${(bt && bt.date) || A.date || ""} ${clock !== null ? fmt(clock) : ""}`, 3, 7);
       if (Math.floor(sec*2)%2===0 && !A.clean){ g.fillStyle = "#e04a3a"; g.fillRect(W-22,2,4,4); g.fillStyle = "#e9f2e9"; g.fillText("REC", W-16, 7); }
       if (paused && !seeking){ g.fillStyle = "#000a"; g.fillRect(82,42,28,24); g.fillStyle="#e9f2e9"; for(let i=0;i<15;i++) g.fillRect(92, 47+i, Math.min(i,14-i)+1, 1); }
       const cap = beat && !gap ? beat.cap : null;
-      if (cap !== lastCap){ lastCap = cap; onCap && onCap(cap ? `${beat.t.slice(0,5)}　${cap}` : "", sec>=total); }
-      if (sec >= total && !paused){ done = true; onCap && onCap(lastCap ? `${beat.t.slice(0,5)}　${lastCap}` : "", true); return; }
+      if (cap !== lastCap){ lastCap = cap; onCap && onCap(cap ? `${bt.label}　${cap}` : "", sec>=total); }
+      if (sec >= total && !paused){ done = true; onCap && onCap(lastCap ? `${tOf(beat||A.beats[A.beats.length-1]).label}　${lastCap}` : "", true); return; }
       if (paused) return;
       requestAnimationFrame(frame);
     }
@@ -468,36 +723,68 @@ const PX = (() => {
       stop(){ alive = false; },
       seek(sec){ seeking = true; paused = true; pauseAt = Math.max(0, Math.min(total, sec)); alive = true; requestAnimationFrame(frame); },
       total,
-      beatsAt: () => { let el = 0; return A.beats.map(b=>{ const st = el + 0.5; el = st + b.d; return [st, el]; }); },
+      beatsAt: () => { let el = 0; return A.beats.map(b=>{ const st = el + gapOf(b); el = st + b.d; return [st, el]; }); },
       toggle(){ if (done){ this.restart(); return false; } if (paused){ paused = false; t0 = performance.now() - pauseAt*1000; requestAnimationFrame(frame); } else { paused = true; pauseAt = Math.min(total,(performance.now()-t0)/1000); } return paused; },
       restart(){ paused = false; done = false; t0 = performance.now(); lastCap = null; alive = true; requestAnimationFrame(frame); }
     };
   }
-  // 側面走路的人（14×28，面向右；facing=-1 會左右翻轉）。frame 0–3 是走路的四格
-  function profile(x, y, L, frame=0, facing=1){
+  /* 側面走路的人（14×28，面向右；facing=-1 會左右翻轉）。frame 0–3 是走路的四格。
+     o = { s 放大, arm 手部動作（PROF 裡的）, near 做動作的是不是靠近鏡頭的那隻手, item, col,
+           stair 1 上樓梯／-1 下樓梯（frame：0、2 一腳踏在另一級上，1、3 雙腳併攏） }
+     面向右時靠近鏡頭的是右手；面向左時是左手。遠的那隻手顏色比較暗，被身體擋住一部分。 */
+  function profile(x, y, L, frame=0, facing=1, o={}){
+    if (L.kind === "dog") return dog(x, y, L, o.s||1, facing, (frame%2) ? "walk1" : "walk2");
     const parts = [], add = (px,py,w,h,c) => parts.push([px,py,w,h,c]);
     const skin=L.skin||"#e8b98f", top=L.top||"#5577aa", bot=L.bottom||"#333a44", hair=L.hair||"#2a1d16", shoe=L.shoes||"#2a2320";
-    const sl = L.coat||L.sleeve||top, f = frame % 4, bob = (f===1||f===3) ? -1 : 0;
-    // 腿
-    const legA = [[8,3],[6,0],[4,-3],[6,0]][f], legB = [[4,-3],[6,0],[8,3],[6,0]][f];
-    if (L.skirt){ add(4,18,7,4,bot); }
-    add(legB[0],19,3,7,shade(bot,-.2)); add(legB[0]+(legB[1]>0?1:-1)*0,25,4,2,shade(shoe,-.1));
-    add(legA[0],19,3,7,bot); add(legA[0]+(legA[1]>0?1:0),25,4,2,shoe);
-    if (L.skirt){ add(legA[0],22,2,4,skin); add(legB[0],22,2,4,shade(skin,-.15)); add(4,17,7,5,bot); }
+    const sl = L.coat||L.sleeve||top, hand = L.gloves||skin, f = ((frame % 4) + 4) % 4, st = o.stair || 0;
+    const bob = (f===1||f===3) ? -1 : 0;
+    // 腿：[x, 抬高幾格]。上樓梯：前腳先踏上一級；下樓梯：後腳還留在上一級
+    let nl, fl;
+    if (st){ const a = f%2 === 0 ? [8, st>0 ? 3 : 0] : [7,0], b = f%2 === 0 ? [4, st>0 ? 0 : 3] : [5,0]; nl = f < 2 ? a : b; fl = f < 2 ? b : a; }
+    else { nl = [[8,0],[6,0],[4,0],[6,0]][f]; fl = [[4,0],[6,0],[8,0],[6,0]][f]; }
+    const leg = ([lx,up], c, sc) => { add(lx,19,3,7-up,c); add(lx+(lx>=7?1:0),25-up,4,2,sc); };
+    if (L.skirt) add(4,18,7,4,bot);
+    leg(fl, shade(bot,-.2), shade(shoe,-.1)); leg(nl, bot, shoe);
+    if (L.skirt){ add(nl[0],22,2,4-nl[1],skin); add(fl[0],22,2,4-fl[1],shade(skin,-.15)); add(4,17,7,5,bot); }
+    // 手：遠的那隻先畫（會被身體擋住），近的那隻最後畫
+    const arm = PROF.has(o.arm) && !/^(stand|walk)/.test(o.arm) ? o.arm : (o.item ? "carry" : "swing");
+    const two = arm==="hold"||arm==="read"||arm==="push"||arm==="drag", nearActs = o.near !== false;
+    const FW = { point:11, aim:10, give:13, reach:15, strike:17, pour:9, stretch:12, knock:6, knock2:7, door:5, wipe:14, wipe2:14, cup:13, brush:14, brush2:16, hold:14, read:12, push:12, drag:17 };
+    const dflt = arm==="aim" ? "gun" : arm==="cup" ? "cup" : /^wipe/.test(arm) ? "cloth" : /^brush/.test(arm) ? "brush" : null;
+    const limb = (x0,y0,x1,y1,c) => { const n = Math.max(Math.abs(x1-x0), Math.abs(y1-y0)) || 1; for (let i=0;i<=n;i++) add(Math.round(x0+(x1-x0)*i/n), Math.round(y0+(y1-y0)*i/n), 2, 2, c); };
+    const oneArm = (far, acts) => {
+      const c = far ? shade(sl,-.3) : sl, hc = far ? shade(hand,-.2) : hand, mode = acts || two ? arm : "swing";
+      const it = acts && !two ? (o.item || dflt) : null, col = o.col || (it==="cup" ? L.cupColor : null);
+      if (mode==="swing" && !acts && o.item2 && !two){ if (!far) add(6,11,3,5,shade(sl,-.1)); add(7,15,3,3,c); add(7,18,2,2,hc); putItem(add, o.item2, 7, 18, ITEMS[o.item2] && (ITEMS[o.item2].seg || /^(bag|case|bucket|umbrella|gun)$/.test(o.item2)) ? "down" : "up", o.col2); }
+      else if (mode==="swing"){ const hx = far ? [5,7,9,7][f] : [9,7,5,7][f]; if (!far) add(6,11,3,5,shade(sl,-.1)); add(hx,15,3,3,c); add(hx+(f===0&&!far?1:0),18,2,2,hc); }
+      else if (mode==="carry"){ if (!far) add(6,11,3,5,shade(sl,-.1)); add(7,15,3,3,c); add(7,18,2,2,hc); if (it) putItem(add, it, 7, 18, "down", col); }
+      else if (mode==="phone"){ if (!far) add(6,11,3,3,shade(sl,-.1)); add(6,9,2,3,c); }   // 手和電話要蓋在頭上，下面再畫
+      else { const hy = FW[mode] - (far && two ? 1 : 0), hx = (hy < 9 ? 14 : 13) - (far && two ? 1 : 0);
+        if (!far) add(6,11,3,2,shade(sl,-.1)); limb(7,11,hx-2,hy,c); add(hx,hy,2,2,hc);
+        if (it){ const len = putItem(add, it, hx, hy, /^knock|^cup|^door/.test(mode) ? "up" : "fwd", col); if (mode==="pour"){ add(hx+2+len,hy+2,1,1,"#9fd0ff"); add(hx+2+len,hy+4,1,2,"#9fd0ff"); } } }
+    };
+    oneArm(true, !nearActs);
     // 身體
     add(4,10,7,9,top); add(4,10,1,9,shade(top,-.25));
     if (L.coat){ add(4,10,7,11,L.coat); add(9,10,2,8,top); add(4,10,1,11,shade(L.coat,-.25)); }
     if (L.apron) add(8,12,3,7,L.apron);
     if (L.tie) add(10,11,1,4,L.tie);
-    // 手（擺動）
-    const hx = [9,7,5,7][f];
-    add(6,11,3,5,shade(sl,-.1)); add(hx,15,3,3,sl); add(hx+(f===0?1:0),18,2,2,L.gloves||skin);
-    if (L.case) add(hx-1,19,6,5,"#4a3424");
+    if (L.chain) add(9,11,2,1,"#e6c34a");
+    if (L.stetho){ add(9,10,1,5,"#555"); add(10,14,1,1,"#555"); }
+    oneArm(false, nearActs);
+    if (arm==="hold") holdProp(add, o.item || L.prop, o.col, 8, 0);
+    else if (arm==="read"){ if (o.item && o.item !== "paper") putItem(add, o.item, 13, 12, "up", o.col); else add(13,8,4,5,o.col||"#f1ead8"); }
+    else if (arm==="push") pushProp(add, o.item, o.col, -5);
+    else if (arm==="drag" && o.item) putItem(add, o.item, 13, 17, "fwd", o.col);
+    if (L.case && arm==="swing") add([9,7,5,7][f]-1,19,6,5,"#4a3424");
+    if (L.cane && arm==="swing") add([9,7,5,7][f]+2,17,1,10,"#6b4a2b");
     // 頭（側面，Q 版大頭）
     const hl = shade(hair,.28);
     add(3,-1,10,10,skin); add(13,4,1,2,skin); add(4,7,7,1,shade(skin,-.12));
     add(10,3,1,2,INK); add(11,3,1,2,"#ffffff"); if (L.glasses){ add(9,2,4,1,"#7a7a7a"); add(9,2,1,3,"#7a7a7a"); } if (L.sunglasses) add(9,2,5,2,"#111");
     add(12,6,1,1,shade(skin,-.4)); add(6,3,2,2,shade(skin,-.18)); add(9,1,3,1,shade(hair,-.15));
+    if (L.bruise) add(9,5,2,2,"#7a4a8a");
+    if (L.blush) add(10,6,1,1,"#e88a8a");
     const hs = L.hairStyle||"short";
     if (hs==="bald"){ add(3,-1,10,1,shade(skin,.12)); add(3,2,2,3,hair); }
     else if (hs==="balding"){ add(3,2,3,4,hair); }
@@ -510,13 +797,23 @@ const PX = (() => {
     if (L.hat==="nurse") add(5,-3,5,2,"#ffffff");
     if (L.mask) add(9,5,5,4,L.mask);
     if (L.beard) add(7,6,6,3,shade(hair,.15));
-    const ox = Math.round(x - 7), oy = Math.round(y - 27 + bob);
-    const F = (px,py,w,h,c) => R(ox + (facing>0?px:14-px-w), oy+py, w, h, c);
+    if (arm==="phone"){ const far = !nearActs; add(6,6,2,3, far ? shade(hand,-.2) : hand); add(5,1,2,6,"#111"); if (!far) add(5,2,1,3,"#3a5a7a"); }
+    const q = snap(o.s || 1), rr = v => RES > 1 ? Math.round(v*RES)/RES : Math.round(v), Rq = RES > 1 ? RAW : R;
+    const ox = rr(x - 7*q), oy = rr(y - 27*q + bob*q);
+    const F = (px,py,w,h,c) => Rq(ox + (facing>0?px:14-px-w)*q, oy+py*q, w*q, h*q, c);
     parts.forEach(([px,py,w,h]) => F(px-1,py-1,w+2,h+2,INK));
     parts.forEach(p => F(...p));
-    R(ox+2, Math.round(y)-1, 10, 1, "#00000040");
-    return { x: ox-1, y: oy-2, w: 16, h: 30 };
+    Rq(ox+2*q, rr(y)-1*q, 10*q, 1*q, "#00000040");
+    return { x: Math.round(ox-q), y: Math.round(oy-2*q), w: Math.round(16*q), h: Math.round(30*q) };
   }
-  const prim = { R, P, dither, shade, mix, OBJ, windowBox, door, sign, lamp, spark, INK, sky, rain, hills, floor, wall, person, ctx:(c)=>{ g = c; }, g:()=>g, seed:(n)=>{ seed = n; }, rnd:()=>rnd() };
-  return { draw, person, profile, play, SCENES, W, H, prim };
+  /* 樓梯：k = [x0,y0,x1,y1,級數]（從下面的 (x0,y0) 到上面的 (x1,y1)）。人在 x、正往 dir 走（1＝往 x1 那頭）時，
+     回傳腳踩的高度 y、走路格 frame、往上還是往下 stair。一級分兩步：先跨一腳，再把身體帶上去。 */
+  function stairAt(k, x, dir){
+    const x0 = k[0], y0 = k[1], x1 = k[2], y1 = k[3], n = k[4] || Math.max(2, Math.round(Math.abs(y1-y0)/4));
+    const a = Math.max(0, Math.min(1, (x-x0)/((x1-x0)||1))) * n, i = Math.min(n-1, Math.floor(a + 1e-6)), ph = a - i;
+    const fwd = dir > 0, tread = fwd ? (ph < 0.5 ? i : i+1) : i, phase = fwd ? (ph < 0.5 ? 0 : 1) : (ph > 0.5 ? 0 : 1);
+    return { y: y0 + (y1-y0)*tread/n, frame: (i&1)*2 + phase, stair: (fwd === (y1 < y0)) ? 1 : -1 };
+  }
+  const prim = { R, P, dither, shade, mix, OBJ, windowBox, door, sign, lamp, spark, INK, sky, rain, hills, floor, wall, person, ctx:(c)=>{ g = c; RES = 1; }, res:(n)=>{ RES = n; }, g:()=>g, seed:(n)=>{ seed = n; }, rnd:()=>rnd() };
+  return { draw, person, profile, dog, play, SCENES, W, H, prim, parsePose, poseErr, stairAt, ITEMS, HI };
 })();
