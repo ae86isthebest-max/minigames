@@ -25,7 +25,7 @@ await mk('poses-front.png', 440, 520, `
   // 每個動作：左＝面向右，右＝面向左（右撇子，右手有藍色記號）
   const list = ["stand","drink","drink@glass","cup","eat","smoke","cig","phone","carry@bag","carry@case","carry@knife","raise@weight","raise@umbrella","wave","inspect","pocket@envelope","write","broom",
     "hold@box","hold@tray","hold@bucket","read","cross","cry","cam","type","handsup","lift@box","climb","climb2",
-    "sit+drink@can","sit+type","kneel+inspect","sit+phone","stand@torch","walk1@bag","carry@ladder","carry@mop","polish@weight","carry@coat","wave&coat","back+door","back+knock","lie","fall","prone","stumble"];
+    "sit+drink@can","sit+type","kneel+inspect","sit+phone","stand@torch","walk1@bag","carry@ladder","carry@mop","polish@weight","carry@coat","wave&coat","back+door","back+knock","kick","kick2","kick+point","lie","fall","prone","stumble"];
   list.forEach((ps,i)=>{ const col = i % 8, row = Math.floor(i/8), x = 28 + col*54, y = row*56;
     label(ps, x-24, y+5);
     PX.person(x-12, y+46, LB, 1, 1, ps); PX.person(x+12, y+46, LB, 1, -1, ps); });
