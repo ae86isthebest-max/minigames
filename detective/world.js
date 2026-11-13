@@ -139,11 +139,20 @@ const WORLD = (() => {
     return !!a && ((cx >= a.x0 && cx <= a.x1) || (wx >= a.x0 && wx <= a.x1));
   }
   // 一顆很小的十字星光，沒有黑邊：每 3.2 秒亮半秒，同一個地方的幾樣東西輪流亮
-  function glint(p, g, s, q, i){
+  // 人的身體大概佔多大（比「點人」的範圍小）：閃光要避開、點擊要分辨「點在人身上」還是「點在旁邊露出來的東西」
+  const onBody = (b, x, y) => Math.abs(x - b.x) <= 8 && y >= (b.y || GROUND) - 36 && y <= (b.y || GROUND) + 1;
+  // 這樣東西要在哪裡閃：依序試幾個位置，挑第一個沒被人擋住的；整個都被擋住就回傳 free:false（照樣畫在人上面）
+  const GPTS = [null, [0.2,0.3], [0.5,0.12], [0.88,0.6], [0.12,0.7], [0.5,0.88], [0.97,0.2], [0.03,0.2], [0.5,0.5]];
+  function glintAt(r, bl){
+    const first = [r[2] > 8 ? 0.7 : 0.5, r[3] > 8 ? 0.3 : 0.5];
+    for (const f of GPTS){ const [fx, fy] = f || first, x = Math.round(r[0] + (r[2]-1) * fx), y = Math.round(r[1] + (r[3]-1) * fy); if (!bl.some(b => onBody(b, x, y))) return { x, y, free:true }; }
+    return { x: Math.round(r[0] + (r[2]-1) * first[0]), y: Math.round(r[1] + (r[3]-1) * first[1]), free:false };
+  }
+  function glint(p, g, s, q, i, bl){
     const T = 3.2, ph = (((s.t - (s.areaT || 0)) + T - 0.25 - (i % 6) * 0.35) % T + T) % T;
     if (ph > 0.55) return;
     const k = Math.sin(Math.PI * ph / 0.55);                       // 0→1→0
-    const x = Math.round(q.r[0] + q.r[2] * (q.r[2] > 8 ? 0.7 : 0.5)), y = Math.round(q.r[1] + q.r[3] * (q.r[3] > 8 ? 0.3 : 0.5));
+    const { x, y } = glintAt(q.r, bl || []);
     // 亮底（白牆、冰箱）和暗底都要看得到：金色的十字＋白色的芯，最亮的那一下四個角落有很淡的暗點襯底
     g.save();
     if (k > 0.75){ g.globalAlpha = 0.22; [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([dx,dy]) => p.R(x+dx, y+dy, 1, 1, "#2a1c0c")); }
@@ -184,7 +193,12 @@ const WORLD = (() => {
     const big = q => { const mx = Math.max(4, (FING - q[2]) / 2), my = Math.max(4, (FING - q[3]) / 2); return [q[0]-mx, q[1]-my, q[2]+mx*2, q[3]+my*2]; };
     const dist = q => Math.hypot(Math.max(q[0]-x, 0, x-q[0]-q[2]), Math.max(q[1]-y, 0, y-q[1]-q[3]));
     const inBig = q => inBox(...big(q)), inR = q => inBox(q[0]-5, q[1]-5, q[2]+10, q[3]+10);
-    const fresh = spots.filter(q => q.k==="item" && q.fresh && inR(q.r)).sort((a,c) => dist(a.r) - dist(c.r))[0];
+    // 還沒看過的東西優先（證物的範圍多 5 格；小細節要正好點中）。它前面站著人的時候：
+    // 點在人身上＝找那個人；點在旁邊露出來的部分＝看東西；整個被人擋住的小東西，點下去先看東西（看過之後才輪到人）
+    const bodies = ppl.map(q => ({ x:q.x, y:q.y || GROUND })); if (buddy) bodies.push({ x:s.bx, y:s.by });
+    const onSomeone = bodies.some(b => onBody(b, x, y));
+    const fresh = spots.filter(q => q.fresh && !hiddenAt(s, q.r[0]+q.r[2]/2, q.r[1]+q.r[3]/2)
+      && (onSomeone ? inBox(...q.r) && !glintAt(q.r, [...bodies, { x:s.px, y:s.py }]).free : q.k==="item" ? inR(q.r) : inBox(...q.r))).sort((a,c) => dist(a.r) - dist(c.r) || a.r[2]*a.r[3] - c.r[2]*c.r[3])[0];
     if (fresh){ const [tx,ty] = target(fresh); return goThen(tx, ty, () => hooks.onSpot(fresh)); }
     const p = ppl.filter(q => inBox(q.x-13, (q.y||GROUND)-36, 26, 38)).sort((a,c) => Math.abs(a.x-x) - Math.abs(c.x-x))[0];
     if (p) return goThen(p.x + (s.px < p.x ? -16 : 16), p.y||GROUND, () => { s.face = s.px < p.x ? 1 : -1; hooks.onPerson(p.id); });
@@ -512,11 +526,6 @@ const WORLD = (() => {
     g.translate(-cam, 0);
     def.draw(p, s.t, hooks.opt(), cam, g);
     if (!def.noGroundFx) groundFx(p, g, cam);
-    // 主角走到附近，還沒看過的東西才會微微閃一下（不是整個畫面都亮，還是要自己走過去）
-    if (!s.script && !hooks.noGlint){
-      if (!s.gl || s.t < s.glT || s.t - s.glT > 0.25){ s.gl = hooks.spots().filter(q => q.fresh); s.glT = s.t; }   // 清單每 1/4 秒才重算一次，省電
-      let i = 0; s.gl.forEach(q => { if (nearYou(s, q)) glint(p, g, s, q, i++); });
-    }
     // 還沒查的證物：閃光（在外面看不到建築裡面的）
     if (!hooks.noSpark) hooks.spots().forEach(q => { const cx = q.r[0]+q.r[2]/2; if (q.k==="item" && q.fresh && !hiddenAt(s, cx, q.r[1]+q.r[3]/2) && Math.floor(s.t*2 + q.r[0]) % 3 !== 0) p.spark(cx, q.r[1]+2); });
     // 車
@@ -563,6 +572,12 @@ const WORLD = (() => {
     });
     list.filter(q => bldAt(q.x) < 0).forEach(drawOne);
     if (def.front) def.front(p, s.t, hooks.opt(), cam, s);
+    // 主角走到附近，還沒看過的東西才會微微閃一下（不是整個畫面都亮，還是要自己走過去）。
+    // 畫在所有人的上面，而且會挑東西上「沒有被人擋住」的位置來閃，所以站在前面的人擋不住它
+    if (!s.script && !hooks.noGlint){
+      if (!s.gl || s.t < s.glT || s.t - s.glT > 0.25){ s.gl = hooks.spots().filter(q => q.fresh); s.glT = s.t; }   // 清單每 1/4 秒才重算一次，省電
+      let i = 0; s.gl.forEach(q => { if (nearYou(s, q)) glint(p, g, s, q, i++, list); });
+    }
     g.setTransform(1,0,0,1,0,0);
     if (def.overlay) def.overlay(p, s.t, hooks.opt());
     // 對話框（HTML，字才清楚）
@@ -604,5 +619,5 @@ const WORLD = (() => {
   function indoor(x, y){ if (!cur) return 0; const i = bldAt(x); if (i < 0) return 0; const b = blds()[i]; if (y < (b.y0 ?? 0)) return 0; if ((b.open || []).some(r => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3])) return 0; const k = levelAt(b, y); return lvVis(cur.s, i, k < 0 ? 0 : k); }
   // 外面叫主角走到某個地方（選地方移動用）：到了再呼叫 cb
   function goTo(x, y, cb){ if (!cur || cur.s.script) return false; goThen(x, y ?? GROUND, cb); return true; }
-  return { mount, state, indoor, goTo, walking:() => !!(cur && cur.s.path.length), levelVis:(i, k) => cur ? lvVis(cur.s, i, k) : 0, skip:() => cur && cur.s.script && skip(), nearYou:q => !!cur && !cur.s.script && nearYou(cur.s, q), VW, VH, GROUND, reset:(lid)=>{ delete st[lid]; } };
+  return { mount, state, indoor, goTo, walking:() => !!(cur && cur.s.path.length), levelVis:(i, k) => cur ? lvVis(cur.s, i, k) : 0, skip:() => cur && cur.s.script && skip(), nearYou:q => !!cur && !cur.s.script && nearYou(cur.s, q), glintAt:q => { if (!cur) return null; const s = cur.s, bl = cur.hooks.people().map(v => ({ x:v.x, y:v.y || GROUND })); if (cur.hooks.buddy && cur.hooks.buddy()) bl.push({ x:s.bx, y:s.by }); bl.push({ x:s.px, y:s.py }); return glintAt(q.r, bl); }, VW, VH, GROUND, reset:(lid)=>{ delete st[lid]; } };
 })();
