@@ -40,5 +40,9 @@ const r=await p.evaluate((CID)=>{ localStorage.clear(); window.uiConfirm=async()
     const testMin=tests().filter(t=>(t.phase||0)<=i).length*(k.test||0);
     out.push('phase '+i+': '+len+' min available; items '+itemMin+' min ('+its.length+'), asking up to '+askMin+' min, tests '+testMin+' min');
   });
+  // 首頁卡和開場不可以洩底：卡面欄位不能出現結論字眼（每一集都查）
+  const BAD=/自殺|他殺|謀殺|意外|綁架|竊|命案|墜樓|跳樓|兇手|真兇|毒殺|溺|頂罪/;
+  const leaks=[]; CASES.forEach((c,i)=>['title','tag','warn','blurb'].forEach(f=>{ const v=c[f]; if(v && BAD.test(String(v).replace(/<[^>]+>/g,''))) leaks.push('第'+(i+1)+'集 '+f+': '+String(v).match(BAD)[0]); }));
+  out.push('CARD LEAKS: '+(leaks.join(' | ')||'none'));
   return out; },CID);
 console.log(r.join('\n')); console.log('errors:',errs); await b.close();})();
