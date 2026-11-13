@@ -4,7 +4,7 @@
 const { chromium } = require('playwright');
 (async () => { const b = await chromium.launch(); const p = await b.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto('http://localhost:8765/index.html'); await p.waitForTimeout(300);
-  const out = await p.evaluate(async ([ci, cfg]) => { window.uiConfirm = async () => true; window.toast = () => {}; localStorage.clear(); openCase(ci); restart(true);
+  const out = await p.evaluate(async ([ci, cfg]) => { window.uiConfirm = async () => true; window.toast = () => {}; localStorage.clear(); await openCase(ci); restart(true);
     if (cfg) C.phases.forEach((ph, i) => { if (i < (cfg.from || 0)) return; const c = Object.assign({}, i === 0 ? cfg.night : cfg.day, (cfg.p || {})[i]); if (c.ql) ph.questionLimit = c.ql; ["ask", "item", "cctv", "test", "end"].forEach(k => { if (c[k] !== undefined) ph.clock[k] = c[k]; }); });
     const people = () => C.suspects.filter(s => !isGone(s));
     const doAll = async (lid, capped) => { let n = 0, again = true;   // 在這個地方把做得到的都做了（capped：照真正的限制）
