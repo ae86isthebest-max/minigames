@@ -275,8 +275,8 @@ EP13.art = true;
       { t:"00:50:00", d:4.5, cap:"黃啟文雙手端著水果盤走到 808，開門進去。", m:{ huangC:[160,98,"hold",1,-20,98] }, out:["huangC"] },
       { t:"00:52:10", d:3.5, cap:"00:52，他出來，把空托盤夾在腋下走回去。", m:{ huangC:[-20,98,"walk2",-1,160,98] }, out:["huangC"] },
       { t:"01:20:00", d:3, cap:"01:10 到 01:29，沒有人靠近 808。" },
-      { t:"01:30:20", d:4.5, cap:"林育龍端著滷味到 808，看到紅燈，敲門兩次，把盤子放在門口的推車上，走掉。", s:{ red:true, cart:true }, m:{ longC:[140,98,"hold",1,-20,98] }, out:["longC"] },
-      { t:"02:40:00", d:4, cap:"02:40，黃啟文和林育龍走到 808，黃啟文用卡打開門。", s:{ red:true, cart:true }, m:{ huangC:[160,98,"walk1",1,-20,98], longC:[138,98,"walk2",1,-34,98] } }
+      { t:"01:30:20", d:4.5, cap:"林育龍端著滷味到 808，看到紅燈，敲門兩次，把盤子放在門口的推車上，走掉。", st:{ red:true, cart:true }, m:{ longC:[140,98,"hold",1,-20,98] }, out:["longC"] },
+      { t:"02:40:00", d:4, cap:"02:40，黃啟文和林育龍走到 808，黃啟文用卡打開門。", st:{ red:true, cart:true }, m:{ huangC:[160,98,"walk1",1,-20,98], longC:[138,98,"walk2",1,-34,98] } }
     ] },
     cctv_back: { scene:"k_back", opt:{ cam:true }, cam:"CAM-03 BACK", date:"2026-09-19", beats:[
       { t:"01:08:20", d:4, cap:"陳怡如推門出來，走到垃圾桶旁邊點菸。", m:{ chenC:[52,98,"walk1",-1,108,98] } },
@@ -290,20 +290,20 @@ EP13.art = true;
       { t:"23:04:20", d:4, cap:"機車離開。男人站了一分鐘才轉身——路燈照到他的臉：黃啟文。", m:{ huangC:[96,98,"stand",-1], sellerC:[230,98,"walk1",1,114,98] }, out:["sellerC"] }
     ] }
   };
-  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.s)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => b.s || {}), ds:A.beats.map(b => b.d) }); });
+  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.st)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => b.st || {}), ds:A.beats.map(b => b.d) }); });
   [...EP13.cctv, ...EP13.evidence].forEach(it => { if (ANIM[it.id]) it.anim = ANIM[it.id]; });
 
   /* ---------- 結案 ---------- */
   const RB = [
-    { t:"00:50:00", d:5, cap:"00:50，黃啟文端著一盤「招待」的水果從門口走進 808。阿凱坐在沙發上講電話，臉朝另一邊。", s:{ body:false, tv:true }, m:{ kaiC:[60,66,"sit+phone",-1], huangC:[116,92,"hold",-1,190,98] } },
-    { t:"00:51:10", d:5, cap:"他彎腰把水果盤放在桌上，右手順勢把一個夾鏈袋塞進菸盒最外面那一格。", s:{ body:false, tv:true }, m:{ kaiC:[60,66,"sit+phone",-1], huangC:[104,92,"kneel",-1,116,92] } },
-    { t:"00:52:00", d:3.5, cap:"不到兩分鐘，他走出去，把門帶上。", s:{ body:false, tv:true }, m:{ kaiC:[60,66,"sit+phone",-1], huangC:[195,98,"walk1",1,104,92] }, out:["huangC"] },
-    { t:"01:05:00", d:5, cap:"01:05，阿凱伸手從菸盒最外面拿出一包，用指甲撕開，吸了。他以為那是他自己的貨。", s:{ body:false, tv:true }, m:{ kaiC:[66,66,"sit+hold",1] }, out:["kaiC"] },
-    { t:"01:07:00", d:4, cap:"幾分鐘後，他倒在沙發上。電視繼續唱下一首。", s:{ body:true, tv:true } },
-    { t:"01:12:04", d:4.5, cap:"01:12，櫃台。黃啟文用店長帳號，把 808 鎖成「勿擾」。門外的燈變紅了。", s:{ body:true, tv:true } },
-    { t:"01:30:00", d:4.5, cap:"01:30，小龍送滷味到門口，敲了兩次。紅燈亮著——店長的規矩：紅燈不能進去。", s:{ body:true, tv:true } },
-    { t:"02:40:00", d:4, cap:"02:40，打烊。黃啟文用總卡開門走進來。", s:{ body:true, tv:true }, m:{ huangC:[160,98,"walk1",-1,195,98] } },
-    { t:"02:40:20", d:4.5, cap:"他沒有先看沙發上的人，而是先伸手關掉了電視。", s:{ body:true, tv:false }, m:{ huangC:[160,98,"point",1] } }
+    { t:"00:50:00", d:5, cap:"00:50，黃啟文端著一盤「招待」的水果從門口走進 808。阿凱坐在沙發上講電話，臉朝另一邊。", st:{ body:false, tv:true }, m:{ kaiC:[60,66,"sit+phone",-1], huangC:[116,92,"hold",-1,190,98] } },
+    { t:"00:51:10", d:5, cap:"他彎腰把水果盤放在桌上，右手順勢把一個夾鏈袋塞進菸盒最外面那一格。", st:{ body:false, tv:true }, m:{ kaiC:[60,66,"sit+phone",-1], huangC:[104,92,"kneel",-1,116,92] } },
+    { t:"00:52:00", d:3.5, cap:"不到兩分鐘，他走出去，把門帶上。", st:{ body:false, tv:true }, m:{ kaiC:[60,66,"sit+phone",-1], huangC:[195,98,"walk1",1,104,92] }, out:["huangC"] },
+    { t:"01:05:00", d:5, cap:"01:05，阿凱伸手從菸盒最外面拿出一包，用指甲撕開，吸了。他以為那是他自己的貨。", st:{ body:false, tv:true }, m:{ kaiC:[66,66,"sit+hold",1] }, out:["kaiC"] },
+    { t:"01:07:00", d:4, cap:"幾分鐘後，他倒在沙發上。電視繼續唱下一首。", st:{ body:true, tv:true } },
+    { t:"01:12:04", d:4.5, cap:"01:12，櫃台。黃啟文用店長帳號，把 808 鎖成「勿擾」。門外的燈變紅了。", st:{ body:true, tv:true } },
+    { t:"01:30:00", d:4.5, cap:"01:30，小龍送滷味到門口，敲了兩次。紅燈亮著——店長的規矩：紅燈不能進去。", st:{ body:true, tv:true } },
+    { t:"02:40:00", d:4, cap:"02:40，打烊。黃啟文用總卡開門走進來。", st:{ body:true, tv:true }, m:{ huangC:[160,98,"walk1",-1,195,98] } },
+    { t:"02:40:20", d:4.5, cap:"他沒有先看沙發上的人，而是先伸手關掉了電視。", st:{ body:true, tv:false }, m:{ huangC:[160,98,"point",1] } }
   ];
   EP13.court = {
     title: "金曲 KTV・808 門口・9 月 20 日中午", scene: "k_hall",
@@ -327,7 +327,7 @@ EP13.art = true;
       hua: "我說了，我一點以前就走了。"
     },
     replayText: "9 月 19 日凌晨 00:50，金曲 KTV 808。店長端著一盤招待的水果走進來——",
-    replay: { scene:"k_808", opt:{ seq:RB.map(b => b.s), ds:RB.map(b => b.d) }, clean:true, cam:"案發經過重現", date:"2026-09-19", beats:RB },
+    replay: { scene:"k_808", opt:{ seq:RB.map(b => b.st), ds:RB.map(b => b.d) }, clean:true, cam:"案發經過重現", date:"2026-09-19", beats:RB },
     endGood: "12:00，葉晴在移送書上寫下「殺人」兩個字。\n黃啟文被帶走的時候，經過櫃台，看了一眼那張開幕照片。他沒有停下來。\n小曼站在 808 門口，把那張學費收據折好，說她會寄去台中。",
     endBad: "12:00，案子以「吸毒過量」結案。\n十月一號，金曲 KTV 換了鎖。招牌拆下來的那天，黃啟文站在對面看了很久。\n夜市後巷的電線桿上，又多了一張黑貓貼紙。"
   };

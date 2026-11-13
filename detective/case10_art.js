@@ -423,26 +423,26 @@ EP10.art = true;
   const DY = 74;
   const ANIM = {
     cctv_front: { scene:"p_out", cam:"FRONT", date:"2026-08-06", opt:null, beats:[
-      { t:"18:41:20", d:3.5, cap:"一個穿米色長外套、戴帽子的女人從騎樓走過，在店門口停了兩秒。", s:{ shut:0 }, m:{ suL:[220,98,null,1,-20,98,[[PDOOR,98],[PDOOR + 2,98]]] }, out:["suL"] },
-      { t:"21:31:05", d:3, cap:"吳德成下班，從前門出來，往左走。", s:{ shut:0 }, m:{ adeL:[-20,98,null,-1,PDOOR,DY,[[PDOOR,98]]] }, out:["adeL"] },
-      { t:"21:52:10", d:3.5, cap:"米色長外套的女人戴著口罩，走進店裡。", s:{ shut:0 }, m:{ suL:[PDOOR,DY,null,1,-20,98,[[PDOOR,98]]] }, out:["suL"] },
-      { t:"21:58:30", d:3.5, cap:"她從店裡出來，往右轉——後巷的巷口在右邊。", s:{ shut:0 }, m:{ suL:[220,98,null,1,PDOOR,DY,[[PDOOR,98]]] }, out:["suL"] },
-      { t:"22:01:00", d:4, cap:"鐵門從裡面慢慢拉下來。拉鐵門的是馮志遠，看得到他的手和袖子。", s:{ shutUp:true } },
-      { t:"22:40:00", d:2.5, cap:"（22:01 到 22:40，前門沒有人進出。）", s:{ shut:1 } }
+      { t:"18:41:20", d:3.5, cap:"一個穿米色長外套、戴帽子的女人從騎樓走過，在店門口停了兩秒。", st:{ shut:0 }, m:{ suL:[220,98,null,1,-20,98,[[PDOOR,98],[PDOOR + 2,98]]] }, out:["suL"] },
+      { t:"21:31:05", d:3, cap:"吳德成下班，從前門出來，往左走。", st:{ shut:0 }, m:{ adeL:[-20,98,null,-1,PDOOR,DY,[[PDOOR,98]]] }, out:["adeL"] },
+      { t:"21:52:10", d:3.5, cap:"米色長外套的女人戴著口罩，走進店裡。", st:{ shut:0 }, m:{ suL:[PDOOR,DY,null,1,-20,98,[[PDOOR,98]]] }, out:["suL"] },
+      { t:"21:58:30", d:3.5, cap:"她從店裡出來，往右轉——後巷的巷口在右邊。", st:{ shut:0 }, m:{ suL:[220,98,null,1,PDOOR,DY,[[PDOOR,98]]] }, out:["suL"] },
+      { t:"22:01:00", d:4, cap:"鐵門從裡面慢慢拉下來。拉鐵門的是馮志遠，看得到他的手和袖子。", st:{ shutUp:true } },
+      { t:"22:40:00", d:2.5, cap:"（22:01 到 22:40，前門沒有人進出。）", st:{ shut:1 } }
     ] },
     cctv_rest: { scene:"r_hall", cam:"HALL / KITCHEN", date:"2026-08-06", opt:{ split:true }, beats:[
       { t:"19:00:00", d:3, cap:"右邊是廚房：康文傑一直在爐子前面。", m:{ kangC:[156,98,"hold",-1] } },
       { t:"20:31:00", d:3.5, cap:"20:31，一個穿米色長外套、戴帽子的女人一個人進來，坐靠窗的 2 號桌。", m:{ kangC:[156,98,"hold",-1], suL:[34,98,"sit",1,-20,98] } },
-      { t:"21:12:30", d:4.5, cap:"21:12，康文傑從廚房出來（左邊畫面的出菜口旁），親手把一盤魚端到 2 號桌。站了幾秒，回廚房。", s:{ fish:true }, m:{ kangC:[50,98,"hold",-1,110,98] } },
-      { t:"21:18:00", d:3.5, cap:"21:18，她付現金離開。魚只吃了幾口。康文傑回到爐子前面。", s:{ fish:true }, m:{ kangC:[156,98,"hold",-1], suL:[-20,98,null,-1,34,98] }, out:["suL"] },
+      { t:"21:12:30", d:4.5, cap:"21:12，康文傑從廚房出來（左邊畫面的出菜口旁），親手把一盤魚端到 2 號桌。站了幾秒，回廚房。", st:{ fish:true }, m:{ kangC:[50,98,"hold",-1,110,98] } },
+      { t:"21:18:00", d:3.5, cap:"21:18，她付現金離開。魚只吃了幾口。康文傑回到爐子前面。", st:{ fish:true }, m:{ kangC:[156,98,"hold",-1], suL:[-20,98,null,-1,34,98] }, out:["suL"] },
       { t:"22:58:00", d:3, cap:"22:58，漁會的客人走了。康文傑走進後面的員工間。", m:{ kangC:[200,98,null,1,156,98] }, out:["kangC"] },
       { t:"23:06:10", d:3.5, cap:"23:06，他換了一件黑色上衣，背著背包，從廚房的後門離開。", m:{ kangN:[200,98,null,1,170,98] }, out:["kangN"] }
     ] },
     cctv_plat: { scene:"s_plat", cam:"PLATFORM 2", date:"2026-08-06", opt:null, beats:[
-      { t:"23:09:40", d:4, cap:"米色長外套的女人走到 5 車旁邊的 2 號垃圾桶，丟進一包藍色的東西。", s:{ train:false }, m:{ suL:[70,98,"hold",-1,-20,98] } },
-      { t:"23:24:10", d:4, cap:"康文傑背著背包走上月台，站在 9 車的位置。", s:{ train:false }, m:{ suL:[60,98,"stand",1], kangT:[166,98,"stand",-1,220,98] } },
-      { t:"23:26:00", d:3, cap:"他往 5 車那邊看了一眼。女人沒有回頭。", s:{ train:false }, m:{ suL:[60,98,"stand",-1], kangT:[166,98,"stand",-1] } },
-      { t:"23:29:00", d:4, cap:"末班車進站。她上 5 車，他上 9 車。", s:{ train:true }, m:{ suL:[47,74,null,1,60,98,[[47,98]]], kangT:[147,74,null,-1,166,98,[[147,98]]] }, out:["suL","kangT"] }
+      { t:"23:09:40", d:4, cap:"米色長外套的女人走到 5 車旁邊的 2 號垃圾桶，丟進一包藍色的東西。", st:{ train:false }, m:{ suL:[70,98,"hold",-1,-20,98] } },
+      { t:"23:24:10", d:4, cap:"康文傑背著背包走上月台，站在 9 車的位置。", st:{ train:false }, m:{ suL:[60,98,"stand",1], kangT:[166,98,"stand",-1,220,98] } },
+      { t:"23:26:00", d:3, cap:"他往 5 車那邊看了一眼。女人沒有回頭。", st:{ train:false }, m:{ suL:[60,98,"stand",-1], kangT:[166,98,"stand",-1] } },
+      { t:"23:29:00", d:4, cap:"末班車進站。她上 5 車，他上 9 車。", st:{ train:true }, m:{ suL:[47,74,null,1,60,98,[[47,98]]], kangT:[147,74,null,-1,166,98,[[147,98]]] }, out:["suL","kangT"] }
     ] },
     cctv_train: { scene:"tr_vest", cam:"CAR 7/8", date:"2026-08-06", beats:[
       { t:"23:51:10", d:3.5, cap:"米色長外套的女人從 5 車那頭走過來，站在門邊。", m:{ suL:[80,98,"stand",1,-20,98] } },
@@ -463,23 +463,23 @@ EP10.art = true;
       { t:"01:29:40", d:2.5, cap:"電梯門關上。（到 04:02，她都沒有離開。）", m:{ suT:[34,DY,null,-1,50,98,[[34,98]]] }, out:["suT"] }
     ] },
     cctv_taxi: { scene:"tx_rank", cam:"EAST 3", date:"2026-08-07", beats:[
-      { t:"01:11:30", d:3.5, cap:"康文傑背著背包走出東三門，從口袋拿出一頂帽子戴上。", s:{ car:1 }, m:{ kangT:[100,98,"stand",1,-20,98] } },
-      { t:"01:12:10", d:3.5, cap:"他上了排班的第一台計程車。車牌照得很清楚。", s:{ car:1 }, m:{ kangT:[128,74,null,1,100,98,[[128,98]]] }, out:["kangT"] },
-      { t:"01:12:40", d:3, cap:"計程車開走——往萬華的方向。", s:{ car:0 } }
+      { t:"01:11:30", d:3.5, cap:"康文傑背著背包走出東三門，從口袋拿出一頂帽子戴上。", st:{ car:1 }, m:{ kangT:[100,98,"stand",1,-20,98] } },
+      { t:"01:12:10", d:3.5, cap:"他上了排班的第一台計程車。車牌照得很清楚。", st:{ car:1 }, m:{ kangT:[128,74,null,1,100,98,[[128,98]]] }, out:["kangT"] },
+      { t:"01:12:40", d:3, cap:"計程車開走——往萬華的方向。", st:{ car:0 } }
     ] }
   };
-  [...EP10.cctv, ...EP10.evidence].forEach(it => { if (ANIM[it.id]){ const A = ANIM[it.id]; if (A.beats.some(b => b.s)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => b.s || {}), ds:A.beats.map(b => b.d) }); it.anim = A; } });
+  [...EP10.cctv, ...EP10.evidence].forEach(it => { if (ANIM[it.id]){ const A = ANIM[it.id]; if (A.beats.some(b => b.st)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => b.st || {}), ds:A.beats.map(b => b.d) }); it.anim = A; } });
   const PS = [["p_back",{ phase:0, body:true, markers:true, ajar:true }],["r_hall",{ phase:1 }],["tp_stair",{ phase:2, floor:"4" }]];
   EP10.phases.forEach((p,i) => { p.scene = PS[i][0]; p.sceneOpt = PS[i][1]; });
 
   /* ---------- 結案 ---------- */
   const RB = [
-    { t:"21:12:30", d:5, cap:"8/6 21:12，海口小館。康文傑把一盤清蒸午仔魚端到 2 號桌。蘇雅婷說，她想看看自己是替誰做這件事。", s:{ side:"kitchen", place:"澄港・海口小館" }, m:{ kangC:[50,98,"hold",-1,110,98], suL:[34,98,"sit",1] }, out:["kangC","suL"] },
-    { t:"22:04:20", d:5, cap:"22:04，遠興當舖。她從沒鎖的後門進去。馮志遠背對著門，在算錢。那時候，康文傑在二十個客人面前炒菜。", s:{ side:"pawn", ajar:true, place:"澄港・遠興當舖" }, m:{ suL:[120,98,"hold",-1,176,DY,[[176,98]]], fengL:[96,92,"sit",-1] }, out:["fengL"] },
-    { t:"22:08:00", d:4.5, cap:"三下。她撕走帳本第 37 頁，用藍色的拭金布包起砝碼，從後門出去。", s:{ side:"pawn", ajar:true, dead:true, place:"澄港・遠興當舖" }, m:{ suL:[200,98,"hold",1,120,98,[[176,98],[176,DY]]] }, out:["suL"] },
-    { t:"23:52:20", d:5, cap:"23:52，末班車的連結處。她把那一頁交給他——「證明」。", s:{ side:"train", place:"末班列車　7 ⇄ 8 車" }, m:{ suL:[84,98,"point",1], kangT:[106,98,"read",-1] }, out:["suL","kangT"] },
-    { t:"01:41:00", d:5.5, cap:"8/7 01:41，台北萬華。方國良喝醉回來，在四樓門口摸鑰匙。康文傑從頂樓樓梯下來。", s:{ side:"apt", place:"台北・西園路的老公寓　四樓" }, m:{ fangL:[148,98,"stand",1,40,98], kangT:[120,98,"stand",1,10,98] } },
-    { t:"01:41:10", d:5, cap:"他抓住方國良，把他的頭撞上門框的鐵邊，再推下樓梯。那時候，蘇雅婷在 KTV 裡，跟朋友唱生日快樂歌。", s:{ side:"apt", blood:true, place:"台北・西園路的老公寓　四樓" }, m:{ fangL:[30,100,"fall",-1,148,98], kangT:[124,98,"point",-1] } }
+    { t:"21:12:30", d:5, cap:"8/6 21:12，海口小館。康文傑把一盤清蒸午仔魚端到 2 號桌。蘇雅婷說，她想看看自己是替誰做這件事。", st:{ side:"kitchen", place:"澄港・海口小館" }, m:{ kangC:[50,98,"hold",-1,110,98], suL:[34,98,"sit",1] }, out:["kangC","suL"] },
+    { t:"22:04:20", d:5, cap:"22:04，遠興當舖。她從沒鎖的後門進去。馮志遠背對著門，在算錢。那時候，康文傑在二十個客人面前炒菜。", st:{ side:"pawn", ajar:true, place:"澄港・遠興當舖" }, m:{ suL:[120,98,"hold",-1,176,DY,[[176,98]]], fengL:[96,92,"sit",-1] }, out:["fengL"] },
+    { t:"22:08:00", d:4.5, cap:"三下。她撕走帳本第 37 頁，用藍色的拭金布包起砝碼，從後門出去。", st:{ side:"pawn", ajar:true, dead:true, place:"澄港・遠興當舖" }, m:{ suL:[200,98,"hold",1,120,98,[[176,98],[176,DY]]] }, out:["suL"] },
+    { t:"23:52:20", d:5, cap:"23:52，末班車的連結處。她把那一頁交給他——「證明」。", st:{ side:"train", place:"末班列車　7 ⇄ 8 車" }, m:{ suL:[84,98,"point",1], kangT:[106,98,"read",-1] }, out:["suL","kangT"] },
+    { t:"01:41:00", d:5.5, cap:"8/7 01:41，台北萬華。方國良喝醉回來，在四樓門口摸鑰匙。康文傑從頂樓樓梯下來。", st:{ side:"apt", place:"台北・西園路的老公寓　四樓" }, m:{ fangL:[148,98,"stand",1,40,98], kangT:[120,98,"stand",1,10,98] } },
+    { t:"01:41:10", d:5, cap:"他抓住方國良，把他的頭撞上門框的鐵邊，再推下樓梯。那時候，蘇雅婷在 KTV 裡，跟朋友唱生日快樂歌。", st:{ side:"apt", blood:true, place:"台北・西園路的老公寓　四樓" }, m:{ fangL:[30,100,"fall",-1,148,98], kangT:[124,98,"point",-1] } }
   ];
   EP10.court = {
     title: "萬華分局・會議室・8 月 8 日下午", scene: "w_pol",
@@ -504,7 +504,7 @@ EP10.art = true;
       huang: "我有戴耳機，我真的什麼都不知道……"
     },
     replayText: "5 月 14 日的深夜，一個叫「海口阿傑」的人，在象棋 app 上收到一個邀請。對手的名字叫「夜雨」。第一局下到一半，聊天室跳出一行字：「你也有一個，法律管不到的人嗎？」——",
-    replay: { scene:"cut10", opt:{ seq:RB.map(b => b.s), ds:RB.map(b => b.d) }, clean:true, cam:"案發經過重現", date:"2026-08-06", beats:RB },
+    replay: { scene:"cut10", opt:{ seq:RB.map(b => b.st), ds:RB.map(b => b.d) }, clean:true, cam:"案發經過重現", date:"2026-08-06", beats:RB },
     endGood: "晚上，康文傑和蘇雅婷被分別移送。澄港和台北的地檢署，第一次為了同一個案子開會。\n林佩君抱著四歲的女兒，在分局門口站了很久。\n許知夏說要回三樓拿一個東西。你們在樓下等。二十分鐘後她下來，眼睛有點紅，手上什麼都沒拿。",
     endBad: "方國良的案子，照意外結了。馮志遠的案子，掛在「搶劫未遂」底下，一直沒有破。\n9 月，台北一家小吃部的老闆娘說，那個瘦瘦的小姐，再也沒有來過。"
   };

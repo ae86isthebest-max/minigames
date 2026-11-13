@@ -244,8 +244,8 @@ EP8.art = true;
       { t:"20:58:00", d:4, cap:"葛志偉帶四個大學生走進「古宅」，幫他們關上門。", m:{ stu1:[DX.guz,DY,null,1,-20,98,[[DX.guz,98]]], stu2:[DX.guz,DY,null,1,-36,98,[[DX.guz,98]]], yuL:[DX.guz,DY,null,1,-52,98,[[DX.guz,98]]], geL:[DX.guz + 14,96,"point",-1,-4,98] }, out:["stu1","stu2","yuL"] },
       { t:"21:02:00", d:3, cap:"葛志偉走進控制室，關上門。", m:{ geL:[DX.ctrl,DY,null,1,DX.guz + 14,96,[[DX.ctrl,98]]] }, out:["geL"] },
       { t:"21:05:20", d:4.5, cap:"江承恩提著工具箱，從辦公室出來，刷卡走進「最後一個房間」。", m:{ jiangT:[DX.last,DY,"carry@case/#c83a2a",1,DX.office,DY,[[DX.office,98],[DX.last,98]]] }, out:["jiangT"] },
-      { t:"21:41:10", d:3.5, cap:"一個女大學生從「古宅」跑出來，經過控制室門口，走進廁所。", s:{ ctrlAjar:true }, m:{ yuL:[DX.wc,DY,null,1,DX.guz,DY,[[DX.guz,98],[DX.wc,98]]] }, out:["yuL"] },
-      { t:"21:44:00", d:4, cap:"她走回「古宅」。經過控制室門口的時候停了一下，又走了。", s:{ ctrlAjar:true }, m:{ yuL:[DX.guz,DY,null,-1,DX.wc,DY,[[DX.wc,98],[DX.ctrl,98],[DX.ctrl - 2,98],[DX.guz,98]]] }, out:["yuL"] },
+      { t:"21:41:10", d:3.5, cap:"一個女大學生從「古宅」跑出來，經過控制室門口，走進廁所。", st:{ ctrlAjar:true }, m:{ yuL:[DX.wc,DY,null,1,DX.guz,DY,[[DX.guz,98],[DX.wc,98]]] }, out:["yuL"] },
+      { t:"21:44:00", d:4, cap:"她走回「古宅」。經過控制室門口的時候停了一下，又走了。", st:{ ctrlAjar:true }, m:{ yuL:[DX.guz,DY,null,-1,DX.wc,DY,[[DX.wc,98],[DX.ctrl,98],[DX.ctrl - 2,98],[DX.guz,98]]] }, out:["yuL"] },
       { t:"22:00:10", d:3, cap:"葛志偉從控制室出來，打開「古宅」的門。", m:{ geL:[DX.guz + 12,96,null,-1,DX.ctrl,DY,[[DX.ctrl,98]]] } },
       { t:"22:10:00", d:3.5, cap:"大學生們離開。", m:{ stu1:[-20,98,null,-1,DX.guz,DY,[[DX.guz,98]]], yuL:[-36,98,null,-1,DX.guz,DY,[[DX.guz,98]]], geL:[DX.ctrl,DY,null,1,DX.guz + 12,96,[[DX.ctrl,98]]] }, out:["stu1","yuL","geL"] },
       { t:"22:26:00", d:3, cap:"葛志偉從控制室出來，往大廳走。", m:{ geL:[-20,98,null,-1,DX.ctrl,DY,[[DX.ctrl,98]]] }, out:["geL"] },
@@ -275,33 +275,33 @@ EP8.art = true;
       { t:"22:00:00", d:3.5, cap:"門打開，GM 走進來跟他們拍照。", m:{ geL:[150,98,"cam@phone",-1,200,98] } }
     ] },
     cctv_ctrl: { scene:"s8_ctrl", opt:{ noHeadset:true }, cam:"CTRL TRAINING", date:"2026-07-07", beats:[
-      { t:"21:02:00", d:3, cap:"葛志偉坐下，戴上耳機。", s:{ cab:0 }, m:{ geL:[92,98,"sit",1,-14,98] } },
-      { t:"21:37:05", d:3.5, cap:"他的手機響了。他看了一眼，接起來，講了二十幾秒。", s:{ cab:0 }, m:{ geL:[92,98,"sit+phone",1] } },
-      { t:"21:38:40", d:4.5, cap:"他摘下耳機丟在桌上，走到後面的大鐵櫃，打開櫃門，彎腰鑽進去。", s:{ cab:[0,0,1,1,0] }, m:{ geL:[176,96,"kneel",1,92,98,[[150,98]]] }, out:["geL"] },
-      { t:"21:41:00", d:3, cap:"（椅子是空的。門外有一個女生的影子經過。）", s:{ cab:0 } },
-      { t:"21:44:20", d:4, cap:"鐵櫃的門打開，他爬出來，回頭把一塊黑布拉進櫃子裡。", s:{ cab:[0,1,1,0] }, m:{ geL:[150,98,"stand",-1,176,96] } },
-      { t:"21:44:30", d:2.5, cap:"他在控制台按了一個鍵。", s:{ cab:0 }, m:{ geL:[138,98,"reach",-1,150,98] } },
-      { t:"21:45:00", d:3.5, cap:"他在角落的洗手台洗手，洗了很久，把右手的袖子拉下來。", s:{ cab:0 }, m:{ geL:[18,98,"back+wipe",-1,138,98] } },
-      { t:"21:45:50", d:3, cap:"他坐回椅子，戴上耳機，打了一行字。", s:{ cab:0 }, m:{ geL:[92,98,"sit+type",1,18,98] } },
-      { t:"22:20:00", d:3, cap:"他在錄影電腦前面操作了一陣子。", s:{ cab:0 }, m:{ geL:[72,98,"type",-1,92,98] } }
+      { t:"21:02:00", d:3, cap:"葛志偉坐下，戴上耳機。", st:{ cab:0 }, m:{ geL:[92,98,"sit",1,-14,98] } },
+      { t:"21:37:05", d:3.5, cap:"他的手機響了。他看了一眼，接起來，講了二十幾秒。", st:{ cab:0 }, m:{ geL:[92,98,"sit+phone",1] } },
+      { t:"21:38:40", d:4.5, cap:"他摘下耳機丟在桌上，走到後面的大鐵櫃，打開櫃門，彎腰鑽進去。", st:{ cab:[0,0,1,1,0] }, m:{ geL:[176,96,"kneel",1,92,98,[[150,98]]] }, out:["geL"] },
+      { t:"21:41:00", d:3, cap:"（椅子是空的。門外有一個女生的影子經過。）", st:{ cab:0 } },
+      { t:"21:44:20", d:4, cap:"鐵櫃的門打開，他爬出來，回頭把一塊黑布拉進櫃子裡。", st:{ cab:[0,1,1,0] }, m:{ geL:[150,98,"stand",-1,176,96] } },
+      { t:"21:44:30", d:2.5, cap:"他在控制台按了一個鍵。", st:{ cab:0 }, m:{ geL:[138,98,"reach",-1,150,98] } },
+      { t:"21:45:00", d:3.5, cap:"他在角落的洗手台洗手，洗了很久，把右手的袖子拉下來。", st:{ cab:0 }, m:{ geL:[18,98,"back+wipe",-1,138,98] } },
+      { t:"21:45:50", d:3, cap:"他坐回椅子，戴上耳機，打了一行字。", st:{ cab:0 }, m:{ geL:[92,98,"sit+type",1,18,98] } },
+      { t:"22:20:00", d:3, cap:"他在錄影電腦前面操作了一陣子。", st:{ cab:0 }, m:{ geL:[72,98,"type",-1,92,98] } }
     ] }
   };
-  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.s)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => b.s || {}), ds:A.beats.map(b => b.d) }); });
+  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.st)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => b.st || {}), ds:A.beats.map(b => b.d) }); });
   [...EP8.cctv, ...EP8.evidence].forEach(it => { if (ANIM[it.id]) it.anim = ANIM[it.id]; });
   const PS = [["s8_final",{ phase:0, body:true, markers:true, drag:true }],["police",{}],["s8_hall",{ phase:2 }]];
   EP8.phases.forEach((p,i) => { p.scene = PS[i][0]; p.sceneOpt = PS[i][1]; });
 
   /* ---------- 結案 ---------- */
   const RB = [
-    { t:"21:37:05", d:4.5, cap:"21:37，江承恩打給葛志偉：「你過來。我們今晚講清楚。」", s:{}, m:{ geL:[28,98,"sit+phone",1], jiangL:[150,98,"phone",-1] } },
-    { t:"21:38:40", d:5, cap:"走廊有監視器。他拉下鐵櫃裡的拉桿，從暗道爬了過去。", s:{ cab:[0,1,1] }, m:{ geL:[124,98,"kneel",1,28,98,[[60,98],[74,98]]], jiangL:[150,98,"stand",-1] } },
-    { t:"21:39:30", d:5, cap:"「合約後天簽。他們要的是房間，不是人。……志偉，對不起。」", s:{}, m:{ geL:[128,98,"stand",1,124,98], jiangL:[150,98,"stand",-1] } },
-    { t:"21:40:10", d:4.5, cap:"江承恩轉過身去收工具。葛志偉拔下擺錘的錘頭。", s:{ nohead:true }, m:{ geL:[164,98,"lift@weight",1,128,98], jiangL:[140,98,"kneel+reach@wrench",-1,150,98] } },
-    { t:"21:40:30", d:3, cap:"他從背後砸了下去。", s:{ nohead:true, flash:true }, m:{ geL:[150,98,"strike@weight",-1,164,98], jiangL:[140,98,"prone",-1] } },
-    { t:"21:41:00", d:5, cap:"他把江承恩拖到擺錘底下，把測試遙控器塞進他手裡。裝回錘頭，撕掉紅色膠帶，用自己的黑膠帶重新纏好。", s:{}, m:{ jiangL:[170,98,"prone",-1,140,98], geL:[184,98,"drag",-1,150,98] } },
-    { t:"21:42:00", d:4, join:true, s:{}, cap:"他把江承恩拖到擺錘底下，把測試遙控器塞進他手裡。裝回錘頭，撕掉紅色膠帶，用自己的黑膠帶重新纏好。", m:{ jiangL:[170,98,"prone",-1], geL:[184,98,"kneel+reach@tape/#1a1a1a",-1] } },
-    { t:"21:43:30", d:4.5, cap:"他爬回控制室，把黑布拉進鐵櫃。", s:{ cab:[0,1,1,0] }, m:{ geL:[40,98,"stand",-1,184,98,[[124,98],[74,98],[60,98]]], jiangL:[170,98,"prone",-1] } },
-    { t:"21:44:32", d:5, cap:"然後，在控制台按下了擺錘的啟動鍵。擺錘在江承恩的身體上方，擺了二十秒。", s:{ swing:true }, m:{ geL:[24,98,"reach",-1,40,98], jiangL:[170,98,"prone",-1] } }
+    { t:"21:37:05", d:4.5, cap:"21:37，江承恩打給葛志偉：「你過來。我們今晚講清楚。」", st:{}, m:{ geL:[28,98,"sit+phone",1], jiangL:[150,98,"phone",-1] } },
+    { t:"21:38:40", d:5, cap:"走廊有監視器。他拉下鐵櫃裡的拉桿，從暗道爬了過去。", st:{ cab:[0,1,1] }, m:{ geL:[124,98,"kneel",1,28,98,[[60,98],[74,98]]], jiangL:[150,98,"stand",-1] } },
+    { t:"21:39:30", d:5, cap:"「合約後天簽。他們要的是房間，不是人。……志偉，對不起。」", st:{}, m:{ geL:[128,98,"stand",1,124,98], jiangL:[150,98,"stand",-1] } },
+    { t:"21:40:10", d:4.5, cap:"江承恩轉過身去收工具。葛志偉拔下擺錘的錘頭。", st:{ nohead:true }, m:{ geL:[164,98,"lift@weight",1,128,98], jiangL:[140,98,"kneel+reach@wrench",-1,150,98] } },
+    { t:"21:40:30", d:3, cap:"他從背後砸了下去。", st:{ nohead:true, flash:true }, m:{ geL:[150,98,"strike@weight",-1,164,98], jiangL:[140,98,"prone",-1] } },
+    { t:"21:41:00", d:5, cap:"他把江承恩拖到擺錘底下，把測試遙控器塞進他手裡。裝回錘頭，撕掉紅色膠帶，用自己的黑膠帶重新纏好。", st:{}, m:{ jiangL:[170,98,"prone",-1,140,98], geL:[184,98,"drag",-1,150,98] } },
+    { t:"21:42:00", d:4, join:true, st:{}, cap:"他把江承恩拖到擺錘底下，把測試遙控器塞進他手裡。裝回錘頭，撕掉紅色膠帶，用自己的黑膠帶重新纏好。", m:{ jiangL:[170,98,"prone",-1], geL:[184,98,"kneel+reach@tape/#1a1a1a",-1] } },
+    { t:"21:43:30", d:4.5, cap:"他爬回控制室，把黑布拉進鐵櫃。", st:{ cab:[0,1,1,0] }, m:{ geL:[40,98,"stand",-1,184,98,[[124,98],[74,98],[60,98]]], jiangL:[170,98,"prone",-1] } },
+    { t:"21:44:32", d:5, cap:"然後，在控制台按下了擺錘的啟動鍵。擺錘在江承恩的身體上方，擺了二十秒。", st:{ swing:true }, m:{ geL:[24,98,"reach",-1,40,98], jiangL:[170,98,"prone",-1] } }
   ];
   EP8.court = {
     title: "謎境・「最後一個房間」・7 月 9 日下午", scene: "s8_final",
@@ -324,7 +324,7 @@ EP8.art = true;
       guan: "我們那時候還在玩……還在笑……"
     },
     replayText: "7 月 7 日晚上 21:37，控制室。他看著螢幕上那個按著提示鈕的大學生，接起了電話——",
-    replay: { scene:"s8_cut", opt:{ seq:RB.map(b => b.s), ds:RB.map(b => b.d) }, clean:true, cam:"案發經過重現", date:"2026-07-07", beats:RB },
+    replay: { scene:"s8_cut", opt:{ seq:RB.map(b => b.st), ds:RB.map(b => b.d) }, clean:true, cam:"案發經過重現", date:"2026-07-07", beats:RB },
     endGood: "17:00，宋佳蓉沒有簽約。她說：「這個房間，等他們兩個的名字都寫在海報上，再說。」\n一個月後，「最後一個房間」照原定日期開幕。海報的設計者欄寫著兩個名字。卓家宏說，第一組玩家從暗道爬出來的時候，所有人都嚇了一跳。",
     endBad: "17:00，合約簽了。「最後一個房間」被拆下來，裝進貨車。\n擺錘被拆下來的時候，膠帶鬆開了，掉在地上。沒有人撿。"
   };

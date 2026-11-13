@@ -319,15 +319,15 @@ EP14.art = true;
       { t:"17:31:20", d:3.5, cap:"蔡明宏刷卡從證物室出來，往走廊口走。", m:{ caiC:[-20,98,"walk1",-1,126,98] }, out:["caiC"] },
       { t:"19:02:10", d:3.5, cap:"鄭國華刷卡出來，往走廊口走。", m:{ zhengC:[-20,98,"walk2",-1,126,98] }, out:["zhengC"] },
       { t:"19:41:30", d:4.5, cap:"鄭國華提著一個塑膠袋回來，刷卡，進證物室。", m:{ zhengC:[126,98,"hold",1,-20,98] }, out:["zhengC"] },
-      { t:"22:08:00", d:4.5, cap:"清潔員拖地拖到證物室門口，停下來從小窗往裡看，敲了兩下窗戶。", s:{ sign:false }, m:{ taoC:[118,98,"broom",1,30,98] } },
-      { t:"22:20:10", d:3.5, cap:"她把「小心地滑」的牌子靠在牆邊，上樓。", s:{ sign:true }, m:{ taoC:[-20,98,"walk1",-1,118,98] }, out:["taoC"] },
-      { t:"22:40:05", d:4, cap:"22:40，她下來，走到證物室門口，站了十幾秒。", s:{ sign:true }, m:{ taoC:[110,98,"stand",1,-20,98] } },
-      { t:"22:40:30", d:3.5, cap:"她拿起「小心地滑」的牌子，往走廊口走，上樓。", s:{ sign:false }, m:{ taoC:[-20,98,"walk1",-1,110,98] }, out:["taoC"] },
-      { t:"23:30:00", d:3, cap:"22:41 到 01:57，沒有任何人出現。", s:{ sign:false } },
-      { t:"01:58:05", d:3.5, cap:"01:58，畫面輕輕晃了一下，天花板的燈管掉下一點灰。", s:{ sign:false, shake:true } },
-      { t:"02:03:10", d:4, cap:"02:03，劉建志從走廊口跑過來，刷卡，門打不開。他趴在小窗上往裡看。", s:{ sign:false }, m:{ liuC:[120,98,"walk1",1,-20,98] } },
-      { t:"02:04:00", d:3, cap:"他轉身往走廊口跑回去。", s:{ sign:false }, m:{ liuC:[-20,98,"walk2",-1,120,98] }, out:["liuC"] },
-      { t:"02:09:00", d:4.5, cap:"02:09，簡永昌和劉建志跑過來，簡永昌刷總卡，開門衝進去。", s:{ sign:false }, m:{ jianC:[132,98,"walk1",1,-20,98], liuC:[116,98,"walk2",1,-36,98] }, out:["jianC","liuC"] }
+      { t:"22:08:00", d:4.5, cap:"清潔員拖地拖到證物室門口，停下來從小窗往裡看，敲了兩下窗戶。", st:{ sign:false }, m:{ taoC:[118,98,"broom",1,30,98] } },
+      { t:"22:20:10", d:3.5, cap:"她把「小心地滑」的牌子靠在牆邊，上樓。", st:{ sign:true }, m:{ taoC:[-20,98,"walk1",-1,118,98] }, out:["taoC"] },
+      { t:"22:40:05", d:4, cap:"22:40，她下來，走到證物室門口，站了十幾秒。", st:{ sign:true }, m:{ taoC:[110,98,"stand",1,-20,98] } },
+      { t:"22:40:30", d:3.5, cap:"她拿起「小心地滑」的牌子，往走廊口走，上樓。", st:{ sign:false }, m:{ taoC:[-20,98,"walk1",-1,110,98] }, out:["taoC"] },
+      { t:"23:30:00", d:3, cap:"22:41 到 01:57，沒有任何人出現。", st:{ sign:false } },
+      { t:"01:58:05", d:3.5, cap:"01:58，畫面輕輕晃了一下，天花板的燈管掉下一點灰。", st:{ sign:false, shake:true } },
+      { t:"02:03:10", d:4, cap:"02:03，劉建志從走廊口跑過來，刷卡，門打不開。他趴在小窗上往裡看。", st:{ sign:false }, m:{ liuC:[120,98,"walk1",1,-20,98] } },
+      { t:"02:04:00", d:3, cap:"他轉身往走廊口跑回去。", st:{ sign:false }, m:{ liuC:[-20,98,"walk2",-1,120,98] }, out:["liuC"] },
+      { t:"02:09:00", d:4.5, cap:"02:09，簡永昌和劉建志跑過來，簡永昌刷總卡，開門衝進去。", st:{ sign:false }, m:{ jianC:[132,98,"walk1",1,-20,98], liuC:[116,98,"walk2",1,-36,98] }, out:["jianC","liuC"] }
     ] },
     cctv_lobby: { scene:"e_lobby", opt:{ cam:true, night:true }, cam:"1F-CAM02", date:"2026-09-25", beats:[
       { t:"01:57:02", d:4, cap:"劉建志接起電話，一邊講一邊在值班日誌上寫字。", m:{ liuC:[90,74,"phone",1] } },
@@ -341,10 +341,10 @@ EP14.art = true;
       { t:"19:10:00", d:4.5, cap:"他走到銀色轎車後面，把箱子放在地上，打開後車廂，再彎腰把箱子抱進去。", m:{ zhengC:[160,98,"kneel",-1,70,98] } },
       { t:"19:11:40", d:3.5, cap:"他扶著腰站起來，關上後車廂。", m:{ zhengC:[160,98,"stand",-1] } },
       { t:"19:12:20", d:4, cap:"他走到駕駛座那邊，上車。", m:{ zhengC:[86,98,"walk1",-1,160,98] }, out:["zhengC"] },
-      { t:"19:12:50", d:3, cap:"銀色轎車開走了。", s:{ car:false } }
+      { t:"19:12:50", d:3, cap:"銀色轎車開走了。", st:{ car:false } }
     ] }
   };
-  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.s)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => Object.assign({}, A.opt || {}, b.s || {})), ds:A.beats.map(b => b.d) }); });
+  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.st)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => Object.assign({}, A.opt || {}, b.st || {})), ds:A.beats.map(b => b.d) }); });
   // 走廊場景要讀動畫裡每一拍的狀態
   const hallBase = SC.e_b1hall; SC.e_b1hall = (o) => hallBase(Object.assign({}, o, stOf(o)));
   [...EP14.cctv, ...EP14.evidence].forEach(it => { if (ANIM[it.id]) it.anim = ANIM[it.id]; });
@@ -352,15 +352,15 @@ EP14.art = true;
   /* ---------- 結案 ---------- */
   // 梯子立在 x82–98；老鄭站在第四階時腳在 y≈74（地面 98）
   const RB = [
-    { t:"22:05:00", d:5, cap:"9 月 24 日晚上。老鄭戴上棉紗手套，把 C-3 底層前排的紙箱，一箱一箱搬出來。", s:{ fallen:false, ladder:"up", top:0, front:4 }, m:{ zhengW:[118,98,"kneel",-1,150,98] } },
-      { t:"22:10:00", d:5.5, cap:"他雙手抱著箱子爬上梯子，一箱一箱疊到頂層。門外的阿桃姨敲窗叫他不要爬，他揮揮手。", s:{ fallen:false, ladder:"up", top:7, front:2 }, m:{ zhengW:[90,76,"hold",1,118,98,[[90,98]]] } },
-    { t:"23:00:00", d:4.5, cap:"23:00，前排 14 箱都上去了。頂層塞得滿滿的——銘牌寫著每層 80 公斤，上面是 212 公斤。", s:{ fallen:false, ladder:"up", top:14, front:0 }, m:{ zhengW:[120,98,"stand",-1,90,76,[[90,98]]] } },
-    { t:"00:12:00", d:5, cap:"他蹲在底層，對著清冊，一箱一箱拍後排的舊箱子。23:54 他回了小蔡的訊息：「好，你顧小孩。」", s:{ fallen:false, ladder:"up", top:14, front:0 }, m:{ zhengW:[124,98,"kneel",-1,120,98] } },
-    { t:"01:57:30", d:5, cap:"01:57，他爬上梯子第四階，把頂層最裡面一箱往外拉，舉起手機拍標籤。", s:{ fallen:false, ladder:"up", top:14, front:0 }, m:{ zhengW:[90,70,"phone",1,124,98,[[90,98]]] } },
-    { t:"01:57:40", d:5, cap:"重心往前一移——泡過水、鏽了九成的下排螺栓斷了。鐵架往前一傾，他伸手抓住立柱。", s:{ fallen:false, ladder:"up", top:14, front:0, tilt:true }, m:{ zhengW:[90,70,"point",1] }, out:["zhengW"] },
-    { t:"01:57:42", d:4.5, cap:"上排的壁虎整排從牆裡拔出來。鐵架往走道倒下，連人帶梯子壓在底下。", s:{ fallen:true, body:true } },
-    { t:"01:58:00", d:4, cap:"01:58。一樓值班台的茶杯晃了一下。地下室，只剩下相機還開著。", s:{ fallen:true, body:true } },
-    { t:"02:09:00", d:4.5, cap:"02:09，簡永昌用總卡打開門。19:41 以後，這是第一次有人打開這扇門。", s:{ fallen:true, body:true }, m:{ jianC:[160,98,"walk1",-1,200,98], liuC:[176,98,"walk2",-1,216,98] } }
+    { t:"22:05:00", d:5, cap:"9 月 24 日晚上。老鄭戴上棉紗手套，把 C-3 底層前排的紙箱，一箱一箱搬出來。", st:{ fallen:false, ladder:"up", top:0, front:4 }, m:{ zhengW:[118,98,"kneel",-1,150,98] } },
+      { t:"22:10:00", d:5.5, cap:"他雙手抱著箱子爬上梯子，一箱一箱疊到頂層。門外的阿桃姨敲窗叫他不要爬，他揮揮手。", st:{ fallen:false, ladder:"up", top:7, front:2 }, m:{ zhengW:[90,76,"hold",1,118,98,[[90,98]]] } },
+    { t:"23:00:00", d:4.5, cap:"23:00，前排 14 箱都上去了。頂層塞得滿滿的——銘牌寫著每層 80 公斤，上面是 212 公斤。", st:{ fallen:false, ladder:"up", top:14, front:0 }, m:{ zhengW:[120,98,"stand",-1,90,76,[[90,98]]] } },
+    { t:"00:12:00", d:5, cap:"他蹲在底層，對著清冊，一箱一箱拍後排的舊箱子。23:54 他回了小蔡的訊息：「好，你顧小孩。」", st:{ fallen:false, ladder:"up", top:14, front:0 }, m:{ zhengW:[124,98,"kneel",-1,120,98] } },
+    { t:"01:57:30", d:5, cap:"01:57，他爬上梯子第四階，把頂層最裡面一箱往外拉，舉起手機拍標籤。", st:{ fallen:false, ladder:"up", top:14, front:0 }, m:{ zhengW:[90,70,"phone",1,124,98,[[90,98]]] } },
+    { t:"01:57:40", d:5, cap:"重心往前一移——泡過水、鏽了九成的下排螺栓斷了。鐵架往前一傾，他伸手抓住立柱。", st:{ fallen:false, ladder:"up", top:14, front:0, tilt:true }, m:{ zhengW:[90,70,"point",1] }, out:["zhengW"] },
+    { t:"01:57:42", d:4.5, cap:"上排的壁虎整排從牆裡拔出來。鐵架往走道倒下，連人帶梯子壓在底下。", st:{ fallen:true, body:true } },
+    { t:"01:58:00", d:4, cap:"01:58。一樓值班台的茶杯晃了一下。地下室，只剩下相機還開著。", st:{ fallen:true, body:true } },
+    { t:"02:09:00", d:4.5, cap:"02:09，簡永昌用總卡打開門。19:41 以後，這是第一次有人打開這扇門。", st:{ fallen:true, body:true }, m:{ jianC:[160,98,"walk1",-1,200,98], liuC:[176,98,"walk2",-1,216,98] } }
   ];
   EP14.court = {
     title: "證物室・9 月 26 日中午", scene: "e_shelf", opt:{ body:false, outline:true },
@@ -386,7 +386,7 @@ EP14.art = true;
       zhou: "查清楚。查我也可以，查清楚。"
     },
     replayText: "9 月 24 日晚上，證物室。老鄭戴上棉紗手套——",
-    replay: { scene:"e_shelf", opt:{ seq:RB.map(b => b.s), ds:RB.map(b => b.d) }, clean:true, cam:"事發經過重現", date:"2026-09-24", beats:RB },
+    replay: { scene:"e_shelf", opt:{ seq:RB.map(b => b.st), ds:RB.map(b => b.d) }, clean:true, cam:"事發經過重現", date:"2026-09-24", beats:RB },
     endGood: "12:00，黎光耀在報告上寫：「意外。查無他殺。」\n他停了一下，又加了一行：「總務科三次報修未處理，另案移送。」\n下午，方德勝一個人把 C 排每一座鐵架的螺栓都換掉了。他沒有報加班。\n群組裡，那則「滅口」的訊息，再也沒有人回。",
     endBad: "12:00，案子以「他殺嫌疑」移送。群組裡的人說：「果然。」\n沒有人再去看那些螺栓。\n兩個禮拜後的一個晚上，C-2 也倒了。那天，剛好沒有人在裡面。"
   };

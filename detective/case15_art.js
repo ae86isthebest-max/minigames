@@ -311,47 +311,47 @@ EP15.art = true;
   // 走廊：5A 門在 x116–142；看守桌後面 x90；樓梯口 x14
   const ANIM = {
     cctv_hall5: { scene:"s15_hall", opt:{ cam:true, night:true, cat:false }, cam:"5F-CAM01", date:"2026-10-08", beats:[
-      { t:"21:00:10", d:4.5, cap:"黎光耀從樓梯口走上來。林志豪站起來，用鑰匙開門，黎光耀進去。", s:{ door:true }, m:{ liC:[128,98,"walk1",1,10,98], linC:[110,98,"stand",1,90,84] }, out:["liC"] },
-      { t:"21:30:20", d:4, cap:"21:30，黎光耀出來，往樓梯口走。林志豪開門往裡看了一眼，關門。", s:{ door:true }, m:{ liC:[-16,98,"walk2",-1,128,98], linC:[110,98,"stand",1] }, out:["liC"] },
-      { t:"22:20:05", d:5, cap:"22:20，外送員提著便當走上來，交給林志豪。林志豪開門，把便當遞進去。趙德安走到門口，跟外送員說話。", s:{ door:true, game:false }, m:{ jieC:[100,98,"hold",1,-16,98], linC:[112,98,"hold",1,90,84], zhaoR:[129,96,"stand",-1] }, out:["zhaoR"] },
-      { t:"22:21:00", d:3.5, cap:"22:21，門關上。外送員往樓梯口走，下樓。", s:{ door:false }, m:{ jieC:[-16,98,"walk1",-1,100,98], linC:[90,84,"sit",1,112,98] }, out:["jieC"] },
-      { t:"22:30:00", d:4, cap:"22:30，林志豪起來開門，往裡看了一眼，關門，坐回桌子後面。", s:{ door:true }, m:{ linC:[110,98,"stand",1,90,84] } },
-      { t:"22:45:00", d:3.5, cap:"之後，門沒有再打開。林志豪一直坐在桌子後面，低頭看手機。", s:{ door:false, game:true }, m:{ linC:[90,84,"phone",1,110,98] } },
-      { t:"23:12:30", d:4, cap:"23:12，他抬頭看了門一眼，又低下頭。", s:{ door:false, game:true }, m:{ linC:[90,84,"phone",-1] } },
-      { t:"23:30:00", d:3.5, cap:"23:30，他沒有起來。", s:{ door:false, game:true }, m:{ linC:[90,84,"phone",1] } },
-      { t:"00:30:10", d:4.5, cap:"00:30，林志豪起來敲門，叫了幾聲，用鑰匙開門進去。", s:{ door:true, game:false }, m:{ linC:[132,98,"walk1",1,90,84,[[110,98]]] }, out:["linC"] },
-      { t:"00:31:00", d:4, cap:"00:31，他衝出來，抓起桌上的折疊刀，又衝進去。", s:{ door:true }, m:{ linC:[132,98,"walk2",1,96,98] }, out:["linC"] },
-      { t:"00:42:00", d:4, cap:"00:42，救護人員從樓梯口跑上來，進安全屋。", s:{ door:true }, m:{ emtC:[130,98,"walk1",1,-16,98], emtD:[120,98,"walk2",1,-34,98] }, out:["emtC","emtD"] },
-      { t:"01:00:30", d:4, cap:"01:00，黎光耀從樓梯口跑上來。整段畫面裡，五樓走廊沒有出現過其他人。", s:{ door:true }, m:{ liC:[122,98,"walk1",1,-16,98] } }
+      { t:"21:00:10", d:4.5, cap:"黎光耀從樓梯口走上來。林志豪站起來，用鑰匙開門，黎光耀進去。", st:{ door:true }, m:{ liC:[128,98,"walk1",1,10,98], linC:[110,98,"stand",1,90,84] }, out:["liC"] },
+      { t:"21:30:20", d:4, cap:"21:30，黎光耀出來，往樓梯口走。林志豪開門往裡看了一眼，關門。", st:{ door:true }, m:{ liC:[-16,98,"walk2",-1,128,98], linC:[110,98,"stand",1] }, out:["liC"] },
+      { t:"22:20:05", d:5, cap:"22:20，外送員提著便當走上來，交給林志豪。林志豪開門，把便當遞進去。趙德安走到門口，跟外送員說話。", st:{ door:true, game:false }, m:{ jieC:[100,98,"hold",1,-16,98], linC:[112,98,"hold",1,90,84], zhaoR:[129,96,"stand",-1] }, out:["zhaoR"] },
+      { t:"22:21:00", d:3.5, cap:"22:21，門關上。外送員往樓梯口走，下樓。", st:{ door:false }, m:{ jieC:[-16,98,"walk1",-1,100,98], linC:[90,84,"sit",1,112,98] }, out:["jieC"] },
+      { t:"22:30:00", d:4, cap:"22:30，林志豪起來開門，往裡看了一眼，關門，坐回桌子後面。", st:{ door:true }, m:{ linC:[110,98,"stand",1,90,84] } },
+      { t:"22:45:00", d:3.5, cap:"之後，門沒有再打開。林志豪一直坐在桌子後面，低頭看手機。", st:{ door:false, game:true }, m:{ linC:[90,84,"phone",1,110,98] } },
+      { t:"23:12:30", d:4, cap:"23:12，他抬頭看了門一眼，又低下頭。", st:{ door:false, game:true }, m:{ linC:[90,84,"phone",-1] } },
+      { t:"23:30:00", d:3.5, cap:"23:30，他沒有起來。", st:{ door:false, game:true }, m:{ linC:[90,84,"phone",1] } },
+      { t:"00:30:10", d:4.5, cap:"00:30，林志豪起來敲門，叫了幾聲，用鑰匙開門進去。", st:{ door:true, game:false }, m:{ linC:[132,98,"walk1",1,90,84,[[110,98]]] }, out:["linC"] },
+      { t:"00:31:00", d:4, cap:"00:31，他衝出來，抓起桌上的折疊刀，又衝進去。", st:{ door:true }, m:{ linC:[132,98,"walk2",1,96,98] }, out:["linC"] },
+      { t:"00:42:00", d:4, cap:"00:42，救護人員從樓梯口跑上來，進安全屋。", st:{ door:true }, m:{ emtC:[130,98,"walk1",1,-16,98], emtD:[120,98,"walk2",1,-34,98] }, out:["emtC","emtD"] },
+      { t:"01:00:30", d:4, cap:"01:00，黎光耀從樓梯口跑上來。整段畫面裡，五樓走廊沒有出現過其他人。", st:{ door:true }, m:{ liC:[122,98,"walk1",1,-16,98] } }
     ] },
     cctv_lobby5: { scene:"s15_lobby", opt:{ cam:true, night:true }, cam:"1F-CAM01", date:"2026-10-08", beats:[
-      { t:"20:58:30", d:4, cap:"一個穿白襯衫的男人走進大門，按電梯，進電梯。", s:{ floor:1 }, m:{ liC:[148,98,"walk1",1,-16,98] }, out:["liC"] },
-      { t:"21:31:10", d:3.5, cap:"21:31，他從電梯出來，走出大門。", s:{ floor:1 }, m:{ liC:[-16,98,"walk2",-1,148,98] }, out:["liC"] },
-      { t:"22:18:20", d:4, cap:"22:18，外送員戴著安全帽、提著便當走進來，進電梯。", s:{ floor:1 }, m:{ jieC:[148,98,"hold",1,-16,98] }, out:["jieC"] },
-      { t:"22:23:00", d:3.5, cap:"22:23，外送員出來，離開。", s:{ floor:1 }, m:{ jieC:[-16,98,"walk1",-1,148,98] }, out:["jieC"] },
-      { t:"22:50:40", d:4.5, cap:"22:50，一個戴棒球帽、穿工作外套的男人低著頭走進來，進電梯。電梯的樓層燈停在 3。", s:{ floor:3 }, m:{ capC:[148,98,"walk1",1,-16,98] }, out:["capC"] },
-      { t:"00:41:00", d:4, cap:"00:41，救護人員跑進來，進電梯。", s:{ floor:5 }, m:{ emtC:[150,98,"walk1",1,-16,98], emtD:[140,98,"walk2",1,-34,98] }, out:["emtC","emtD"] },
-      { t:"00:59:10", d:3.5, cap:"00:59，黎光耀跑進來，進電梯。", s:{ floor:5 }, m:{ liC:[148,98,"walk1",1,-16,98] }, out:["liC"] }
+      { t:"20:58:30", d:4, cap:"一個穿白襯衫的男人走進大門，按電梯，進電梯。", st:{ floor:1 }, m:{ liC:[148,98,"walk1",1,-16,98] }, out:["liC"] },
+      { t:"21:31:10", d:3.5, cap:"21:31，他從電梯出來，走出大門。", st:{ floor:1 }, m:{ liC:[-16,98,"walk2",-1,148,98] }, out:["liC"] },
+      { t:"22:18:20", d:4, cap:"22:18，外送員戴著安全帽、提著便當走進來，進電梯。", st:{ floor:1 }, m:{ jieC:[148,98,"hold",1,-16,98] }, out:["jieC"] },
+      { t:"22:23:00", d:3.5, cap:"22:23，外送員出來，離開。", st:{ floor:1 }, m:{ jieC:[-16,98,"walk1",-1,148,98] }, out:["jieC"] },
+      { t:"22:50:40", d:4.5, cap:"22:50，一個戴棒球帽、穿工作外套的男人低著頭走進來，進電梯。電梯的樓層燈停在 3。", st:{ floor:3 }, m:{ capC:[148,98,"walk1",1,-16,98] }, out:["capC"] },
+      { t:"00:41:00", d:4, cap:"00:41，救護人員跑進來，進電梯。", st:{ floor:5 }, m:{ emtC:[150,98,"walk1",1,-16,98], emtD:[140,98,"walk2",1,-34,98] }, out:["emtC","emtD"] },
+      { t:"00:59:10", d:3.5, cap:"00:59，黎光耀跑進來，進電梯。", st:{ floor:5 }, m:{ liC:[148,98,"walk1",1,-16,98] }, out:["liC"] }
     ] }
   };
   EP15.looks.jieC.hat = "cap"; EP15.looks.jieC.capColor = "#f4f4f0";   // 安全帽（白）
-  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.s)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => Object.assign({}, A.opt || {}, b.s || {})), ds:A.beats.map(b => b.d) }); });
+  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.st)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => Object.assign({}, A.opt || {}, b.st || {})), ds:A.beats.map(b => b.d) }); });
   [...EP15.cctv, ...EP15.evidence].forEach(it => { if (ANIM[it.id]) it.anim = ANIM[it.id]; });
 
   /* ---------- 結案 ---------- */
   // 剖面：大門 x10、客廳 x14–74（市話 x16、沙發 x36–70）、臥室 x78–130（書桌 x80–108）、浴室 x134–192
   const RB = [
-    { t:"21:00:00", d:5, cap:"10 月 8 日 21:00。黎光耀來確認明天的筆錄。趙德安問他：移送完，能不能見女兒一面。", s:{ lit:true }, m:{ zhaoR:[50,92,"sit",1], liC:[64,98,"read",-1] } },
-    { t:"21:52:00", d:5, cap:"21:52，他拿起市話叫外送：「排骨飯，加辣。明天要去講話了，今天吃好一點。」", s:{ lit:true }, m:{ zhaoR:[22,98,"phone",-1,50,98] } },
-    { t:"22:20:00", d:5, cap:"22:20，林志豪開門把便當遞進來。他走到門口，問外送員有沒有加辣，叫他「少年仔」。", s:{ lit:true, door:true, bento:"full" }, m:{ zhaoR:[18,98,"hold",-1,22,98] } },
-    { t:"22:40:00", d:5, cap:"他坐在沙發上，吃了大半個便當，兩包辣椒醬都撕開了。", s:{ lit:true, bento:true }, m:{ zhaoR:[50,92,"sit",1,18,98] } },
-    { t:"23:12:00", d:5, cap:"23:12，市話響了。答錄機開始錄音。他接起來——一個女孩的聲音：「爸……你為什麼要……害我……」", s:{ lit:true, bento:true, ring:true, off:true }, m:{ zhaoR:[22,98,"phone",-1,50,92] } },
-    { t:"23:13:00", d:5, cap:"那不是以晴。是從她的公開影片剪出來的。他聽不出來，喊了七聲「以晴」。", s:{ lit:true, bento:true, off:true }, m:{ zhaoX:[24,98,"cry",-1] }, out:["zhaoX"] },
-    { t:"23:30:00", d:5.5, cap:"他走進臥室，坐在桌子前面，用安全屋的藍色原子筆寫信：「給我的小船長」。把「在」寫成「再」，跟十八年來的生日卡一樣。", s:{ lit:true, bento:true, lamp:true, letter:true }, m:{ zhaoX:[94,92,"write",1,24,98] } },
-    { t:"23:52:00", d:5, cap:"大約 23:52，他走進浴室，從裡面按下喇叭鎖。窗戶是封死的，門外的林志豪一直坐在走廊上。", s:{ lit:true, bento:true, lamp:true, letter:true }, m:{ zhaoC:[150,98,"walk1",1,94,98] }, out:["zhaoC"] },
-    { t:"23:55:00", d:5, cap:"浴室的門，再也沒有從裡面打開過。", s:{ lit:true, bento:true, lamp:true, letter:true, bathShut:true } },
-    { t:"00:30:00", d:5, cap:"00:30，林志豪進來查看，浴室的門鎖著，叫不應。他用肩膀撞了三次。", s:{ lit:true, bento:true, lamp:true, letter:true, bathShut:true, door:true }, m:{ linC:[126,98,"point",1,10,98,[[74,98]]] } },
-    { t:"00:34:00", d:4.5, cap:"門框往裡裂開。他割斷繩子，做 CPR，打 119。從 22:30 到這一刻，沒有任何人打開過安全屋的門。", s:{ lit:true, bento:true, lamp:true, letter:true, bathShut:true, broken:true, door:true }, m:{ linC:[140,98,"kneel",1,126,98] } }
+    { t:"21:00:00", d:5, cap:"10 月 8 日 21:00。黎光耀來確認明天的筆錄。趙德安問他：移送完，能不能見女兒一面。", st:{ lit:true }, m:{ zhaoR:[50,92,"sit",1], liC:[64,98,"read",-1] } },
+    { t:"21:52:00", d:5, cap:"21:52，他拿起市話叫外送：「排骨飯，加辣。明天要去講話了，今天吃好一點。」", st:{ lit:true }, m:{ zhaoR:[22,98,"phone",-1,50,98] } },
+    { t:"22:20:00", d:5, cap:"22:20，林志豪開門把便當遞進來。他走到門口，問外送員有沒有加辣，叫他「少年仔」。", st:{ lit:true, door:true, bento:"full" }, m:{ zhaoR:[18,98,"hold",-1,22,98] } },
+    { t:"22:40:00", d:5, cap:"他坐在沙發上，吃了大半個便當，兩包辣椒醬都撕開了。", st:{ lit:true, bento:true }, m:{ zhaoR:[50,92,"sit",1,18,98] } },
+    { t:"23:12:00", d:5, cap:"23:12，市話響了。答錄機開始錄音。他接起來——一個女孩的聲音：「爸……你為什麼要……害我……」", st:{ lit:true, bento:true, ring:true, off:true }, m:{ zhaoR:[22,98,"phone",-1,50,92] } },
+    { t:"23:13:00", d:5, cap:"那不是以晴。是從她的公開影片剪出來的。他聽不出來，喊了七聲「以晴」。", st:{ lit:true, bento:true, off:true }, m:{ zhaoX:[24,98,"cry",-1] }, out:["zhaoX"] },
+    { t:"23:30:00", d:5.5, cap:"他走進臥室，坐在桌子前面，用安全屋的藍色原子筆寫信：「給我的小船長」。把「在」寫成「再」，跟十八年來的生日卡一樣。", st:{ lit:true, bento:true, lamp:true, letter:true }, m:{ zhaoX:[94,92,"write",1,24,98] } },
+    { t:"23:52:00", d:5, cap:"大約 23:52，他走進浴室，從裡面按下喇叭鎖。窗戶是封死的，門外的林志豪一直坐在走廊上。", st:{ lit:true, bento:true, lamp:true, letter:true }, m:{ zhaoC:[150,98,"walk1",1,94,98] }, out:["zhaoC"] },
+    { t:"23:55:00", d:5, cap:"浴室的門，再也沒有從裡面打開過。", st:{ lit:true, bento:true, lamp:true, letter:true, bathShut:true } },
+    { t:"00:30:00", d:5, cap:"00:30，林志豪進來查看，浴室的門鎖著，叫不應。他用肩膀撞了三次。", st:{ lit:true, bento:true, lamp:true, letter:true, bathShut:true, door:true }, m:{ linC:[126,98,"point",1,10,98,[[74,98]]] } },
+    { t:"00:34:00", d:4.5, cap:"門框往裡裂開。他割斷繩子，做 CPR，打 119。從 22:30 到這一刻，沒有任何人打開過安全屋的門。", st:{ lit:true, bento:true, lamp:true, letter:true, bathShut:true, broken:true, door:true }, m:{ linC:[140,98,"kneel",1,126,98] } }
   ];
   const foundN = () => { try { return ARC.list().filter(x => x.how === "found").length; } catch (e) { return 0; } };
   EP15.court = {
@@ -376,7 +376,7 @@ EP15.art = true;
       zhou: "查清楚。我只要查清楚。"
     },
     replayText: "10 月 8 日晚上，安全屋。他還在等明天——",
-    replay: { scene:"s15_flat", opt:{ seq:RB.map(b => b.s), ds:RB.map(b => b.d) }, clean:true, cam:"事發經過重現", date:"2026-10-08", beats:RB },
+    replay: { scene:"s15_flat", opt:{ seq:RB.map(b => b.st), ds:RB.map(b => b.d) }, clean:true, cam:"事發經過重現", date:"2026-10-08", beats:RB },
     get endGood(){
       let s = "18:30，記者會。黎光耀照著你的報告念：「證人趙德安，自縊身亡。查無他人進入。」\n記者舉手：「那通電話呢？」\n黎光耀闔上小本子：「教唆自殺，另案偵辦。」\n散會以後，林美鳳把那封信交給以晴。以晴讀到「給我的小船長」，把信紙貼在臉上。下禮拜一，她還是去考了模擬考。";
       if (foundN() >= 8) s += "\n\n你把這半年來記下的東西攤在桌上：淹水報廢的槍、綁架案那通電話、證物室的筆記本、分機 4417……一條一條，都通往同一棟大樓。";

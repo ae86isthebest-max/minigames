@@ -368,17 +368,17 @@ EP4.art = true;
       { t:"21:55:00", d:4, cap:"林佩珊走開後，蘇曼文用放大鏡看到了樹脂裡的小氣泡。這是假貨——而鑑定書是她簽的。", m:{ suL:[130,98,"inspect@magnifier",1] } },
       { t:"22:36:00", d:3.5, cap:"管家和外燴都離開了。套房裡只剩她一個人。", m:{ suL:[130,98,"stand",-1], kaiL:[220,98,"push@cart/#c8ccd0",1,160,98] }, out:["kaiL"] },
       { t:"22:39:00", d:4, cap:"她到備餐間，用外燴的電子秤，把一塊乾冰削到 527 公克，包進絲綢小袋。", m:{ suL:[176,98,"back+hold@ice",1,130,98] } },
-      { t:"22:40:00", d:4, cap:"二號鑰匙，維修模式 53 秒：仿品拿出來，乾冰放進去。展示櫃裡的溫度一下子掉到 3 度。", s:{ case:"empty" }, m:{ suL:[136,98,"back+door@key",-1,176,98] } },
-      { t:"22:43:00", d:3.5, cap:"仿品用兩條餐巾包好，塞進外燴保冷箱最底下的乾冰下面。", s:{ case:"fog" }, m:{ suL:[176,98,"kneel+reach@cloth",1,136,98] } },
-      { t:"23:05:00", d:3.5, cap:"不知情的王凱文，把保冷箱推下 B2。23:08，展示區的移動偵測打開了。", s:{ case:"fog" }, m:{ kaiL:[220,98,"push@cart/#3a6ac8",1,176,98], suL:[110,98,"stand",-1] }, out:["kaiL"] },
-      { t:"23:10:00", d:3, s:{ case:"fog" }, cap:"23:10，她和鄧志強一起離開套房。", m:{ suL:[-16,98,null,-1,110,98] }, out:["suL"] },
-      { t:"03:12:00", d:4, s:{ case:"fog" }, cap:"四個半小時，乾冰一點一點昇華成二氧化碳。重量慢慢變輕，感應器一直當成誤差——直到剩不到一成。", m:{} },
+      { t:"22:40:00", d:4, cap:"二號鑰匙，維修模式 53 秒：仿品拿出來，乾冰放進去。展示櫃裡的溫度一下子掉到 3 度。", st:{ case:"empty" }, m:{ suL:[136,98,"back+door@key",-1,176,98] } },
+      { t:"22:43:00", d:3.5, cap:"仿品用兩條餐巾包好，塞進外燴保冷箱最底下的乾冰下面。", st:{ case:"fog" }, m:{ suL:[176,98,"kneel+reach@cloth",1,136,98] } },
+      { t:"23:05:00", d:3.5, cap:"不知情的王凱文，把保冷箱推下 B2。23:08，展示區的移動偵測打開了。", st:{ case:"fog" }, m:{ kaiL:[220,98,"push@cart/#3a6ac8",1,176,98], suL:[110,98,"stand",-1] }, out:["kaiL"] },
+      { t:"23:10:00", d:3, st:{ case:"fog" }, cap:"23:10，她和鄧志強一起離開套房。", m:{ suL:[-16,98,null,-1,110,98] }, out:["suL"] },
+      { t:"03:12:00", d:4, st:{ case:"fog" }, cap:"四個半小時，乾冰一點一點昇華成二氧化碳。重量慢慢變輕，感應器一直當成誤差——直到剩不到一成。", m:{} },
       { t:"2025-08-02", d:4, cap:"而真正的貔貅，早在去年 8 月 2 日的半夜，就被葉承浩從天母的保險櫃裡換走了。", m:{} }
     ] },
     endGood: "拍賣會照常開始，貔貅撤拍。何永福交出了真品，葉老太太捧著它，摸了很久，說：「這才是阿和的。」\n收隊的時候，許知夏把她的工具箱扛上車，跟你說：「下個月見。我調去澄港了。」",
     endBad: "拍賣會照常開始。你總覺得，這間展廳裡有人悄悄鬆了一口氣。"
   };
-  { const RP = EP4.court.replay; RP.opt = Object.assign({}, RP.opt, { seq:RP.beats.map(b => Object.assign({ case:"full" }, b.s || {})), ds:RP.beats.map(b => b.d) });
+  { const RP = EP4.court.replay; RP.opt = Object.assign({}, RP.opt, { seq:RP.beats.map(b => Object.assign({ case:"full" }, b.st || {})), ds:RP.beats.map(b => b.d) });
     const hsBase = SC.hsuite; SC.hsuite = (o) => { if (o.seq && o.ds){ let el = 0, t = o.t || 0; for (let i = 0; i < o.ds.length; i++){ const en = el + 0.5 + o.ds[i]; if (t < en || i === o.ds.length - 1){ o = Object.assign({}, o, o.seq[i]); break; } el = en; } } return hsBase(o); }; }
   if (typeof ARC_INTER !== "undefined" && ARC_INTER[4] && ARC_INTER[4].after) EP4.after = ARC_INTER[4].after;
 })();

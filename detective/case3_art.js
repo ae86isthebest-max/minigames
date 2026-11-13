@@ -552,19 +552,19 @@ EP3.art = true;
     },
     replayText: "12 月 7 日晚上，宏昌倉儲 B-12 裡真正發生的事——",
     replay: { scene:"wback", opt:{ phase:1, replay:true }, clean:true, cam:"案發經過重現", date:"2025-12-07", beats:[
-      { t:"20:21:00", d:3.5, s:{ cut:true }, cap:"阿豹找上倉庫。他剁下鄭國華的左手小指，包紮好，帶著那根手指離開。", m:{ baoL:[116,98,"strike@knife",-1,200,98], zheng:[96,98,"cry",1] } },
-      { t:"21:04:00", d:2.5, s:{ cut:true }, cap:"阿豹離開時，鄭國華還活著。", m:{ baoL:[220,98,null,1] }, out:["baoL"] },
-      { t:"22:58:00", d:3, s:{ cut:true }, cap:"鄭國華用藏起來的第二支手機，打給林啟明的預付卡。", m:{ zheng:[96,98,"phone",1] } },
-      { t:"23:40:00", d:3.5, s:{ cut:true }, cap:"林啟明來了，戴著鴨舌帽、提著布購物袋。他看到行李、護照，還有手機裡兩張飛曼谷的機票。", m:{ capman_bag:[130,98,"carry@bag/#c8b898",-1,200,98] } },
-      { t:"23:41:00", d:3, join:true, s:{ cut:true }, cap:"林啟明來了，戴著鴨舌帽、提著布購物袋。他看到行李、護照，還有手機裡兩張飛曼谷的機票。", m:{ capman_bag:[124,98,"inspect@phone&bag/#c8b898",-1] } },
-      { t:"00:05:00", d:4, s:{ cut:true, mid:true }, cap:"他把鄭國華綁在椅子上，用園藝剪一根一根剪下手指，逼問冷錢包的密碼。", m:{ zheng:[96,98,"sit",1], capman_bag:[112,98,"reach@scissors",-1] } },
-      { t:"00:41:00", d:3, s:{ cut:true, mid:true }, cap:"拿到密碼後，他把 118 萬 USDT 轉到岳母名下的帳戶。", m:{ capman_bag:[124,98,"inspect@phone",-1] } },
-      { t:"00:45:00", d:3.5, s:{ cut:true, mid:true }, cap:"鄭國華胸口劇痛，想拿藥。藥瓶被一腳踢到架子底下。", m:{ zheng:[96,98,"sit+clutch",1], capman_bag:[60,98,"stand",-1] } },
-      { t:"01:30:00", d:4, s:{ cut:true, mid:true, late:true }, cap:"人死了。他剪下剩下的六根手指排在桌上，用死者的手指在牆上寫「欠債還錢」。", m:{ capman_bag:[100,92,"back+wipe",1] } },
-      { t:"02:38:00", d:3, s:{ cut:true, mid:true, late:true }, cap:"他從側門離開。牆上那四個字，是寫給警察看的。", m:{ capman_bag:[220,98,"carry@bag/#c8b898",1,100,98] }, out:["capman_bag"] }
+      { t:"20:21:00", d:3.5, st:{ cut:true }, cap:"阿豹找上倉庫。他剁下鄭國華的左手小指，包紮好，帶著那根手指離開。", m:{ baoL:[116,98,"strike@knife",-1,200,98], zheng:[96,98,"cry",1] } },
+      { t:"21:04:00", d:2.5, st:{ cut:true }, cap:"阿豹離開時，鄭國華還活著。", m:{ baoL:[220,98,null,1] }, out:["baoL"] },
+      { t:"22:58:00", d:3, st:{ cut:true }, cap:"鄭國華用藏起來的第二支手機，打給林啟明的預付卡。", m:{ zheng:[96,98,"phone",1] } },
+      { t:"23:40:00", d:3.5, st:{ cut:true }, cap:"林啟明來了，戴著鴨舌帽、提著布購物袋。他看到行李、護照，還有手機裡兩張飛曼谷的機票。", m:{ capman_bag:[130,98,"carry@bag/#c8b898",-1,200,98] } },
+      { t:"23:41:00", d:3, join:true, st:{ cut:true }, cap:"林啟明來了，戴著鴨舌帽、提著布購物袋。他看到行李、護照，還有手機裡兩張飛曼谷的機票。", m:{ capman_bag:[124,98,"inspect@phone&bag/#c8b898",-1] } },
+      { t:"00:05:00", d:4, st:{ cut:true, mid:true }, cap:"他把鄭國華綁在椅子上，用園藝剪一根一根剪下手指，逼問冷錢包的密碼。", m:{ zheng:[96,98,"sit",1], capman_bag:[112,98,"reach@scissors",-1] } },
+      { t:"00:41:00", d:3, st:{ cut:true, mid:true }, cap:"拿到密碼後，他把 118 萬 USDT 轉到岳母名下的帳戶。", m:{ capman_bag:[124,98,"inspect@phone",-1] } },
+      { t:"00:45:00", d:3.5, st:{ cut:true, mid:true }, cap:"鄭國華胸口劇痛，想拿藥。藥瓶被一腳踢到架子底下。", m:{ zheng:[96,98,"sit+clutch",1], capman_bag:[60,98,"stand",-1] } },
+      { t:"01:30:00", d:4, st:{ cut:true, mid:true, late:true }, cap:"人死了。他剪下剩下的六根手指排在桌上，用死者的手指在牆上寫「欠債還錢」。", m:{ capman_bag:[100,92,"back+wipe",1] } },
+      { t:"02:38:00", d:3, st:{ cut:true, mid:true, late:true }, cap:"他從側門離開。牆上那四個字，是寫給警察看的。", m:{ capman_bag:[220,98,"carry@bag/#c8b898",1,100,98] }, out:["capman_bag"] }
     ] },
     endGood: "林啟明被帶走時，回頭看了一眼白板上的照片。\n「那雙手，」他低聲說，「是算了一輩子帳的手。」",
     endBad: "會議室裡一片安靜。檢察官合上卷宗，看了你一眼。\n你總覺得，有人在心裡鬆了一口氣。"
   };
-  { const RP = EP3.court.replay; RP.opt = Object.assign({}, RP.opt, { seq:RP.beats.map(b => b.s || {}), ds:RP.beats.map(b => b.d) }); }
+  { const RP = EP3.court.replay; RP.opt = Object.assign({}, RP.opt, { seq:RP.beats.map(b => b.st || {}), ds:RP.beats.map(b => b.d) }); }
 })();
