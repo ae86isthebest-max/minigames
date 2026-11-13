@@ -18,7 +18,7 @@
       玩家知道的旗標才會列在筆記的「📌 主線」，不知道的完全不顯示（連數量都不顯示，免得洩露）。
    5) 程式裡直接問：ARC.has("gun")、ARC.found("gun")、ARC.grade("案件id")
 
-   6) 幕間（案件之間跟同事、朋友聊天的場面，像劇集一樣）：案件加 before（第一次打開這一集、開場之前播）或 after（真相公布之後播）
+   6) 幕間（案件之間跟同事、朋友聊天的場面，像劇集一樣）：一句台詞加 cut:{ title, scene, opt, cast } 就從那一句起換場景。案件加 before（第一次打開這一集、開場之前播）或 after（真相公布之後播）
         after: { title:"收工之後・麵攤", scene:"noodle", opt:{…}, cast:[ { id:"_you", x:40 }, { id:"wu", x:90, pose:"drink", facing:-1 } ],
                  lines:[ { who:"wu", text:"……" },
                          { who:"you", text:"那把槍的事……", when:"arc:gun" },        // when／unless：跟 requires 一樣，可以用 "arc:旗標"，也可以用這一集的 id
@@ -286,8 +286,10 @@ function interEnd(){
   else if (!k && back){ if (fsMode() && !["notes", "brief", "accuse"].includes(back.tab)) { closeSheet(); return; } tab = back.tab; openLoc = back.openLoc; }
   render(); scrollTo(0, 0);
 }
+// 換場：台詞可以帶 cut:{ title, scene, opt, cast }，從這一句起換到另一個場景（像劇集剪接）
+const interShot = () => { let s = inter.L; for (let i = 0; i <= inter.idx && i < inter.L.lines.length; i++){ const l = inter.L.lines[i]; if (l.cut && interOK(l)) s = { ...inter.L, ...l.cut }; } return s; };
 function vInter(){
-  const L = inter.L, st = interLine(), open = interOpen(st);
+  const L = interShot(), st = interLine(), open = interOpen(st);
   const sus = id => C.suspects.find(s => s.id === id);
   const who = st.who || (st.choices ? "narr" : "narr");
   const speaker = who === "you" ? "你" : who === "narr" ? "" : st.name || ARC.name(who) || (sus(who) || { name:"" }).name.replace(/（.*）/, "");

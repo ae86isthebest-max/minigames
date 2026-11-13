@@ -1,9 +1,9 @@
-/* 主線資料（第 4–15 集）—— 劇透，由「主線」thread 產生。載入順序：arc.js 之後、各集 case 檔之前。
+/* 主線資料（第 4–20 集；第 11–20 集另有 before 開場生活小場景）—— 劇透，由「主線」thread 產生。載入順序：arc.js 之後、各集 case 檔之前。
    1) ARC.defineCast：固定班底。幕間 cast 用這些 id；案件中出場也可以 look:ARC.look("xu")。
    2) ARC.define：主線旗標的標題和筆記內容。ARC_SETS 寫明哪一集的哪樣東西要加 arc:旗標；下一集的 arcRecap 對這些旗標寫 text/miss。
    3) ARC_INTER[集數].after：貼到該集 C.after。scene 只用 PX.SCENES 現有的；sceneWanted＝建議新做的場景（麵攤、高鐵、安全屋、告別式），做好之前只有對話。
    幕間只聊天、埋伏筆，不放破案線索。
-   4) 選擇（arc.js 第 7 點格式）：c_ep5_vow（第 5 集）、c_xu_overnight（第 8 集，許知夏羈絆）、c_zhao_promise（第 12 集，第 15 集幕間會用到）。全部不影響破案；之後的季度和結局會讀這些旗標，見 劇透_主線聖經.md「選擇旗標表」。 */
+   4) 選擇（arc.js 第 7 點格式）：c_ep5_vow（第 5 集）、c_xu_overnight（第 8 集，許知夏羈絆）、c_zhao_promise（第 12 集，第 15 集幕間會用到）。第 18 集 c_wedding_speech、第 19 集 c_told_xu。全部不影響破案；之後的季度和結局會讀這些旗標，見 劇透_主線聖經.md「選擇旗標表」。 */
 ARC.defineCast({
  "wu": {
   "name": "吳子豪",
@@ -133,19 +133,62 @@ ARC.defineCast({
  },
  "han": {
   "name": "韓守義",
-  "look": {"age": "old", "skin": "#e0b48c", "hair": "#9a9a92", "hairStyle": "slick", "top": "#e9e4da", "coat": "#2a3a5a", "bottom": "#2a3a5a", "glasses": true}
+  "look": {
+   "age": "old",
+   "skin": "#e0b48c",
+   "hair": "#9a9a92",
+   "hairStyle": "slick",
+   "top": "#e9e4da",
+   "coat": "#2a3a5a",
+   "bottom": "#2a3a5a",
+   "glasses": true
+  }
  },
  "longshu": {
   "name": "龍叔",
-  "look": {"age": "old", "skin": "#c08a60", "hair": "#d8d8d0", "hairStyle": "short", "top": "#f4f4f0", "bottom": "#3a3a3a"}
+  "look": {
+   "age": "old",
+   "skin": "#c08a60",
+   "hair": "#d8d8d0",
+   "hairStyle": "short",
+   "top": "#f4f4f0",
+   "bottom": "#3a3a3a"
+  }
  },
  "dengta": {
   "name": "司機",
-  "look": {"skin": "#d8a880", "hair": "#1e1e1e", "hairStyle": "short", "top": "#1e1e22", "bottom": "#1e1e22"}
+  "look": {
+   "skin": "#d8a880",
+   "hair": "#1e1e1e",
+   "hairStyle": "short",
+   "top": "#1e1e22",
+   "bottom": "#1e1e22"
+  }
  },
  "doufa": {
   "name": "豆花",
   "note": "拉布拉多鑑識犬，需要新做狗的 sprite"
+ },
+ "kui": {
+  "name": "陳葵",
+  "look": {
+   "skin": "#f0d0b4",
+   "hair": "#5a3a2a",
+   "hairStyle": "bob",
+   "top": "#3d6fa8",
+   "bottom": "#3d6fa8"
+  }
+ },
+ "xiaoying": {
+  "name": "吳小瑩",
+  "look": {
+   "skin": "#ecc8a6",
+   "hair": "#2a2a2a",
+   "hairStyle": "long",
+   "top": "#e8a0b0",
+   "bottom": "#4a5a8a",
+   "skirt": true
+  }
  }
 });
 
@@ -219,6 +262,36 @@ ARC.define({
   "title": "分機 4417",
   "text": "趙德安死前接到一通播他女兒聲音的電話，來自局內分機 4417，和綁架案通風報信是同一條總機線路。",
   "ep": 15
+ },
+ "harbour_crate": {
+  "title": "空的魷魚貨箱",
+  "text": "漁港冷凍庫角落有一個貨單寫「海龍漁業」的空貨箱，豆花嗅到槍油味。龍叔說是別人寄放的。",
+  "ep": 16
+ },
+ "third_gun": {
+  "title": "第三把報廢槍",
+  "text": "廟會槍殺案用的是第三把「淹水報廢」警槍。槍被丟進海裡，沒找到。",
+  "ep": 17
+ },
+ "xuzy_wants_meet": {
+  "title": "許振業想見你",
+  "text": "許知夏說她父親想見你一面，沒說為甚麼。",
+  "ep": 18
+ },
+ "xuzy_slip": {
+  "title": "「沈組長那件事」",
+  "text": "許振業喝醉時說漏：「當年沈組長那件事……葛仔有拍照……」沈組長，就是你舅舅沈國棟。",
+  "ep": 19
+ },
+ "photo_box_2011": {
+  "title": "空的底片格",
+  "text": "退休攝影師葛振民的底片箱，標著「2011」的那一格是空的。不是兇手拿的。",
+  "ep": 19
+ },
+ "he_usb": {
+  "title": "何沛恩的隨身碟",
+  "text": "記者何沛恩被人跟蹤，把一支加密的隨身碟交給你：「如果我出事就打開。」密碼打不開。",
+  "ep": 20
  }
 });
 
@@ -236,7 +309,13 @@ var ARC_SETS = {
  "zhao_confess": "第 12 集：趙德安的供詞",
  "evroom_drugs": "第 13 集：紫外光毒品袋化驗",
  "notebook_y": "第 14 集：老鄭筆記本物件",
- "ext_4417": "第 15 集：電信回覆或市話錄音"
+ "ext_4417": "第 15 集：電信回覆或市話錄音",
+ "harbour_crate": "第 16 集：豆花嗅貨箱（物件或動作）",
+ "third_gun": "第 17 集：彈道報告",
+ "xuzy_wants_meet": "第 18 集：after 幕間（已寫在 ARC_INTER[18].after，可加 arc 欄位）",
+ "xuzy_slip": "第 19 集：問許振業時說漏的那一題",
+ "photo_box_2011": "第 19 集：書房底片箱物件",
+ "he_usb": "第 20 集：何沛恩交隨身碟的事件"
 };
 
 var ARC_INTER = {
@@ -613,6 +692,50 @@ var ARC_INTER = {
    ],
    "arc": "ring_suspected",
    "scene": "lab"
+  },
+  "before": {
+   "title": "早上・刑事大隊辦公室",
+   "cast": [
+    {
+     "id": "wu",
+     "x": 40
+    },
+    {
+     "id": "_you",
+     "x": 80
+    },
+    {
+     "id": "xu",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（星期一早上八點。小吳趴在桌上，桌上堆著升等考試的書。）"
+    },
+    {
+     "who": "wu",
+     "text": "學長，「刑事訴訟法第 88 條之 1」是什麼？"
+    },
+    {
+     "who": "you",
+     "text": "逕行拘提。"
+    },
+    {
+     "who": "wu",
+     "text": "你怎麼連這個都記得……"
+    },
+    {
+     "who": "xu",
+     "text": "他連你上個月欠我一杯珍奶都記得。"
+    },
+    {
+     "who": "wu",
+     "text": "那是半杯！"
+    }
+   ],
+   "scene": "office"
   }
  },
  "12": {
@@ -666,6 +789,46 @@ var ARC_INTER = {
    ],
    "arc": "zhao_promise",
    "sceneWanted": "safehouse"
+  },
+  "before": {
+   "title": "早餐店",
+   "cast": [
+    {
+     "id": "wu",
+     "x": 40
+    },
+    {
+     "id": "xu",
+     "x": 80
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（局對面的早餐店，老闆娘已經認得你們。）"
+    },
+    {
+     "who": "narr",
+     "text": "老闆娘：沈先生照舊，蘿蔔糕加蛋、冰豆漿。"
+    },
+    {
+     "who": "wu",
+     "text": "我也要一樣的！"
+    },
+    {
+     "who": "xu",
+     "text": "你不是說要減肥？"
+    },
+    {
+     "who": "wu",
+     "text": "那是下禮拜的我的事。"
+    },
+    {
+     "who": "narr",
+     "text": "（電視新聞正在播：巡佐失聯，家屬報案。大家同時放下筷子。）"
+    }
+   ],
+   "sceneWanted": "breakfast"
   }
  },
  "13": {
@@ -701,6 +864,50 @@ var ARC_INTER = {
    ],
    "arc": "ye_first_name",
    "scene": "hospital"
+  },
+  "before": {
+   "title": "鑑識室的午休",
+   "cast": [
+    {
+     "id": "wu",
+     "x": 40
+    },
+    {
+     "id": "xu",
+     "x": 80
+    },
+    {
+     "id": "qian",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（許知夏的桌上多了一盆多肉植物，名牌寫「證物 A」。）"
+    },
+    {
+     "who": "wu",
+     "text": "妳把植物取名叫證物 A？"
+    },
+    {
+     "who": "xu",
+     "text": "它很耐活，比你們都耐。"
+    },
+    {
+     "who": "qian",
+     "text": "我太太說多肉一週澆一次水就好。"
+    },
+    {
+     "who": "xu",
+     "text": "我知道。我有做紀錄表。"
+    },
+    {
+     "who": "narr",
+     "text": "（牆上真的貼著一張澆水紀錄表，精確到分鐘。）"
+    }
+   ],
+   "scene": "lab"
   }
  },
  "14": {
@@ -740,6 +947,46 @@ var ARC_INTER = {
    ],
    "arc": "dog_joins",
    "sceneWanted": "funeral"
+  },
+  "before": {
+   "title": "下班後・小吳的機車",
+   "cast": [
+    {
+     "id": "wu",
+     "x": 40
+    },
+    {
+     "id": "_you",
+     "x": 80
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（下雨。小吳的機車發不動。）"
+    },
+    {
+     "who": "wu",
+     "text": "學長，可以載我一程嗎……"
+    },
+    {
+     "who": "you",
+     "text": "上車。"
+    },
+    {
+     "who": "wu",
+     "text": "你車上怎麼都是便利商店的飯糰包裝？你都不吃正餐嗎？"
+    },
+    {
+     "who": "you",
+     "text": "……"
+    },
+    {
+     "who": "wu",
+     "text": "明天我帶我媽做的滷肉飯給你。不准拒絕。"
+    }
+   ],
+   "scene": "road"
   }
  },
  "15": {
@@ -784,6 +1031,553 @@ var ARC_INTER = {
    ],
    "arc": "season1_end",
    "sceneWanted": "noodle（雨夜）"
+  },
+  "before": {
+   "title": "葉晴的辦公室",
+   "cast": [
+    {
+     "id": "ye",
+     "x": 40
+    },
+    {
+     "id": "_you",
+     "x": 80
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（檢察署。葉晴桌上有一張弟弟小時候的照片。）"
+    },
+    {
+     "who": "ye",
+     "text": "他醒了。醫生說要戒，至少半年。"
+    },
+    {
+     "who": "you",
+     "text": "妳呢？"
+    },
+    {
+     "who": "ye",
+     "text": "我？我還有十七件案子要起訴。"
+    },
+    {
+     "who": "narr",
+     "text": "（她把照片轉過去，又轉回來。）"
+    },
+    {
+     "who": "ye",
+     "text": "……謝謝你那天的咖啡。很難喝。"
+    }
+   ],
+   "scene": "office"
+  }
+ },
+ "16": {
+  "before": {
+   "title": "督察組約談室",
+   "cast": [
+    {
+     "id": "li",
+     "x": 40
+    },
+    {
+     "id": "_you",
+     "x": 80
+    },
+    {
+     "id": "zhou",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（趙德安過世一週。督察組逐一約談。）"
+    },
+    {
+     "who": "li",
+     "text": "安全屋的地址，你告訴過誰？"
+    },
+    {
+     "who": "you",
+     "text": "沒有。"
+    },
+    {
+     "who": "li",
+     "text": "你的隊長、你的助手、你的鑑識員，都說沒有。"
+    },
+    {
+     "who": "li",
+     "text": "那就是你們當中有人說謊，或是有人在偷聽。"
+    },
+    {
+     "who": "narr",
+     "text": "（他在本子上寫了一行字，你看不到。）"
+    },
+    {
+     "who": "zhou",
+     "text": "（門外）好了，問完了吧？我的人要去漁港查案。"
+    }
+   ],
+   "scene": "police"
+  },
+  "after": {
+   "title": "漁港碼頭・黃昏",
+   "cast": [
+    {
+     "id": "xu",
+     "x": 40
+    },
+    {
+     "id": "wu",
+     "x": 80
+    },
+    {
+     "id": "_you",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "xu",
+     "text": "那個空箱子，槍油味很重。"
+    },
+    {
+     "who": "wu",
+     "text": "「海龍漁業」……是那個龍叔的公司？"
+    },
+    {
+     "who": "you",
+     "text": "他說是別人寄放的。"
+    },
+    {
+     "who": "xu",
+     "text": "你信？"
+    },
+    {
+     "who": "you",
+     "text": "我信他知道是誰寄放的。"
+    },
+    {
+     "who": "narr",
+     "text": "（豆花對著一艘漁船叫了兩聲，船上沒有人。）"
+    }
+   ],
+   "sceneWanted": "harbour"
+  }
+ },
+ "17": {
+  "before": {
+   "title": "阿月姨麵攤・中午",
+   "cast": [
+    {
+     "id": "ayue",
+     "x": 40
+    },
+    {
+     "id": "xu",
+     "x": 80
+    },
+    {
+     "id": "wu",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "ayue",
+     "text": "欸，那個女鑑識，妳太瘦了，多吃一顆滷蛋。"
+    },
+    {
+     "who": "xu",
+     "text": "我不吃滷蛋。"
+    },
+    {
+     "who": "ayue",
+     "text": "那豆干。"
+    },
+    {
+     "who": "xu",
+     "text": "……好。"
+    },
+    {
+     "who": "wu",
+     "text": "（小聲）學長，她從來不跟人說「好」的。"
+    },
+    {
+     "who": "ayue",
+     "text": "明天廟會遶境，你們要不要來看？我們這攤會擺到半夜。"
+    }
+   ],
+   "sceneWanted": "noodle"
+  },
+  "after": {
+   "title": "廟埕・遶境散場",
+   "cast": [
+    {
+     "id": "he",
+     "x": 40
+    },
+    {
+     "id": "_you",
+     "x": 80
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（地上都是鞭炮紙。阿月姨的攤子還亮著。）"
+    },
+    {
+     "who": "he",
+     "text": "三把了。你們局裡還要裝多久？"
+    },
+    {
+     "who": "you",
+     "text": "你寫這篇，會有人找你麻煩。"
+    },
+    {
+     "who": "he",
+     "text": "已經有了。我的機車輪胎上禮拜被割破。"
+    },
+    {
+     "who": "he",
+     "text": "沈警官，我不是在問你要新聞。我是在問你，你站哪一邊。"
+    },
+    {
+     "who": "narr",
+     "text": "（他走進散場的人群裡。）"
+    }
+   ],
+   "sceneWanted": "temple"
+  }
+ },
+ "18": {
+  "before": {
+   "title": "小吳家・出發前",
+   "cast": [
+    {
+     "id": "wu",
+     "x": 40
+    },
+    {
+     "id": "_you",
+     "x": 80
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（小吳穿著太緊的西裝，對著鏡子打領帶，打了五次。）"
+    },
+    {
+     "who": "wu",
+     "text": "學長，你會打領帶嗎？"
+    },
+    {
+     "who": "you",
+     "text": "過來。"
+    },
+    {
+     "who": "narr",
+     "text": "（你幫他打好。小吳的妹妹小瑩在旁邊笑到彎腰。）"
+    },
+    {
+     "who": "narr",
+     "text": "小瑩：哥，你看起來像賣保險的。"
+    },
+    {
+     "who": "wu",
+     "text": "吳小瑩！"
+    },
+    {
+     "who": "narr",
+     "text": "（小瑩是小吳的妹妹，讀大學二年級。）"
+    }
+   ],
+   "sceneWanted": "home"
+  },
+  "after": {
+   "title": "喜宴散場",
+   "cast": [
+    {
+     "id": "kui",
+     "x": 40
+    },
+    {
+     "id": "_you",
+     "x": 80
+    },
+    {
+     "id": "xu",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（新郎新娘在門口送客。小吳喝醉了，抱著豆花說話。）"
+    },
+    {
+     "who": "kui",
+     "text": "許前輩，下禮拜我就去鑑識科報到了，請多指教！"
+    },
+    {
+     "who": "you",
+     "text": "（新郎硬把麥克風塞給你。）",
+     "id": "ep18_speech",
+     "choices": [
+      {
+       "text": "認真致詞",
+       "set": "c_wedding_speech",
+       "say": [
+        {
+         "who": "narr",
+         "text": "你說了三句話。全場安靜，然後新娘哭了。小吳說那是他聽過最好的致詞。"
+        }
+       ]
+      },
+      {
+       "text": "把麥克風塞給小吳",
+       "say": [
+        {
+         "who": "wu",
+         "text": "咦？我？呃……祝表哥早生貴子！"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "who": "xu",
+     "text": "先把蜜粉擦乾淨。採完指紋要寫紀錄。"
+    },
+    {
+     "who": "kui",
+     "text": "是！"
+    },
+    {
+     "who": "xu",
+     "text": "（對你）……我爸說，想見你一面。"
+    },
+    {
+     "who": "you",
+     "text": "為什麼？"
+    },
+    {
+     "who": "xu",
+     "text": "他沒說。他很少想見誰。"
+    }
+   ],
+   "sceneWanted": "banquet",
+   "arc": "xuzy_wants_meet"
+  }
+ },
+ "19": {
+  "before": {
+   "title": "許振業的老公寓",
+   "cast": [
+    {
+     "id": "xuzy",
+     "x": 40
+    },
+    {
+     "id": "_you",
+     "x": 80
+    },
+    {
+     "id": "xu",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（許知夏帶你去見她爸。屋裡很乾淨，但桌上有三個空酒瓶。）"
+    },
+    {
+     "who": "xuzy",
+     "text": "你就是沈岳。……長得跟你舅舅有點像。"
+    },
+    {
+     "who": "you",
+     "text": "您認識我舅舅？"
+    },
+    {
+     "who": "xuzy",
+     "text": "以前一起辦過案。很久以前了。"
+    },
+    {
+     "who": "narr",
+     "text": "（他倒了一杯茶給你，自己倒了一杯酒。）"
+    },
+    {
+     "who": "xu",
+     "text": "爸。"
+    },
+    {
+     "who": "xuzy",
+     "text": "最後一杯。"
+    }
+   ],
+   "sceneWanted": "apartment"
+  },
+  "after": {
+   "title": "許振業家樓下・深夜",
+   "cast": [
+    {
+     "id": "xu",
+     "x": 40
+    },
+    {
+     "id": "_you",
+     "x": 80
+    }
+   ],
+   "lines": [
+    {
+     "who": "xu",
+     "text": "他喝醉會亂講話。你不要放在心上。"
+    },
+    {
+     "who": "you",
+     "text": "「沈組長」是我舅舅。"
+    },
+    {
+     "who": "narr",
+     "text": "（許知夏停下腳步。）"
+    },
+    {
+     "who": "xu",
+     "text": "我會去問他。等他清醒的時候。"
+    },
+    {
+     "who": "you",
+     "text": "葛振民的底片箱，2011 那一格是空的。"
+    },
+    {
+     "who": "xu",
+     "text": "我知道。我也看到了。"
+    },
+    {
+     "who": "xu",
+     "text": "他到底說了什麼？你要告訴我嗎？",
+     "id": "ep19_tell",
+     "choices": [
+      {
+       "text": "全部告訴她",
+       "set": "c_told_xu",
+       "say": [
+        {
+         "who": "xu",
+         "text": "……謝謝你沒有瞞我。"
+        }
+       ]
+      },
+      {
+       "text": "「等妳問過他再說。」",
+       "say": [
+        {
+         "who": "xu",
+         "text": "嗯。"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "sceneWanted": "street_night"
+  }
+ },
+ "20": {
+  "before": {
+   "title": "夜市・下班後",
+   "cast": [
+    {
+     "id": "wu",
+     "x": 40
+    },
+    {
+     "id": "xu",
+     "x": 80
+    },
+    {
+     "id": "qian",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（案子還沒來。你們難得準時下班，一起逛夜市。）"
+    },
+    {
+     "who": "wu",
+     "text": "我要吃大腸包小腸、蚵仔煎、地瓜球……"
+    },
+    {
+     "who": "xu",
+     "text": "你的升等考試呢？"
+    },
+    {
+     "who": "wu",
+     "text": "吃飽才有力氣讀書。"
+    },
+    {
+     "who": "qian",
+     "text": "我推薦那攤杏仁豆腐，三十年老店。"
+    },
+    {
+     "who": "narr",
+     "text": "（你們排了二十分鐘的隊。那時候沒人知道，兩天後那攤會上新聞。）"
+    }
+   ],
+   "sceneWanted": "nightmarket"
+  },
+  "after": {
+   "title": "何沛恩被翻亂的租屋處",
+   "cast": [
+    {
+     "id": "he",
+     "x": 40
+    },
+    {
+     "id": "wu",
+     "x": 80
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（抽屜全被拉出來，筆電不見了。何沛恩坐在地上，手上貼著 OK 繃。）"
+    },
+    {
+     "who": "he",
+     "text": "還好我不在家。"
+    },
+    {
+     "who": "wu",
+     "text": "你那支隨身碟……"
+    },
+    {
+     "who": "he",
+     "text": "在你們學長那裡。最安全的地方。"
+    },
+    {
+     "who": "he",
+     "text": "密碼我也記不住。我設了一個只有我女朋友知道的。"
+    },
+    {
+     "who": "wu",
+     "text": "你有女朋友？"
+    },
+    {
+     "who": "he",
+     "text": "……上個月分了。"
+    }
+   ],
+   "sceneWanted": "apartment"
   }
  }
 };
