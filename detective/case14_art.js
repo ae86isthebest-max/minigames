@@ -292,14 +292,14 @@ EP14.art = true;
       { id:"evoffice", name:"B1 證物室前台", scene:"e_office", details:[
         { id:"d14_kettle", name:"小電熱水壺", hot:[4,40,10,8], text:"牆角有一個小電熱水壺，旁邊一罐泡麵，罐子上用麥克筆寫著「鄭」。" } ] },
       { id:"evshelf", name:"B1 證物室鐵架區", scene:"e_shelf", requires:shelfOpen, opt:(ph, has) => ({ body:ph === 0, outline:ph > 0, guncase:ph > 0 && has && has("e_dog"), dog:false }), details:[
-        { id:"d14_glove", name:"地上的一隻棉紗手套", hot:[86,102,8,5], text:"一隻棉紗手套掉在地上，指尖的地方磨破了。是右手的。" } ] }
+        { id:"d14_glove", name:"地上的一隻棉紗手套", label:"地板", hot:[86,102,8,5], text:"一隻棉紗手套掉在地上，指尖的地方磨破了。是右手的。" } ] }
     ],
     lab: [ { id:"lab", name:"鑑識中心", scene:"lab", details:[
       { id:"d14_bolt", name:"桌上的放大鏡", hot:[140,40,16,10], text:"放大鏡底下是一顆斷掉的螺栓。許知夏在旁邊的便條上寫：「竹子」。" } ] } ],
     morgue: [ { id:"mroom", name:"法醫室", scene:"m13_morgue", details:[
       { id:"d14_radio", name:"收音機", hot:[18,42,16,8], text:"收音機在放〈小城故事〉。老錢說：「老鄭最喜歡這首。他每次來，都跟著哼。」" } ] } ],
     lot: [ { id:"lot", name:"員工停車場", scene:"e_lot", details:[
-      { id:"d14_tape", name:"車位牌上的膠帶", hot:[110,20,6,4], text:"牌子的角用膠帶黏著。膠帶是證物室專用的那種，上面印著「證物封緘」。" } ] } ],
+      { id:"d14_tape", name:"車位牌上的膠帶", label:"車位牌", hot:[110,20,6,4], text:"牌子的角用膠帶黏著。膠帶是證物室專用的那種，上面印著「證物封緘」。" } ] } ],
     zhenghome: [ { id:"zliving", name:"鄭家客廳", scene:"z_home", details:[
       { id:"d14_shoes", name:"鞋櫃", hot:[2,62,12,12], text:"鞋櫃最上層是一雙擦得很亮的皮鞋，鞋盒上寫著：「雅文升護理長那天穿」。" } ] } ]
   };

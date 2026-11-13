@@ -37,14 +37,14 @@ const EP15 = {
   ],
   goal: "弄清楚趙德安是怎麼死的。",
   phases: [
-    { title:"凌晨　10月9日（五）", short:"凌晨", startAt:"safehouse", questionLimit:4, clock:{ start:"01:20", end:"07:00", ask:5, item:10, cctv:10, test:10 },
+    { title:"凌晨　10月9日（五）", short:"凌晨", startAt:"safehouse", questionLimit:8, clock:{ start:"01:20", end:"07:00", ask:5, item:10, cctv:10, test:10 },
       reports:[
         { id:"r_119", title:"119 轉報",
           text:"00:34 港區民生路 88 號 5 樓報案：一名男子在浴室上吊。\n00:42 救護車到場，判定死亡。\n報案人：看守員警林志豪。他說 00:30 例行查看時浴室門鎖著、叫不應，撞門進去發現，用刀割斷繩子、做了 CPR。\n督察組組長黎光耀 01:00 到場。",
           clue:"00:34 看守員警林志豪報案：00:30 例行查看，浴室門鎖著，撞門進去發現趙德安上吊，割斷繩子做 CPR；00:42 判定死亡",
           tl:[["10/09 00:30","林志豪例行查看，浴室門鎖著"],["10/09 00:34","林志豪打 119"],["10/09 00:42","救護人員判定趙德安死亡"]] }
       ]},
-    { title:"天亮以後　10月9日（五）", short:"白天", headline:"白天：記者會之前", startAt:"police", questionLimit:4, clock:{ start:"09:00", end:"18:00", ask:5, item:10, cctv:10, test:10 },
+    { title:"天亮以後　10月9日（五）", short:"白天", headline:"白天：記者會之前", startAt:"police", questionLimit:8, clock:{ start:"09:00", end:"18:00", ask:5, item:10, cctv:10, test:10 },
       intro:[
         "老錢一早做完了解剖。",
         "昨晚申請的調閱，都放在你桌上了。",

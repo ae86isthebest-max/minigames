@@ -240,7 +240,7 @@ EP13.art = true;
       { id:"nstall", name:"鹽酥雞攤", scene:"n_stall", details:[
         { id:"d13_oil", name:"油鍋", hot:[64,54,12,8], text:"油鍋上蓋著鐵板。老闆說白天不炸，晚上六點才開。" } ] },
       { id:"nlane", name:"夜市後巷", scene:"n_lane", details:[
-        { id:"d13_moto", name:"地上的機車油漬", hot:[120,84,20,6], text:"地上有一小灘新的機車機油，形狀像有一台車在這裡停過幾分鐘。" } ] }
+        { id:"d13_moto", name:"地上的機車油漬", label:"巷子地上", hot:[120,84,20,6], text:"地上有一小灘新的機車機油，形狀像有一台車在這裡停過幾分鐘。" } ] }
     ],
     arcade: [ { id:"aroom", name:"金龍遊藝場", scene:"a_room", details:[
       { id:"d13_claw", name:"夾娃娃機", hot:[150,24,24,40], text:"夾娃娃機裡全部是柴犬布偶。華仔說：「我夾的。全部。」" } ] } ],
