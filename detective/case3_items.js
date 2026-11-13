@@ -137,10 +137,10 @@ EP3.evidence.push(
     tl:[["12/08 00:31","王俊傑在新莊的便利商店買啤酒（發票）"]] },
 
   /* ---------- 鑑識中心 ---------- */
-  { id:"o3_lab_fingers", loc:"lab", room:"lab", hot:[128,40,34,24], obj:true, mins:5, icon:"🧊", phase:1, title:"證物冰箱",
+  { id:"o3_lab_fingers", loc:"lab", room:"lab", hot:[164,28,26,44], obj:true, mins:5, icon:"🧊", phase:1, title:"證物冰箱",
     text:"九根手指分別裝在九個小袋子裡，貼著編號。小吳把右手食指那袋拿到燈下：「指腹上除了血，還有白色的油漆屑。跟現場的牆一樣。」",
     clue:"右手食指的指腹上有牆上的白漆屑——牆上的字是拿這根手指寫的" },
-  { id:"o3_lab_note", loc:"lab", room:"lab", hot:[26,40,22,24], obj:true, mins:5, icon:"🔬", title:"小吳的便條",
+  { id:"o3_lab_note", loc:"lab", room:"lab", hot:[7,41,17,15], obj:true, mins:5, icon:"🔬", title:"小吳的便條",
     text:"顯微鏡旁貼著一張便條：「送驗請寫清楚要驗什麼。『全部都驗』不是一個選項。」",
     clue:"化驗要想清楚先送什麼" },
 
@@ -280,7 +280,7 @@ EP3.evidence.push(
   { id:"ev_sledger", loc:"shark", room:"sfront", hot:[98,48,32,14], requires:["bao2"], title:"櫃檯的帳本",
     text:"「鄭國華　600 萬　8/15　月息 2%」\n「9/15、10/15 已繳。11/15 未繳。」\n最新的一行用原子筆寫著：「12/7　豹　B-12　收據 ×1」。",
     clue:"金鼎帳本：「12/7 豹 B-12 收據 ×1」" },
-  { id:"ev_bmw", loc:"shark", room:"sfront", hot:[8,58,44,30], requires:["bao12"], title:"阿豹的黑色 BMW",
+  { id:"ev_bmw", loc:"shark", room:"sfront", hot:[164,30,28,44], requires:["bao12"], title:"阿豹的黑色 BMW",
     text:"後車廂有一把用毛巾包著的剁刀。旁邊的車用急救包被打開過，紗布少了一包。",
     clue:"阿豹的後車廂有一把剁刀，急救包少了一包紗布" },
   { id:"o3_neon", loc:"shark", room:"sfront", hot:[40,4,110,20], obj:true, mins:5, icon:"💡", title:"招牌",
@@ -348,7 +348,7 @@ EP3.evidence.push(
       ["12/06","21:41","門號儲值 0966-310-552","300","—"]
     ] },
     clue:"" },
-  { id:"o3_storesign", loc:"seven", room:"seven", hot:[60,38,32,14], obj:true, mins:5, icon:"🪧", title:"櫃檯的告示",
+  { id:"o3_storesign", loc:"seven", room:"seven", hot:[166,38,24,18], obj:true, mins:5, icon:"🪧", title:"櫃檯的告示",
     text:"「發票可存手機條碼載具，中獎自動通知！」\n店員說：「現在很多人都用手機條碼，連阿伯都會。」",
     clue:"" },
 
