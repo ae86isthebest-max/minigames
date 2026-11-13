@@ -215,7 +215,7 @@ EP10.art = true;
     lamp(30, 10, "#f8e8b8");
     R(0, 74, W, 34, "#4a4a48"); for (let x = 0; x < W; x += 16) R(x, 74, 1, 34, "#3a3a38");
     txt("← 龍山寺", 4, 104, "#8a8a8a", "5px sans-serif"); txt("小吃部 →", 154, 104, "#8a8a8a", "5px sans-serif");
-    R(0, 0, W, 6, "#0a0a0a"); txt("CAM 7-11", 4, 5, "#e8e8e0", "4px monospace");
+    R(0, 0, W, 6, "#0a0a0a"); txt("CAM STORE", 4, 5, "#e8e8e0", "4px monospace");
   };
 
   /* ---------- 台北：其他地方 ---------- */
@@ -459,7 +459,7 @@ EP10.art = true;
       { t:"23:53:40", d:2, join:true, cap:"他打開看了一眼，手停了很久。然後摺起來，放進胸前的口袋。", m:{ suL:[80,98,"stand",1], kangT:[110,98,"pocket@paper",-1] } },
       { t:"23:54:30", d:3.5, cap:"兩個人往相反的方向，走回自己的車廂。", m:{ suL:[-20,98,null,-1,80,98], kangT:[220,98,null,1,110,98] }, out:["suL","kangT"] }
     ] },
-    cctv_store: { scene:"tp_out", cam:"CAM 7-11", date:"2026-08-07", beats:[
+    cctv_store: { scene:"tp_out", cam:"CAM STORE", date:"2026-08-07", beats:[
       { t:"01:32:10", d:4, cap:"一個戴帽子、背黑包、穿黑鞋的男人走到大門口，在密碼鎖上按了幾下。", m:{ kangT:[TDOOR + 12,98,"back+reach",1,-20,98] } },
       { t:"01:33:00", d:3, cap:"門開了，他走進去。", m:{ kangT:[TDOOR,DY,null,-1,TDOOR + 12,98,[[TDOOR,98]]] }, out:["kangT"] },
       { t:"01:37:30", d:3.5, cap:"方國良從右邊走過來，走路歪歪的，在門口摸了很久才刷卡進去。", m:{ fangL:[TDOOR + 4,96,"back+door@card",-1,220,98,[[TDOOR + 16,98],[TDOOR + 10,94]]] } },

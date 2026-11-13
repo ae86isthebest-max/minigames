@@ -69,7 +69,7 @@ const EP6 = {
     { id:"fanhome", mins:20, name:"范家（山腳別墅）", sign:"范宅", icon:"🏛️", desc:"董事長范振東和兒子范凱文的家，司機莊文福住在車庫旁的小房間", phase:1, requires:["r_zhuang"] },
     { id:"site", mins:20, name:"海灣一號工地", sign:"海灣一號", icon:"🏗️", desc:"振東建設正在蓋的海景大樓，濱海路走到底就是", phase:1, requires:["ev_notebook","ev_keybox"] },
     { id:"lihome", mins:20, name:"黎家（濱海工業區宿舍）", sign:"工業區宿舍", icon:"🏘️", desc:"黎國偉一家住的老宿舍", phase:1, requires:["li1"] },
-    { id:"store", mins:15, name:"7-11 濱海門市", sign:"7-11", icon:"🏪", desc:"濱海路口的超商，離海灣一號工地五分鐘", phase:1, requires:["h_adi"] },
+    { id:"store", mins:15, name:"每日便利 濱海門市", sign:"每日", icon:"🏪", desc:"濱海路口的超商，離海灣一號工地五分鐘", phase:1, requires:["h_adi"] },
     { id:"hongda", mins:25, name:"宏達安全器材行", sign:"宏達安全器材", icon:"🦺", desc:"工業區後巷的小倉庫", phase:1, requires:["h_hongda"] },
     { id:"meihome", mins:25, name:"陳家（北澳漁村）", sign:"北澳漁村", icon:"🐟", desc:"去年在工地摔死的工人陳志忠的家", phase:1, requires:["ev_notebook","qi4"] }
   ],
@@ -269,11 +269,11 @@ EP6.suspects.push(
       { id:"xa6", q:"柯建宏是個怎樣的人？", a:"好孩子。阿忠走了以後，他每天下班都在神龕前面站一下才走。站了一個月，就辭職了。", clue:"阿忠走後，柯建宏每天在神龕前站一下，一個月後辭職" },
       { id:"xa7", q:"工地的人都抽什麼菸？", requires:["ev_butts"], a:"大部分抽新樂園、白長壽。黃長壽的不多……主任抽黃長壽。", note:"他從口袋拿出自己的菸：新樂園。", clue:"阿賢說工地大多抽新樂園，主任黎國偉抽長壽" }
     ] },
-  { id:"clerk", name:"陳冠宇", role:"7-11 濱海門市店員，22 歲", av:"🏪", where:[null,"store","store"],
+  { id:"clerk", name:"陳冠宇", role:"每日便利 濱海門市店員，22 歲", av:"🏪", where:[null,"store","store"],
     questions:[
       { id:"ck1", q:"5/12 傍晚 18:40，辦預付卡的那個人，你記得嗎？", a:"記得。很高，進門的時候頭撞到吊旗。他拿一張外國人的居留證影本，說幫工地的朋友辦，朋友走不開。我說要本人……他塞給我兩百塊。我就辦了。", note:"他的耳朵紅了。「店長會殺了我。」", clue:"店員說 5/12 辦卡的男人很高，頭撞到吊旗；拿外國人的居留證影本說幫工地朋友辦，塞了兩百塊" },
       { id:"ck2", q:"他還買了什麼？", requires:["ck1"], a:"一包長壽。他說：『工地的人都抽這個。』我又沒問他。", clue:"那個男人多買了一包長壽菸，自己說「工地的人都抽這個」" },
-      { id:"ck3", q:"店裡的監視器還留著嗎？", a:"有，保留一個月。後面的電腦可以看。", clue:"7-11 的監視器保留一個月" },
+      { id:"ck3", q:"店裡的監視器還留著嗎？", a:"有，保留一個月。後面的電腦可以看。", clue:"每日便利 的監視器保留一個月" },
       { id:"ck4", q:"這個人，是他嗎？", requires:["ck1"], requiresAll:["li1"], a:"……是他。外套背後那兩個字，振東。他走路的樣子我也記得，腳往外開。", clue:"店員指認辦預付卡的人就是黎國偉" }
     ] },
   { id:"he", name:"何沛恩", role:"《澄港日報》記者，33 歲", av:"📰", where:[null,"police","police"],
