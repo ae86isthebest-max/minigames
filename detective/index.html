@@ -269,6 +269,9 @@ body.fs .toast{bottom:calc(14px + env(safe-area-inset-bottom))}
 <script src="case13.js"></script>
 <script src="case13_items.js"></script>
 <script src="case13_art.js"></script>
+<script src="case14.js"></script>
+<script src="case14_items.js"></script>
+<script src="case14_art.js"></script>
 <script src="cafe.js"></script>
 <script>
 /* =========================================================
@@ -1348,6 +1351,8 @@ const kindOf = id => C.kinds.find(k=>k.id===id);
 /* 要不要選「是誰」：他殺一定要；其他結局（失竊、綁架、自殺被人動過手腳……）在 kinds 裡寫 who:"題目" 就會問。
    推理題可以寫 kinds:["murder","theft"] 限定哪些結局才出現（沒寫＝所有會問「是誰」的結局都出現） */
 const whoKind = id => { const k = kindOf(id); return !!k && (id==="murder" || !!k.who); };
+// 有些結論不用選人，可是要回答推理題（例如證明是意外）：kinds 裡寫 reason:true
+const rqKind = id => whoKind(id) || !!(kindOf(id)||{}).reason;
 const whoTitle = id => (kindOf(id)||{}).who || "兇手是誰？（可以複選，甚至全部都選）";
 const reasonFor = (r, kind) => unlocked(r) && (!r.kinds || r.kinds.includes(kind));
 
@@ -1362,6 +1367,7 @@ function courtSteps(){
   steps.push({ who:"narr", text: (typeof K.open==="function" ? K.open(S.phase) : K.open) || "所有人都被叫到了一起。大家看著你，等你開口。" });
   const kd = C.kinds.find(k=>k.id===P.kind);
   steps.push({ who:"you", text: (K.kindLine && K.kindLine[P.kind]) || `我的結論是——${kd ? kd.label.replace(/^(.{2,4})：/,"$1。") : "……"}` });
+  if (!whoKind(P.kind) && rqKind(P.kind)) C.reasoning.forEach((q,i)=>{ if (reasonFor(q, P.kind) && P.reasoning[i]!==undefined) steps.push({ who:"you", text:`${q.q}\n——${q.options[P.reasoning[i]]}。` }); });
   if (whoKind(P.kind)){
     C.reasoning.forEach((q,i)=>{ if (reasonFor(q, P.kind) && P.reasoning[i]!==undefined) steps.push({ who:"you", text:`${q.q}\n——${q.options[P.reasoning[i]]}。` }); });
     if ((K.murmur||[]).length) steps.push({ who:"narr", text:K.murmur[(S.tries||1) % K.murmur.length] });
@@ -1406,7 +1412,7 @@ function vAccuse(){
   const kinds = C.kinds.filter(unlocked);
   const lockedKinds = C.kinds.length - kinds.length;
   const people = allPeople();
-  const murder = whoKind(P.kind);
+  const murder = whoKind(P.kind), rqk = rqKind(P.kind);
   const lockedR = C.reasoning.filter(r=>!unlocked(r) && (!r.kinds || r.kinds.includes(P.kind))).length;
   const rqN = C.reasoning.filter(r=>reasonFor(r, P.kind)).length;   // 這個結論要回答的推理題（已解鎖的）
   let n = 1;
@@ -1419,8 +1425,8 @@ function vAccuse(){
   ${murder?`<div class="card"><h3>${n++}. ${esc(whoTitle(P.kind))}</h3>
     ${people.map(s=>`<div class="pick ${P.culprits.includes(s.id)?"on":""}" onclick="toggleCulprit('${s.id}')"><span class="box">${P.culprits.includes(s.id)?"✓":""}</span>${s.av} ${esc(s.name)}</div>`).join("")}
     <p class="muted small">🔒 調查中出現的其他人物，也會加進這裡。</p>
-  </div>
-  ${!rqN ? "" : !S.rq ? `<div class="card"><h3>🧩 推理題（${rqN} 題，先蓋著）</h3>
+  </div>`:""}
+  ${rqk?`${!rqN ? "" : !S.rq ? `<div class="card"><h3>🧩 推理題（${rqN} 題，先蓋著）</h3>
     <p class="muted small" style="margin:0 0 8px"><b>一打開推理題，就算用掉一次推理機會</b>，看了不提交也算。這會是你第 ${(S.tries||0)+1} 次推理：第一次就全對才有 S，第二次最高 A，之後最高 B。<br>題目本身也是提示，所以想清楚、查夠了再打開。離開這一頁，題目會再蓋起來。</p>
     <button class="btn primary" style="text-align:center" onclick="openReasoning()">打開推理題（用掉一次機會）</button></div>`
   : C.reasoning.map((r,i)=>!reasonFor(r, P.kind)?"":`<div class="card"><h3>${n++}. ${esc(r.q)}</h3>
@@ -1444,9 +1450,9 @@ async function openReasoning(){
 }
 function toggleEv(id){ const e=accusePick.evidence; if(e.includes(id)) e.splice(e.indexOf(id),1); else if(e.length<3) e.push(id); else toast("最多選 3 項"); render(); }
 async function submitAccuse(){
-  const P = accusePick, murder = whoKind(P.kind);
+  const P = accusePick, murder = whoKind(P.kind), rqk = rqKind(P.kind);
   if (murder && !P.culprits.length){ toast(P.kind==="murder" ? "請至少選一名兇手" : "請至少選一個人"); return; }
-  if (murder && C.reasoning.some((r,i)=>reasonFor(r, P.kind) && P.reasoning[i]===undefined)){ toast(S.rq ? "推理題還沒答完" : "要先打開推理題，把題目答完"); return; }
+  if (rqk && C.reasoning.some((r,i)=>reasonFor(r, P.kind) && P.reasoning[i]===undefined)){ toast(S.rq ? "推理題還沒答完" : "要先打開推理題，把題目答完"); return; }
   if (!await uiConfirm("確定提交你的推理？")) return;
   const sol = C.solution;
   let verdict;
@@ -1458,7 +1464,7 @@ async function submitAccuse(){
     verdict = (right===sol.culprits.length && !wrongN) ? "perfect" : right>0 ? "partial" : "wrong";
   }
   const evHits = P.evidence.filter(e=>sol.keyEvidence.includes(e)).length;
-  const reasonHits = murder ? C.reasoning.filter((r,i)=>reasonFor(r, P.kind) && P.reasoning[i]===r.answer).length : 0;
+  const reasonHits = rqk ? C.reasoning.filter((r,i)=>reasonFor(r, P.kind) && P.reasoning[i]===r.answer).length : 0;
   const pts = evHits + reasonHits, max = 3 + C.reasoning.filter(r=>!r.kinds || r.kinds.includes(sol.kind)).length;   // 第 1 集：滿分 6
   let grade;
   if (verdict==="perfect") grade = pts>=max ? "S" : pts>=Math.ceil(max*2/3) ? "A" : "B";
@@ -1483,7 +1489,7 @@ function vResult(){
   const everyone = [...C.suspects, ...C.extraPeople];
   const pickName = murder ? (r.pick.kind==="murder" ? "他殺：" : kindOf(r.pick.kind).label.replace(/：.*/,"") + "：") + r.pick.culprits.map(id=>everyone.find(s=>s.id===id).name).join("、") : kindOf(r.pick.kind).label;
   const shown = S.revealed !== false;   // 舊存檔沒有這個欄位，視為已公布
-  const answers = !murder || !shown ? "" : `<div class="card"><h3>🧩 推理題</h3>${rq.map(([q,i])=>{
+  const answers = !rqKind(r.pick.kind) || !shown ? "" : `<div class="card"><h3>🧩 推理題</h3>${rq.map(([q,i])=>{
     const mine = r.pick.reasoning[i], ok = mine===q.answer;
     return `<p style="margin:6px 0">${ok?"✅":"❌"} ${esc(q.q)}<br><span class="muted small">答案：${esc(q.options[q.answer])}${ok?"":`（${mine===undefined?"你沒有作答":"你選："+esc(q.options[mine])}）`}</span></p>`;}).join("")}</div>`;
   const dig = canDig();
