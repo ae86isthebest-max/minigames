@@ -280,7 +280,7 @@ EP24.art = true;
   EP24.outScenes = [];
   EP24.fac = { anhe:["#efe8d8","#3a8a6a"], lab:["#e2e8e8","#3a7a8a"], meihome:["#c8b898","#7a5a3a"] };
   EP24.setting = { anhe:"town", lab:"city", meihome:"town" };
-  const SKY24 = [ ["#8ab8d8","#a8c8e0","#c8d8e0","#6a8a5a",0,0], ["#0a0f1c","#1a2238","#222a3a","#2a3242",0,1] ];
+  const SKY24 = [ ["#7a8a98","#b4bec4","#5a6a5a","#6a7a64",0,0], ["#0a0f1c","#1a2238","#222a3a","#2a3242",1,1] ];   // 下午陰天，晚上下起毛毛雨
   EP24.worldSky = ph => SKY24[Math.min(ph || 0, SKY24.length - 1)];
   EP24.roomDesc = {
     lobby:"安和護理之家的一樓大廳。消毒水的味道。", station:"二樓的護理站，走廊兩邊都是病房。", r301:"301 病房。何振聲住了快四個月的地方。", lounge:"二樓的交誼廳。電視開著，沒有聲音。", staff:"員工休息室。大夜班的人在這裡吃飯。",
