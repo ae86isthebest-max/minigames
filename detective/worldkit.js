@@ -137,12 +137,10 @@ const WK = (() => {
     Object.assign(spots, o.spots || {});          // 個別地點可以把證物搬到別的位置（例如停在店外的車）
     rooms.forEach(r => (r.details || []).forEach(d => { details[d.id] = [pos[r.id] + d.hot[0], OY + d.hot[1], d.hot[2], d.hot[3]]; }));
     const setting = o.setting || (C.setting || {})[l.id] || SETTING[l.id] || "town", fac = (C.fac || {})[l.id] || FAC[l.id] || FAC.police;
-    const used = {};
+    // 人站的位置只看劇本（C.daily 的 room／x）；「不要疊在一起」交給 index.html 的 spreadPeople（連員警、鑑識人員一起排）
     const placeFor = (s) => {
       const d = dailyOf(s), room = d.room && pos[d.room] !== undefined ? d.room : rooms[0].id;
       let px = pos[room] + (d.x !== undefined ? d.x : 60);
-      while (Object.keys(used).some(k => k !== s.id && Math.abs(used[k] - px) < 12)) px += 16;
-      used[s.id] = px;
       return { x:px, pose:d.pose, facing:d.facing };
     };
     function draw(p, t, op, cam, g){
@@ -198,7 +196,9 @@ const WK = (() => {
       sign: i ? null : (p) => { const { R, shade } = p, ox = b.x0 + GAP; R(ox + 60, 30, 72, 16, fac[1]); R(ox + 60, 30, 72, 1, shade(fac[1], .3)); R(ox + 60, 45, 72, 1, shade(fac[1], -.4));
         if (l.id === "hospital"){ R(ox + 66, 35, 8, 2, "#e04a3a"); R(ox + 69, 32, 2, 8, "#e04a3a"); }
         if (l.id === "police"){ R(ox + 66, 33, 6, 6, "#f2d03b"); R(ox + 68, 32, 2, 8, "#f2d03b"); }
-        R(ox + 20, 104, 30, 4, shade(fac[1], -.1)); for (let k = 0; k < 6; k++) R(ox + 20 + k*5, 100, 4, 4, k%2 ? "#e9e4da" : fac[1]); }
+        // 一樓頭兩扇窗下面的花台（以前是一條橫跨兩扇窗的條紋，擋住半扇窗，看起來像畫錯）
+        [12, 42].forEach(wx => { R(ox + wx - 3, 104, 18, 4, shade(fac[1], -.1)); R(ox + wx - 3, 104, 18, 1, shade(fac[1], .25)); R(ox + wx - 3, 107, 18, 1, shade(fac[1], -.4));
+          for (let k = 0; k < 6; k++){ R(ox + wx - 2 + k*3, 102, 2, 2, k % 2 ? "#4f7f46" : "#3f6b3a"); if (k % 3 === 1) R(ox + wx - 2 + k*3, 101, 1, 1, "#f2d6dc"); } }); }
     }));
     // 每個房間第一次走進去說的話（C.roomDesc[房間 id]），街上也說一句
     const areas = rooms.map(r => ({ id:r.id, name:r.name, x0:pos[r.id] - GAP, x1:pos[r.id] + RW - 1, text:(C.roomDesc || {})[r.id] || `${r.name}。看起來沒什麼特別的。` }));
