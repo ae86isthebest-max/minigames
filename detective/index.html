@@ -131,6 +131,14 @@ details.past summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6p
 .wbtns button{pointer-events:auto}
 .wgo{background:rgba(20,16,12,.82);color:#fff;border:1.5px solid #6fd46f;border-radius:99px;padding:6px 12px;font-size:13px;font-family:inherit;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.5)}
 .wgo[hidden]{display:none}
+/* 「附近」清單：畫面正下方一排名字（高度固定，有沒有東西畫面都不會跳） */
+.wnear{display:flex;gap:7px;align-items:center;overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;touch-action:pan-x;padding:0 max(8px,env(safe-area-inset-right)) 0 max(8px,env(safe-area-inset-left));height:48px;box-sizing:border-box;line-height:1.2;background:#14100c;scrollbar-width:none}
+.wnear::-webkit-scrollbar{display:none}
+.wnear .nl{flex:none;color:#cfc6b8;font-size:13px;white-space:nowrap}
+.wnear .nn{color:#8a8072}
+.wnear .nb{flex:none;background:#2a221b;color:#fff;border:1.5px solid #ffd04a;border-radius:99px;padding:0 14px;height:38px;font-size:14px;font-family:inherit;white-space:nowrap;cursor:pointer}
+.wnear .nb:active{background:#4a3c2e}
+.wnear.more{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 44px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 44px),transparent)}
 .wroom{background:rgba(20,16,12,.82);color:#fff;border:1.5px solid #ffd04a;border-radius:99px;padding:6px 12px;font-size:13px;font-family:inherit;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.5);display:flex;align-items:center;gap:2px}
 .wroom[hidden]{display:none}
 .wroom .an{font-weight:400;opacity:.85}
@@ -174,7 +182,7 @@ body.fs .toast{bottom:calc(14px + env(safe-area-inset-bottom))}
   /* 打橫：畫面大小固定不變，問話、選單浮在畫面右邊（不會一開一關畫面就縮放） */
   .fs-body{position:relative}
   .fs-stage{flex:1 1 0;min-height:0;container-type:size}
-  .fs-stage .world{width:min(100cqw,177.78cqh)}
+  .fs-stage .world{width:min(100cqw,calc((100cqh - 48px) * 1.7778))}   /* 48px：留給畫面下面的「附近」清單 */
   .fs-panel{position:absolute;top:8px;right:max(8px,env(safe-area-inset-right));width:clamp(260px,36vw,420px);max-height:calc(100% - 16px);background:none;padding:0;z-index:3;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.55)}
   .fs-panel > .card{margin:0;background:rgba(31,26,23,.96)} .fs-panel > .look{margin:0 4px 4px 0}
 }
@@ -581,7 +589,7 @@ function buddyHint(l){
   const sl = travel() ? searchLeftAt(l) : searchLeft();
   const fresh = allItems().filter(it=>(it.loc||"_")===l.id && !S.seen.includes(it.id) && itemOpen(it) && unlocked(it)).length;
   const s = C.suspects.find(x=>x.id==="wu");
-  const tail = (detailsLeft(l) ? "清單不是全部：這裡還藏著小細節，走到附近會微微閃一下，點它就能看（不花時間）。" : "") + (s && !reachable(s) ? "要問我問題，就到鑑識中心找我。" : "");
+  const tail = (detailsLeft(l) ? "清單不是全部：這裡還藏著小細節，走到附近會微微閃一下，畫面下面的「🔎 附近」也會列出來，點名字就能看（不花時間）。" : "") + (s && !reachable(s) ? "要問我問題，就到鑑識中心找我。" : "");
   if (S.done) return "案子已經結了，辛苦了。";
   if (CLK()) return `${timeTag()}。${fresh ? `點${pinWhere()}的「📍」看這裡有什麼可以查，點畫面上的箭嘴換地方。` : "這裡看得到的東西都查過了。"}看錄影、查證物、問話都要花時間，挑重要的做。` + tail;
   if (sl <= 0) return "這裡今天查不了更多了，去問問人吧。" + tail;
@@ -747,7 +755,7 @@ function helpText(l){
   看到<b style="color:#b07aff">【···】</b>代表那裡好像有暗門或秘道。<br>
   頭上箭嘴：<b style="color:#ffd04a">黃</b> 可以問話、<b style="color:#ff5a4a">紅</b> 有新的質問、<b style="color:#8a8a8a">灰</b> 不肯再答、<b style="color:#6ac8ff">藍</b> 鑑識人員或員警（問話不花時間）、<b style="color:#6fd46f">綠</b> 小吳。<br>
   到了一個地方，點${pinWhere()}<b style="color:#ffd04a">「📍 地名」</b>：那裡的人可以說話、可以調查的東西都列在裡面（黃色數字是還沒查的數量）。點人、點東西會先問你要不要做，確定了才會${CLK() ? "花時間" : "用掉次數"}。<br>
-  <b style="color:#ffd04a">清單不是全部。</b>每個地方的畫面上還藏著<b>小細節</b>，清單裡不會列出來。你走到附近，還沒看過的東西會<b>微微閃一下</b>，點它就能看；點在旁邊一點點也算。看小細節不花時間。<br>
+  <b style="color:#ffd04a">清單不是全部。</b>每個地方的畫面上還藏著<b>小細節</b>，清單裡不會列出來。你走到附近，還沒看過的東西會<b>微微閃一下</b>，點它就能看。點不準也沒關係：畫面下面的<b style="color:#ffd04a">「🔎 附近」</b>會列出你身邊還沒看過的東西，點名字就可以。看小細節不花時間。<br>
   筆記、案情、結案：點小吳或右上角「💬 小吳」。`;
 }
 /* ---------- 走進一個房間／區域：列出這裡可以查的東西 ---------- */
@@ -786,6 +794,24 @@ const areaList = def => (def.areas || []).filter(a=>!a.hide);
 function peopleIn(def, aid){
   const a = (def.areas||[]).find(x=>x.id===aid); if (!a || !curHooks) return [];
   return curHooks.people().filter(q=>q.x>=a.x0-2 && q.x<=a.x1+2 && Math.abs((q.y ?? FLOOR) - areaY(a)) < 3);
+}
+/* ---------- 「附近」清單：主角身邊（會閃的那幾樣）還沒看過的東西，排成一排名字，點名字就等於點那樣東西 ----------
+   名字用小細節的 label／name、證物的 label／title：一定要是中性的東西名稱，不能看得出重不重要，也不能劇透。
+   證物和小細節長得一樣，不分種類；要不要花時間，點下去照原本的規則問。 */
+let curNear = [];
+function nearLabel(q){
+  if (q.k === "detail"){ const d = allDetails().find(x=>x.id===q.id); return (d && (d.label || d.name)) || "這裡的東西"; }
+  const its = (q.ids || []).map(id=>allItems().find(x=>x.id===id)).filter(Boolean), fr = its.filter(it=>!S.seen.includes(it.id) && itemOpen(it) && unlocked(it));
+  const it = fr[0] || its[0];
+  return it ? (it.label || it.title) + (fr.length > 1 ? `　等 ${fr.length} 樣` : "") : "這裡的東西";
+}
+function updateNear(){
+  const el = document.querySelector(".wnear"); if (!el) return;
+  if (curScripting){ el.innerHTML = ""; return; }
+  el.innerHTML = curNear.length
+    ? `<span class="nl">🔎 附近</span>` + curNear.map(q=>`<button class="nb" onclick="WORLD.goSpot('${WORLD.spotKey(q)}')">${esc(nearLabel(q))}</button>`).join("")
+    : `<span class="nl nn">🔎 附近沒有還沒看過的東西</span>`;
+  el.classList.toggle("more", el.scrollWidth > el.clientWidth + 2);   // 一排放不下：右邊淡出，提示可以往左滑
 }
 function updateRoomBtn(){
   const b = document.querySelector(".wroom"), g = document.querySelector(".wgo"); if (!b) return;
@@ -852,7 +878,7 @@ function roomList(l, def){
     ${rest.map(row).join("")}
     ${locked ? `<p class="muted small" style="margin:6px 2px 0">🔒 這裡好像還有 ${locked} 樣東西，現在還沒有理由去翻。</p>` : ""}
     ${!open.length && !ppl.length ? `<p class="muted small" style="margin:6px 2px 0">這裡沒有人，也沒什麼可以查的。</p>` : ""}
-    ${(dt => dt.n ? `<p class="muted small" style="margin:8px 2px 0">🔎 這裡藏著 ${dt.n} 個小細節，已發現 ${dt.found} 個${dt.found < dt.n ? "。走到附近會微微閃一下，點它就能看（不花時間）" : " ✓"}。</p>` : "")(areaDetails(l, def, wRoom))}</div>`;
+    ${(dt => dt.n ? `<p class="muted small" style="margin:8px 2px 0">🔎 這裡藏著 ${dt.n} 個小細節，已發現 ${dt.found} 個${dt.found < dt.n ? "。走到附近會微微閃一下，畫面下面的「🔎 附近」也會列出來（不花時間）" : " ✓"}。</p>` : "")(areaDetails(l, def, wRoom))}</div>`;
 }
 function worldViewFS(l, def){
   let panel = "";
@@ -864,7 +890,7 @@ function worldViewFS(l, def){
     panel = `<div class="look"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:6px">${back ? `<button class="back" style="margin:0;white-space:nowrap" onclick="${back}">‹ ${peek.from ? "監視器列表" : "返回"}</button>` : ""}<b style="margin:0;flex:1">${it.cctv?"📹":it.icon||"🧾"} ${esc(it.title)}</b><button class="back" style="margin:0" onclick="closePanel()">✕</button></div>${itemBody(it, true)}${peek.from ? `<button class="back" onclick="wAct={ids:peek.from};peek=null;render()">‹ 回到監視器列表</button>` : wRoom ? `<button class="back" onclick="peek=null;render()">‹ 回到${esc(areaName(def, wRoom))}</button>` : ""}</div>`; }
   else if (wGo) panel = goList(l, def);
   else if (wRoom) panel = roomList(l, def);
-  const stage = `<div class="world"><canvas id="worldcv"></canvas><div class="wbtns"><button class="wroom" hidden onclick="openRoomList()"></button></div><div class="wbubble" hidden><b></b><span></span></div><div class="wtip"></div><button class="wskip" hidden>跳過 ⏭</button></div>`;
+  const stage = `<div class="world"><canvas id="worldcv"></canvas><div class="wbtns"><button class="wroom" hidden onclick="openRoomList()"></button></div><div class="wnear"></div><div class="wbubble" hidden><b></b><span></span></div><div class="wtip"></div><button class="wskip" hidden>跳過 ⏭</button></div>`;
   const extra = l.perVisit ? `<button class="hb go" onclick="wTalk=null;wBuddy=false;wSay=null;peek=peek&&peek.kind==='lab'?null:{kind:'lab'};render()">${labW(l).ic} ${labW(l).nm.slice(0,2)}</button>` : "";
   return fsFrame(l, stage, panel, extra);
 }
@@ -923,7 +949,8 @@ function worldHooks(l, def){
     noSpark: true,
     noFreeWalk: true,
     areaName: aid => areaName(def, aid),
-    areaNow: (aid, scr) => { curArea = aid; curScripting = !!scr; updateRoomBtn(); },
+    areaNow: (aid, scr) => { curArea = aid; curScripting = !!scr; updateRoomBtn(); updateNear(); },
+    nearNow: list => { curNear = list; updateNear(); },
     onSecret: q => { wTalk = null; wAct = null; peek = null; lastSaid = null; wSay = { who:"you", text:q.text || "這面牆後面好像是空的……" }; if (q.onFind) q.onFind(S); save(); render(); },
     areaSeen: id => (S.areas || []).includes(l.id + ":" + id + "@" + S.phase),
     onArea: id => { (S.areas = S.areas || []).push(l.id + ":" + id + "@" + S.phase); save(); }
