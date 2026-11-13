@@ -401,7 +401,7 @@ function drawScenes(){
   const wc = document.getElementById("worldcv");
   if (wc){ const l = curLoc(), def = worldDef(l); if (def) WORLD.mount(wc, def, l.id, curHooks = worldHooks(l, def)); }
   const mc = document.getElementById("mapcv");
-  if (mc) mapCtl = WK.drawMap(mc, mapFrom || PH().startAt || C.locations[0].id);
+  if (mc){ mapCtl = WK.drawMap(mc, mapFrom || PH().startAt || C.locations[0].id); fitMapLabels(); requestAnimationFrame(fitMapLabels); }
   document.querySelectorAll("canvas[data-anim]").forEach(cv=>{
     const it = cv.dataset.anim==="__replay" ? { anim:(C.court||{}).replay } : [...allItems(), ...tests()].find(x=>x.id===cv.dataset.anim); if (!it || !it.anim) return;
     const cap = cv.parentNode.querySelector(".cap");
@@ -635,7 +635,7 @@ function calcCover(){
   const pr = p.getBoundingClientRect(), cr = cv.getBoundingClientRect();
   if (cr.width) fsCover = Math.max(0, Math.min(.6, (cr.right - pr.left + 6) / cr.width));
 }
-addEventListener("resize", ()=>{ if (fsMode()) calcCover(); });
+addEventListener("resize", ()=>{ if (fsMode()) calcCover(); fitMapLabels(); });
 function fsFrame(l, stage, panel, extra){
   return `<div class="fs-root">${hudHTML(l, extra)}<div class="fs-body"><div class="fs-stage">${stage}</div>${panel ? `<div class="fs-panel">${panel}</div>` : `<div class="fs-panel fs-empty"><p class="hint" style="margin:6px 2px">📱 把手機打橫，畫面會更大。<br>點人、點東西會先問你要不要做；點小吳（<b style="color:#6fd46f">綠色箭嘴</b>）或右上角「💬 小吳」，可以翻筆記、看案情、結案。</p></div>`}</div></div>`;
 }
@@ -749,7 +749,7 @@ function goArea(aid){
   const l = curLoc(), def = l && worldDef(l), a = def && (def.areas||[]).find(x=>x.id===aid); if (!a) return;
   wGo = false; wRoom = null; render();
   if (aid === curArea && !(WORLD.walking && WORLD.walking())){ openRoomList(aid); return; }
-  WORLD.goTo((a.x0 + a.x1) / 2, areaY(a), () => openRoomList(aid));
+  WORLD.goTo(WORLD.standIn(a)[0], areaY(a), () => openRoomList(aid));
 }
 // 從清單跟人說話：先走到那個人旁邊
 function talkTo(id){
@@ -819,20 +819,35 @@ function sheetWrap(v){
   return `<div class="fs-root"><div class="fs-hud"><button class="hb go" onclick="closeSheet()">✕ 回到${travel() && !sheetFrom ? "地圖" : "現場"}</button><b class="hn">${t}</b><span class="sp"></span>
     ${CLK() ? `<span>🕐 ${nowStr()}・剩 ${minLabel(timeLeft())}</span>` : ""}</div><div class="fs-sheet" data-tab="${sheetKey()}"><div class="in">${lead}${v}</div></div></div>`;
 }
+/* 人不可以疊在一起（自動排的場景）：坐著、跪著、寫字的人跟家具有關係，先佔位置；
+   其他人如果離別人不到 13 格，就在同一個房間裡往旁邊挪 16 格（先右後左，越挪越遠）。每次算出來都一樣，不記上一次的結果。 */
+function spreadPeople(def, list){
+  if (!def.auto || !def.rooms || list.length < 2) return list;
+  const fixed = p => /^(sit|lie|kneel|type|write)$/.test(p.pose || "") ? 1 : 0, placed = [];
+  list.map((p, i) => [p, i]).sort((a, b) => fixed(b[0]) - fixed(a[0]) || a[1] - b[1]).forEach(([p]) => {
+    const clash = x => placed.some(q => (q.y || 0) === (p.y || 0) && Math.abs(q.x - x) < 13);
+    if (clash(p.x)){
+      const r = def.rooms.find(r => p.x >= def.pos[r.id] && p.x < def.pos[r.id] + 192), lo = r ? def.pos[r.id] + 8 : -1e9, hi = r ? def.pos[r.id] + 184 : 1e9;
+      for (let k = 1; k <= 11; k++){ const x = [p.x + 16 * k, p.x - 16 * k].find(x => x >= lo && x <= hi && !clash(x)); if (x !== undefined){ p.x = x; break; } }
+    }
+    placed.push(p);
+  });
+  return list;
+}
 function worldHooks(l, def){
   const sus = id => C.suspects.find(x=>x.id===id), ps = pendingScript(l, def);
   return {
     you: def.you || (C.world && C.world.farm && C.world.farm.you) || DETECTIVE,
     // 小吳一直跟在你後面（第 1 集沒有小吳這個角色，就用預設造型）
     buddy: () => { const s = sus(def.buddy || "wu"); if (s) return isGone(s) ? null : { id:s.id, L:lookOf(s) }; return { id:BUDDY.id, L:(C.looks && C.looks._wu) || BUDDY.look }; },
-    people: () => [
+    people: () => spreadPeople(def, [
       ...C.suspects.filter(s=>!isGone(s) && (!travel() || whereOf(s)===l.id) && s.id!==(def.buddy || "wu")).map(s=>{
         const pl = (def.placeFor ? def.placeFor(s, S.phase) : (def.place||{})[s.id]) || {};
         const m = moodOf(s, pl);
         return { id:s.id, x: pl.x ?? 140, y: pl.y, pose: pl.pose, facing: pl.facing, L: lookOf(s), mark: wTalk===s.id, ...arrowOf(s), ...m };
       }),
       ...extrasOf(def).map(e=>({ ...e, mark: wSay && wSay.who===e.id, arrow: ARROW.extra }))
-    ],
+    ]),
     spots: () => {
       const groups = {};
       allItems().filter(it=>(it.loc||"_")===l.id && def.spots[it.id] && (S.seen.includes(it.id) || (itemOpen(it) && unlocked(it)))).forEach(it=>{
@@ -1077,6 +1092,36 @@ async function nextPhase(){
 
 /* ---------- 地點 ---------- */
 const mapKnown = l => unlocked({ ...l, phase:undefined }) && (l.until===undefined || l.until>=S.phase);   // 地圖上看得到（就算今天還去不了）
+/* 地圖上的名牌：不可以被地圖的邊切掉，也不可以互相蓋住、蓋住別的地點的小房子。
+   每次畫地圖、視窗大小一變就重排一次（只挪名牌，用 margin；地點本身的位置 C.mapPos 不動）。檢查：tools/maplint.js */
+function fitMapLabels(){
+  const box = document.querySelector(".wmap"); if (!box || typeof C === "undefined" || !C) return;
+  const labs = [...box.querySelectorAll(".mlab")]; if (!labs.length) return;
+  labs.forEach(e => { e.style.marginLeft = e.style.marginTop = ""; });
+  const B = box.getBoundingClientRect(), k = B.width / 240, pad = 2, gap = 2; if (!B.width) return;
+  const r = labs.map(e => { const q = e.getBoundingClientRect(); return { x:q.left - B.left, y:q.top - B.top, w:q.width, h:q.height, x0:q.left - B.left, y0:q.top - B.top }; });
+  const pins = C.locations.filter(mapKnown).map(l => { const [x, y] = (C.mapPos || {})[l.id] || [120, 70]; return { x:(x - 7) * k, y:(y - 9) * k, w:14 * k, h:10 * k }; });
+  const clamp = a => { a.x = Math.max(pad, Math.min(B.width - pad - a.w, a.x)); a.y = Math.max(pad, Math.min(B.height - pad - a.h, a.y)); };
+  const ovx = (a, c) => Math.min(a.x + a.w, c.x + c.w) - Math.max(a.x, c.x), ovy = (a, c) => Math.min(a.y + a.h, c.y + c.h) - Math.max(a.y, c.y);
+  r.forEach(clamp);
+  for (let pass = 0; pass < 80; pass++){
+    let moved = false;
+    for (let i = 0; i < r.length; i++){
+      const a = r[i];
+      for (let j = i + 1; j < r.length; j++){ const c = r[j], ox = ovx(a, c) + gap, oy = ovy(a, c) + gap;
+        if (ox <= 0 || oy <= 0) continue; moved = true;
+        if (oy <= ox){ const s = a.y + a.h / 2 <= c.y + c.h / 2 ? -1 : 1; a.y += s * oy / 2; c.y -= s * oy / 2; }
+        else { const s = a.x + a.w / 2 <= c.x + c.w / 2 ? -1 : 1; a.x += s * ox / 2; c.x -= s * ox / 2; }
+      }
+      if (pins.length === r.length) pins.forEach((q, j) => { if (j === i) return; const ox = ovx(a, q), oy = ovy(a, q);
+        if (ox <= 0 || oy <= 0 || ox * oy < .4 * q.w * q.h) return; moved = true;
+        if (oy <= ox) a.y += (a.y + a.h / 2 <= q.y + q.h / 2 ? -1 : 1) * Math.min(oy, 3); else a.x += (a.x + a.w / 2 <= q.x + q.w / 2 ? -1 : 1) * Math.min(ox, 3); });
+    }
+    r.forEach(clamp);
+    if (!moved) break;
+  }
+  labs.forEach((e, i) => { const dx = r[i].x - r[i].x0, dy = r[i].y - r[i].y0; if (Math.abs(dx) > .5) e.style.marginLeft = dx.toFixed(1) + "px"; if (Math.abs(dy) > .5) e.style.marginTop = dy.toFixed(1) + "px"; });
+}
 function mapView(){
   const P = PH(), pos = C.mapPos || {};
   const hidden = C.locations.filter(l=>!mapKnown(l)).length;

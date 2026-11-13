@@ -391,24 +391,37 @@ const WORLD = (() => {
     return out;
   }
   // 不能隨便走的時候：畫面上出現往旁邊區域的箭嘴（⬅ 客廳、🚪 大門 ➜、⬆ 二樓書房），點了就走過去
+  // 走進一個區域要站在哪裡：盡量靠中間，但是不要站在別人身上（小吳跟在旁邊 18 格左右，也算進去）。
+  // 以前一律走到正中間，中間剛好有人的時候主角會把那個人整個擋住。
+  function standIn(a){
+    const y = a.y ?? GROUND, m = (a.x0 + a.x1) / 2;
+    let ppl = []; try { ppl = (cur && cur.hooks.people ? cur.hooks.people() : []).filter(p => Math.abs((p.y || GROUND) - y) < 2 && p.x > a.x0 - 16 && p.x < a.x1 + 16); } catch (e) {}
+    if (!ppl.length) return [m, y];
+    const lo = Math.min(m, a.x0 + 24), hi = Math.max(m, a.x1 - 24); let best = m, bc = 1e9;
+    for (let x = lo; x <= hi; x += 2){
+      const c = ppl.reduce((n, p) => n + (Math.abs(p.x - x) < 17 ? 10 : 0) + (Math.abs(p.x - (x - 18)) < 15 ? 3 : 0) + (Math.abs(p.x - (x + 18)) < 15 ? 3 : 0), 0) + Math.abs(x - m) / 24;
+      if (c < bc){ bc = c; best = x; }
+    }
+    return [Math.round(best), y];
+  }
   function areaArrows(s){
     const A = cur.def.areas.filter(a => !a.hide && !(a.when && !a.when(cur.hooks.opt()))), ay = a => a.y ?? GROUND;
     const here = A.find(a => s.px >= a.x0 && s.px <= a.x1 && Math.abs(s.py - ay(a)) < 2);
     if (!here) return [];
     const nm = a => a.name || (cur.hooks.areaName ? cur.hooks.areaName(a.id) : a.id);
     const door = x => blds().some(b => Math.abs(b.x0 - x) < 8 || Math.abs(b.x1 - x) < 8);
-    const mid = a => [(a.x0 + a.x1) / 2, ay(a)], out = [], fy = ay(here);
+    const out = [], fy = ay(here);
     const same = A.filter(a => a !== here && ay(a) === fy);
     const L = same.filter(a => a.x1 <= here.x0 + 2 && a.x1 >= here.x0 - 8)[0], R = same.filter(a => a.x0 >= here.x1 - 2 && a.x0 <= here.x1 + 8)[0];
-    if (L) out.push({ key:"aL" + L.id, x:here.x0 + 6, y:fy + 10, label:(door(here.x0) ? "🚪 " : "⬅ ") + nm(L), to:mid(L), edge:-1, area:L.id });
-    if (R) out.push({ key:"aR" + R.id, x:here.x1 - 6, y:fy + 10, label:nm(R) + (door(here.x1) ? " 🚪" : " ➜"), to:mid(R), edge:1, area:R.id });
+    if (L) out.push({ key:"aL" + L.id, x:here.x0 + 6, y:fy + 10, label:(door(here.x0) ? "🚪 " : "⬅ ") + nm(L), get to(){ return standIn(L); }, edge:-1, area:L.id });
+    if (R) out.push({ key:"aR" + R.id, x:here.x1 - 6, y:fy + 10, label:nm(R) + (door(here.x1) ? " 🚪" : " ➜"), get to(){ return standIn(R); }, edge:1, area:R.id });
     stairs().forEach((k, i) => {
       [[k.x0, k.y0, k.x1, k.y1], [k.x1, k.y1, k.x0, k.y0]].forEach(([ax, ayy, bx, by]) => {
         if (Math.abs(ayy - fy) > 1 || ax < here.x0 - 4 || ax > here.x1 + 4) return;
         const other = A.filter(a => Math.abs(ay(a) - by) < 2).sort((a, c) => Math.abs((a.x0 + a.x1) / 2 - bx) - Math.abs((c.x0 + c.x1) / 2 - bx))
           .find(a => bx >= a.x0 - 4 && bx <= a.x1 + 4) || A.filter(a => Math.abs(ay(a) - by) < 2).sort((a, c) => Math.abs((a.x0 + a.x1) / 2 - bx) - Math.abs((c.x0 + c.x1) / 2 - bx))[0];
         if (!other || out.some(o => o.area === other.id)) return;
-        out.push({ key:"aS" + i + other.id, x:(ax + bx) / 2, y:Math.min(ayy, by) + (by < ayy ? -6 : 18), label:(by < ayy ? "⬆ 上樓・" : "⬇ 下樓・") + nm(other), to:mid(other), area:other.id });
+        out.push({ key:"aS" + i + other.id, x:(ax + bx) / 2, y:Math.min(ayy, by) + (by < ayy ? -6 : 18), label:(by < ayy ? "⬆ 上樓・" : "⬇ 下樓・") + nm(other), get to(){ return standIn(other); }, area:other.id });
       });
     });
     return out;
@@ -508,7 +521,7 @@ const WORLD = (() => {
       (b.rows || []).slice(0, 1).forEach(y => { const ax = b.x0 + Math.floor((b.x1 - b.x0) * 0.62); R(ax, y + 3, 12, 8, "#c9cdd0"); R(ax, y + 3, 12, 1, "#e9eef0"); for (let k = 0; k < 3; k++) R(ax + 2, y + 5 + k*2, 8, 1, "#8a9094"); R(ax + 5, y + 11, 1, 6, "#6a7074"); });
       R(b.x0, GROUND - 6, b.x1 - b.x0, 6, shade(wall, -.18)); dither(b.x0, GROUND - 10, b.x1 - b.x0, 4, shade(wall, -.18), 3);
       const lampOn = night;
-      R(b.x0 + 16, GROUND - 32, 3, 4, "#2a2a2e"); R(b.x0 + 16, GROUND - 29, 3, 2, lampOn ? "#ffe8a0" : "#c9cdd0"); if (lampOn) dither(b.x0 + 10, GROUND - 30, 16, 18, "#ffe8a0", 4);
+      R(b.x0 + 13, GROUND - 33, 3, 4, "#2a2a2e"); R(b.x0 + 13, GROUND - 30, 3, 2, lampOn ? "#ffe8a0" : "#c9cdd0"); if (lampOn) dither(b.x0 + 7, GROUND - 31, 16, 18, "#ffe8a0", 4);   // 門燈貼著門框，不要壓到旁邊的窗
       if (b.sign) b.sign(p, t, b);
     }
     // 門（前門在左、後門在右）
@@ -630,5 +643,5 @@ const WORLD = (() => {
   function indoor(x, y){ if (!cur) return 0; const i = bldAt(x); if (i < 0) return 0; const b = blds()[i]; if (y < (b.y0 ?? 0)) return 0; if ((b.open || []).some(r => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3])) return 0; const k = levelAt(b, y); return lvVis(cur.s, i, k < 0 ? 0 : k); }
   // 外面叫主角走到某個地方（選地方移動用）：到了再呼叫 cb
   function goTo(x, y, cb){ if (!cur || cur.s.script) return false; goThen(x, y ?? GROUND, cb); return true; }
-  return { mount, state, indoor, goTo, walking:() => !!(cur && cur.s.path.length), levelVis:(i, k) => cur ? lvVis(cur.s, i, k) : 0, skip:() => cur && cur.s.script && skip(), nearYou:q => !!cur && !cur.s.script && nearYou(cur.s, q), goSpot, spotKey, glintAt:q => { if (!cur) return null; const s = cur.s, bl = cur.hooks.people().map(v => ({ x:v.x, y:v.y || GROUND })); if (cur.hooks.buddy && cur.hooks.buddy()) bl.push({ x:s.bx, y:s.by }); bl.push({ x:s.px, y:s.py }); return glintAt(q.r, bl); }, VW, VH, GROUND, reset:(lid)=>{ delete st[lid]; } };
+  return { mount, state, indoor, goTo, standIn, walking:() => !!(cur && cur.s.path.length), levelVis:(i, k) => cur ? lvVis(cur.s, i, k) : 0, skip:() => cur && cur.s.script && skip(), nearYou:q => !!cur && !cur.s.script && nearYou(cur.s, q), goSpot, spotKey, glintAt:q => { if (!cur) return null; const s = cur.s, bl = cur.hooks.people().map(v => ({ x:v.x, y:v.y || GROUND })); if (cur.hooks.buddy && cur.hooks.buddy()) bl.push({ x:s.bx, y:s.by }); bl.push({ x:s.px, y:s.py }); return glintAt(q.r, bl); }, VW, VH, GROUND, reset:(lid)=>{ delete st[lid]; } };
 })();
