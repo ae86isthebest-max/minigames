@@ -287,7 +287,7 @@ function vInter(){
   const sus = id => C.suspects.find(s => s.id === id);
   const who = st.who || (st.choices ? "narr" : "narr");
   const speaker = who === "you" ? "你" : who === "narr" ? "" : st.name || ARC.name(who) || (sus(who) || { name:"" }).name.replace(/（.*）/, "");
-  const cast = (L.cast || []).map(c => { const me = c.id === who || (c.id === "_you" && who === "you"); return { y:100, facing:1, ...c, pose: me && st.pose ? st.pose : c.pose || "stand", mark: me }; });
+  const cast = (L.cast || []).map(c => { const me = c.id === who || (c.id === "_you" && who === "you"); return { y:100, facing:1, ...c, pose: me && st.pose ? (/^sit/.test(c.pose || "") && !/\+|^sit/.test(st.pose) ? "sit+" + st.pose : st.pose) : c.pose || "stand", mark: me }; });
   const more = inter.pend.length > 1 || interNextIdx(inter.idx + 1) >= 0;
   let btns;
   if (open){

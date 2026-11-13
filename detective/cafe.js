@@ -16,12 +16,25 @@
     R(0, 56, W, 6, night ? "#2a2e34" : "#7a7a76"); for (let x = 6; x < W; x += 24) R(x, 58, 10, 1, "#e8e0a0");   // 馬路
     // 咖啡店門面
     R(0, 18, 64, 56, night ? "#3a3028" : "#e8dcc4"); R(6, 30, 26, 30, night ? "#e8b860" : "#9cc5e6"); R(18, 30, 1, 30, "#6a5a44"); R(40, 32, 18, 42, "#6a4a32"); P(54, 52, "#e8c040");   // 牆、窗、門
-    R(4, 20, 56, 8, "#2a5a6a"); txt("海風咖啡", 12, 27, "#f4f0e0", "6px sans-serif");   // 招牌
+    // 窗裡：吧台、吊燈、咖啡機；窗台花箱；門上的玻璃和營業牌
+    R(6, 50, 26, 10, night ? "#8a5a30" : "#a87a50"); R(6, 49, 26, 1, "#6a4a32"); R(9, 44, 6, 5, "#5a5a5e"); R(10, 42, 4, 2, "#8a8a8e"); R(24, 46, 3, 3, "#f4f4f0");
+    [10, 22].forEach(x => { R(x, 30, 1, 5, "#3a3028"); R(x - 2, 35, 5, 2, "#ffd98a"); });
+    R(4, 60, 30, 4, "#7a4a2a"); for (let x = 5; x < 33; x += 4){ R(x, 57, 3, 3, "#4a8a3a"); P(x + 1, 56, ["#e85a6a","#f4d04a","#f4f0f0"][(x >> 2) % 3]); }
+    R(43, 36, 12, 14, night ? "#e8b860" : "#9cc5e6"); R(42, 54, 14, 5, "#f4f0e0"); R(44, 56, 10, 1, "#2a7a8a");
+    // 招牌：杯子圖案＋浪花＋CAFE
+    R(0, 2, 64, 16, night ? "#3a3028" : "#e8dcc4"); R(4, 4, 56, 9, "#2a5a6a"); R(4, 13, 56, 1, "#1a3a4a"); R(7, 6, 6, 5, "#f4f0e0"); R(13, 7, 2, 3, "#f4f0e0"); R(8, 6, 4, 1, "#a87a50");
+    for (let x = 17; x < 28; x++) P(x, 8 + ((x >> 1) % 2), "#8ad0d8");
+    const F = { C:["111","100","100","100","111"], A:["010","101","111","101","101"], F:["111","100","110","100","100"], E:["111","100","110","100","111"] };
+    "CAFE".split("").forEach((ch, i) => F[ch].forEach((row, y) => row.split("").forEach((b, x) => { if (b === "1") P(33 + i * 5 + x, 6 + y, "#f4f0e0"); })));
     if (tm === "dusk"){ const g = PR.g(); g.fillStyle = "rgba(240,150,90,.15)"; g.fillRect(0, 0, W, 70); R(6, 30, 26, 30, "#e8c080"); R(18, 30, 1, 30, "#6a5a44"); }
     if (night){ const g = PR.g(); g.fillStyle = "rgba(255,210,140,.18)"; g.fillRect(0, 30, 70, 50); }
     // 雨棚（下雨時拉長）
     const aw = rain ? 150 : 120; for (let x = 0; x < aw; x += 8){ R(x, 14, 8, 6, (x / 8) % 2 ? "#f4f0e0" : "#2a7a8a"); } R(0, 20, aw, 1, "#1a4a5a");
     for (let x = 0; x < aw; x += 8) R(x + 2, 20, 4, 2, (x / 8) % 2 ? "#f4f0e0" : "#2a7a8a");
+    if (tm === "dusk" || night){ for (let x = 3; x < aw; x += 6){ R(x, 23 + (x % 12 < 6 ? 1 : 0), 1, 1, "#3a3028"); P(x, 24 + (x % 12 < 6 ? 1 : 0), ["#ffd98a","#ffb86a","#fff0b0"][(x / 6 | 0) % 3]); } }
+    // 路燈、停在路邊的腳踏車
+    R(112, 30, 1, 40, "#4a4e56"); R(110, 29, 5, 2, "#4a4e56"); R(110, 31, 4, 1, night || tm === "dusk" ? "#ffe8a0" : "#c8ccd0");
+    if (!rain){ const bx = 92; [0, 14].forEach(d => { R(bx + d, 62, 6, 1, "#2a2a2e"); R(bx + d, 68, 6, 1, "#2a2a2e"); R(bx + d, 62, 1, 7, "#2a2a2e"); R(bx + d + 5, 62, 1, 7, "#2a2a2e"); }); R(bx + 3, 63, 14, 1, "#c84a3a"); R(bx + 9, 60, 1, 4, "#c84a3a"); R(bx + 7, 59, 4, 1, "#2a2a2e"); R(bx + 16, 59, 1, 4, "#c84a3a"); R(bx + 15, 59, 3, 1, "#2a2a2e"); R(bx + 14, 61, 5, 2, "#a87a50"); }
     // 小黑板菜單、盆栽
     R(66, 52, 14, 18, "#2a2a2a"); R(67, 53, 12, 12, "#3a4a3a"); for (let k = 0; k < 3; k++) R(69, 56 + k * 3, 8, 1, "#e8e8e0"); R(68, 65, 2, 6, "#6a4a32"); R(76, 65, 2, 6, "#6a4a32");
     R(178, 56, 12, 14, "#a85a3a"); R(176, 46, 16, 12, "#3a7a3a"); R(180, 42, 8, 6, "#4a8a4a");
@@ -30,7 +43,9 @@
     // 戶外桌椅：兩張圓桌
     const ch = night ? "#8a8a90" : "#3a3a3e"; const table = (x) => { R(x - 10, 80, 20, 3, "#e8e8e4"); R(x - 1, 83, 2, 14, "#5a5a5e"); R(x - 5, 97, 10, 2, "#5a5a5e"); R(x - 4, 76, 4, 4, "#f4f4f0"); R(x - 3, 75, 2, 1, "#6a4a32"); R(x + 2, 77, 3, 3, "#f4f4f0");
       [-16, 16].forEach(d => { R(x + d - 3, 86, 7, 2, ch); R(x + d - 3, 88, 1, 9, ch); R(x + d + 3, 88, 1, 9, ch); R(x + d + (d < 0 ? -3 : 3), 76, 1, 10, ch); }); };
+    if (!rain){ R(139, 40, 1, 40, "#6a6a6e"); for (let k = 0; k < 6; k++) R(122 + k * 6, 38 + Math.abs(k - 2.5) | 0, 6, 3, k % 2 ? "#f4f0e0" : "#2a7a8a"); R(124, 37, 32, 1, "#1a4a5a"); }
     table(70); table(140);
+    R(64, 77, 2, 3, "#e8d8b0"); R(146, 78, 3, 2, "#c8a070");   // 糖包、餅乾
     // 雨
     if (rain){ for (let i = 0; i < 70; i++){ const x = (i * 53 + Math.floor(t * 30) * 2) % W, y = (i * 37 + Math.floor(t * 90)) % H; if (x > aw || y < 20) R(x, y, 1, 3, "#8aa0b8"); } for (let x = 0; x < aw; x += 7) R(x + 3, 22 + ((x + Math.floor(t * 40)) % 6), 1, 2, "#9ab0c8"); }
   };
@@ -63,19 +78,42 @@
     R(0, 84, W, 24, "#4a4e58"); dither(0, 84, W, 24, "#545862", 4);
   };
 
+  // 麵攤、高鐵：便服；麵攤的人坐在折疊桌兩邊、阿月姨站在攤車後面；高鐵上大家坐在座位上
+  const offDuty = (cast, noodle) => { let k = 0; const list = (cast || []).slice(); if (!list.some(c => c.id === "_you")) list.push({ id:"_you" });
+    return list.map(c => { const look = lookFor(c.id);
+      if (noodle && c.id === "ayue") return Object.assign({}, c, { x:50, y:98, s:1.2, facing:1, pose:"stand", look });
+      const i = k++; return Object.assign({}, c, noodle ? { x:[124,156,108,172][i % 4], y:97, s:1.15, facing:i % 2 ? -1 : 1, pose:"sit", look } : { x:[34,64,98,128][i % 4], y:86, s:1.15, facing:1, pose:"sit", look }); }); };
+  // 前景：桌面和椅子前腳畫在人前面，坐著的人看起來就真的坐在桌邊
+  const draw0 = PX.draw;
+  PX.draw = (cv, name, opt = {}) => { const hits = draw0(cv, name, opt);
+    if (name === "cafe" && (opt.people || []).some(p => /^sit/.test(p.pose || ""))){ const night = opt.time === "night", ch = night ? "#8a8a90" : "#3a3a3e";
+      [70, 140].forEach(x => { R(x - 10, 80, 20, 3, "#e8e8e4"); R(x - 10, 82, 20, 1, "#b8b8b4"); R(x - 1, 83, 2, 14, "#5a5a5e"); R(x - 5, 97, 10, 2, "#5a5a5e"); R(x - 4, 76, 4, 4, "#f4f4f0"); R(x - 3, 75, 2, 1, "#6a4a32"); R(x + 2, 77, 3, 3, "#f4f4f0");
+        [-1, 1].forEach(d => { const cx = x + d * 9; if ((opt.people || []).some(p => Math.abs(p.x - cx) < 3 && /^sit/.test(p.pose || ""))){ R(cx - 4, 90, 9, 2, ch); R(cx - 4, 92, 1, 6, ch); R(cx + 4, 92, 1, 6, ch); } }); }); }
+    return hits; };
+
   // 從標題、內容猜時間和天氣
   const guess = d => { const s = (d.title || "") + JSON.stringify(d.lines || []);
     const time = /早上|早餐|上班前/.test(d.title || "") ? "morning" : /中午|午休/.test(d.title || "") ? "noon" : /傍晚|黃昏|下班/.test(d.title || "") ? "dusk" : /晚上|深夜|夜/.test(d.title || "") ? "night" : "noon";
     return { time, rain: /下雨|雨夜|雨傘|撐傘|雨棚|雨聲/.test(s) }; };
+  // 咖啡店裡的打扮（下班或休息時的便服；老闆有圍裙）。只用在咖啡店的場景，案件裡照原來的工作服。
+  const CAFE_LOOK = {
+    barista:{ skin:"#d8a880", hair:"#3a2a20", hairStyle:"short", top:"#f4f0e6", apron:"#2a5a6a", bottom:"#3a3430", beard:true, cupColor:"#f4f0e0" },
+    wu:{ skin:"#e8c09a", hair:"#2a2a2a", hairStyle:"short", top:"#f0a040", bottom:"#3a5a8a", shoes:"#e8e8e8", glasses:true },
+    xu:{ skin:"#ecc8a6", hair:"#1e1a18", hairStyle:"bob", top:"#e8e4dc", coat:"#2f5a4a", bottom:"#2a2a30", cupColor:"#c8a070" },
+    qian:{ age:"old", skin:"#e0b48c", hair:"#b8b8b0", hairStyle:"balding", top:"#e9e4da", coat:"#8a7a5a", bottom:"#4a4438", glasses:true },
+    zhou:{ age:"old", skin:"#d8a880", hair:"#6a6a66", hairStyle:"slick", top:"#e9e4da", coat:"#3a3f4a", bottom:"#2a2f3a", tie:"#2a3a6a" },
+    ayue:{ age:"old", skin:"#d8a880", hair:"#4a4440", hairStyle:"bob", top:"#c84a4a", apron:"#e8e0d0", bottom:"#3a3a44" }
+  };
+  const lookFor = id => CAFE_LOOK[id] || null;
   // 大家坐在外面：老闆站在店門口，其他人兩兩坐在兩張圓桌旁（沈岳一定坐第一張桌）
-  const SEATS = [[56,1],[84,-1],[126,1],[154,-1],[172,-1]];
+  const SEATS = [[61,1],[79,-1],[131,1],[149,-1],[172,-1]];
   const seat = cast => { const list = (cast || []).slice(), out = [];
     if (!list.some(c => c.id === "_you")) list.push({ id:"_you" });   // 你一定在座
     const bar = list.filter(c => c.id === "barista"), rest = list.filter(c => c.id !== "barista");
     rest.sort((a, b) => (b.id === "_you") - (a.id === "_you"));
-    bar.forEach(c => out.push(Object.assign({}, c, { x:28, y:99, s:1.2, facing:1, pose:c.pose || "stand" })));
+    bar.forEach(c => out.push(Object.assign({}, c, { x:28, y:99, s:1.2, facing:1, pose:c.pose || "stand+cup", look:lookFor(c.id) })));
     rest.forEach((c, i) => { const [x, f] = SEATS[Math.min(i, SEATS.length - 1)], late = i >= 4;
-      out.push(Object.assign({}, c, { x, y: late ? 99 : 97, s: late ? 1.2 : 1.15, facing: f, pose: late ? (c.pose || "stand") : "sit" + (c.pose && c.pose !== "stand" && c.pose !== "sit" ? "+" + c.pose.split("+").pop() : "") })); });
+      out.push(Object.assign({}, c, { x, y: late ? 99 : 97, s: late ? 1.2 : 1.15, facing: f, pose: late ? (c.pose || "stand") : "sit" + (c.pose && c.pose !== "stand" && c.pose !== "sit" ? "+" + c.pose.split("+").pop() : ""), look:lookFor(c.id) })); });
     return out; };
   const wire = d => { if (!d) return d; if (d.sceneWanted !== "cafe" && d.scene !== "cafe") return d;
     const fix = L => L && L.cut && (L.cut.scene === "cafe" || L.cut.sceneWanted === "cafe") ? Object.assign({}, L, { cut:Object.assign({}, L.cut, { scene:"cafe", cast:seat(L.cut.cast) }) }) : L;
@@ -87,5 +125,5 @@
     // 麵攤、高鐵：場景已做好，沒指定別的場景就接上
     const cur = c.after, sw = cur && String(cur.sceneWanted || "");
     if (cur && !PX.SCENES[cur.scene] && /^(noodle|train)/.test(sw))
-      c.after = Object.assign({}, cur, { scene: sw.slice(0, sw.startsWith("noodle") ? 6 : 5), opt: Object.assign({ rain: /雨/.test(sw + (cur.title || "")), time: /晚|夜/.test(cur.title || "") ? "night" : "noon" }, cur.opt || {}) }); });
+      c.after = Object.assign({}, cur, { scene: sw.slice(0, sw.startsWith("noodle") ? 6 : 5), cast: offDuty(cur.cast, sw.startsWith("noodle")), opt: Object.assign({ rain: /雨/.test(sw + (cur.title || "")), time: /晚|夜/.test(cur.title || "") ? "night" : "noon" }, cur.opt || {}) }); });
 })();

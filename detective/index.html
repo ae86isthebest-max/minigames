@@ -422,7 +422,7 @@ function drawScenes(){
   document.querySelectorAll("canvas[data-scene]").forEach(cv=>{
     const opt = JSON.parse(cv.dataset.opt||"{}");
     if (opt.who) opt.people = opt.who.map(id=>looksFor(id)).filter(Boolean);
-    if (opt.cast) opt.people = opt.cast.map(c=>({ ...c, L: looksFor(c.id) })).filter(c=>c.L);
+    if (opt.cast) opt.people = opt.cast.map(c=>({ ...c, L: c.look || looksFor(c.id) })).filter(c=>c.L);
     const hits = PX.draw(cv, cv.dataset.scene, opt);
     if (cv.dataset.hot){
       const hot = JSON.parse(cv.dataset.hot);
