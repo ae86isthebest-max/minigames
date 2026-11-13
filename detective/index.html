@@ -493,11 +493,14 @@ function worldDef(l){
 }
 function leaveWorld(){ mapFrom = openLoc || mapFrom; openLoc = null; wRoom = null; wGo = false; wTalk = null; wSay = null; peek = null; lastSaid = null; tab = "map"; render(); scrollTo(0,0); }
 const BUDDY = { id:"_wu", name:"小吳", look:{ skin:"#e8c09a", hair:"#2a2a2a", hairStyle:"spiky", top:"#8ab4d8", coat:"#f4f6f6", bottom:"#3a4152", glasses:true, gloves:"#4a8ad8" } };
+// 這個地方的畫面上還有幾個小細節沒發現（清單裡不會列出來，要自己在畫面上點）
+function detailsLeft(l){ try { const def = worldDef(l); if (!def) return 0;
+  return allDetails().filter(d=>detailOpen(d) && !(S.found||[]).includes(d.id) && (def.auto ? roomsOf(l).some(r=>r.id===d.room) : !!(def.details && def.details[d.id]))).length; } catch(e){ return 0; } }
 function buddyHint(l){
   const sl = travel() ? searchLeftAt(l) : searchLeft();
   const fresh = allItems().filter(it=>(it.loc||"_")===l.id && !S.seen.includes(it.id) && itemOpen(it) && unlocked(it)).length;
   const s = C.suspects.find(x=>x.id==="wu");
-  const tail = s && !reachable(s) ? "要問我問題，就到鑑識中心找我。" : "";
+  const tail = (detailsLeft(l) ? "清單不是全部：畫面上還藏著小細節，要自己到處走、到處點才找得到（不花時間）。" : "") + (s && !reachable(s) ? "要問我問題，就到鑑識中心找我。" : "");
   if (S.done) return "案子已經結了，辛苦了。";
   if (CLK()) return `${timeTag()}。${fresh ? `點${pinWhere()}的「📍」看這裡有什麼可以查，點畫面上的箭嘴換地方。` : "這裡看得到的東西都查過了。"}看錄影、查證物、問話都要花時間，挑重要的做。` + tail;
   if (sl <= 0) return "這裡今天查不了更多了，去問問人吧。" + tail;
@@ -659,7 +662,8 @@ function helpText(l){
   return `移動：點畫面上的箭嘴（<b style="color:#ffd04a">⬅ 客廳、大門 🚪、⬆ 二樓</b>），你會自己走過去。<b>走路不花時間。</b><br>
   看到<b style="color:#b07aff">【···】</b>代表那裡好像有暗門或秘道。<br>
   頭上箭嘴：<b style="color:#ffd04a">黃</b> 可以問話、<b style="color:#ff5a4a">紅</b> 有新的質問、<b style="color:#8a8a8a">灰</b> 不肯再答、<b style="color:#6ac8ff">藍</b> 鑑識人員或員警（問話不花時間）、<b style="color:#6fd46f">綠</b> 小吳。<br>
-  到了一個地方，點${pinWhere()}<b style="color:#ffd04a">「📍 地名」</b>：那裡的人可以說話、可以調查的東西都列在裡面（黃色數字是還沒查的數量）。點人、點東西會先問你要不要做，確定了才會${CLK() ? "花時間" : "用掉次數"}。畫面上其他地方也可能藏著小細節，可以到處點點看。<br>
+  到了一個地方，點${pinWhere()}<b style="color:#ffd04a">「📍 地名」</b>：那裡的人可以說話、可以調查的東西都列在裡面（黃色數字是還沒查的數量）。點人、點東西會先問你要不要做，確定了才會${CLK() ? "花時間" : "用掉次數"}。<br>
+  <b style="color:#ffd04a">清單不是全部。</b>每個地方的畫面上還藏著<b>小細節</b>，清單裡不會列出來，要自己到處走、在畫面上到處點才找得到。看小細節不花時間。<br>
   筆記、案情、結案：點小吳或右上角「💬 小吳」。`;
 }
 /* ---------- 走進一個房間／區域：列出這裡可以查的東西 ---------- */

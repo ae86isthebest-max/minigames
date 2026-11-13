@@ -65,7 +65,112 @@ const SLOT = (() => {
       ks.forEach(k => localStorage.removeItem(k)); } catch (e) {}
   }
   function use(n){ cur = n; try { localStorage.setItem(CUR, String(n)); } catch (e) {} }
-  return { N, cur:() => cur, caseKey, seriesKey, summary, wipe, use };
+  // 這個存檔位在這台裝置上的所有鍵（每一集的進度＋主線紀錄）
+  const keys = n => { const ks = []; try { for (let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if (k && (k.startsWith(pre(n) + "save_") || k === seriesKey(n))) ks.push(k); } } catch (e) {} return ks; };
+  // 整個存檔位打包／還原（存檔碼和自動備份都用這個）。cases 的鍵是案件 id，不含存檔位，所以可以還原到另一個存檔位
+  function dump(n){ n = n || cur; const cases = {}; let series = null;
+    keys(n).forEach(k => { const v = read(k); if (v === null) return; if (k === seriesKey(n)) series = v; else cases[k.slice((pre(n) + "save_").length)] = v; });
+    return { app:"detective_tw3", v:1, t:Date.now(), cases, series }; }
+  function restore(n, data){
+    if (!data || data.app !== "detective_tw3" || typeof data.cases !== "object" || !data.cases) return -1;
+    wipe(n); let c = 0;
+    try { Object.entries(data.cases).forEach(([id, v]) => { if (v && typeof v === "object" && /^[\w.-]+$/.test(id)){ localStorage.setItem(caseKey(id, n), JSON.stringify(v)); c++; } });
+      if (data.series && typeof data.series === "object") localStorage.setItem(seriesKey(n), JSON.stringify(data.series)); } catch (e) { return -1; }
+    return c; }
+  // 存檔碼：「DT1.」＋壓縮過的內容（瀏覽器不支援壓縮就用「DT0.」不壓縮）。只有英數和 - _，方便複製貼上
+  const b64 = { enc: u8 => { let b = ""; for (let i = 0; i < u8.length; i += 0x8000) b += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(b).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); },
+    dec: t => { const b = atob(t.replace(/-/g, "+").replace(/_/g, "/")), u8 = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u8[i] = b.charCodeAt(i); return u8; } };
+  const pipe = async (u8, T) => new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(T)).arrayBuffer());
+  async function code(n){
+    const raw = new TextEncoder().encode(JSON.stringify(dump(n)));
+    try { if (typeof CompressionStream === "function") return "DT1." + b64.enc(await pipe(raw, new CompressionStream("deflate-raw"))); } catch (e) {}
+    return "DT0." + b64.enc(raw); }
+  // 回傳 { ok, cases:還原了幾集 } 或 { ok:false, why }
+  async function load(text, n){
+    try { const t = String(text || "").replace(/\s+/g, ""), m = /^DT([01])\.([\w-]+)$/.exec(t); if (!m) return { ok:false, why:"這不是存檔碼（要從「DT」開頭、整段貼上）。" };
+      let u8 = b64.dec(m[2]); if (m[1] === "1"){ if (typeof DecompressionStream !== "function") return { ok:false, why:"這個瀏覽器讀不了這種存檔碼。" }; u8 = await pipe(u8, new DecompressionStream("deflate-raw")); }
+      const c = restore(n || cur, JSON.parse(new TextDecoder().decode(u8)));
+      return c < 0 ? { ok:false, why:"存檔碼的內容不對，可能少貼了一段。" } : { ok:true, cases:c };
+    } catch (e) { return { ok:false, why:"存檔碼讀不出來，可能少貼了一段。" }; } }
+  return { N, cur:() => cur, caseKey, seriesKey, summary, wipe, use, keys, dump, restore, code, load, pre };
+})();
+/* ---------- 自動備份 ----------
+   在 claude.ai 的試玩卡裡，把每個存檔位的進度另外存一份到「這個玩家自己的」雲端資料（data/users/<自己>/…，別人看不到）。
+   瀏覽器的儲存空間被清掉、或換了裝置：回到首頁時會自動拿回來；兩邊都有、而備份比較多時會先問。
+   只是備份，不是同步：這台裝置上的進度永遠不會在沒問過的情況下被蓋掉。
+   網站版沒有 window.claude，一律安靜地略過。發佈試玩卡時要宣告 capabilities:{ db:{}, user:{} }，否則存檔列會寫「沒有自動備份」。 */
+const BACKUP = (() => {
+  const TOMB = "detective_tw3_bkdel";   // 玩家自己刪掉的存檔：記下來，備份那邊也要刪，不能又被拿回來
+  const mine = k => /^detective_tw3_(s[23]_)?(save_[\w.~:@+-]{1,120}|series)$/.test(k);
+  const live = () => { try { return !!(window.claude && typeof window.claude.use === "function"); } catch (e) { return false; } };
+  let col = null, state = "off", ready = false, pulled = null, applying = false, synced = {}, timer = null, busy = false, again = false, last = 0, retry = 0;
+  const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  const put = (k, v) => { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } };
+  const tomb = () => { try { return JSON.parse(get(TOMB)) || {}; } catch (e) { return {}; } };
+  const setTomb = t => { try { Object.keys(t).length ? localStorage.setItem(TOMB, JSON.stringify(t)) : localStorage.removeItem(TOMB); } catch (e) {} };
+  const localKeys = () => { const ks = []; try { for (let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if (k && mine(k)) ks.push(k); } } catch (e) {} return ks; };
+  // 進度多少的粗略分數：只用來比較「備份」和「這台裝置」哪一份走得比較遠
+  const score = (k, json) => { try { const s = JSON.parse(json); if (!s || typeof s !== "object") return -1;
+      const n = v => Array.isArray(v) ? v.length : v && typeof v === "object" ? Object.keys(v).length : 0;
+      return k.endsWith("series") ? n(s.flags) + n(s.cases) * 50 + n(s.seen) + n(s.picks)
+        : (s.done && s.result ? 1e6 : 0) + (s.phase || 0) * 1e4 + n(s.asked) + n(s.seen) + n(s.found); } catch (e) { return -1; } };
+  const hhmm = t => { const d = new Date(t); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); };
+  function statusText(){
+    return state === "on" ? `☁ 自動備份開著${last ? `（上次 ${hhmm(last)}）` : ""}。存檔碼是多一層保險。`
+      : state === "wait" ? "☁ 正在連接自動備份…"
+      : state === "err" ? "☁ 自動備份暫時連不上，等一下會再試。先按「存檔碼」抄下來比較保險。"
+      : "這個畫面沒有自動備份。想保險一點，按「存檔碼」把進度抄下來。"; }
+  const show = () => { try { const e = document.getElementById("bkStatus"); if (e) e.textContent = statusText(); } catch (e) {} };
+  const atHome = () => { try { return typeof screen !== "string" || screen === "home"; } catch (e) { return true; } };
+  function fail(e){ const c = e && e.code;
+    if (["not_granted", "revoked", "capability_disabled", "capability_removed", "invalid_argument"].includes(c)){ state = "off"; col = null; }
+    else { state = "err"; if (retry < 6) setTimeout(() => { ready ? scan() : pull(); }, Math.min(300000, 20000 * 2 ** retry++)); }
+    show(); }
+  async function pull(){
+    if (!col) return; if (pulled) return apply();
+    try { const snap = await col.get(), got = {};
+      snap.docs.forEach(d => { const v = d.data(); if (mine(d.id) && v && typeof v.json === "string") got[d.id] = v.json; });
+      pulled = got; state = "on"; retry = 0; show(); apply(); }
+    catch (e) { fail(e); } }
+  // 只在首頁做：玩到一半不動存檔。做完這一步之前不會往備份寫東西，以免空白的新進度蓋掉備份
+  async function apply(){
+    if (!pulled || ready || applying || !atHome()) return; applying = true;
+    try { const t = tomb(), use = [], ask = [];
+      Object.entries(pulled).forEach(([k, json]) => { if (t[k]) return; const loc = get(k);
+        if (loc === null) use.push(k); else if (loc === json) synced[k] = json; else if (score(k, json) > score(k, loc)) ask.push(k); });
+      if (ask.length){ const eps = ask.filter(k => !k.endsWith("series")).length;
+        if (await uiConfirm(`☁ 自動備份裡的進度，比這台裝置上的多${eps ? `（${eps} 集）` : ""}。\n要拿回備份裡的進度嗎？\n「確定」＝用備份裡的；「取消」＝保留現在這台裝置上的。`)) use.push(...ask);
+        else ask.forEach(k => { synced[k] = get(k); }); }   // 不拿：等這邊的進度有變化，才會蓋過備份
+      let n = 0; use.forEach(k => { if (put(k, pulled[k])){ synced[k] = pulled[k]; if (!k.endsWith("series")) n++; } });
+      ready = true; pulled = null;
+      if (use.length){ slotRefresh(); toast(`☁ 已從自動備份拿回進度${n ? `（${n} 集）` : ""}`); }
+      touch();
+    } catch (e) {} finally { applying = false; } }
+  async function scan(){
+    if (!col || !ready) return; if (busy){ again = true; return; } busy = true;
+    try {
+      for (const k of Object.keys(tomb())){ if (get(k) === null) await col.doc(k).delete(); delete synced[k]; const t = tomb(); delete t[k]; setTomb(t); }
+      for (const k of localKeys()){ const v = get(k); if (v === null || v === synced[k] || v.length > 80000) continue;
+        await col.doc(k).set({ t:Date.now(), json:v }); synced[k] = v; last = Date.now(); }
+      state = "on"; retry = 0; show();
+    } catch (e) { fail(e); }
+    finally { busy = false; if (again){ again = false; touch(); } } }
+  // 存檔有變化時呼叫（ARC.sync／主線紀錄寫入／還原存檔碼之後）：過幾秒一起備份
+  function touch(){ if (!col || !ready) return; clearTimeout(timer); timer = setTimeout(scan, 4000); }
+  // 玩家自己刪掉（或用存檔碼蓋掉）的鍵：備份那邊也刪
+  function forget(keys){ if (!live()) return; const t = tomb(); keys.filter(mine).forEach(k => { t[k] = Date.now(); delete synced[k]; }); setTomb(t); touch(); }
+  const home = () => { if (pulled && !ready) setTimeout(apply, 0); };
+  async function init(){
+    if (col || state === "wait" || !live()) return; state = "wait"; show();
+    try { const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]), uid = db && user ? await user.id() : null;
+      if (!uid){ state = "off"; show(); return; }
+      col = db.collection("data/users/" + uid); await pull(); }
+    catch (e) { state = "off"; col = null; show(); } }
+  try { addEventListener("load", init);
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden"){ clearTimeout(timer); scan(); } else if (state === "err" && col){ ready ? scan() : pull(); } });
+  } catch (e) {}
+  init();
+  return { init, touch, forget, home, statusText, state:() => state, flush:() => { clearTimeout(timer); return scan(); } };
 })();
 // 以前有「現實秒數倒數」的設定；現在限時一律用遊戲裡的時間（見最上面第 7 點），這裡只留空殼給舊程式呼叫
 const OPT = { timed:() => false, setTimed(){} };
@@ -75,17 +180,53 @@ function slotRefresh(){
   if (typeof WORLD !== "undefined") CASES.forEach(c => (c.locations ? c.locations.map(l => l.id) : ["_"]).forEach(id => WORLD.reset(id)));
   inter = null; render(); scrollTo(0, 0);
 }
-function slotUse(n){ if (n === SLOT.cur()) return; SLOT.use(n); slotRefresh(); toast(`💾 現在用的是存檔 ${n}`); }
+const slotLabel = n => { const m = SLOT.summary(n); return m.empty ? "空白" : [m.solved ? `已結案 ${m.solved} 集` : "", m.open ? `調查中 ${m.open} 集` : ""].filter(Boolean).join("・") || "剛開始"; };
+// 換存檔位一定先問一次：以免不小心點到，以為進度不見了
+async function slotUse(n){ if (n === SLOT.cur()) return;
+  if (!await uiConfirm(`換到存檔 ${n}（${slotLabel(n)}）？\n現在的存檔 ${SLOT.cur()}（${slotLabel(SLOT.cur())}）會原封不動留著，隨時可以換回來。`)) return;
+  SLOT.use(n); slotRefresh(); toast(`💾 現在用的是存檔 ${n}`); }
 async function slotDelete(n){
   if (!await uiConfirm(`刪除存檔 ${n}？\n這個存檔裡每一集的進度和主線紀錄都會消失，不能復原。`)) return;
-  SLOT.wipe(n); slotRefresh(); toast(`🗑 存檔 ${n} 已刪除`);
+  BACKUP.forget(SLOT.keys(n)); SLOT.wipe(n); slotRefresh(); toast(`🗑 存檔 ${n} 已刪除`);
 }
 // 首頁的存檔列
 function slotsHTML(){
-  return `<div class="card"><h3 style="margin:0 0 6px">💾 存檔</h3><p class="muted small" style="margin:0 0 8px">這台裝置有 ${SLOT.N} 個存檔，各玩各的。點一個來用；想重新玩，就開一個空白的，或把舊的刪掉。</p>
-    ${[1, 2, 3].slice(0, SLOT.N).map(n => { const m = SLOT.summary(n), on = n === SLOT.cur();
-      const txt = m.empty ? "空白" : [m.solved ? `已結案 ${m.solved} 集` : "", m.open ? `調查中 ${m.open} 集` : ""].filter(Boolean).join("・") || "剛開始";
-      return `<div class="pick ${on ? "on" : ""}" onclick="slotUse(${n})" style="align-items:center"><span class="box">${on ? "✓" : ""}</span><span style="flex:1"><b>存檔 ${n}</b>　<span class="muted small">${txt}${on ? "・使用中" : ""}</span></span>${m.empty ? "" : `<button class="tag" style="border:0;cursor:pointer;padding:5px 10px;margin:0;color:#ff9a8a" onclick="event.stopPropagation();slotDelete(${n})">🗑 刪除</button>`}</div>`; }).join("")}</div>`;
+  BACKUP.home();
+  const cur = SLOT.cur(), me = SLOT.summary(cur);
+  // 現在用的存檔比別的存檔少：提醒一下（最常見的「進度不見了」其實是換到了另一個存檔）
+  const other = [1, 2, 3].slice(0, SLOT.N).filter(n => n !== cur).map(n => ({ n, m:SLOT.summary(n) })).filter(o => o.m.solved > me.solved || (me.empty && !o.m.empty)).sort((a, b) => b.m.solved - a.m.solved)[0];
+  const hint = other ? `<div class="report" style="border-color:var(--accent);margin:0 0 8px"><b>現在用的是存檔 ${cur}（${slotLabel(cur)}）。</b><div class="muted small">存檔 ${other.n} 有比較多進度（${slotLabel(other.n)}）。<button class="tag" style="border:0;cursor:pointer;padding:4px 10px;margin:4px 0 0;color:var(--accent)" onclick="slotUse(${other.n})">換到存檔 ${other.n}</button></div></div>` : "";
+  return `<div class="card"><h3 style="margin:0 0 6px">💾 存檔</h3><p class="muted small" style="margin:0 0 8px">這台裝置有 ${SLOT.N} 個存檔，各玩各的。點一個來用；想重新玩，就開一個空白的，或把舊的刪掉。</p>${hint}
+    ${[1, 2, 3].slice(0, SLOT.N).map(n => { const m = SLOT.summary(n), on = n === cur;
+      return `<div class="pick ${on ? "on" : ""}" onclick="slotUse(${n})" style="align-items:center"><span class="box">${on ? "✓" : ""}</span><span style="flex:1"><b>存檔 ${n}</b>　<span class="muted small">${slotLabel(n)}${on ? "・使用中" : ""}</span></span>${m.empty ? "" : `<button class="tag" style="border:0;cursor:pointer;padding:5px 10px;margin:0;color:#ff9a8a" onclick="event.stopPropagation();slotDelete(${n})">🗑 刪除</button>`}</div>`; }).join("")}
+    <div class="muted small" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center"><span id="bkStatus" style="flex:1;min-width:150px">${BACKUP.statusText()}</span>
+      <button class="tag" style="border:0;cursor:pointer;padding:5px 10px;margin:0" onclick="slotExport()">📤 存檔碼</button><button class="tag" style="border:0;cursor:pointer;padding:5px 10px;margin:0" onclick="slotImport()">📥 用存檔碼還原</button></div></div>`;
+}
+// 存檔碼的小視窗（跟 uiConfirm 同一個樣子）
+function slotDialog(title, body, btns){
+  return new Promise(res => { const d = document.createElement("div"); d.className = "dlg";
+    d.innerHTML = `<div class="dlg-box" style="max-width:420px"><div class="dlg-msg" style="margin-bottom:8px"></div><textarea style="width:100%;height:110px;box-sizing:border-box;font:12px monospace;background:#0003;color:inherit;border:1px solid #0006;border-radius:6px;padding:6px;word-break:break-all"></textarea><div class="muted small" data-note style="margin:6px 0 10px;min-height:1.2em"></div><div class="dlg-btns">${btns.map((b, i) => `<button class="btn ${b.primary ? "primary" : ""}" style="margin:0;text-align:center" data-i="${i}">${b.text}</button>`).join("")}</div></div>`;
+    d.querySelector(".dlg-msg").textContent = title; const ta = d.querySelector("textarea"), note = d.querySelector("[data-note]"); ta.value = body.value || ""; ta.readOnly = !!body.readOnly; ta.placeholder = body.placeholder || "";
+    const close = v => { d.remove(); res(v); };
+    d.onclick = async e => { if (e.target === d) return close(null); const i = e.target.dataset && e.target.dataset.i; if (i === undefined) return;
+      const r = await btns[+i].run(ta, note); if (r !== false) close(r); };
+    document.body.appendChild(d); if (body.readOnly){ ta.focus(); ta.select(); } });
+}
+async function slotExport(){
+  const n = SLOT.cur(); if (SLOT.summary(n).empty){ toast("這個存檔還是空白的，沒有東西可以備份。"); return; }
+  const code = await SLOT.code(n);
+  await slotDialog(`存檔 ${n} 的存檔碼（${slotLabel(n)}）\n把整段複製起來，貼到備忘錄或傳給自己。之後在任何裝置按「用存檔碼還原」貼上，進度就回來。`, { value:code, readOnly:true }, [
+    { text:"關閉", run:() => null },
+    { text:"複製", primary:true, run:async (ta, note) => { ta.focus(); ta.select(); let ok = false; try { await navigator.clipboard.writeText(ta.value); ok = true; } catch (e) { try { ok = document.execCommand("copy"); } catch (e2) {} }
+        note.textContent = ok ? "✓ 已複製。" : "複製不了，請長按上面的文字，自己全選再複製。"; return false; } } ]);
+}
+async function slotImport(){
+  const n = SLOT.cur();
+  const r = await slotDialog(`把存檔碼貼在下面，還原到存檔 ${n}。${SLOT.summary(n).empty ? "" : `\n注意：存檔 ${n} 現在的進度（${slotLabel(n)}）會被蓋掉。想保留的話，先關掉這個視窗，換到一個空白的存檔再還原。`}`, { placeholder:"DT1.……" }, [
+    { text:"取消", run:() => null },
+    { text:`還原到存檔 ${n}`, primary:true, run:async (ta, note) => { if (!ta.value.trim()){ note.textContent = "還沒貼上存檔碼。"; return false; }
+        const before = SLOT.dump(n); BACKUP.forget(SLOT.keys(n)); const r = await SLOT.load(ta.value, n); if (!r.ok){ SLOT.restore(n, before); note.textContent = r.why; return false; } return r; } } ]);
+  if (r && r.ok){ BACKUP.touch(); slotRefresh(); toast(`📥 已還原到存檔 ${n}（${r.cases} 集的進度）`); }
 }
 
 const ARC = (() => {
@@ -97,7 +238,7 @@ const ARC = (() => {
     D.flags = D.flags || {}; D.cases = D.cases || {}; D.seen = D.seen || {}; D.picks = D.picks || {};
     return D;
   };
-  const store = () => { try { localStorage.setItem(SLOT.seriesKey(), JSON.stringify(D)); } catch (e) {} };
+  const store = () => { try { localStorage.setItem(SLOT.seriesKey(), JSON.stringify(D)); } catch (e) {} BACKUP.touch(); };
   const has = f => !!load().flags[f];
   const found = f => has(f) && D.flags[f].how === "found";
   // how："found" 自己查到、"told" 前情提要告知、"auto" 結案紀錄。told 之後自己查到會升級成 found
@@ -134,6 +275,7 @@ const ARC = (() => {
   }
   // 每次存檔時呼叫：把這一集已經看到的主線線索記進跨集存檔
   function sync(){
+    BACKUP.touch();
     if (typeof C === "undefined" || !C || typeof S === "undefined" || !S) return;
     const fresh = [];
     entries().forEach(e => {
