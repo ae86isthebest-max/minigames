@@ -94,7 +94,10 @@ const {chromium}=require('playwright'); const CID=process.env.CASE||'fingers';
    }
    // 同一輪裡，化驗的前提要在後面的地點才拿得到：繞回去再送一次
    for(const a of retry.splice(0)){
-    const ok=await p.evaluate(async a=>{ if(a.loc && !here(a.loc)){ await visit(a.loc); mapFrom=a.loc; } if(a.k==='q'){ const b=S.asked.length; askById(a.sid,a.id); return S.asked.length>b; } const id=a.id.slice(2); await submitTest(id,true); return S.labq[id]!==undefined; },a);
+    const ok=await p.evaluate(async a=>{ if(a.loc && !here(a.loc)){ await visit(a.loc); mapFrom=a.loc; } if(a.k==='q'){ const b=S.asked.length; askById(a.sid,a.id);
+       // 這個人要等到某個時間的事件以後才出現（例如下午才來自首）：先去做別的事，等到那個時間
+       if(S.asked.length===b){ const e=(C.events||[]).find(e=>e.atTime && (e.phase||0)===S.phase && S.ev[e.id]===undefined && unlocked(e)); if(e){ const m=toMin(e.atTime)-nowMin(); if(m>0 && m<timeLeft()) spend(m); await checkEvents(); for(let j=0;j<80 && typeof inter!=="undefined" && inter;j++){ const L=interLine(); if(L && L.choices) interPick(0); else interNext(1); } if(a.loc && !here(a.loc)){ await visit(a.loc); mapFrom=a.loc; } askById(a.sid,a.id); } }
+       return S.asked.length>b; } const id=a.id.slice(2); await submitTest(id,true); return S.labq[id]!==undefined; },a);
     if(ok) vis.push(a.loc+'(again)'); else fail.push(`${a.k} ${a.id} d${ph} t=${await p.evaluate(()=>nowStr())}`);
    }
   }
