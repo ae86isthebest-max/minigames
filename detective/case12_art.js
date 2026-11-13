@@ -10,6 +10,7 @@ EP12.art = true;
   const txt = (s, x, y, c, f) => { const g = PR.g(); g.font = f || "6px monospace"; g.fillStyle = c; g.fillText(s, x, y); };
   const jds = bs => Object.assign(bs.map(b => b.d), { j:bs.map(b => !!b.join) });
   const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + (ds.j && ds.j[i] ? 0 : 0.5), en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
+  const kf = (v, p) => Array.isArray(v) ? (() => { if (v.length === 1) return v[0]; const k = p * (v.length - 1), i = Math.min(v.length - 2, Math.floor(k)); return v[i] + (v[i + 1] - v[i]) * (k - i); })() : v;
   const stOf = o => { if (!o.ds) return [{}, 0]; const [i, p] = beatAt(o.t || 0, o.ds); return [(o.seq || [])[i] || {}, p]; };
   const sea = (y, h, t) => { R(0, y, W, h, "#2a5a7a"); for (let x = 0; x < W; x += 6) R(x, y + 2 + Math.round(Math.sin((t || 0) * 2 + x / 9)), 4, 1, "#5a8aaa"); };
   const boatHull = (x, y, w, c, name) => { R(x, y, w, 12, c); R(x + 4, y + 12, w - 8, 4, "#3a2a2a"); R(x, y - 2, w, 2, "#e9e4da"); if (name) txt(name, x + 6, y + 9, "#f4f0e0", "5px sans-serif"); R(x + w - 26, y - 16, 18, 14, "#e9e4da"); R(x + w - 24, y - 13, 6, 5, "#5a8aa0"); R(x + w - 16, y - 13, 6, 5, "#5a8aa0"); R(x + w - 18, y - 30, 2, 14, "#5a5a5a"); };
@@ -82,6 +83,8 @@ EP12.art = true;
     OBJ.car(36, 58, "#b8bcc4"); R(42, 64, 6, 3, "#7a1a1a"); R(56, 63, 4, 2, "#7a1a1a");   // 銀色轎車（駕駛座的血）
     if (!o.clean){ R(78, 66, 36, 4, "#3a6ab8"); R(80, 62, 10, 6, "#e8ecf0"); R(81, 63, 8, 4, "#f4f0e0"); P(84, 64, "#7a1a1a"); R(100, 62, 10, 6, "#e8ecf0"); R(101, 63, 8, 4, "#f4f0e0"); }   // 鑑識攤開的證物袋：衛生紙、收據
     R(150, 30, 24, 18, "#e8e0c8"); R(152, 32, 20, 2, "#c23a2a"); for (let k = 0; k < 3; k++) R(152, 36 + k * 3, 18, 1, "#3a3a3a"); R(160, 48, 3, 26, "#6a6a6a");   // 告示牌
+    R(118, 78, 30, 2, "#6b4a2b"); R(119, 80, 2, 6, "#5a3e24"); R(145, 80, 2, 6, "#5a3e24"); R(116, 86, 34, 3, "#8a6338"); R(118, 89, 2, 9, "#5a3e24"); R(146, 89, 2, 9, "#5a3e24");   // 長椅
+    if (s.butts) for (let k = 0; k < Math.round(kf(s.butts, p)); k++) P(122 + k * 3, 97 - (k % 2), "#e8e0c8");   // 地上的菸蒂
     if (s.truck !== undefined){ const x = Math.round(Array.isArray(s.truck) ? s.truck[0] + (s.truck[1] - s.truck[0]) * p : s.truck); R(x, 58, 40, 14, "#3a6ab8"); R(x + 28, 52, 12, 10, "#3a6ab8"); R(x + 30, 54, 8, 5, "#9cc5e6"); R(x + 4, 72, 7, 4, "#1a1a1a"); R(x + 28, 72, 7, 4, "#1a1a1a"); txt("金水水產", x + 4, 67, "#f4f0e0", "5px sans-serif"); if (night) R(x + 40, 60, 14, 4, "#f8e8a066"); }
     if (night){ PR.g().fillStyle = "rgba(10,14,30,.45)"; PR.g().fillRect(0, 0, W, H); }
     if (o.tape) OBJ.tape(20, 84, 30);
@@ -257,11 +260,15 @@ EP12.art = true;
   /* ---------- 結案 ---------- */
   EP12.looks = { zhaoC: Object.assign({}, LOOK.zhao, { hello:undefined, top:"#24324e" }), caiC: Object.assign({}, LOOK.cai, { hello:undefined }) };
   const RB = [
-    { t:"23:12:00", d:5, cap:"9/4 23:12，觀海台。趙德安把車停在最靠海的格子，關掉自己的手機。手機最後一次連上的，是這裡的基地台。", st:{ night:true }, m:{ zhaoC:[60,98,"sit",1,-20,98] } },
-    { t:"23:20:00", d:5, cap:"鼻血又流下來了。他用診所的衛生紙一直擦，一滴一滴滴在方向盤上。他在長椅上坐了很久，抽了八根菸。", st:{ night:true }, m:{ zhaoC:[150,98,"smoke",1,60,98] } },
-    { t:"23:33:00", d:5, cap:"23:33，一台「金水水產」的小貨車開上來。", st:{ night:true, truck:[-60,90] }, m:{ zhaoC:[150,98,"stand",-1] } },
-    { t:"23:40:00", d:5, cap:"他用遙控器鎖上車門，把鑰匙放進口袋，上了小貨車。車子停在懸崖邊，車上有血——就像他已經不在了。", st:{ night:true, truck:90 }, m:{ zhaoC:[120,98,"stand",1,150,98], caiC:[136,98,"stand",-1] }, out:["zhaoC","caiC"] },
-    { t:"23:52:00", d:4.5, cap:"23:52，小貨車開下山，前座兩個人。23:58，他的預付卡手機在南澳漁港開機。", st:{ night:true, truck:[90,-60] } }
+    { t:"23:12:00", d:3, cap:"9/4 23:12，觀海台。趙德安把車停在最靠海的格子，關掉自己的手機。手機最後一次連上的，是這裡的基地台。", st:{ night:true }, m:{ zhaoC:[62,98,null,1,62,80] } },
+    { t:"23:12:30", d:2.5, join:true, cap:"9/4 23:12，觀海台。趙德安把車停在最靠海的格子，關掉自己的手機。手機最後一次連上的，是這裡的基地台。", st:{ night:true }, m:{ zhaoC:[62,98,"phone:R",1] } },
+    { t:"23:20:00", d:3, cap:"鼻血又流下來了。他用診所的衛生紙一直擦，一滴一滴滴在方向盤上。他在長椅上坐了很久，抽了八根菸。", st:{ night:true }, m:{ zhaoC:[62,98,["raise:R@paper/#f4f4f0","stand","raise:R@paper/#f4f4f0"],-1] } },
+    { t:"23:21:00", d:4, join:true, cap:"鼻血又流下來了。他用診所的衛生紙一直擦，一滴一滴滴在方向盤上。他在長椅上坐了很久，抽了八根菸。", st:{ night:true, butts:[0,8] }, m:{ zhaoC:[132,98,"sit+smoke:R",1,62,98] } },
+    { t:"23:33:00", d:5, cap:"23:33，一台「金水水產」的小貨車開上來。", st:{ night:true, butts:8, truck:[-60,90] }, m:{ zhaoC:[132,98,"stand",-1] } },
+    { t:"23:40:00", d:2.5, cap:"他用遙控器鎖上車門，把鑰匙放進口袋，上了小貨車。車子停在懸崖邊，車上有血——就像他已經不在了。", st:{ night:true, butts:8, truck:90 }, m:{ zhaoC:[96,98,"aim:R@remote",-1,132,98] } },
+    { t:"23:40:10", d:2, join:true, cap:"他用遙控器鎖上車門，把鑰匙放進口袋，上了小貨車。車子停在懸崖邊，車上有血——就像他已經不在了。", st:{ night:true, butts:8, truck:90 }, m:{ zhaoC:[96,98,"pocket:R@key",-1] } },
+    { t:"23:40:20", d:3, join:true, cap:"他用遙控器鎖上車門，把鑰匙放進口袋，上了小貨車。車子停在懸崖邊，車上有血——就像他已經不在了。", st:{ night:true, butts:8, truck:90 }, m:{ zhaoC:[124,80,null,1,96,98,[[124,98]]] }, out:["zhaoC"] },
+    { t:"23:52:00", d:4.5, cap:"23:52，小貨車開下山，前座兩個人。23:58，他的預付卡手機在南澳漁港開機。", st:{ night:true, butts:8, truck:[90,-60] } }
   ];
   EP12.court = {
     title: "南澳漁港・福滿 12 號旁・9 月 7 日早上", scene: "m12_fuel",
@@ -286,7 +293,7 @@ EP12.art = true;
       zhao: "……"
     },
     replayText: "9 月 4 日晚上 23:12，觀海台。他把車停在懸崖邊，關掉手機，鼻血又流了下來——",
-    replay: { scene:"m12_cliff", opt:{ seq:RB.map(b => b.st), ds:jds(RB) }, clean:true, cam:"案發經過重現", date:"2026-09-04", beats:RB },
+    replay: { scene:"m12_cliff", opt:{ clean:true, seq:RB.map(b => b.st), ds:jds(RB) }, clean:true, cam:"案發經過重現", date:"2026-09-04", beats:RB },
     endGood: "09:00，福滿 12 號沒有出港。\n趙德安從船艙走出來的時候，以晴站在碼頭上。她沒有哭，只說了一句：「你不准再這樣。」\n黎光耀把他帶上車。車門關上以前，趙德安回頭看了你一眼。",
     endBad: "09:00，福滿 12 號出港了。\n十天以後它回來，船上少了一個人。蔡金水說，那個臨時工在北邊的港口下船了，不知道去了哪裡。"
   };
