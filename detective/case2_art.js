@@ -231,7 +231,7 @@ EP2.art = true;
 
   /* ---------- 監視器、錄影的動畫（內容和證物文字一致，不多給線索） ---------- */
   const ANIM = {
-    cctv_living: { scene:"living", opt:{ phase:0 }, cam:"CAM1 客廳", date:"2026-10-17", beats:[
+    cctv_living: { scene:"living", opt:{ phase:0 }, cam:"CAM1 客廳", date:"2025-10-17", beats:[
       { t:"20:16:00", d:3, cap:"林振宗穿過客廳，往後走廊（製茶房方向）走去。", m:{ zong:[180,90,null,1,50,100] }, out:["zong"] },
       { t:"20:20:00", d:3, cap:"家豪坐到沙發上開始喝酒。雅琴、佩如端著碗盤進廚房。", m:{ hao:[122,94,"drink",1,40,100], ya:[-12,100,"hold",-1,96,100], pei:[-12,104,"hold",-1,104,104] }, out:["ya","pei"] },
       { t:"20:21:00", d:3, cap:"林振德拿著外套走出大門，跟沙發上的家豪揮了揮手。", m:{ de:[17,72,"point",-1,80,100] }, out:["de"] },
@@ -246,7 +246,7 @@ EP2.art = true;
       { t:"22:05:00", d:2.5, cap:"麻將散場。", m:{ ya:[134,98,"stand",-1], xin_wet:[164,98,"cross",-1], ho:[44,100,"phone",1], pei:[90,102,"stand",1] } },
       { t:"22:12:00", d:3.5, cap:"土伯衝進客廳大叫。", m:{ tu:[60,98,"point",1,17,72], ya:[134,98,"cry",-1], hao:[122,94,"stand",-1], xin_wet:[164,98,"stand",-1], ho:[44,100,"stand",1], pei:[90,102,"stand",-1] } }
     ] },
-    cctv_gate: { scene:"courtyard", cam:"CAM2 大門", date:"2026-10-17", beats:[
+    cctv_gate: { scene:"courtyard", cam:"CAM2 大門", date:"2025-10-17", beats:[
       { t:"20:21:00", d:3, cap:"何志明走進中庭旁的客房。", m:{ ho:[156,74,null,1,-12,92] }, out:["ho"] },
       { t:"20:25:00", d:3, cap:"林振德的車在中庭倒車迴轉。", cars:{ de:[70,30,"#7a8a6a"] } },
       { t:"20:26:00", d:2.5, cap:"林振德的車駛出大門。", cars:{ de:[220] }, out:["de"] },
@@ -256,23 +256,23 @@ EP2.art = true;
       { t:"21:30:00", d:2, speed:600, cap:"……沒有任何車輛或人從大門進出。" },
       { t:"23:20:00", d:3, cap:"警車抵達（你和小吳）。", cars:{ police:[70,240,"#e9e4da"] } }
     ] },
-    pol_road: { scene:"road", cam:"測速照相 山路口", date:"2026-10-17", beats:[
+    pol_road: { scene:"road", cam:"測速照相 山路口", date:"2025-10-17", beats:[
       { t:"20:41:00", d:3, cap:"下山：林振德的車。", cars:{ de:[-60,200,"#7a8a6a"] }, out:["de"] },
       { t:"21:30:00", d:2, speed:900, cap:"……沒有其他車輛。" },
       { t:"23:10:00", d:3, cap:"上山：警車（你和小吳）。", cars:{ police:[200,-60,"#e9e4da"] } }
     ] },
-    ev_video: { scene:"guestroom", cam:"視訊會議錄影", date:"2026-10-17", s:1.6, beats:[
+    ev_video: { scene:"guestroom", cam:"視訊會議錄影", date:"2025-10-17", s:1.6, beats:[
       { t:"20:22:00", d:3, cap:"何志明在客房裡和台北的董事長開視訊會議。", m:{ ho:[96,104,"sit",1] } },
       { t:"20:40:00", d:3, cap:"有人敲門進來倒茶。是張佩如，她還對鏡頭點頭打招呼。", m:{ pei:[140,100,"hold",-1,220,100] } },
       { t:"20:43:00", d:2.5, cap:"張佩如離開。", m:{ pei:[220,100,null,1] }, out:["pei"] },
       { t:"20:52:00", d:2.5, cap:"會議結束。何志明全程都在畫面裡。", m:{ ho:[96,104,"stand",1] } }
     ] },
-    ev_dashcam: { scene:"dashcam", opt:{ anim:true }, cam:"行車記錄器", date:"2026-10-17", beats:[
+    ev_dashcam: { scene:"dashcam", opt:{ anim:true }, cam:"行車記錄器", date:"2025-10-17", beats:[
       { t:"20:25:10", d:4, cap:"車子在中庭倒車迴轉，車燈掃過主屋側面通往製茶房的小路。畫面裡有一個穿灰色帽T的人，背對鏡頭往製茶房走。", m:{ hoodie:[176,92,null,1,126,96] } },
       { t:"20:26:00", d:2, cap:"車子駛出大門。", out:["hoodie"] },
       { t:"20:41:00", d:2, cap:"經過山路口。" }
     ] },
-    ev_recording: { scene:"audio", clean:true, cam:"通話錄音", date:"2026-10-17", beats:[
+    ev_recording: { scene:"audio", clean:true, cam:"通話錄音", date:"2025-10-17", beats:[
       { t:"21:12:00", d:3, cap:"（電話接通。背景是很大的風雨聲。）" },
       { t:"21:20:00", d:3.5, cap:"（車庫鐵門被風吹得哐哐響。家豪一直在求情。）" },
       { t:"21:30:00", d:5, cap:"家豪：「我爸剛剛在飯桌上說要把茶園捐掉，我現在真的沒辦法……」" },
@@ -317,7 +317,7 @@ EP2.art = true;
       intruder: "（沒有人回答。客廳裡只聽得到雨聲。）"
     },
     replayText: "10 月 17 日晚上八點多，製茶房裡到底發生了什麼事——",
-    replay: { scene:"tearoom", opt:{ replay:true, body:false, night:true, hot:false }, clean:true, cam:"案發經過重現", date:"2026-10-17", beats:[
+    replay: { scene:"tearoom", opt:{ replay:true, body:false, night:true, hot:false }, clean:true, cam:"案發經過重現", date:"2025-10-17", beats:[
       { t:"20:16:00", d:3, cap:"林振宗照例到製茶房看焙茶。", m:{ zong:[110,96,"stand",-1,200,96] } },
       { t:"20:26:00", d:3, cap:"家欣換上灰色帽T，從後門進了製茶房。", m:{ xin_hood:[156,96,null,-1,200,96] } },
       { t:"20:30:00", d:3.5, cap:"兩人在工具架旁爭吵。", m:{ zong:[126,96,"point",1], xin_hood:[152,96,"point",-1] } },

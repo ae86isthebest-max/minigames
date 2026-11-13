@@ -85,7 +85,7 @@
     ev_note:["doc"], ev_glass:["vstudy",{ staff:[[150,-1,"cam"]] }], ev_printer:["vstudy",{ staff:[[166,-1,"kneel"]] }],
     ev_ledger:["doc",{stamp:true}], ev_phone:["chat"], ev_window:["vstudy",{ staff:[[160,-1,"kneel"]] }], ev_lab:["doc",{stamp:true}]
   };
-  const D = "2026-11-09";
+  const D = "2024-11-09";
   const ANIM = {
     cctv_kitchen: { scene:"vcorridor", cam:"CAM3 廚房走廊", date:D, beats:[
       // 樓梯在畫面左邊靠牆，往右上走是上樓；廚房門在最左邊

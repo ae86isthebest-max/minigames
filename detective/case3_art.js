@@ -456,7 +456,7 @@ EP3.art = true;
     ],
     linhome: [
       { id:"llobby", name:"鴻福華廈 管理室", scene:"lobby", details:[
-        { id:"d3_guard", name:"管理員的登記簿", hot:[14,62,64,8], text:"夜班管理員 23:00 就下班了。登記簿上，12/6 晚上沒有任何訪客。" } ] },
+        { id:"d3_guard", name:"管理員的登記簿", hot:[14,62,64,8], text:"夜班管理員 23:00 就下班了。登記簿上，12/7 晚上沒有任何訪客。" } ] },
       { id:"lliving", name:"林家客廳", scene:"apartment", opt:{ who:"lin" }, details:[
         { id:"d3_lphoto", name:"牆上的照片", hot:[50,30,40,24], text:"電視旁邊的相框：林啟明夫妻和一位坐輪椅的老太太，在安養院門口合照。" } ] },
       { id:"lbalcony", name:"林家陽台", scene:"balcony", opt:(ph,has)=>({ newShears: has("e_new_shears") }), details:[
@@ -484,7 +484,7 @@ EP3.art = true;
 
   /* ---------- 監視器動畫（每一段的動作都要和字幕一樣） ---------- */
   const ANIM = {
-    cctv_gate: { scene:"wyard", opt:{ phase:1, noCar:true }, cam:"CAM1 GATE", date:"2026-12-06", beats:[
+    cctv_gate: { scene:"wyard", opt:{ phase:1, noCar:true }, cam:"CAM1 GATE", date:"2025-12-07", beats:[
       { t:"19:41:00", d:3, cap:"白色 Lexus 開進大門，往 B 區開去。", cars:{ lx:[230,-50,"#e8e8e4"] }, out:["lx"] },
       { t:"20:21:00", d:3, cap:"黑色 BMW 開進大門，往 B 區。駕駛是一個光頭男子。", cars:{ bmw:[230,-50,"#1e1e22"] }, out:["bmw"] },
       { t:"21:04:00", d:3, cap:"黑色 BMW 離開。", cars:{ bmw:[-60,230,"#1e1e22"] }, out:["bmw"] },
@@ -495,18 +495,18 @@ EP3.art = true;
       { t:"02:38:00", d:3.5, cap:"戴鴨舌帽的人從側門出來，提著布購物袋，往小巷走去。", m:{ capman_bag:[-14,98,"hold",-1,200,98,[[22,98]]] }, out:["capman_bag"] },
       { t:"06:40:00", d:3, cap:"管理員走向 B 區。", m:{ zhangL:[200,98,null,1,40,98] }, out:["zhangL"] }
     ] },
-    cctv_garage: { scene:"parking", opt:{ noCar:true }, cam:"B1 RAMP", date:"2026-12-06", beats:[
+    cctv_garage: { scene:"parking", opt:{ noCar:true }, cam:"B1 RAMP", date:"2025-12-07", beats:[
       { t:"23:20:00", d:3.5, cap:"銀色舊 Toyota 開出地下室。駕駛戴鴨舌帽、穿深色防風外套。", cars:{ ty:[-60,64,"#b8bcc0"] }, out:["ty"] },
       { t:"02:58:00", d:3.5, cap:"同一台車開回地下室。", cars:{ ty:[64,-60,"#b8bcc0"] } },
       { t:"03:04:00", d:3, cap:"駕駛從車道旁的樓梯間走上樓，手上提著布購物袋。", m:{ capman_bag:[200,96,"hold",1,96,98] }, out:["capman_bag"] },
       { t:"07:02:00", d:3, cap:"林啟明穿著西裝走出大樓。", m:{ linL:[-14,98,null,-1,160,96] }, out:["linL"] }
     ] },
-    cctv_store: { scene:"store", cam:"CAM2 STORE", date:"2026-12-05", beats:[
+    cctv_store: { scene:"store", cam:"CAM2 STORE", date:"2025-12-06", beats:[
       { t:"21:13:00", d:3, cap:"戴鴨舌帽的男人走進店裡，提著布購物袋。", m:{ capman_bag:[40,98,"hold",-1,200,98] } },
       { t:"21:14:00", d:3.5, cap:"他在多媒體機前操作，拿著單據到櫃檯，把手機遞給店員掃了一下。", m:{ capman_bag:[134,98,"phone",1,40,98] } },
       { t:"21:15:00", d:3, cap:"他走出去時抬了一下頭：戴眼鏡，五十多歲。", m:{ capman_bag:[200,98,"hold",1] }, out:["capman_bag"] }
     ] },
-    cctv_diner: { scene:"diner", cam:"CAM1 DINING", date:"2026-12-06", beats:[
+    cctv_diner: { scene:"diner", cam:"CAM1 DINING", date:"2025-12-07", beats:[
       { t:"23:05:00", d:3, cap:"許美玲走進店裡，坐在靠窗的位子。", m:{ meiL:[44,96,"sit",1,200,98] } },
       { t:"23:12:00", d:3, cap:"蔡佳穎走進來，坐到她對面。", m:{ jiaL:[96,96,"sit",-1,200,98] } },
       { t:"00:12:00", d:3, cap:"蔡佳穎去櫃檯點了一份薯條，回到座位。", m:{ jiaL:[96,96,"sit",-1,96,96,[[150,98]]] } },
@@ -546,8 +546,8 @@ EP3.art = true;
       shu: "我、我那天晚上吃了藥，什麼都不知道……",
       gang: "（金鼎的律師站起來：「我的當事人與本案無關。」）"
     },
-    replayText: "12 月 6 日晚上，宏昌倉儲 B-12 裡真正發生的事——",
-    replay: { scene:"wback", opt:{ phase:1, replay:true }, clean:true, cam:"案發經過重現", date:"2026-12-06", beats:[
+    replayText: "12 月 7 日晚上，宏昌倉儲 B-12 裡真正發生的事——",
+    replay: { scene:"wback", opt:{ phase:1, replay:true }, clean:true, cam:"案發經過重現", date:"2025-12-07", beats:[
       { t:"20:21:00", d:3.5, cap:"阿豹找上倉庫。他剁下鄭國華的左手小指，包紮好，帶著那根手指離開。", m:{ baoL:[120,98,"point",-1,200,98], zheng:[96,98,"cry",1] } },
       { t:"21:04:00", d:2.5, cap:"阿豹離開時，鄭國華還活著。", m:{ baoL:[220,98,null,1] }, out:["baoL"] },
       { t:"22:58:00", d:3, cap:"鄭國華用藏起來的第二支手機，打給林啟明的預付卡。", m:{ zheng:[96,98,"phone",1] } },
