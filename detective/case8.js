@@ -22,7 +22,7 @@ const EP8 = {
   ],
   goal: "找出江承恩是怎麼死的；如果是有人殺的，兇手是誰、怎麼進出那個鎖著的房間。",
   phases: [
-    { title:"那一晚　7月7日（二）", short:"那一晚", startAt:"studio", questionLimit:8, clock:{ start:"23:50", end:"03:50", ask:5, item:10, cctv:10, test:10 },
+    { title:"那一晚　7月7日（二）", short:"那一晚", startAt:"studio", questionLimit:8, clock:{ start:"23:50", end:"04:10", ask:5, item:10, cctv:10, test:10 },
       reports:[
         { id:"r_case", title:"報案內容（110 轉報）",
           text:"23:42 謎境工作室櫃台人員林語安報案：老闆江承恩倒在「最後一個房間」裡，頭部流血，已無呼吸。\n房間的門是鎖著的，林語安用總卡打開。\n當晚在工作室的人：江承恩、合夥人葛志偉、櫃台林語安，以及一組玩「古宅」房間的四名大學生（22:10 離開）。",
