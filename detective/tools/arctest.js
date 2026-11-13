@@ -47,7 +47,7 @@ out.E = await p.evaluate(async()=>{ const r={}; const wait = ms => new Promise(f
   CASES[0].after = { title:"測試選擇", lines:[ { who:"narr", text:"L1" },
     { who:"narr", text:"Q1", id:"q1", choices:[ { text:"甲", set:"t_a", say:"SAY-A" }, { text:"乙", set:"t_b", say:[{ who:"you", text:"SAY-B1" }, "SAY-B2"] }, { text:"丙（看不到）", when:"arc:nope" } ] },
     { who:"narr", text:"ONLY-A", when:"arc:t_a" }, { who:"narr", text:"ONLY-B", when:"arc:t_b" },
-    { who:"narr", text:"Q2", time:0.6, timeout:0, choices:[ { text:"快", mark:"fast", say:"SAY-FAST" }, { text:"慢", mark:"slow" } ] },
+    { who:"narr", text:"Q2", time:0.3, timeout:0, choices:[ { text:"快", mark:"fast", say:"SAY-FAST" }, { text:"慢", mark:"slow" } ] },   // time（現實秒數）已經沒有作用：不會自動選
     { who:"narr", text:"END" } ] };
   CASES[0].events = (CASES[0].events||[]).concat([{ id:"t_ev", requires:["o_milk"], title:"測試事件", text:"x", scene:{ title:"測試場面", lines:[ { who:"narr", text:"S1" }, { who:"narr", text:"SQ", choices:[ { text:"一", mark:"one" }, { text:"二", mark:"two" } ] }, { who:"narr", text:"S-ONE", when:"pick:one" } ] } }]);
   CASES[0].suspects[0].questions.push({ id:"t_pq", q:"（測試）", a:"…", requires:["pick:one"] });
@@ -59,18 +59,28 @@ out.E = await p.evaluate(async()=>{ const r={}; const wait = ms => new Promise(f
   openSheet('accuse'); pickKind('murder'); ['ho','chow'].forEach(toggleCulprit); ['ev_glass','ev_lab','ev_printer'].forEach(toggleEv); C.reasoning.forEach((x,i)=>pickReason(i,x.answer)); await submitAccuse(); courtNext(1);
   const seq=[]; seq.push(interLine().text); interNext(0); seq.push(interLine().text, interChoices(interLine()).length);
   interPick(1); seq.push(interLine().text); interNext(0); seq.push(interLine().text); interNext(0); seq.push(interLine().text); interNext(0);
-  seq.push(interLine().text, !!inter.deadline, document.querySelector('.ibar') ? "bar" : "nobar"); await wait(900);
-  seq.push(interLine().text); interNext(0); seq.push(interLine().text); interNext(0); seq.push(interLine().text); interNext(0);
-  r.seq=seq; r.end0=1; r.end=[!!inter, has("arc:t_b"), has("arc:t_a"), has("pick:fast"), has("pick:slow")];
-  // 關掉倒數：同一題不會自動選
-  OPT.setTimed(false); interPlay({ title:"t", lines:[{ who:"narr", text:"TQ", time:0.3, choices:[{ text:"a", mark:"ta" }, { text:"b", mark:"tb" }] }] }, "t_off"); await wait(700);
-  r.off=[!!inter && interOpen(interLine()), !!(inter && inter.deadline), has("pick:ta"), has("pick:tb")]; interPick(0); OPT.setTimed(true); r.off.push(!!inter, has("pick:ta"));
-  CASES[0].before = { title:"x", lines:[{ who:"narr", text:"q", time:5, choices:[{ text:"a" }] }] }; _anyTimed = undefined; goHome(); r.optShown = document.body.innerText.includes("限時行動要倒數"); openCase(0); if (inter){ interPick(0); } 
+  seq.push(interLine().text); await wait(700); seq.push(interOpen(interLine()) ? "still-open" : "auto-picked", document.querySelector('.ibar') ? "bar" : "nobar"); interPick(0);
+  seq.push(interLine().text); interNext(0); seq.push(interLine().text); interNext(0);
+  r.seq=seq; r.end=[!!inter, has("arc:t_b"), has("arc:t_a"), has("pick:fast"), has("pick:slow")];
+  // 遊戲時間的限制：場面額度 limit、選項 mins、來不及就算 timeout；花掉的分鐘算進當天的時鐘
+  goHome(); openCase(0); S.done = false; const t0 = usedNow();
+  interPlay({ title:"g", limit:15, lines:[ { who:"narr", text:"GA", choices:[{ text:"A", mins:10, mark:"ga" }, { text:"B", mins:20, mark:"gb" }] },
+    { who:"narr", text:"GB", timeout:1, late:"LATE", choices:[{ text:"C", mins:10, mark:"gc" }, { text:"D", mins:10, mark:"gd", say:"SAY-D" }] }, { who:"narr", text:"GEND" } ] }, "t_g");
+  r.g=[interCan(interLine(), interLine().choices[0]), interCan(interLine(), interLine().choices[1]), document.body.innerText.includes("來不及"), document.body.innerText.includes("還有 15 分鐘")];
+  interPick(1); r.g.push(interLine().text, has("pick:gb")); interPick(0); r.g.push(usedNow() - t0, interLine().text, interChoices(interLine()).some(c=>interCan(interLine(), c)), document.body.innerText.includes("時間不夠了"));
+  interPick(0); r.g.push(has("pick:gc")); interPick(1, true); r.g.push(interLine().text); interNext(0); r.g.push(interLine().text); interNext(0); r.g.push(interLine().text, has("pick:gd"), usedNow() - t0); interNext(0); r.g.push(!!inter);
+  // by：要在遊戲時鐘幾點前決定
+  const by = fmtMin(nowMin() + 5);
+  interPlay({ title:"h", lines:[ { who:"narr", text:"HA", by, choices:[{ text:"X", mins:10, mark:"hx" }, { text:"Y", mins:5, mark:"hy" }, { text:"Z", mark:"hz" }] } ] }, "t_h");
+  r.h=[interCan(interLine(), interLine().choices[0]), interCan(interLine(), interLine().choices[1]), interCan(interLine(), interLine().choices[2]), document.body.innerText.includes("要在 " + by + " 前決定")]; interPick(1); r.h.push(!!inter, has("pick:hy"), usedNow() - t0);
+  r.optShown = document.body.innerText.includes("限時行動要倒數");
   openSheet('accuse'); interReplay('after'); interNext(0); r.replay=[interLine().text, interOpen(interLine()), document.body.innerText.includes("你的選擇：乙")]; interNext(1); r.replayEnd=!!inter;
   return r; });
 console.log(JSON.stringify(out,null,1));
 const E = out.E, okE = E.scene[0] && E.scene[1]==="測試場面" && E.scene[3] && E.sceneSkip[0]==="SQ" && E.sceneSkip[1] && E.cantSkip==="SQ" && E.sceneBranch==="S-ONE" && !E.sceneEnd[0] && E.sceneEnd[1] && E.sceneEnd[2] && !E.sceneEnd[3] && E.sceneEnd[4] && E.sceneEnd[5]
-  && E.seq.join("|")==="L1|Q1|2|SAY-B1|SAY-B2|ONLY-B|Q2|true|bar|你來不及決定——|SAY-FAST|END" && !E.end[0] && E.end[1] && !E.end[2] && E.end[3] && !E.end[4] && E.off.join()==="true,false,false,false,false,true" && E.optShown && E.replay[0]==="Q1" && !E.replay[1] && E.replay[2] && !E.replayEnd;
+  && E.seq.join("|")==="L1|Q1|2|SAY-B1|SAY-B2|ONLY-B|Q2|still-open|nobar|SAY-FAST|END" && !E.end[0] && E.end[1] && !E.end[2] && E.end[3] && !E.end[4]
+  && E.g.join("|")==="true|false|true|true|GA|false|10|GB|false|true|false|LATE|SAY-D|GEND|true|10|false" && E.h.join("|")==="false|true|true|true|false|true|15" && !E.optShown
+  && E.replay[0]==="Q1" && !E.replay[1] && E.replay[2] && !E.replayEnd;
 const ok = okE && out.A.after[0] && out.A.after[1] && !out.A.before[0] && out.A.ep2[0][0]==="FOUND 版本" && out.A.ep2[1] && out.A.ep2[2] && out.A.briefHas && out.A.again[0]==="FOUND 版本"
   && out.B.ep2[0][0]==="MISS 版本" && out.B.ep2[1] && !out.B.ep2[2] && out.B.again[0]==="MISS 版本" && out.B.upgraded[0] && out.B.stillMiss[0]==="MISS 版本"
   && out.D.before[0] && out.D.before[2] && out.D.before[3] && !out.D.beforeEnd[0] && out.D.beforeEnd[1]==="scene" && out.D.beforeEnd[2] && !out.D.beforeAgain

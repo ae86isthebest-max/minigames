@@ -28,16 +28,18 @@
       scene 是 PX.SCENES 裡的場景名（可省略，沒有就只有對話）；cast 的 id 可以是這一集的人物、C.looks，或 ARC.defineCast 定義的固定班底；"_you" 是偵探。
       固定班底：ARC.defineCast({ wu:{ name:"吳……", look:{ skin:…, hair:…, top:… } } })，每一集的幕間都可以直接用。
       幕間只能聊天、埋伏筆，不可以放破案必需的線索；沒看（跳過）也不影響任何一集。
-   7) 劇情選擇、限時行動：lines 裡放一個「選擇題」
-        { who:"wu", text:"他往後巷跑了！怎麼辦？", time:10, timeout:2, id:"chase",        // time＝限時幾秒（不寫就不限時）；timeout＝時間到自動選第幾個（從 0 算，不寫就是最後一個）
-          choices:[ { text:"追上去", set:"ep7_chased", say:"你翻過圍牆追了上去。" },      // set＝記下跨集旗標（之後用 "arc:ep7_chased"）
-                    { text:"叫支援", mark:"called", say:[ { who:"wu", text:"我馬上叫！" } ] },   // mark＝只記在這一集（之後用 "pick:called"）
-                    { text:"先保護人質", say:"你停下腳步。", when:"pick:found_kid" } ] }       // 選項也可以有 when／unless
-      玩家可以在首頁把「限時行動要倒數」關掉（OPT.timed()）：關掉後同一個場面照樣出現，只是不倒數，所以劇情不可以依賴「一定會超時」。
+   7) 劇情選擇、限時行動：lines 裡放一個「選擇題」。限時一律是「遊戲裡的時間」，沒有現實世界的倒數（使用者 2026-11-13 決定）
+        { who:"wu", text:"他往後巷跑了！怎麼辦？", id:"chase", by:"21:30", timeout:2,      // by＝要在遊戲時鐘幾點前決定（案件進行中才有用）；timeout＝來不及時算選了第幾個（從 0 算，不寫就是最後一個）
+          choices:[ { text:"追上去", mins:10, set:"ep7_chased", say:"你翻過圍牆追了上去。" },   // mins＝做這件事要花幾分鐘遊戲時間（案件進行中會算進當天的時鐘）；set＝記下跨集旗標（之後用 "arc:ep7_chased"）
+                    { text:"叫支援", mins:5, mark:"called", say:[ { who:"wu", text:"我馬上叫！" } ] },   // mark＝只記在這一集（之後用 "pick:called"）
+                    { text:"先保護人質", say:"你停下腳步。", when:"pick:found_kid" } ] }       // 選項也可以有 when／unless；沒寫 mins 就是不花時間
+      整個場面也可以有時間額度：場面加 limit:15（分鐘），每個選項的 mins 從裡面扣，扣完之後有 mins 的選擇題就「來不及」。
+      剩下的時間＝ min(場面額度剩多少, 離 by 還有多久, 今天還剩多少)。不夠時間做的選項會變灰；全部都來不及，玩家按「時間不夠了」就算選了 timeout。
+      玩家不用趕：畫面不會自己倒數，時間只在「選了要花時間的行動」時才前進。所以每個選項花多久、值不值得，要設計成真的取捨。
+      舊的 time（現實秒數）已經沒有作用，請改用 by／limit／mins。
       選完會接著說 say（字串＝旁白，或 { who, text }），之後的台詞可以用 when:"arc:…"／"pick:…" 分支。選擇題不能跳過；重看時不能改選。
       案件進行中也可以播這種場面：突發事件加 scene:{ title, scene, cast, lines }，事件一發生就播（搭配 atTime 就是「幾點幾分突然……」）；
       程式裡用 interPlay(def, "這一集裡不重複的名字")。選擇的後果要寫成之後的台詞、問題或事件，不要讓任何一個選項把案子變成破不了。
-
 
    規則：主線線索只能是加分，任何一集沒有它也要破得了案；下一集一定要用 arcRecap 的 miss 把沒查到的人接回來。
    ========================================================= */
@@ -65,22 +67,8 @@ const SLOT = (() => {
   function use(n){ cur = n; try { localStorage.setItem(CUR, String(n)); } catch (e) {} }
   return { N, cur:() => cur, caseKey, seriesKey, summary, wipe, use };
 })();
-/* ---------- 設定（跟著裝置，不跟存檔）：限時行動要不要倒數 ---------- */
-const OPT = (() => {
-  const K = "detective_tw3_opt_timed";
-  let timed = true; try { timed = localStorage.getItem(K) !== "0"; } catch (e) {}
-  return { timed:() => timed, setTimed(v){ timed = !!v; try { localStorage.setItem(K, timed ? "1" : "0"); } catch (e) {} } };
-})();
-function optTimed(v){ OPT.setTimed(v); render(); toast(v ? "⏱ 限時行動：有倒數" : "⏱ 限時行動：不倒數，可以慢慢選"); }
-// 有沒有任何一集用到限時的選擇（都沒有就不用顯示這個設定）
-let _anyTimed;
-function anyTimed(){
-  if (_anyTimed !== undefined) return _anyTimed;
-  const t = d => !!(d && d.lines && d.lines.some(l => l.choices && l.time));
-  return (_anyTimed = CASES.some(c => t(c.before) || t(c.after) || (c.events || []).some(e => t(e.scene)) || Object.values(c.scenes || {}).some(t)));
-}
-const optHTML = () => !anyTimed() ? "" : `<div class="card"><h3 style="margin:0 0 6px">⚙️ 設定</h3>
-  <div class="pick ${OPT.timed() ? "on" : ""}" onclick="optTimed(${OPT.timed() ? 0 : 1})"><span class="box">${OPT.timed() ? "✓" : ""}</span><span><b>⏱ 限時行動要倒數</b><br><span class="muted small">${OPT.timed() ? "有些緊急場面要在幾秒內決定，來不及就當作你猶豫了。點一下可以關掉。" : "已關掉：緊急場面一樣會出現，但不倒數，可以慢慢選。"}</span></span></div></div>`;
+// 以前有「現實秒數倒數」的設定；現在限時一律用遊戲裡的時間（見最上面第 7 點），這裡只留空殼給舊程式呼叫
+const OPT = { timed:() => false, setTimed(){} };
 // 換存檔、刪存檔之後：把記在記憶體裡的東西（主線紀錄、場景裡走到哪）清掉，從新存檔重新讀
 function slotRefresh(){
   ARC.reload();
@@ -97,7 +85,7 @@ function slotsHTML(){
   return `<div class="card"><h3 style="margin:0 0 6px">💾 存檔</h3><p class="muted small" style="margin:0 0 8px">這台裝置有 ${SLOT.N} 個存檔，各玩各的。點一個來用；想重新玩，就開一個空白的，或把舊的刪掉。</p>
     ${[1, 2, 3].slice(0, SLOT.N).map(n => { const m = SLOT.summary(n), on = n === SLOT.cur();
       const txt = m.empty ? "空白" : [m.solved ? `已結案 ${m.solved} 集` : "", m.open ? `調查中 ${m.open} 集` : ""].filter(Boolean).join("・") || "剛開始";
-      return `<div class="pick ${on ? "on" : ""}" onclick="slotUse(${n})" style="align-items:center"><span class="box">${on ? "✓" : ""}</span><span style="flex:1"><b>存檔 ${n}</b>　<span class="muted small">${txt}${on ? "・使用中" : ""}</span></span>${m.empty ? "" : `<button class="tag" style="border:0;cursor:pointer;padding:5px 10px;margin:0;color:#ff9a8a" onclick="event.stopPropagation();slotDelete(${n})">🗑 刪除</button>`}</div>`; }).join("")}</div>${optHTML()}`;
+      return `<div class="pick ${on ? "on" : ""}" onclick="slotUse(${n})" style="align-items:center"><span class="box">${on ? "✓" : ""}</span><span style="flex:1"><b>存檔 ${n}</b>　<span class="muted small">${txt}${on ? "・使用中" : ""}</span></span>${m.empty ? "" : `<button class="tag" style="border:0;cursor:pointer;padding:5px 10px;margin:0;color:#ff9a8a" onclick="event.stopPropagation();slotDelete(${n})">🗑 刪除</button>`}</div>`; }).join("")}</div>`;
 }
 
 const ARC = (() => {
@@ -210,7 +198,7 @@ const interPid = () => { const l = inter.L.lines[inter.idx]; return l.id || Stri
 const interOpen = l => !!(l && l.choices) && !inter.pend.length && interPickGet(interPid()) === undefined;   // 還沒選的選擇題
 const interNextIdx = from => { const ls = inter.L.lines; for (let i = from; i < ls.length; i++) if (interOK(ls[i])) return i; return -1; };
 function interStart(k, L, key, force, back){
-  inter = { k, L, key, idx:-1, pend:[], force:!!force, back };
+  inter = { k, L, key, idx:-1, pend:[], force:!!force, back, used:0 };
   inter.idx = interNextIdx(0);
   if (inter.idx < 0){ inter = null; return false; }
   interArm();
@@ -238,25 +226,31 @@ function interPlay(def, key, force){
   scrollTo(0, 0);
   return true;
 }
-// 限時的選擇題：開始倒數；時間到就自動選 timeout 那一個（沒寫就是最後一個）
-function interArm(){
-  clearTimeout(inter.timer); inter.deadline = null;
-  const l = interLine();
-  if (interOpen(l) && l.time && !inter.force && OPT.timed()){
-    const me = inter; me.deadline = Date.now() + l.time * 1000;
-    me.timer = setTimeout(() => { if (inter === me && interOpen(interLine())){ const cs = interChoices(l); interPick(l.timeout !== undefined ? l.timeout : cs[cs.length - 1].j, true); } }, l.time * 1000);
-  }
+// 限時一律用「遊戲裡的時間」，沒有現實世界的倒數：
+//   場面 limit:分鐘＝這個場面總共只有這麼多時間；選擇題 by:"HH:MM"＝要在遊戲時鐘幾點前決定；選項 mins:分鐘＝做這件事要花多久。
+//   案件進行中的場面，花掉的分鐘也會算進當天的時鐘。
+const interClock = () => !!inter && !inter.k && typeof CLK === "function" && !!CLK();
+const interTimed = l => !!(l && l.choices) && (!!l.by || l.choices.some(c => c.mins));
+function interRemain(l){
+  let r = Infinity;
+  if (inter.L.limit !== undefined) r = Math.min(r, inter.L.limit - (inter.used || 0));
+  if (interClock()){ r = Math.min(r, timeLeft()); if (l && l.by) r = Math.min(r, clkAt(CLK(), l.by) - nowMin()); }
+  return r;
 }
+// 這個選項現在來不來得及做
+const interCan = (l, c) => { if (!interTimed(l) || inter.force) return true; const r = interRemain(l); return r === Infinity || (r > 0 && (c.mins || 0) <= r); };
+function interArm(){ /* 不再有現實時間的計時器 */ }
 const interChoices = l => l.choices.map((c, j) => ({ ...c, j })).filter(interOK);
 function interPick(j, timedOut){
   if (!inter) return; const l = interLine(); if (!interOpen(l)) return;
   const c = l.choices[j]; if (!c) return;
-  clearTimeout(inter.timer); inter.deadline = null;
+  if (!timedOut && !interCan(l, c)) return;                 // 來不及做的選項不能選
+  if (!timedOut && c.mins && !inter.force){ inter.used = (inter.used || 0) + c.mins; if (interClock()) spend(c.mins); }
   interPickSet(interPid(), j);
   [].concat(c.set || []).forEach(f => ARC.set(f, C.id, "found"));
   if (c.mark){ S.picks = S.picks || {}; [].concat(c.mark).forEach(f => { S.picks[f] = 1; }); save(); }
   const say = [].concat(c.say || []).map(x => typeof x === "string" ? { who: l.reply || "narr", text: x } : x);
-  if (timedOut) say.unshift({ who:"narr", text: l.late || "你來不及決定——" });
+  if (timedOut) say.unshift({ who:"narr", text: l.late || "時間不夠了，你什麼都來不及做——" });
   inter.pend = say;
   if (say.length){ render(); scrollTo(0, 0); } else interNext(0);
 }
@@ -275,7 +269,7 @@ function interNext(end){
   interArm(); render(); scrollTo(0, 0);
 }
 function interEnd(){
-  const { k, L, key, force, back } = inter; clearTimeout(inter.timer); inter = null;
+  const { k, L, key, force, back } = inter; inter = null;
   if (k) ARC.mark(key); else { (S.scenes = S.scenes || {})[key] = 1; save(); }
   [].concat(L.arc || []).forEach(f => ARC.set(f, C.id, "found"));
   if (typeof L.done === "function") try { L.done(); } catch (e) {}
@@ -297,9 +291,12 @@ function vInter(){
   const more = inter.pend.length > 1 || interNextIdx(inter.idx + 1) >= 0;
   let btns;
   if (open){
-    const left = inter.deadline ? Math.max(0, (inter.deadline - Date.now()) / 1000) : 0;
-    btns = `${inter.deadline ? `<div class="ibar"><i style="width:${Math.round(left / st.time * 100)}%;animation:ibar ${left.toFixed(1)}s linear forwards"></i></div><div class="muted small" style="margin:4px 0 0">⏱ 要馬上決定（${st.time} 秒）</div>` : ""}
-      ${interChoices(st).map(c => `<button class="btn" style="margin-top:8px;border-color:var(--accent)" onclick="interPick(${c.j})">${esc(c.text)}</button>`).join("")}`;
+    const cs = interChoices(st), timed = interTimed(st) && !inter.force, r = timed ? interRemain(st) : Infinity;
+    const none = timed && !cs.some(c => interCan(st, c)), to = st.timeout !== undefined ? st.timeout : cs[cs.length - 1].j;
+    const clock = !timed || r === Infinity ? "" : `<p class="muted small" style="margin:10px 2px 0">${interClock() ? `🕐 現在 ${nowStr()}` : "⏱"}${st.by && interClock() ? `・要在 ${st.by} 前決定` : ""}・${r > 0 ? `還有 ${minLabel(r)}` : "已經沒有時間了"}<span style="opacity:.7">（遊戲裡的時間，不用趕，想清楚再選）</span></p>`;
+    btns = `${clock}
+      ${cs.map(c => { const ok = interCan(st, c); return `<button class="btn" style="margin-top:8px;${ok ? "border-color:var(--accent)" : "opacity:.45"}" ${ok ? "" : "disabled"} onclick="interPick(${c.j})">${esc(c.text)}${c.mins ? ` <span class="tag cost">⏱ ${minLabel(c.mins)}</span>` : ""}${ok ? "" : ` <span class="tag">來不及</span>`}</button>`; }).join("")}
+      ${none ? `<button class="btn primary" style="margin-top:12px" onclick="interPick(${to}, true)">時間不夠了 ▶</button>` : ""}`;
   } else {
     const picked = st.choices && !inter.pend.length ? st.choices[interPickGet(interPid())] : null;
     btns = `${picked ? `<p class="muted small" style="margin:8px 2px 0">你的選擇：${esc(picked.text)}</p>` : ""}
@@ -313,4 +310,3 @@ function vInter(){
 }
 // 結案畫面上的「重看幕間」按鈕
 const interBtns = () => ["before", "after"].filter(k => C[k] && C[k].lines && ARC.seen(C.id + ":" + k)).map(k => `<button class="btn" style="text-align:center;margin-top:0" onclick="interReplay('${k}')">🎬 重看幕間：${esc(C[k].title || (k === "before" ? "開場" : "收工之後"))}</button>`).join("");
-try { const st = document.createElement("style"); st.textContent = ".ibar{height:8px;border-radius:99px;background:#ffffff1a;overflow:hidden;margin-top:12px}.ibar i{display:block;height:100%;background:#ff7a5a;border-radius:99px}@keyframes ibar{to{width:0}}"; document.head.appendChild(st); } catch (e) {}
