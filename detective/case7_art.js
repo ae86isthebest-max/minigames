@@ -170,6 +170,10 @@ EP7.art = true;
   SC.t_stairs = (o) => {
     R(0, 0, W, H, "#101010");
     for (let k = 0; k < 15; k++){ const c = k % 5, r = Math.floor(k / 5), x = 4 + c * 37, y = 12 + r * 32; R(x, y, 35, 30, "#2a2e2a"); R(x + 12, y + 6, 12, 22, "#4a5048"); R(x + 13, y + 7, 10, 4, "#2a6a3a"); R(x, y + 26, 35, 4, "#3a3e3a"); txt((k + 1) + "F", x + 2, y + 8, "#c8d8c8", "5px monospace"); }
+    // 有人經過的樓層：門打開、門口一個小小的人影（照每一段的 s.fig）
+    const [bi, bp] = o.ds ? beatAt(o.t || 0, o.ds) : [0, 0], st = (o.seq || [])[bi] || {};
+    (st.fig || []).forEach((k, j, arr) => { const show = arr.length < 2 || (j === 0 ? bp < 0.5 : bp >= 0.5); if (!show) return; const c = k % 5, r = Math.floor(k / 5), x = 4 + c * 37, y = 12 + r * 32;
+      R(x + 13, y + 7, 10, 19, "#1a1e1a"); R(x + 16, y + 12, 5, 4, "#d8b090"); R(x + 15, y + 16, 7, 8, st.col || "#3a4a6a"); R(x + 16, y + 24, 2, 3, "#2a2a30"); R(x + 19, y + 24, 2, 3, "#2a2a30"); });
   };
   // 好運來麻將館
   SC.mj_hall = (o) => {
@@ -275,9 +279,9 @@ EP7.art = true;
   });
   const L0 = id => { const L = Object.assign({}, LOOK[id]); delete L.hello; delete L.byPhase; return L; };
   EP7.looks = {
-    jiahaoL: L0("jiahao"), jianL: Object.assign(L0("jian"), { prop:"bag" }), suL: L0("su"), chenL: L0("chen"),
+    jiahaoL: L0("jiahao"), jianL: L0("jian"), suL: L0("su"), chenL: L0("chen"),
     liuU: { skin:"#e0b48c", hair:"#1a1410", hairStyle:"short", top:"#4a6a8a", bottom:"#3a4a5a", hat:"cap", capColor:"#2a4a6a", gloves:"#c8b890" },
-    liuH: { skin:"#e0b48c", hair:"#1a1410", hairStyle:"short", top:"#4a6a8a", bottom:"#3a4a5a", hat:"cap", capColor:"#2a4a6a", gloves:"#c8b890", prop:"bag" },
+    liuH: { skin:"#e0b48c", hair:"#1a1410", hairStyle:"short", top:"#4a6a8a", bottom:"#3a4a5a", hat:"cap", capColor:"#2a4a6a", gloves:"#c8b890" },
     fangL: { age:"old", skin:"#d8a880", hair:"#c8c8c0", hairStyle:"balding", top:"#8a8a8a", bottom:"#6a6a6a", glasses:true },
     famDad: { skin:"#d8a880", hair:"#1a1410", hairStyle:"short", top:"#3a6a3a", bottom:"#2a2a3a" },
     famMom: { skin:"#f0c8a8", hair:"#2a2220", hairStyle:"long", top:"#e8a0b0", bottom:"#3a3a5a", skirt:true },
@@ -344,8 +348,8 @@ EP7.art = true;
       { t:"22:50:10", d:4, cap:"警衛蘇金城從 1 樓進電梯，上 14 樓。", s:{ fl:["1","1","4","8","11","14"], door:[1,0,0,0,0,0], out:"#c8c0a8" }, m:{ suL:[96,98,"stand",1,96,78] } }
     ] },
     cctv_lobby: { scene:"t_lobbycam", cam:"1F LOBBY", date:"2026-06-03", beats:[
-      { t:"20:27:30", d:4, cap:"一個穿西裝、拿公事包的男人刷訪客卡進來，搭電梯上樓。", m:{ jianL:[164,74,null,1,26,74,[[60,98],[150,98]]] }, out:["jianL"] },
-      { t:"20:51:10", d:4, cap:"他下樓，邊走邊打電話，用力推開大門。", m:{ jianL:[26,74,"phone",-1,164,74,[[150,98],[60,98]]] }, out:["jianL"] },
+      { t:"20:27:30", d:4, cap:"一個穿西裝、拿公事包的男人刷訪客卡進來，搭電梯上樓。", m:{ jianL:[164,74,"carry@case",1,26,74,[[60,98],[150,98]]] }, out:["jianL"] },
+      { t:"20:51:10", d:4, cap:"他下樓，邊走邊打電話，用力推開大門。", m:{ jianL:[26,74,"phone&case",-1,164,74,[[150,98],[60,98]]] }, out:["jianL"] },
       { t:"21:08:00", d:3.5, cap:"方家豪走進大廳，跟警衛點了個頭，搭電梯上樓。", m:{ jiahaoL:[164,74,null,1,26,74,[[60,98],[150,98]]], suL:[96,98,"stand",-1] }, out:["jiahaoL"] },
       { t:"21:26:00", d:3.5, cap:"方家豪走出大門，在門口踢了一下垃圾桶。", m:{ jiahaoL:[26,74,null,-1,164,74,[[150,98],[60,98]]], suL:[96,98,"stand",-1] }, out:["jiahaoL"] },
       { t:"22:24:00", d:4, cap:"一家五口進電梯。爸爸又走出來，站在電梯口等。", m:{ famDad:[140,98,"stand",1,26,74,[[60,98]]], famMom:[164,74,null,1,20,74,[[60,98],[150,98]]], famGma:[164,74,null,1,14,74,[[60,98],[150,98]]], suL:[96,98,"sit",-1] }, out:["famMom","famGma"] },
@@ -364,8 +368,8 @@ EP7.art = true;
     cctv_stair14: { scene:"t_stairs", cam:"STAIR 1-15F", date:"2026-06-03", beats:[
       { t:"21:00:00", d:3, cap:"十五格畫面，1 樓到 15 樓的樓梯間門口。" },
       { t:"22:00:00", d:3, cap:"（21:00 到 22:53，沒有任何人開過樓梯門。）" },
-      { t:"22:53:10", d:3.5, cap:"警衛從 14 樓的樓梯門衝出來，一路跑下 1 樓。" },
-      { t:"23:05:00", d:3, cap:"兩個員警從 1 樓走樓梯上 14 樓。" }
+      { t:"22:53:10", d:3.5, s:{ fig:[13,0], col:"#3a4a6a" }, cap:"警衛從 14 樓的樓梯門衝出來，一路跑下 1 樓。" },
+      { t:"23:05:00", d:3, s:{ fig:[0,13], col:"#3a5a8a" }, cap:"兩個員警從 1 樓走樓梯上 14 樓。" }
     ] },
     cctv_mahjong: { scene:"mj_hall", cam:"HAO YUN LAI", date:"2026-06-03", beats:[
       { t:"21:35:00", d:3.5, cap:"方家豪推門進來，坐在角落那桌。", m:{ jiahaoL:[90,98,"sit",1,-14,98] } },
@@ -375,9 +379,9 @@ EP7.art = true;
     ] },
     ev_dashcam: { scene:"t_b2", opt:{ dash:true, unplug:false, cars:false, clean:true }, clean:true, cam:"AKV-3021 PARKING", date:"2026-06-03", beats:[
       { t:"21:46:00", d:3.5, cap:"一台白色廂型車停進電梯口旁邊的格子，車身寫著「永升電梯」。", cars:{ van:[76,-60,"#e9e4da"] } },
-      { t:"21:47:00", d:4, cap:"一個穿永升制服、戴工作手套的男人下車，踩上柱子的底座，伸手到天花板。", m:{ liuU:[64,90,"point",1,80,98] } },
+      { t:"21:47:00", d:4, cap:"一個穿永升制服、戴工作手套的男人下車，踩上柱子的底座，伸手到天花板。", m:{ liuU:[64,90,"raise",1,80,98] } },
       { t:"21:57:00", d:4.5, cap:"他在 B2 按了電梯。門開了，他沒進去，往通到 B1 的車道走過去。", s:{ door:[0,1,1,0] }, m:{ liuU:[10,74,null,-1,110,98,[[110,98],[40,98]]] }, out:["liuU"] },
-      { t:"22:33:00", d:4, cap:"那個男人從 B1 的車道走下來，手上的東西用抹布包著，上車。", m:{ liuH:[80,96,"hold",1,10,74,[[30,98]]] }, out:["liuH"] },
+      { t:"22:33:00", d:4, cap:"那個男人從 B1 的車道走下來，手上的東西用抹布包著，上車。", m:{ liuH:[80,96,"carry@cloth/#c8b890",1,10,74,[[30,98]]] }, out:["liuH"] },
       { t:"22:36:00", d:3, cap:"廂型車開走。", cars:{ van:[-80,76] } }
     ] }
   };
@@ -392,12 +396,12 @@ EP7.art = true;
   /* ---------- 結案 ---------- */
   const replayBeats = [
     { t:"21:59:30", d:5, cap:"21:59，他站在車廂頂上，把電梯切到檢修模式。空車廂載著他，慢慢往上。", s:{ car:[108,56], ins:true }, m:{ liuU:[48,56,"stand",1,48,108] } },
-    { t:"22:03:00", d:4.5, cap:"車廂停在 13 樓和 14 樓之間。他從裡面推開 14 樓的電梯門。門口的警報「嗶——嗶——」一直響。", s:{ car:56, hd:[0,1], ins:true }, m:{ liuU:[60,56,"point",1,48,56] } },
+    { t:"22:03:00", d:4.5, cap:"車廂停在 13 樓和 14 樓之間。他從裡面推開 14 樓的電梯門。門口的警報「嗶——嗶——」一直響。", s:{ car:56, hd:[0,1], ins:true }, m:{ liuU:[60,56,"push",1,48,56] } },
     { t:"22:04:30", d:4, cap:"方振華打完電話給警衛，開門出來看。", s:{ car:56, hd:1, fdoor:true, ins:true }, m:{ fangL:[120,56,null,-1,160,56] } },
     { t:"22:05:10", d:5, cap:"他從電梯井走出來。「方主委，你還記得劉國雄嗎？」", s:{ car:56, hd:1, fdoor:true, ins:true }, m:{ liuU:[100,56,"stand",1,60,56], fangL:[124,56,"stand",-1] } },
     { t:"22:06:00", d:4.5, cap:"方振華往後退，退進家裡，退進書房。他抓住了老人的衣領。", s:{ car:56, hd:1, fdoor:true, ins:true }, m:{ fangL:[200,56,null,-1,124,56], liuU:[200,56,null,1,100,56] }, out:["fangL","liuU"] },
-    { t:"22:12:00", d:5, cap:"六分鐘後，他一個人走回來，扳手用抹布包著，口袋裡多了一個皮夾。他回到車廂頂上，關上電梯門。", s:{ car:56, hd:[1,1,0], fdoor:true, ins:true }, m:{ liuH:[48,56,"hold",-1,180,56] } },
-    { t:"22:13:00", d:4.5, cap:"檢修模式不能超過十五分鐘，不然公司會跳警報。他把電梯切回一般模式，趴在車廂頂上，跟著車廂一起往下。", s:{ car:[56,120], fdoor:true }, m:{ liuH:[48,120,"kneel",-1,48,56] }, out:["liuH"] }
+    { t:"22:12:00", d:5, cap:"六分鐘後，他一個人走回來，扳手用抹布包著，口袋裡多了一個皮夾。他回到車廂頂上，關上電梯門。", s:{ car:56, hd:[1,1,0], fdoor:true, ins:true }, m:{ liuH:[48,56,"carry@cloth/#c8b890&wallet",-1,180,56] } },
+    { t:"22:13:00", d:4.5, cap:"檢修模式不能超過十五分鐘，不然公司會跳警報。他把電梯切回一般模式，趴在車廂頂上，跟著車廂一起往下。", s:{ car:[56,120], fdoor:true }, m:{ liuH:[48,120,"prone",-1,48,56] }, out:["liuH"] }
   ];
   EP7.court = {
     title: "海悅大樓一樓大廳・6 月 5 日下午", scene: "t_lobby",
