@@ -11,7 +11,7 @@ EP5.cctv.push(
     text:"行車記錄器平常會一直覆蓋，可是 4/12 有一段「碰撞事件」影片被自動鎖住了。\n15:02  南澳漁港公有停車場。開車的人下車——是陳建志。\n15:03  他走到停車場邊，跟一個戴鴨舌帽的高個子男人說話。男人點菸的時候，右手手背露出一個刺青，像船錨。\n15:04  陳建志倒車時輕輕撞到柱子，影片就停在這裡。",
     clue:"4/12 15:02 陳建志開大嫂的車到南澳漁港停車場，跟一個右手手背有船錨刺青的高個子男人說話",
     tl:[["04/12 15:02","陳建志在南澳漁港停車場和一個手背有船錨刺青的男人見面（行車記錄器）"]] },
-  { id:"cctv_store", loc:"police", room:"pdesk", hot:[60,40,24,16], phase:1, requires:["h_burner_store"], title:"便利商店舊港門市監視器 4/10 21:35–21:45（調閱）",
+  { id:"cctv_store", loc:"police", room:"pdesk", hot:[58,58,16,10], phase:1, requires:["h_burner_store"], title:"便利商店舊港門市監視器 4/10 21:35–21:45（調閱）",
     text:"21:38  一個戴黑色鴨舌帽的高個子男人走進店裡。\n21:40  他在櫃檯買了一張預付卡，付現金。找錢的時候脫下手套，右手手背有一個船錨刺青。\n21:41  他抬頭看了一眼監視器，是徐志賢。",
     clue:"4/10 21:40 買下綁匪那張預付卡的人是徐志賢，右手手背有船錨刺青",
     tl:[["04/10 21:40","徐志賢在舊港區便利商店買預付卡"]] },
@@ -23,7 +23,7 @@ EP5.cctv.push(
 
 EP5.evidence.push(
   /* ---------- 陳家：客廳 ---------- */
-  { id:"ev_phone_rec", loc:"chenhome", room:"cliving", hot:[60,48,16,10], requires:["e_call1"], title:"家用電話的錄音（第一通）",
+  { id:"ev_phone_rec", loc:"chenhome", room:"cliving", hot:[74,46,16,8], requires:["e_call1"], title:"家用電話的錄音（第一通）",
     text:"變聲器的聲音又尖又怪。仔細聽，背景很安靜，偶爾有一種「咚、咚」的金屬聲，像鐵皮被風吹動。\n電話 41 秒就掛了——剛好不夠抓到基地台。",
     clue:"第一通電話的背景有鐵皮被風吹的「咚、咚」聲；41 秒，來不及追蹤" },
   { id:"ev_threat", loc:"chenhome", room:"cliving", hot:[100,56,14,8], title:"陳建宏手機裡的一則訊息",
@@ -32,10 +32,10 @@ EP5.evidence.push(
   { id:"ev_gpsbag", loc:"chenhome", room:"cliving", hot:[140,58,24,12], phase:1, until:1, untilTime:"17:00", mins:20, requires:["wu3","yeq2"], title:"在贖金裡夾一個 GPS（要在 17:00 交錢前）",
     text:"你和小吳把兩千萬一疊一疊放進運動袋。小吳把一個火柴盒大小的 GPS 夾進其中一疊鈔票中間，再用橡皮筋綁好。\n「只要他不一張一張數，就不會發現。」",
     clue:"贖金裡夾了一個 GPS" },
-  { id:"ev_familyphoto", loc:"chenhome", room:"cliving", hot:[20,20,30,22], title:"牆上的全家福",
+  { id:"ev_familyphoto", loc:"chenhome", room:"cliving", hot:[40,8,28,20], title:"牆上的全家福",
     text:"去年過年拍的全家福。語彤坐在叔叔陳建志的肩膀上，笑得很開心。",
     clue:"語彤跟叔叔陳建志很親" },
-  { id:"o5_tv", obj:true, loc:"chenhome", room:"cliving", hot:[40,30,30,20], title:"電視", text:"電視開著靜音，卡通台。沒有人敢關掉，語彤每天這個時間都在看。", clue:"（家裡的人很難受）" },
+  { id:"o5_tv", obj:true, loc:"chenhome", room:"cliving", hot:[88,36,18,14], title:"電視", text:"電視開著靜音，卡通台。沒有人敢關掉，語彤每天這個時間都在看。", clue:"（家裡的人很難受）" },
   { id:"o5_money", obj:true, loc:"chenhome", room:"cliving", hot:[140,58,24,12], phase:1, title:"桌上的運動袋", text:"兩千萬舊鈔，裝了整整兩個運動袋。陳建宏一直把手放在袋子上。", clue:"兩千萬已經準備好了" },
 
   /* ---------- 陳家：車庫 ---------- */
@@ -61,7 +61,7 @@ EP5.evidence.push(
   { id:"ev_nanny_bag", loc:"chenhome", room:"cmaid", hot:[80,56,20,12], requires:["nanny2"], title:"保母的包包",
     text:"包包裡沒有菜，只有錢包、手機和一張收據：「月光汽車旅館　4/17　15:12　休息 3 小時」。\n手機裡有一則訊息，來自「阿明」：「今天謝謝妳，下禮拜見。」",
     clue:"保母的包包裡有一張 4/17 15:12 的汽車旅館收據，她那天下午和男朋友見面" },
-  { id:"o5_maidroom", obj:true, loc:"chenhome", room:"cmaid", hot:[20,40,40,30], title:"保母房的床頭", text:"床頭貼著語彤小時候的照片，還有一張她畫的「王姐生日快樂」。", clue:"保母很疼語彤" },
+  { id:"o5_maidroom", obj:true, loc:"chenhome", room:"cmaid", hot:[108,40,30,16], title:"保母房的床頭", text:"床頭貼著語彤小時候的照片，還有一張她畫的「王姐生日快樂」。", clue:"保母很疼語彤" },
 
   /* ---------- 安親班 ---------- */
   { id:"doc_cardlog", loc:"school", room:"sroom", hot:[20,40,26,20], title:"接送卡刷卡紀錄（4/17）",
@@ -122,8 +122,8 @@ EP5.evidence.push(
   { id:"ev_wifi", loc:"company", room:"c8f", hot:[150,10,20,10], requires:["h_app_ip"], title:"8 樓的無線網路基地台",
     text:"資訊人員說：8 樓的網路只有副總辦公室和小會議室收得到，4/17 下午小會議室沒有人借。",
     clue:"8 樓的網路只有副總辦公室和小會議室收得到；4/17 下午小會議室沒人借" },
-  { id:"o5_model", obj:true, loc:"company", room:"clobby", hot:[60,40,60,30], title:"大廳的建案模型", text:"「陳氏港灣・天際線」的模型，旁邊放著得獎的獎盃。", clue:"（陳氏建設的大案子）" },
-  { id:"o5_cig", obj:true, loc:"company", room:"clobby", hot:[10,60,20,10], title:"地下室入口的菸灰桶", text:"司機們都在這裡抽菸。阿德說，以前副總也常下來，跟徐志賢一起抽。", clue:"陳建志以前常跟徐志賢在地下室抽菸" },
+  { id:"o5_model", obj:true, loc:"company", room:"clobby", hot:[116,56,36,32], title:"大廳的建案模型", text:"「陳氏港灣・天際線」的模型，旁邊放著得獎的獎盃。", clue:"（陳氏建設的大案子）" },
+  { id:"o5_cig", obj:true, loc:"company", room:"clobby", hot:[8,58,16,16], title:"地下室入口的菸灰桶", text:"司機們都在這裡抽菸。阿德說，以前副總也常下來，跟徐志賢一起抽。", clue:"陳建志以前常跟徐志賢在地下室抽菸" },
 
   /* ---------- 徐志賢的租屋 ---------- */
   { id:"ev_xu_cal", loc:"xuhome", room:"xroom", hot:[30,20,24,20], title:"牆上的月曆",
@@ -132,7 +132,7 @@ EP5.evidence.push(
   { id:"ev_vc_box", loc:"xuhome", room:"xroom", hot:[100,56,20,10], title:"垃圾桶裡的空盒子",
     text:"一個網購的紙盒：「變聲器　卡拉 OK 用」。收件人：徐志賢。",
     clue:"徐志賢網購過變聲器" },
-  { id:"ev_debt", loc:"xuhome", room:"xroom", hot:[140,50,24,12], title:"門縫塞進來的催債單",
+  { id:"ev_debt", loc:"xuhome", room:"xroom", hot:[4,76,22,10], title:"門縫塞進來的催債單",
     text:"「徐志賢，欠款 300 萬，月底不還，後果自負。——錢莊」\n一共有六張，一張比一張兇。",
     clue:"徐志賢欠地下錢莊 300 萬" },
   { id:"o5_snacks", obj:true, loc:"xuhome", room:"xroom", hot:[6,58,18,14], icon:"🧃", title:"門邊的塑膠袋", text:"門邊一個超市的塑膠袋，裡面是兩盒兒童餅乾、六瓶草莓牛奶，還有一本全新的著色本。發票：4/16 20:12。\n一個單身男人的租屋處，冰箱裡只有啤酒。", clue:"徐志賢租屋處有 4/16 買的兒童餅乾、草莓牛奶和著色本" },
