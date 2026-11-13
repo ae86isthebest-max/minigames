@@ -8,7 +8,8 @@ EP9.art = true;
   const wall = (y, c, b) => PR.wall(y, c, b), floor = (y, c, l) => PR.floor(y, c, l), sky = (a, b, h) => PR.sky(a, b, h);
   const SC = PX.SCENES;
   const txt = (s, x, y, c, f) => { const g = PR.g(); g.font = f || "6px monospace"; g.fillStyle = c; g.fillText(s, x, y); };
-  const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + 0.5, en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
+  const jds = bs => Object.assign(bs.map(b => b.d), { j:bs.map(b => !!b.join) });
+  const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + (ds.j && ds.j[i] ? 0 : 0.5), en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
   const stOf = o => { if (!o.ds) return [{}, 0]; const [i, p] = beatAt(o.t || 0, o.ds); return [(o.seq || [])[i] || {}, p]; };
   const fog = (x, y, w, h, a) => { const g = PR.g(); g.fillStyle = `rgba(220,226,230,${a})`; g.fillRect(x, y, w, h); if (a >= 0.5) for (let i = 0; i < w * h / 90; i++) P(x + (i * 37) % w, y + (i * 53) % h, "#eef2f4"); };
   const wood = (y, h, c, c2) => { R(0, y, W, h, c); for (let x = 0; x < W; x += 12) R(x, y, 1, h, c2); };
@@ -244,7 +245,7 @@ EP9.art = true;
       yun: "我扶他的時候……他的手還是溫的。"
     },
     replayText: "7 月 4 日，呂志明在湯屋後面的牆上，釘上最後一根木條，退後兩步看了看：「這樣客人就不會冷了。」一個禮拜以後——",
-    replay: { scene:"i_cut", opt:{ seq:RB.map(b => b.st), ds:RB.map(b => b.d) }, clean:true, cam:"案發經過重現", date:"2026-07-11", beats:RB },
+    replay: { scene:"i_cut", opt:{ seq:RB.map(b => b.st), ds:jds(RB) }, clean:true, cam:"案發經過重現", date:"2026-07-11", beats:RB },
     endGood: "中午，檢察官上了山。呂志明和呂國榮被依業務過失致死和湮滅證據移送。\n下山的路上，你們在溫泉街停了一下。許知夏走進曾記五金，買了一個一氧化碳警報器，放進小吳的背包：「你家的熱水器，裝在陽台上，對吧？」",
     endBad: "檢察官上了山，翻了翻報告：「喝酒泡湯，滑倒，意外。」\n一個禮拜後，雲靄山莊重新開放。湯屋「松」的排風扇，還是沒有修。"
   };

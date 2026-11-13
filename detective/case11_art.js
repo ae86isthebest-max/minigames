@@ -8,7 +8,8 @@ EP11.art = true;
   const wall = (y, c, b) => PR.wall(y, c, b), floor = (y, c, l) => PR.floor(y, c, l);
   const SC = PX.SCENES;
   const txt = (s, x, y, c, f) => { const g = PR.g(); g.font = f || "6px monospace"; g.fillStyle = c; g.fillText(s, x, y); };
-  const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + 0.5, en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
+  const jds = bs => Object.assign(bs.map(b => b.d), { j:bs.map(b => !!b.join) });
+  const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + (ds.j && ds.j[i] ? 0 : 0.5), en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
   const kf = (v, p) => Array.isArray(v) ? (() => { if (v.length === 1) return v[0]; const k = p * (v.length - 1), i = Math.min(v.length - 2, Math.floor(k)); return v[i] + (v[i + 1] - v[i]) * (k - i); })() : v;
   const stOf = o => { if (!o.ds) return [{}, 0]; const [i, p] = beatAt(o.t || 0, o.ds); return [(o.seq || [])[i] || {}, p]; };
   const clip = (x, y, w, h, fn) => { const g = PR.g(); g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip(); fn(); g.restore(); };
@@ -294,7 +295,7 @@ EP11.art = true;
       { t:"21:22:00", d:4.5, cap:"窗外又一台公車經過，白色的，沒有廣告。辦公室沒有人。", st:{ bus:[-66,50], plain:true } }
     ] }
   };
-  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.st)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => b.st || {}), ds:A.beats.map(b => b.d) }); });
+  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.st)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => b.st || {}), ds:jds(A.beats) }); });
   [...EP11.cctv, ...EP11.evidence].forEach(it => { if (ANIM[it.id]) it.anim = ANIM[it.id]; });
   const PS = [["g11_back",{ phase:0, mark:true }],["pol11",{}],["pol11",{}]];
   EP11.phases.forEach((p,i) => { p.scene = PS[i][0]; p.sceneOpt = PS[i][1]; });
@@ -337,7 +338,7 @@ EP11.art = true;
       ja: "我只是……那個保全衝過來……"
     },
     replayText: "8 月 22 日深夜 23:41，港景大樓 18 樓。太太睡了。他打開手機裡的攝影機 App，關掉「自動校時」，把時間往前撥了 10 分鐘——",
-    replay: { scene:"g11_cut", opt:{ seq:RB.map(b => b.st), ds:RB.map(b => b.d) }, clean:true, cam:"案發經過重現", date:"2026-08-24", beats:RB },
+    replay: { scene:"g11_cut", opt:{ seq:RB.map(b => b.st), ds:jds(RB) }, clean:true, cam:"案發經過重現", date:"2026-08-24", beats:RB },
     endGood: "13:00，葉晴沒有聲請羈押田小雯。她走出刑大的時候，媽媽在門口等她，手上提著一袋她最愛吃的蔥油餅。\n9 月 1 日，會計師來盤點。木盒裡的 22 條金條回來了，另外 8 條，呂佩珊拿自己的嫁妝去當舖贖了回來。\n呂金福把邱俊傑的金戒指收進抽屜。他說，以後點金條，他要自己點。",
     endBad: "13:00，葉晴聲請羈押田小雯。法官准了。\n9 月 1 日，會計師在報告上寫：「庫存短少 30 條，因搶案滅失，由保險理賠。」\n邱俊傑在醫院陪太太產檢。他手上的戒指，擦得很亮。"
   };

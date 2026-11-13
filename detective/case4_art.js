@@ -378,7 +378,7 @@ EP4.art = true;
     endGood: "拍賣會照常開始，貔貅撤拍。何永福交出了真品，葉老太太捧著它，摸了很久，說：「這才是阿和的。」\n收隊的時候，許知夏把她的工具箱扛上車，跟你說：「下個月見。我調去澄港了。」",
     endBad: "拍賣會照常開始。你總覺得，這間展廳裡有人悄悄鬆了一口氣。"
   };
-  { const RP = EP4.court.replay; RP.opt = Object.assign({}, RP.opt, { seq:RP.beats.map(b => Object.assign({ case:"full" }, b.st || {})), ds:RP.beats.map(b => b.d) });
-    const hsBase = SC.hsuite; SC.hsuite = (o) => { if (o.seq && o.ds){ let el = 0, t = o.t || 0; for (let i = 0; i < o.ds.length; i++){ const en = el + 0.5 + o.ds[i]; if (t < en || i === o.ds.length - 1){ o = Object.assign({}, o, o.seq[i]); break; } el = en; } } return hsBase(o); }; }
+  { const jds = bs => Object.assign(bs.map(b => b.d), { j:bs.map(b => !!b.join) }); const RP = EP4.court.replay; RP.opt = Object.assign({}, RP.opt, { seq:RP.beats.map(b => Object.assign({ case:"full" }, b.st || {})), ds:jds(RP.beats) });
+    const hsBase = SC.hsuite; SC.hsuite = (o) => { if (o.seq && o.ds){ let el = 0, t = o.t || 0; for (let i = 0; i < o.ds.length; i++){ const en = el + (o.ds.j && o.ds.j[i] ? 0 : 0.5) + o.ds[i]; if (t < en || i === o.ds.length - 1){ o = Object.assign({}, o, o.seq[i]); break; } el = en; } } return hsBase(o); }; }
   if (typeof ARC_INTER !== "undefined" && ARC_INTER[4] && ARC_INTER[4].after) EP4.after = ARC_INTER[4].after;
 })();

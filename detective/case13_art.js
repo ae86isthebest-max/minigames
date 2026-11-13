@@ -8,7 +8,8 @@ EP13.art = true;
   const wall = (y, c, b) => PR.wall(y, c, b), floor = (y, c, l) => PR.floor(y, c, l);
   const SC = PX.SCENES;
   const txt = (s, x, y, c, f) => { const g = PR.g(); g.font = f || "6px monospace"; g.fillStyle = c; g.fillText(s, x, y); };
-  const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + 0.5, en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
+  const jds = bs => Object.assign(bs.map(b => b.d), { j:bs.map(b => !!b.join) });
+  const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + (ds.j && ds.j[i] ? 0 : 0.5), en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
   const stOf = o => { if (!o.ds) return {}; const [i] = beatAt(o.t || 0, o.ds); return (o.seq || [])[i] || {}; };
   const cam = (x, y) => { R(x, y, 10, 5, "#2a2a2e"); R(x + 7, y + 1, 3, 3, "#4a4a52"); P(x + 1, y + 1, "#e83a3a"); };
   const neon = (x, y, w, c, t) => { const on = Math.floor((t || 0) * 3) % 7 !== 0; R(x, y, w, 1, on ? c : "#3a2a3a"); R(x, y + 1, w, 1, on ? "#ffffff55" : "#3a2a3a"); };
@@ -290,7 +291,7 @@ EP13.art = true;
       { t:"23:04:20", d:4, cap:"機車離開。男人站了一分鐘才轉身——路燈照到他的臉：黃啟文。", m:{ huangC:[96,98,"stand",-1], sellerC:[230,98,"walk1",1,114,98] }, out:["sellerC"] }
     ] }
   };
-  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.st)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => b.st || {}), ds:A.beats.map(b => b.d) }); });
+  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.st)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => b.st || {}), ds:jds(A.beats) }); });
   [...EP13.cctv, ...EP13.evidence].forEach(it => { if (ANIM[it.id]) it.anim = ANIM[it.id]; });
 
   /* ---------- 結案 ---------- */
@@ -327,7 +328,7 @@ EP13.art = true;
       hua: "我說了，我一點以前就走了。"
     },
     replayText: "9 月 19 日凌晨 00:50，金曲 KTV 808。店長端著一盤招待的水果走進來——",
-    replay: { scene:"k_808", opt:{ seq:RB.map(b => b.st), ds:RB.map(b => b.d) }, clean:true, cam:"案發經過重現", date:"2026-09-19", beats:RB },
+    replay: { scene:"k_808", opt:{ seq:RB.map(b => b.st), ds:jds(RB) }, clean:true, cam:"案發經過重現", date:"2026-09-19", beats:RB },
     endGood: "12:00，葉晴在移送書上寫下「殺人」兩個字。\n黃啟文被帶走的時候，經過櫃台，看了一眼那張開幕照片。他沒有停下來。\n小曼站在 808 門口，把那張學費收據折好，說她會寄去台中。",
     endBad: "12:00，案子以「吸毒過量」結案。\n十月一號，金曲 KTV 換了鎖。招牌拆下來的那天，黃啟文站在對面看了很久。\n夜市後巷的電線桿上，又多了一張黑貓貼紙。"
   };

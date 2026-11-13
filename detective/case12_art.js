@@ -8,7 +8,8 @@ EP12.art = true;
   const wall = (y, c, b) => PR.wall(y, c, b), floor = (y, c, l) => PR.floor(y, c, l);
   const SC = PX.SCENES;
   const txt = (s, x, y, c, f) => { const g = PR.g(); g.font = f || "6px monospace"; g.fillStyle = c; g.fillText(s, x, y); };
-  const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + 0.5, en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
+  const jds = bs => Object.assign(bs.map(b => b.d), { j:bs.map(b => !!b.join) });
+  const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + (ds.j && ds.j[i] ? 0 : 0.5), en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
   const stOf = o => { if (!o.ds) return [{}, 0]; const [i, p] = beatAt(o.t || 0, o.ds); return [(o.seq || [])[i] || {}, p]; };
   const sea = (y, h, t) => { R(0, y, W, h, "#2a5a7a"); for (let x = 0; x < W; x += 6) R(x, y + 2 + Math.round(Math.sin((t || 0) * 2 + x / 9)), 4, 1, "#5a8aaa"); };
   const boatHull = (x, y, w, c, name) => { R(x, y, w, 12, c); R(x + 4, y + 12, w - 8, 4, "#3a2a2a"); R(x, y - 2, w, 2, "#e9e4da"); if (name) txt(name, x + 6, y + 9, "#f4f0e0", "5px sans-serif"); R(x + w - 26, y - 16, 18, 14, "#e9e4da"); R(x + w - 24, y - 13, 6, 5, "#5a8aa0"); R(x + w - 16, y - 13, 6, 5, "#5a8aa0"); R(x + w - 18, y - 30, 2, 14, "#5a5a5a"); };
@@ -285,7 +286,7 @@ EP12.art = true;
       zhao: "……"
     },
     replayText: "9 月 4 日晚上 23:12，觀海台。他把車停在懸崖邊，關掉手機，鼻血又流了下來——",
-    replay: { scene:"m12_cliff", opt:{ seq:RB.map(b => b.st), ds:RB.map(b => b.d) }, clean:true, cam:"案發經過重現", date:"2026-09-04", beats:RB },
+    replay: { scene:"m12_cliff", opt:{ seq:RB.map(b => b.st), ds:jds(RB) }, clean:true, cam:"案發經過重現", date:"2026-09-04", beats:RB },
     endGood: "09:00，福滿 12 號沒有出港。\n趙德安從船艙走出來的時候，以晴站在碼頭上。她沒有哭，只說了一句：「你不准再這樣。」\n黎光耀把他帶上車。車門關上以前，趙德安回頭看了你一眼。",
     endBad: "09:00，福滿 12 號出港了。\n十天以後它回來，船上少了一個人。蔡金水說，那個臨時工在北邊的港口下船了，不知道去了哪裡。"
   };

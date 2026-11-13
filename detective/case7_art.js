@@ -10,7 +10,8 @@ EP7.art = true;
   const night = o => (o.phase || 0) === 0;
   const txt = (s, x, y, c, f) => { const g = PR.g(); g.font = f || "6px monospace"; g.fillStyle = c; g.fillText(s, x, y); };
   // 監視器動畫：照 play() 的算法，算出現在播到第幾段、這段播了多少（scene 只拿得到 o.t）
-  const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + 0.5, en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
+  const jds = bs => Object.assign(bs.map(b => b.d), { j:bs.map(b => !!b.join) });
+  const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + (ds.j && ds.j[i] ? 0 : 0.5), en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
   const lerp = (a, b, p) => a + (b - a) * p;
   const kf = (v, p) => Array.isArray(v) ? (v.length === 1 ? v[0] : (() => { const k = p * (v.length - 1), i = Math.min(v.length - 2, Math.floor(k)); return lerp(v[i], v[i + 1], k - i); })()) : v;
   const liftDoor = (x, y, w, h, open, inside) => {   // 電梯門：open 0（關）～1（全開）
@@ -386,7 +387,7 @@ EP7.art = true;
     ] }
   };
   // 有 s（場景狀態）的動畫：把每一段的狀態交給場景
-  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.st || b.black)){ A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => b.st || {}), ds:A.beats.map(b => b.d), blk:A.beats.map(b => !!b.black) }); } });
+  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.st || b.black)){ A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => b.st || {}), ds:jds(A.beats), blk:A.beats.map(b => !!b.black) }); } });
   // B2：黑掉的那一段
   const b2 = SC.t_b2; SC.t_b2 = (o) => { if (o.blk && o.ds){ const [i] = beatAt(o.t || 0, o.ds); if (o.blk[i]){ R(0, 0, W, H, "#050505"); return; } } const s = o.seq && o.ds ? (o.seq[beatAt(o.t || 0, o.ds)[0]] || {}) : {}; b2(Object.assign({}, o, s.door !== undefined ? { door:s.door, p:beatAt(o.t || 0, o.ds)[1] } : {})); };
   [...EP7.cctv, ...EP7.evidence].forEach(it => { if (ANIM[it.id]) it.anim = ANIM[it.id]; });
@@ -424,7 +425,7 @@ EP7.art = true;
       jian: "我說過了，我要的是簽名，不是命案。"
     },
     replayText: "6 月 3 日晚上 21:57，B2 停車場。他按了電梯，看著空車廂的門打開又關上，然後轉身走上 B1——",
-    replay: { scene:"t_shaft", opt:{ seq:replayBeats.map(b => b.st), ds:replayBeats.map(b => b.d) }, clean:true, cam:"案發經過重現", date:"2026-06-03", beats:replayBeats },
+    replay: { scene:"t_shaft", opt:{ seq:replayBeats.map(b => b.st), ds:jds(replayBeats) }, clean:true, cam:"案發經過重現", date:"2026-06-03", beats:replayBeats },
     endGood: "方家豪在下午四點以前走出了分局。他在門口站了很久，打了一通電話給阿彪：「錢我會自己還。」\n劉文彬被帶走的時候，請求再看一眼機房。老錢說，他在那本少了一頁的日誌上，用很工整的字寫了最後一行：「2026/06/05　劉文彬　停用。」\n一個月後，管委會把電梯口那塊白色的方塊，重新掛上了劉國雄的照片。",
     endBad: "下午四點，葉晴聲請羈押方家豪。\n電梯照常上上下下。凌晨的時候，「INS」偶爾還會亮一下，可是再也沒有人去看。"
   };

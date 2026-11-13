@@ -8,7 +8,8 @@ EP8.art = true;
   const wall = (y, c, b) => PR.wall(y, c, b), floor = (y, c, l) => PR.floor(y, c, l);
   const SC = PX.SCENES;
   const txt = (s, x, y, c, f) => { const g = PR.g(); g.font = f || "6px monospace"; g.fillStyle = c; g.fillText(s, x, y); };
-  const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + 0.5, en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
+  const jds = bs => Object.assign(bs.map(b => b.d), { j:bs.map(b => !!b.join) });
+  const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + (ds.j && ds.j[i] ? 0 : 0.5), en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
   const kf = (v, p) => Array.isArray(v) ? (() => { if (v.length === 1) return v[0]; const k = p * (v.length - 1), i = Math.min(v.length - 2, Math.floor(k)); return v[i] + (v[i + 1] - v[i]) * (k - i); })() : v;
   const stOf = o => { if (!o.ds) return [{}, 0]; const [i, p] = beatAt(o.t || 0, o.ds); return [(o.seq || [])[i] || {}, p]; };
   // 擺錘：支點 (x, y)，長度 L，角度 a（弧度）
@@ -148,7 +149,7 @@ EP8.art = true;
   // 案發經過重現：控制室（左）＋暗道（中）＋最後一個房間（右）
   SC.s8_cut = (o) => { const [s, p] = stOf(o);
     R(0, 0, W, H, "#141418");
-    R(0, 0, 70, 98, "#2a2a30"); R(4, 14, 40, 16, "#101014"); for (let k = 0; k < 4; k++) R(5 + k * 10, 15, 9, 14, "#2a3a2a"); R(4, 60, 40, 4, "#3a3a3e"); R(20, 66, 3, 32, "#2a2a2a");   // 控制室
+    R(0, 0, 70, 98, "#2a2a30"); R(4, 14, 40, 16, "#101014"); for (let k = 0; k < 4; k++) R(5 + k * 10, 15, 9, 14, "#2a3a2a"); R(4, 60, 40, 4, "#3a3a3e"); R(20, 66, 3, 32, "#2a2a2a"); R(20, 87, 16, 3, "#3a3a44"); R(22, 91, 2, 7, "#2a2a2a"); R(32, 91, 2, 7, "#2a2a2a"); R(21, 76, 14, 12, "#34343e");   // 控制室、椅子
     R(52, 40, 18, 58, "#5a5e64"); if (kf(s.cab || 0, p) > 0.4) R(54, 42, 14, 54, "#0a0a0c");   // 鐵櫃
     R(70, 84, 46, 14, "#0e0e10"); R(70, 83, 46, 1, "#3a3a3a");   // 暗道
     R(116, 0, 76, 98, "#2a2420"); dither(116, 0, 76, 98, "#342a24", 4); R(116, 74, 14, 24, "#5a3a24");   // 最後一個房間、書櫃
@@ -196,9 +197,9 @@ EP8.art = true;
   });
   const L0 = id => { const L = Object.assign({}, LOOK[id]); delete L.hello; delete L.byPhase; return L; };
   EP8.looks = {
-    geL: Object.assign(L0("ge"), { top:"#2a3a5a" }), linL: L0("lin"), baiL: Object.assign(L0("bai"), { prop:"bag" }), yuL: L0("yu"), guanL: L0("guan"), zhuoL: Object.assign(L0("zhuo"), { prop:"bag" }),
+    geL: Object.assign(L0("ge"), { top:"#2a3a5a" }), linL: L0("lin"), baiL: L0("bai"), yuL: L0("yu"), guanL: L0("guan"), zhuoL: Object.assign(L0("zhuo"), { prop:"bag" }),
     jiangL: { skin:"#e0b48c", hair:"#1a1410", hairStyle:"short", top:"#e9e4da", bottom:"#3a3a4a", apron:"#5a4a3a" },
-    jiangT: { skin:"#e0b48c", hair:"#1a1410", hairStyle:"short", top:"#e9e4da", bottom:"#3a3a4a", apron:"#5a4a3a", prop:"bag" },
+    jiangT: { skin:"#e0b48c", hair:"#1a1410", hairStyle:"short", top:"#e9e4da", bottom:"#3a3a4a", apron:"#5a4a3a" },
     stu1: { skin:"#f4d4bc", hair:"#1a1410", hairStyle:"short", top:"#c23a2a", bottom:"#2a2a3a" },
     stu2: { skin:"#e8c09a", hair:"#1a1410", hairStyle:"long", top:"#e8e040", bottom:"#3a4a6a", skirt:true }
   };
@@ -286,7 +287,7 @@ EP8.art = true;
       { t:"22:20:00", d:3, cap:"他在錄影電腦前面操作了一陣子。", st:{ cab:0 }, m:{ geL:[72,98,"type",-1,92,98] } }
     ] }
   };
-  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.st)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => b.st || {}), ds:A.beats.map(b => b.d) }); });
+  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.st)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => b.st || {}), ds:jds(A.beats) }); });
   [...EP8.cctv, ...EP8.evidence].forEach(it => { if (ANIM[it.id]) it.anim = ANIM[it.id]; });
   const PS = [["s8_final",{ phase:0, body:true, markers:true, drag:true }],["police",{}],["s8_hall",{ phase:2 }]];
   EP8.phases.forEach((p,i) => { p.scene = PS[i][0]; p.sceneOpt = PS[i][1]; });
@@ -294,14 +295,18 @@ EP8.art = true;
   /* ---------- 結案 ---------- */
   const RB = [
     { t:"21:37:05", d:4.5, cap:"21:37，江承恩打給葛志偉：「你過來。我們今晚講清楚。」", st:{}, m:{ geL:[28,98,"sit+phone",1], jiangL:[150,98,"phone",-1] } },
-    { t:"21:38:40", d:5, cap:"走廊有監視器。他拉下鐵櫃裡的拉桿，從暗道爬了過去。", st:{ cab:[0,1,1] }, m:{ geL:[124,98,"kneel",1,28,98,[[60,98],[74,98]]], jiangL:[150,98,"stand",-1] } },
+    { t:"21:38:40", d:3, cap:"走廊有監視器。他拉下鐵櫃裡的拉桿，從暗道爬了過去。", st:{ cab:[0,1,1] }, m:{ geL:[60,98,"reach",1,28,98], jiangL:[150,98,"stand",-1] } },
+    { t:"21:38:50", d:3.5, join:true, cap:"走廊有監視器。他拉下鐵櫃裡的拉桿，從暗道爬了過去。", st:{ cab:1 }, m:{ geL:[114,98,"prone",1,64,98], jiangL:[150,98,"stand",-1] } },
+    { t:"21:39:20", d:1.5, join:true, cap:"走廊有監視器。他拉下鐵櫃裡的拉桿，從暗道爬了過去。", st:{}, m:{ geL:[124,98,["kneel","kneel","stand"],1,118,98], jiangL:[150,98,"stand",-1] } },
     { t:"21:39:30", d:5, cap:"「合約後天簽。他們要的是房間，不是人。……志偉，對不起。」", st:{}, m:{ geL:[128,98,"stand",1,124,98], jiangL:[150,98,"stand",-1] } },
     { t:"21:40:10", d:4.5, cap:"江承恩轉過身去收工具。葛志偉拔下擺錘的錘頭。", st:{ nohead:true }, m:{ geL:[164,98,"lift@weight",1,128,98], jiangL:[140,98,"kneel+reach@wrench",-1,150,98] } },
     { t:"21:40:30", d:3, cap:"他從背後砸了下去。", st:{ nohead:true, flash:true }, m:{ geL:[150,98,"strike@weight",-1,164,98], jiangL:[140,98,"prone",-1] } },
     { t:"21:41:00", d:5, cap:"他把江承恩拖到擺錘底下，把測試遙控器塞進他手裡。裝回錘頭，撕掉紅色膠帶，用自己的黑膠帶重新纏好。", st:{}, m:{ jiangL:[170,98,"prone",-1,140,98], geL:[184,98,"drag",-1,150,98] } },
     { t:"21:42:00", d:4, join:true, st:{}, cap:"他把江承恩拖到擺錘底下，把測試遙控器塞進他手裡。裝回錘頭，撕掉紅色膠帶，用自己的黑膠帶重新纏好。", m:{ jiangL:[170,98,"prone",-1], geL:[184,98,"kneel+reach@tape/#1a1a1a",-1] } },
-    { t:"21:43:30", d:4.5, cap:"他爬回控制室，把黑布拉進鐵櫃。", st:{ cab:[0,1,1,0] }, m:{ geL:[40,98,"stand",-1,184,98,[[124,98],[74,98],[60,98]]], jiangL:[170,98,"prone",-1] } },
-    { t:"21:44:32", d:5, cap:"然後，在控制台按下了擺錘的啟動鍵。擺錘在江承恩的身體上方，擺了二十秒。", st:{ swing:true }, m:{ geL:[24,98,"reach",-1,40,98], jiangL:[170,98,"prone",-1] } }
+    { t:"21:43:30", d:2, cap:"他爬回控制室，把黑布拉進鐵櫃。", st:{}, m:{ geL:[118,98,["kneel","kneel"],-1,184,98,[[124,98]]], jiangL:[170,98,"prone",-1] } },
+    { t:"21:43:40", d:3.5, join:true, cap:"他爬回控制室，把黑布拉進鐵櫃。", st:{ cab:1 }, m:{ geL:[66,98,"prone",-1,116,98], jiangL:[170,98,"prone",-1] } },
+    { t:"21:44:10", d:3, join:true, cap:"他爬回控制室，把黑布拉進鐵櫃。", st:{ cab:[1,1,0] }, m:{ geL:[48,98,"reach:R@cloth/#141414",1,58,98], jiangL:[170,98,"prone",-1] } },
+    { t:"21:44:32", d:5, cap:"然後，在控制台按下了擺錘的啟動鍵。擺錘在江承恩的身體上方，擺了二十秒。", st:{ swing:true }, m:{ geL:[24,98,"reach",-1,48,98], jiangL:[170,98,"prone",-1] } }
   ];
   EP8.court = {
     title: "謎境・「最後一個房間」・7 月 9 日下午", scene: "s8_final",
@@ -324,7 +329,7 @@ EP8.art = true;
       guan: "我們那時候還在玩……還在笑……"
     },
     replayText: "7 月 7 日晚上 21:37，控制室。他看著螢幕上那個按著提示鈕的大學生，接起了電話——",
-    replay: { scene:"s8_cut", opt:{ seq:RB.map(b => b.st), ds:RB.map(b => b.d) }, clean:true, cam:"案發經過重現", date:"2026-07-07", beats:RB },
+    replay: { scene:"s8_cut", opt:{ seq:RB.map(b => b.st), ds:jds(RB) }, clean:true, cam:"案發經過重現", date:"2026-07-07", beats:RB },
     endGood: "17:00，宋佳蓉沒有簽約。她說：「這個房間，等他們兩個的名字都寫在海報上，再說。」\n一個月後，「最後一個房間」照原定日期開幕。海報的設計者欄寫著兩個名字。卓家宏說，第一組玩家從暗道爬出來的時候，所有人都嚇了一跳。",
     endBad: "17:00，合約簽了。「最後一個房間」被拆下來，裝進貨車。\n擺錘被拆下來的時候，膠帶鬆開了，掉在地上。沒有人撿。"
   };

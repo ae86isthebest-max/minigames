@@ -8,7 +8,8 @@ EP6.art = true;
   const wall = (y, c, b) => PR.wall(y, c, b), floor = (y, c, l) => PR.floor(y, c, l);
   const SC = PX.SCENES;
   const txt = (s, x, y, c, f) => { const g = PR.g(); g.font = f || "6px monospace"; g.fillStyle = c; g.fillText(s, x, y); };
-  const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + 0.5, en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
+  const jds = bs => Object.assign(bs.map(b => b.d), { j:bs.map(b => !!b.join) });
+  const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + (ds.j && ds.j[i] ? 0 : 0.5), en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
   const kf = (v, p) => Array.isArray(v) ? (() => { if (v.length === 1) return v[0]; const k = p * (v.length - 1), i = Math.min(v.length - 2, Math.floor(k)); return v[i] + (v[i + 1] - v[i]) * (k - i); })() : v;
   const stOf = o => { if (!o.ds) return [{}, 0]; const [i, p] = beatAt(o.t || 0, o.ds); return [(o.seq || [])[i] || {}, p]; };
   const clip = (x, y, w, h, fn) => { const g = PR.g(); g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip(); fn(); g.restore(); };
@@ -372,7 +373,7 @@ EP6.art = true;
     { t:"18:41:00", d:4, cap:"店員把一張 SIM 卡交給他。他指了指菸櫃最上面一排。", m:{ liS:[54,98,"point",1], clerkS:[110,98,"give@card",-1] } },
     { t:"18:41:40", d:4, cap:"他轉身出門。背後印著「振東建設」。走路的時候，腳尖往外開。", m:{ liS:[-14,98,null,-1,54,98], clerkS:[110,98,"stand",-1] }, out:["liS"] }
   ] };
-  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.st)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => b.st || {}), ds:A.beats.map(b => b.d) }); });
+  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.st)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => b.st || {}), ds:jds(A.beats) }); });
   [...EP6.cctv, ...EP6.evidence].forEach(it => { if (ANIM[it.id]) it.anim = ANIM[it.id]; });
   const PS = [["c6_curve",{ mark:true }],["pol6",{}],["pol6",{}]];
   EP6.phases.forEach((p,i) => { p.scene = PS[i][0]; p.sceneOpt = PS[i][1]; });
@@ -415,7 +416,7 @@ EP6.art = true;
       qi: "我哥不會自己摔車。他騎得比誰都小心。"
     },
     replayText: "5 月 12 日傍晚，7-11 濱海門市。一個很高的男人低頭閃過門口的吊旗，把一張已經回國的移工的居留證影本放在櫃台上——",
-    replay: { scene:"c6_cut", opt:{ seq:RB.map(b => b.st || {}), ds:RB.map(b => b.d) }, clean:true, cam:"案發經過重現", date:"2026-05-13", beats:RB },
+    replay: { scene:"c6_cut", opt:{ seq:RB.map(b => b.st || {}), ds:jds(RB) }, clean:true, cam:"案發經過重現", date:"2026-05-13", beats:RB },
     endGood: "13:00，葉晴撤回了莊文福的起訴，改用殺人罪起訴黎國偉。范振東被依教唆頂替起訴，莊文福也沒有逃過頂替罪。\n《澄港日報》頭版是何沛恩寫的：〈網子晚到的那一天〉。勞動檢查處重開了陳志忠的案子。\n6 月 1 日，海灣一號沒有開賣。\n柯雅琪把哥哥存的 31 萬，交給了陳美華。陳美華的女兒畫了一隻新的長頸鹿：戴著兩頂安全帽。",
     endBad: "13:00，葉晴用「過失致死、肇事逃逸」起訴莊文福。他當庭認罪，判了一年十個月，緩刑。\n6 月 1 日，海灣一號公開銷售，第一天賣掉了一半。剪綵的照片上，黎國偉站在董事長旁邊。\n柯建宏筆電裡那個叫「阿忠」的資料夾，沒有人再打開過。"
   };

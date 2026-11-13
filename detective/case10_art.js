@@ -8,7 +8,8 @@ EP10.art = true;
   const wall = (y, c, b) => PR.wall(y, c, b), floor = (y, c, l) => PR.floor(y, c, l);
   const SC = PX.SCENES;
   const txt = (s, x, y, c, f) => { const g = PR.g(); g.font = f || "6px monospace"; g.fillStyle = c; g.fillText(s, x, y); };
-  const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + 0.5, en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
+  const jds = bs => Object.assign(bs.map(b => b.d), { j:bs.map(b => !!b.join) });
+  const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + (ds.j && ds.j[i] ? 0 : 0.5), en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
   const stOf = o => { if (!o.ds) return [{}, 0]; const [i, p] = beatAt(o.t || 0, o.ds); return [(o.seq || [])[i] || {}, p]; };
   const terrazzo = (y, c) => { R(0, y, W, H - y, c); for (let k = 0; k < 160; k++) P((k * 37) % W, y + 1 + (k * 23) % (H - y - 1), ["#d8d0c0", "#8a8478", "#b8b0a0"][k % 3]); R(0, y, W, 1, "#5a564e"); };
   const bars = (x, y, w, h) => { for (let k = 0; k < w; k += 5) R(x + k, y, 1, h, "#3a3a32"); R(x, y, w, 1, "#3a3a32"); R(x, y + h - 1, w, 1, "#3a3a32"); };
@@ -468,7 +469,7 @@ EP10.art = true;
       { t:"01:12:40", d:3, cap:"計程車開走——往萬華的方向。", st:{ car:0 } }
     ] }
   };
-  [...EP10.cctv, ...EP10.evidence].forEach(it => { if (ANIM[it.id]){ const A = ANIM[it.id]; if (A.beats.some(b => b.st)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => b.st || {}), ds:A.beats.map(b => b.d) }); it.anim = A; } });
+  [...EP10.cctv, ...EP10.evidence].forEach(it => { if (ANIM[it.id]){ const A = ANIM[it.id]; if (A.beats.some(b => b.st)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => b.st || {}), ds:jds(A.beats) }); it.anim = A; } });
   const PS = [["p_back",{ phase:0, body:true, markers:true, ajar:true }],["r_hall",{ phase:1 }],["tp_stair",{ phase:2, floor:"4" }]];
   EP10.phases.forEach((p,i) => { p.scene = PS[i][0]; p.sceneOpt = PS[i][1]; });
 
@@ -504,7 +505,7 @@ EP10.art = true;
       huang: "我有戴耳機，我真的什麼都不知道……"
     },
     replayText: "5 月 14 日的深夜，一個叫「海口阿傑」的人，在象棋 app 上收到一個邀請。對手的名字叫「夜雨」。第一局下到一半，聊天室跳出一行字：「你也有一個，法律管不到的人嗎？」——",
-    replay: { scene:"cut10", opt:{ seq:RB.map(b => b.st), ds:RB.map(b => b.d) }, clean:true, cam:"案發經過重現", date:"2026-08-06", beats:RB },
+    replay: { scene:"cut10", opt:{ seq:RB.map(b => b.st), ds:jds(RB) }, clean:true, cam:"案發經過重現", date:"2026-08-06", beats:RB },
     endGood: "晚上，康文傑和蘇雅婷被分別移送。澄港和台北的地檢署，第一次為了同一個案子開會。\n林佩君抱著四歲的女兒，在分局門口站了很久。\n許知夏說要回三樓拿一個東西。你們在樓下等。二十分鐘後她下來，眼睛有點紅，手上什麼都沒拿。",
     endBad: "方國良的案子，照意外結了。馮志遠的案子，掛在「搶劫未遂」底下，一直沒有破。\n9 月，台北一家小吃部的老闆娘說，那個瘦瘦的小姐，再也沒有來過。"
   };

@@ -107,7 +107,7 @@ EP3.art = true;
   };
   SC.wback = (o) => { const ph = o.phase || 0, body = ph === 0;
     // 結案重現（o.replay）：o.p＝播到哪裡。血、牆上的字、桌上的手指要照時間慢慢出現
-    let st = {}; if (o.replay && o.seq && o.ds){ let el = 0, t = o.t || 0; for (let i = 0; i < o.ds.length; i++){ const en = el + 0.5 + o.ds[i]; if (t < en || i === o.ds.length - 1){ st = o.seq[i] || {}; break; } el = en; } }
+    let st = {}; if (o.replay && o.seq && o.ds){ let el = 0, t = o.t || 0; for (let i = 0; i < o.ds.length; i++){ const en = el + (o.ds.j && o.ds.j[i] ? 0 : 0.5) + o.ds[i]; if (t < en || i === o.ds.length - 1){ st = o.seq[i] || {}; break; } el = en; } }
     const rp = o.replay ? (o.seq ? (st.late ? 1 : st.mid ? 0.5 : st.cut ? 0.1 : 0) : (o.p || 0)) : 1, late = rp >= 0.8, mid = rp >= 0.42;
     wall(74, "#e4e2da", false); R(0, 0, W, 6, "#6a7078");
     // 牆上的血字
@@ -566,5 +566,5 @@ EP3.art = true;
     endGood: "林啟明被帶走時，回頭看了一眼白板上的照片。\n「那雙手，」他低聲說，「是算了一輩子帳的手。」",
     endBad: "會議室裡一片安靜。檢察官合上卷宗，看了你一眼。\n你總覺得，有人在心裡鬆了一口氣。"
   };
-  { const RP = EP3.court.replay; RP.opt = Object.assign({}, RP.opt, { seq:RP.beats.map(b => b.st || {}), ds:RP.beats.map(b => b.d) }); }
+  { const jds = bs => Object.assign(bs.map(b => b.d), { j:bs.map(b => !!b.join) }); const RP = EP3.court.replay; RP.opt = Object.assign({}, RP.opt, { seq:RP.beats.map(b => b.st || {}), ds:jds(RP.beats) }); }
 })();

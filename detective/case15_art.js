@@ -8,7 +8,8 @@ EP15.art = true;
   const wall = (y, c, b) => PR.wall(y, c, b), floor = (y, c, l) => PR.floor(y, c, l);
   const SC = PX.SCENES;
   const txt = (s, x, y, c, f) => { const g = PR.g(); g.font = f || "6px monospace"; g.fillStyle = c; g.fillText(s, x, y); };
-  const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + 0.5, en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
+  const jds = bs => Object.assign(bs.map(b => b.d), { j:bs.map(b => !!b.join) });
+  const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + (ds.j && ds.j[i] ? 0 : 0.5), en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
   const stOf = o => { if (!o.ds) return {}; const [i] = beatAt(o.t || 0, o.ds); return (o.seq || [])[i] || {}; };
   const cam = (x, y, left) => { R(x, y, 10, 5, "#2a2a2e"); R(left ? x : x + 7, y + 1, 3, 3, "#4a4a52"); P(left ? x + 8 : x + 1, y + 1, "#e83a3a"); };
   const tube = (x, y, w) => { R(x, y, w, 2, "#f4f8f0"); dither(x - 4, y + 2, w + 8, 6, "#f4f8f022", 3); };
@@ -335,7 +336,7 @@ EP15.art = true;
     ] }
   };
   EP15.looks.jieC.hat = "cap"; EP15.looks.jieC.capColor = "#f4f4f0";   // 安全帽（白）
-  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.st)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => Object.assign({}, A.opt || {}, b.st || {})), ds:A.beats.map(b => b.d) }); });
+  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.st)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => Object.assign({}, A.opt || {}, b.st || {})), ds:jds(A.beats) }); });
   [...EP15.cctv, ...EP15.evidence].forEach(it => { if (ANIM[it.id]) it.anim = ANIM[it.id]; });
 
   /* ---------- 結案 ---------- */
@@ -376,7 +377,7 @@ EP15.art = true;
       zhou: "查清楚。我只要查清楚。"
     },
     replayText: "10 月 8 日晚上，安全屋。他還在等明天——",
-    replay: { scene:"s15_flat", opt:{ seq:RB.map(b => b.st), ds:RB.map(b => b.d) }, clean:true, cam:"事發經過重現", date:"2026-10-08", beats:RB },
+    replay: { scene:"s15_flat", opt:{ seq:RB.map(b => b.st), ds:jds(RB) }, clean:true, cam:"事發經過重現", date:"2026-10-08", beats:RB },
     get endGood(){
       let s = "18:30，記者會。黎光耀照著你的報告念：「證人趙德安，自縊身亡。查無他人進入。」\n記者舉手：「那通電話呢？」\n黎光耀闔上小本子：「教唆自殺，另案偵辦。」\n散會以後，林美鳳把那封信交給以晴。以晴讀到「給我的小船長」，把信紙貼在臉上。下禮拜一，她還是去考了模擬考。";
       if (foundN() >= 8) s += "\n\n你把這半年來記下的東西攤在桌上：淹水報廢的槍、綁架案那通電話、證物室的筆記本、分機 4417……一條一條，都通往同一棟大樓。";
