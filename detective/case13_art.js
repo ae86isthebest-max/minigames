@@ -338,7 +338,7 @@ EP13.art = true;
   EP13.outScenes = ["k_back","n_lane","n_stall"];
   EP13.fac = { ktv:["#2a1e34","#ff5ab4"], police:["#cfcabb","#3f5a7a"], lab:["#e2e8e8","#3a7a8a"], morgue:["#d8e0e0","#5a7a8a"], nightmkt:["#c8c0b0","#c83a2a"], arcade:["#1a1424","#e8c040"], huanghome:["#e8e0d0","#8a6a4a"] };
   EP13.setting = { ktv:"city", police:"city", lab:"city", morgue:"city", nightmkt:"town", arcade:"city", huanghome:"town" };
-  const SKY13 = [ ["#0a0f1c","#24304a","#2a3040","#323a4a",1,0], ["#8ab8e0","#e8eef4","#4a6070","#56707a",0,0], ["#9ac0e0","#f0e8d8","#4a6070","#56707a",0,0] ];
+  const SKY13 = [ ["#0a0f1c","#24304a","#2a3040","#323a4a",0,0], ["#8ab8e0","#e8eef4","#4a6070","#56707a",0,0], ["#9ac0e0","#f0e8d8","#4a6070","#56707a",0,0] ];
   EP13.worldSky = ph => SKY13[Math.min(ph || 0, SKY13.length - 1)];
   EP13.roomDesc = {
     kfront:"金曲 KTV 的櫃台。霓虹燈有一半壞了。", khall:"包廂走廊。808 在最裡面。", k808:"808 包廂。最裡面那間，旁邊是倉庫。", k805:"805 包廂。生日氣球還掛著。",
