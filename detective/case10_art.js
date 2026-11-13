@@ -394,7 +394,7 @@ EP10.art = true;
       { id:"pback", name:"後面的辦公室", scene:"p_back", opt:(ph,has)=>({ body:ph===0, markers:ph===0, ajar:ph===0, clean:ph>0 }), details:[
         { id:"d10_noodle", name:"垃圾桶", hot:[60,62,10,10], text:"垃圾桶裡有一個泡麵碗，「肉燥」口味。旁邊的帳單背面寫著：「明天去看醫生」。" } ] },
       { id:"palley", name:"後巷", scene:"p_alley", opt:(ph,has)=>({ noBags:ph>0, clean:ph>0 }), details:[
-        { id:"d10_cat", name:"水管後面", hot:[0,40,10,34], text:"水管後面躲著一隻橘貓，盯著當舖的後門。陳秀枝說，馮老闆每天晚上都會丟一點魚乾給牠。" } ] },
+        { id:"d10_cat", name:"水管後面", label:"水管", hot:[0,40,10,34], text:"水管後面躲著一隻橘貓，盯著當舖的後門。陳秀枝說，馮老闆每天晚上都會丟一點魚乾給牠。" } ] },
       { id:"pfish", name:"阿枝魚丸・後廚", scene:"p_fish", details:[
         { id:"d10_radio", name:"收音機", hot:[24,28,20,14], text:"收音機在播：「……澄港老街一家當舖昨晚發生命案……」陳秀枝把它關掉了。" } ] }
     ],
@@ -420,7 +420,7 @@ EP10.art = true;
       { id:"d10_pancoffee", name:"潘志剛的杯子", hot:[134,24,18,14], text:"白板旁邊的杯子上印著：「萬華分局　破案績效第一名　2024」。" } ] } ],
     tp_apt: [
       { id:"tdoor", name:"一樓大門", scene:"tp_stair", opt:{ floor:"1" }, details:[
-        { id:"d10_bike", name:"樓梯下面", hot:[130,58,30,16], text:"樓梯下面停著一台生鏽的腳踏車，車籃裡塞滿了廣告單。" } ] },
+        { id:"d10_bike", name:"樓梯下面", label:"樓梯", hot:[130,58,30,16], text:"樓梯下面停著一台生鏽的腳踏車，車籃裡塞滿了廣告單。" } ] },
       { id:"tstair", name:"二樓到三樓的樓梯", scene:"tp_stair", opt:(ph,has)=>({ floor:"23", outline:true }), details:[
         { id:"d10_shoes", name:"三樓的鞋櫃", hot:[120,60,18,12], text:"許家的鞋櫃上只有一雙皮鞋，擦得很亮。旁邊一雙女生的拖鞋，粉紅色，很舊了，好像很多年沒人穿。" } ] },
       { id:"t4f", name:"四樓・方國良家門口", scene:"tp_stair", opt:{ floor:"4" }, details:[

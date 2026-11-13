@@ -261,7 +261,7 @@ EP12.art = true;
       { id:"bdeck", name:"甲板", scene:"m12_deck", details:[
         { id:"d12_flag", name:"船頭的旗子", hot:[176,0,14,16], text:"船頭插著一面媽祖的旗子，被海風吹得啪啪響。" } ] },
       { id:"bhold", name:"船艙", scene:"m12_hold", details:[
-        { id:"d12_tally", name:"牆上的刻痕", hot:[60,20,20,10], text:"船艙的木板上，有人用指甲刻了兩道痕。一天一道。" } ] }
+        { id:"d12_tally", name:"牆上的刻痕", label:"船艙的牆", hot:[60,20,20,10], text:"船艙的木板上，有人用指甲刻了兩道痕。一天一道。" } ] }
     ]
   };
   const PS = [["m12_cliff",{ phase:0, tape:true }],["police",{}],["m12_fuel",{}]];

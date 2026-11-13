@@ -285,7 +285,7 @@ EP4.art = true;
     haoapt: [ { id:"hapt", name:"葉承浩的公寓", scene:"c4_hapt", details:[
       { id:"d4_haobed", name:"床頭", hot:[158,36,32,16], text:"床頭櫃上壓著一張催繳單，信封已經拆過，又被揉成一團。" } ] } ],
     qiu: [ { id:"qshop", name:"邱師傅玉雕工作室", scene:"qshop", details:[
-      { id:"d4_dust", name:"地上的粉", hot:[70,70,70,4], text:"地上一層白色的石粉。老邱說：「玉越磨越亮，人越磨越老。」" } ] } ],
+      { id:"d4_dust", name:"地上的粉", label:"地板", hot:[70,70,70,4], text:"地上一層白色的石粉。老邱說：「玉越磨越亮，人越磨越老。」" } ] } ],
     ice: [ { id:"iyard", name:"極凍乾冰倉庫", scene:"iyard", details:[
       { id:"d4_frost", name:"倉庫的門", hot:[0,30,16,44], text:"倉庫門口貼著：「禁止密閉空間存放乾冰：二氧化碳會讓人窒息」。" } ] } ],
     suhome: [ { id:"sroom", name:"蘇曼文的家", scene:"c4_su", details:[

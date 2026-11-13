@@ -164,7 +164,7 @@ EP5.art = true;
   EP5.rooms = {
     chenhome: [
       { id:"cgarage", name:"車庫", scene:"c5_garage", details:[
-        { id:"d5_oil", name:"地上的油漬", hot:[20,80,60,10], text:"車庫地上只有自家車的油漬，很乾淨。" } ] },
+        { id:"d5_oil", name:"地上的油漬", label:"車庫地板", hot:[20,80,60,10], text:"車庫地上只有自家車的油漬，很乾淨。" } ] },
       { id:"cliving", name:"陳家客廳", scene:"c5_living", details:[
         { id:"d5_clock", name:"牆上的鐘", hot:[170,10,16,16], text:"每一次秒針走過，陳太太就看一眼。" } ] },
       { id:"ckid", name:"語彤的房間", scene:"ckid", details:[

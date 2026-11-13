@@ -304,16 +304,16 @@ EP7.art = true;
       { id:"tlobby", name:"一樓大廳・管理室", scene:"t_lobby", details:[
         { id:"d7_peanut", name:"花生殼", hot:[96,60,14,6], text:"管理台底下一堆花生殼。蘇金城說，他太太叫他戒菸，他就改吃花生。" } ] },
       { id:"tlift", name:"電梯口", scene:"t_lift", opt:(ph,has)=>({ open:1 }), details:[
-        { id:"d7_mark", name:"銅牌下面的白色方塊", hot:[24,40,22,14], text:"你問警衛那裡以前掛什麼。他想了很久：「好像是一張照片……那個死掉的技師的。後來有人說不吉利，拿掉了。」" },
+        { id:"d7_mark", name:"銅牌下面的白色方塊", label:"電梯的銅牌", hot:[24,40,22,14], text:"你問警衛那裡以前掛什麼。他想了很久：「好像是一張照片……那個死掉的技師的。後來有人說不吉利，拿掉了。」" },
         { id:"d7_button", name:"叫車按鈕", hot:[134,38,10,14], text:"「▲」那顆按鈕被按得發亮。「▼」旁邊貼著一張小小的恐龍貼紙——9B 那個小男孩貼的。他媽媽說，他現在不敢一個人搭電梯了。" } ] },
       { id:"tcommittee", name:"管委會辦公室", scene:"t_committee", details:[
         { id:"d7_notice", name:"公告欄", hot:[4,14,22,30], text:"公告：「6/10 都更說明會，請踴躍出席。」下面有人用原子筆寫：「14A 不簽就大家一起住危樓。」" } ] },
       { id:"t14", name:"14 樓走廊", scene:"t_14", opt:(ph,has)=>({ tape:ph===0, markers:ph===0, open:ph===0 }), details:[
-        { id:"d7_slipper", name:"走廊上的拖鞋", hot:[102,72,16,10], text:"一隻咖啡色的室內拖鞋，鞋尖朝著電梯。" } ] },
+        { id:"d7_slipper", name:"走廊上的拖鞋", label:"走廊", hot:[102,72,16,10], text:"一隻咖啡色的室內拖鞋，鞋尖朝著電梯。" } ] },
       { id:"tliving", name:"方家客廳", scene:"t_living", details:[
         { id:"d7_photo", name:"全家福", hot:[90,18,30,20], text:"照片裡是方振華和太太，中間站著一個小男孩——小時候的方家豪。照片右下角寫著 2004。" } ] },
       { id:"tstudy", name:"書房", scene:"t_study", opt:(ph,has)=>({ body:ph===0, outline:ph>0, markers:ph===0 }), details:[
-        { id:"d7_book", name:"書櫃最上面一層", hot:[144,0,44,8], text:"書櫃最上面一層是一整排的《電梯安全法規彙編》，從 2006 年版到今年，一年一本，每一本都翻得很舊。" } ] },
+        { id:"d7_book", name:"書櫃最上面一層", label:"書櫃", hot:[144,0,44,8], text:"書櫃最上面一層是一整排的《電梯安全法規彙編》，從 2006 年版到今年，一年一本，每一本都翻得很舊。" } ] },
       { id:"tmachine", name:"頂樓電梯機房", scene:"t_machine", details:[
         { id:"d7_bento", name:"報紙", hot:[150,70,32,4], text:"接油的報紙是今天的晚報，日期 6/3。上面放著一個吃完的便當盒，筷子擺得整整齊齊。" } ] },
       { id:"tb2", name:"地下二樓停車場", scene:"t_b2", opt:(ph,has)=>({ van:ph===0, unplug:!has("ev_b2cam") || ph===0, cars:true }), details:[
@@ -327,11 +327,11 @@ EP7.art = true;
       { id:"d7_cert", name:"牆上的證書", hot:[170,10,16,30], text:"牆角掛著員工的技術證照影本。劉文彬的那張，發證日期是 2010 年，上面的照片還是個二十出頭的年輕人。" },
       { id:"d7_lunch", name:"桌上的便當袋", hot:[60,56,14,8], text:"調度台旁邊放著一個便當袋，上面縫著一塊布：「文彬　不要辣」。張雅芬說，那是他媽媽每天幫他準備的，他今天沒來拿。" } ] } ],
     mahjong: [ { id:"mjhall", name:"好運來麻將館", scene:"mj_hall", details:[
-      { id:"d7_cat", name:"櫃台下面", hot:[10,60,50,10], text:"櫃台下面睡著一隻真的黑貓。老范說：「不是我養的，是牠自己要叫這個名字。」" } ] } ],
+      { id:"d7_cat", name:"櫃台下面", label:"櫃台", hot:[10,60,50,10], text:"櫃台下面睡著一隻真的黑貓。老范說：「不是我養的，是牠自己要叫這個名字。」" } ] } ],
     hongyuan: [ { id:"hyroom", name:"宏遠建設・都更部", scene:"hy_room", details:[
       { id:"d7_list", name:"桌上的名單", hot:[108,58,24,9], text:"桌上一張名單，海悅大樓六十戶，五十九戶打了勾，只有「14A 方」是紅色的圈。" } ] } ],
     liuhome: [ { id:"lhroom", name:"劉文彬的住處", scene:"lh_room", details:[
-      { id:"d7_uniform", name:"衣櫃裡的制服", hot:[170,20,18,52], text:"衣櫃裡掛著兩套永升的制服。其中一套的膝蓋和胸口，有一大片黑黑的油污。" } ] } ]
+      { id:"d7_uniform", name:"衣櫃裡的制服", label:"衣櫃", hot:[170,20,18,52], text:"衣櫃裡掛著兩套永升的制服。其中一套的膝蓋和胸口，有一大片黑黑的油污。" } ] } ]
   };
 
   /* ---------- 監視器動畫 ---------- */

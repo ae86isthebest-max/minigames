@@ -197,7 +197,7 @@ EP9.art = true;
     inn: [
       { id:"ilobby", name:"大廳・櫃台", scene:"i_lobby", details:[
         { id:"d9_cat", name:"櫃台的招財貓", hot:[20,46,10,6], text:"招財貓的手一直在招，招到一半卡住了。陳芸說，牠從上禮拜就這樣了。" },
-        { id:"d9_loan", name:"櫃台下面的信", hot:[64,60,20,6], text:"櫃台下面壓著一疊信，最上面一封是農會的：「貸款繳款通知　第三次」。" } ] },
+        { id:"d9_loan", name:"櫃台下面的信", label:"櫃台", hot:[64,60,20,6], text:"櫃台下面壓著一疊信，最上面一封是農會的：「貸款繳款通知　第三次」。" } ] },
       { id:"icorr", name:"湯屋走廊", scene:"i_corr", details:[
         { id:"d9_slip", name:"拖鞋架", hot:[66,58,26,8], text:"拖鞋架上少了一雙藍白拖。每一雙拖鞋背面都用奇異筆寫著員工的名字。" } ] },
       { id:"isong", name:"湯屋「松」", scene:"i_song", opt:(ph,has)=>({ body:ph===0, markers:ph===0, cold:ph>0 }), details:[
@@ -207,7 +207,7 @@ EP9.art = true;
       { id:"iback", name:"屋後・熱水器", scene:"i_back", opt:(ph,has)=>({ flame:0, fogA:ph===2 ? 0.1 : 0.3 }), details:[
         { id:"d9_bamboo", name:"竹林", hot:[0,30,30,40], text:"竹林裡一點聲音都沒有。山上的人說，這種霧叫「死霧」，一點風都不起。" } ] },
       { id:"istore", name:"倉庫", scene:"i_store", details:[
-        { id:"d9_shelf", name:"架上的箱子", hot:[100,10,80,40], text:"一箱一箱的浴巾、清酒、備用拖鞋。最上面一層有一個寫著「民國 75 年」的舊招牌：「雲靄旅社」。" } ] },
+        { id:"d9_shelf", name:"架上的箱子", label:"架子", hot:[100,10,80,40], text:"一箱一箱的浴巾、清酒、備用拖鞋。最上面一層有一個寫著「民國 75 年」的舊招牌：「雲靄旅社」。" } ] },
       { id:"iroom", name:"羅家的客房", scene:"i_room", details:[
         { id:"d9_photo", name:"手機桌布", hot:[60,54,20,4], text:"被褥上放著羅文昌的另一支手機，桌布是他和一隻柴犬的合照。" },
         { id:"d9_ring", name:"洗手台", hot:[20,40,10,10], text:"洗手台邊放著一枚婚戒，是杜美玲的。她說：「我今天早上拿下來的。」" } ] },

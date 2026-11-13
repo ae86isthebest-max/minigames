@@ -270,22 +270,22 @@ EP11.art = true;
       { id:"goffice", name:"二樓辦公室", scene:"g11_office", details:[
         { id:"d11_mug", name:"桌上的馬克杯", hot:[121,51,12,10], text:"一個馬克杯，印著「BULL RUN 2025」，一隻往上衝的金色公牛。杯底的咖啡已經乾成一圈。" } ] },
       { id:"galley", name:"後巷", scene:"g11_alley", outdoor:true, details:[
-        { id:"d11_cat", name:"垃圾桶後面", hot:[100,80,10,10], text:"一隻橘貓縮在垃圾桶後面。阿美說，牠每天 21:03 也會來，等那個女孩子分牠一點便當。" } ] }
+        { id:"d11_cat", name:"垃圾桶後面", label:"垃圾桶", hot:[100,80,10,10], text:"一隻橘貓縮在垃圾桶後面。阿美說，牠每天 21:03 也會來，等那個女孩子分牠一點便當。" } ] }
     ],
     hospital: [ { id:"hward", name:"澄港醫院・骨科病房", scene:"hosp11", details:[
       { id:"d11_flower", name:"床頭的花", hot:[174,46,14,14], text:"床頭一小束花，卡片上歪歪的字：「阿勇哥　快點好起來　小雯」。" } ] } ],
     police: [ { id:"pdesk", name:"澄港市刑大", scene:"pol11", details:[
       { id:"d11_books", name:"小吳的桌上", hot:[34,56,18,12], text:"小吳的桌上堆著升等考試的書，最上面那本貼滿了便利貼：「刑訴 88-1」「別再忘了」。" } ] } ],
     lab: [ { id:"lab", name:"鑑識中心", scene:"lab11", details:[
-      { id:"d11_tape", name:"兩張桌子中間", hot:[100,62,10,8], text:"小吳貼的那條「國界」膠帶還在。許知夏那邊的膠帶，被人用尺壓得平平整整。" } ] } ],
+      { id:"d11_tape", name:"兩張桌子中間", label:"桌子", hot:[100,62,10,8], text:"小吳貼的那條「國界」膠帶還在。許知夏那邊的膠帶，被人用尺壓得平平整整。" } ] } ],
     bus: [ { id:"bdesk", name:"澄港客運・調度室", scene:"g11_bus", details:[
       { id:"d11_radio2", name:"無線電", hot:[118,46,10,14], text:"無線電一直在響：「12 路 508，前方施工，請改道……」賴宏明一邊聽一邊在紙上記。" } ] } ],
     ice: [ { id:"iice", name:"阿珠冰店", scene:"g11_ice", details:[
       { id:"d11_menu", name:"牆上的價目表", hot:[110,24,20,12], text:"價目表最下面一行是手寫的：「警察、消防、外送　加料免費」。" } ] } ],
     linhome: [ { id:"lroom", name:"林家・客廳", scene:"g11_lin", opt:(ph, has) => ({ gold:has("e_arrest") }), details:[
-      { id:"d11_bills", name:"桌上的信封", hot:[108,56,14,9], text:"一疊沒拆的信封，最上面一封是冷凍廠寄來的：「林建成　八月薪資　預支扣回」。" } ] } ],
+      { id:"d11_bills", name:"桌上的信封", label:"桌上", hot:[108,56,14,9], text:"一疊沒拆的信封，最上面一封是冷凍廠寄來的：「林建成　八月薪資　預支扣回」。" } ] } ],
     qiuhome: [ { id:"qroom", name:"邱家・書房", scene:"g11_qiu", details:[
-      { id:"d11_ultra", name:"嬰兒床上方的超音波照片", hot:[37,36,14,14], text:"嬰兒床上方的白板上，一張超音波照片，用金色的磁鐵貼著。旁邊呂佩珊寫著：「24 週　是女生」。" } ] } ]
+      { id:"d11_ultra", name:"嬰兒床上方的超音波照片", label:"嬰兒床", hot:[37,36,14,14], text:"嬰兒床上方的白板上，一張超音波照片，用金色的磁鐵貼著。旁邊呂佩珊寫著：「24 週　是女生」。" } ] } ]
   };
 
   /* ---------- 監視器動畫 ---------- */

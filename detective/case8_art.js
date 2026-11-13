@@ -231,7 +231,7 @@ EP8.art = true;
       { id:"sctrl", name:"控制室", scene:"s8_ctrl", details:[
         { id:"d8_cup", name:"控制台旁的杯子", hot:[148,52,8,8], text:"一個馬克杯，印著「謎境 2019 開幕紀念」。杯子是乾的，裡面一滴水都沒有——昨晚沒有人在這裡倒水。" } ] },
       { id:"sfinal", name:"「最後一個房間」", scene:"s8_final", opt:(ph,has)=>({ body:ph===0, outline:ph>0, markers:ph===0, drag:true, tape:ph===0, open:has("e_lockin") }), details:[
-        { id:"d8_sticker", name:"書桌底下", hot:[16,62,46,8], text:"書桌底下貼著一張小紙條，是葛志偉的字：「07:07——我們的生日。」江承恩和葛志偉，是同一天生日。" } ] },
+        { id:"d8_sticker", name:"書桌底下", label:"書桌", hot:[16,62,46,8], text:"書桌底下貼著一張小紙條，是葛志偉的字：「07:07——我們的生日。」江承恩和葛志偉，是同一天生日。" } ] },
       { id:"sprop", name:"道具倉", scene:"s8_prop", details:[
         { id:"d8_label", name:"標籤機", hot:[170,60,20,10], text:"標籤機裡最後印的一張是：「THE LAST ROOM　—　設計：葛志偉」。那張標籤沒有被貼出去。" } ] },
       { id:"soffice", name:"辦公室", scene:"s8_office", details:[

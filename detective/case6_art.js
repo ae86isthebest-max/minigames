@@ -318,9 +318,9 @@ EP6.art = true;
       { id:"rcurve", name:"彎道・護欄", scene:"c6_curve", outdoor:true, opt:(ph) => ({ day:ph > 0, mark:ph === 0, clean:ph > 0, body:ph === 0 }), details:[
         { id:"d6_cone", name:"路邊的三角錐", hot:[60,80,8,10], text:"派出所擺的三角錐被風吹倒了兩次。值班的員警第三次把它扶起來，壓了一塊石頭。" } ] },
       { id:"rturn", name:"避車彎", scene:"c6_turn", outdoor:true, opt:(ph) => ({ day:ph > 0 }), details:[
-        { id:"d6_cans", name:"草叢裡", hot:[100,70,14,6], text:"草叢裡有幾個舊的飲料罐，褪色褪得看不出牌子——這裡平常是情侶停車看海的地方。" } ] },
+        { id:"d6_cans", name:"草叢裡", label:"草叢", hot:[100,70,14,6], text:"草叢裡有幾個舊的飲料罐，褪色褪得看不出牌子——這裡平常是情侶停車看海的地方。" } ] },
       { id:"rbank", name:"堤防", scene:"c6_bank", outdoor:true, opt:(ph) => ({ day:ph > 0 }), details:[
-        { id:"d6_crab", name:"消波塊縫裡", hot:[10,60,20,8], text:"消波塊的縫裡，一隻小螃蟹被手電筒照到，橫著跑進更深的縫裡。" } ] }
+        { id:"d6_crab", name:"消波塊縫裡", label:"消波塊", hot:[10,60,20,8], text:"消波塊的縫裡，一隻小螃蟹被手電筒照到，橫著跑進更深的縫裡。" } ] }
     ],
     kohome: [
       { id:"kliving", name:"柯家・客廳", scene:"c6_ko", details:[
