@@ -3,202 +3,243 @@
    ========================================================= */
 EP6.art = true;
 (() => {
-  const PR = PX.prim, { R, P, dither, shade, OBJ, windowBox, door, sign, lamp, INK } = PR;
+  const PR = PX.prim, { R, P, dither, OBJ, windowBox, door, lamp, INK } = PR;
   const W = 192, H = 108;
-  const wall = (y, c, b) => PR.wall(y, c, b), floor = (y, c, l) => PR.floor(y, c, l), sky = (a, b, h) => PR.sky(a, b, h);
+  const wall = (y, c, b) => PR.wall(y, c, b), floor = (y, c, l) => PR.floor(y, c, l);
   const SC = PX.SCENES;
-  const night = o => (o.phase || 0) === 0;
-  const dust = (x, y, w, h) => { for (let i = 0; i < w * h / 18; i++) P(x + (i * 37) % w, y + (i * 53) % h, "#b8b4aa"); };
-  const lockerRow = (x, y, n) => { for (let i = 0; i < n; i++){ R(x + i * 12, y, 11, 24, "#7a8a9a"); R(x + i * 12 + 1, y + 2, 9, 1, "#5a6a7a"); P(x + i * 12 + 8, y + 12, "#d8d8d8"); } };
-  const studentDesk = (x, y, c) => { R(x, y, 18, 3, c || "#c8a070"); R(x + 2, y + 3, 2, 9, "#6a6a6a"); R(x + 14, y + 3, 2, 9, "#6a6a6a"); R(x + 4, y + 6, 10, 2, "#8a6a4a"); };
+  const txt = (s, x, y, c, f) => { const g = PR.g(); g.font = f || "6px monospace"; g.fillStyle = c; g.fillText(s, x, y); };
+  const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + 0.5, en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
+  const kf = (v, p) => Array.isArray(v) ? (() => { if (v.length === 1) return v[0]; const k = p * (v.length - 1), i = Math.min(v.length - 2, Math.floor(k)); return v[i] + (v[i + 1] - v[i]) * (k - i); })() : v;
+  const stOf = o => { if (!o.ds) return [{}, 0]; const [i, p] = beatAt(o.t || 0, o.ds); return [(o.seq || [])[i] || {}, p]; };
+  const clip = (x, y, w, h, fn) => { const g = PR.g(); g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip(); fn(); g.restore(); };
+  // 雨：t 讓雨會動
+  const rain = (t, n, c, x0, y0, w, h) => { x0 = x0 || 0; y0 = y0 || 0; w = w || W; h = h || H; for (let i = 0; i < (n || 70); i++){ const x = x0 + ((i * 53 + Math.floor((t || 0) * 30) * 2) % w), y = y0 + ((i * 37 + Math.floor((t || 0) * 90)) % h); R(x, y, 1, 3, c || "#8aa0b8"); } };
+  // 灰色休旅車（側面）：x＝車尾左邊，y＝車頂；face＝1 車頭朝右；dmg＝右前凹；lit＝開大燈
+  const suv = (x, y, face, dmg, lit, c) => { x = Math.round(x); c = c || "#7c8288";
+    const F = (px, py, w, h, col) => R(face > 0 ? x + px : x + 48 - px - w, y + py, w, h, col);
+    F(2, 6, 44, 12, c); F(8, 0, 30, 7, "#5e6469"); F(10, 1, 12, 5, "#2a3440"); F(24, 1, 12, 5, "#2a3440"); F(0, 10, 2, 5, "#a03030");
+    F(44, 10, 4, 4, lit ? "#fff6c8" : "#c8c8c0"); F(42, 16, 6, 2, "#4a4e52"); F(6, 16, 9, 6, INK); F(33, 16, 9, 6, INK); F(8, 18, 5, 2, "#5a5a5a"); F(35, 18, 5, 2, "#5a5a5a");
+    if (dmg){ F(43, 13, 5, 3, "#4a4e52"); F(45, 15, 2, 2, "#1a1a1a"); }
+    else F(44, 15, 3, 2, "#e8e8d8");   // 霧燈
+    if (lit){ const g = PR.g(); g.fillStyle = "rgba(255,240,190,.22)"; g.beginPath(); const hx = face > 0 ? x + 48 : x; g.moveTo(hx, y + 11); g.lineTo(hx + face * 50, y + 2); g.lineTo(hx + face * 50, y + 24); g.closePath(); g.fill(); } };
+  // 機車（側面）：x＝車尾，face＝1 朝右；box＝外送箱；lit＝大燈
+  const scooter = (x, y, face, lit, crashed) => { x = Math.round(x);
+    const F = (px, py, w, h, col) => R(face > 0 ? x + px : x + 26 - px - w, y + py, w, h, col);
+    if (crashed){ R(x, y + 10, 26, 6, "#e8e8e4"); R(x + 2, y + 6, 10, 6, "#2f8a4a"); R(x + 18, y + 8, 6, 4, "#c8c8c4"); R(x + 2, y + 15, 6, 4, INK); R(x + 18, y + 15, 6, 4, INK); R(x + 6, y + 12, 14, 1, "#8a8a8a"); return; }
+    F(4, 8, 18, 6, "#e8e8e4"); F(2, 2, 9, 7, "#2f8a4a"); F(18, 2, 2, 8, "#9a9a9a"); F(17, 1, 5, 2, "#3a3a3a"); F(3, 13, 6, 5, INK); F(18, 13, 6, 5, INK); F(21, 6, 3, 2, lit ? "#fff6c8" : "#c8c8c0");
+    if (lit){ const g = PR.g(); g.fillStyle = "rgba(255,240,190,.18)"; g.beginPath(); const hx = face > 0 ? x + 24 : x + 2; g.moveTo(hx, y + 7); g.lineTo(hx + face * 34, y + 2); g.lineTo(hx + face * 34, y + 16); g.closePath(); g.fill(); } };
+  const guard = (y, x0, x1) => { for (let x = x0; x < x1; x++){ R(x, y, 1, 4, "#c8ccd0"); if (x % 2) P(x, y + 1, "#9aa0a6"); } for (let x = x0 + 4; x < x1; x += 14) R(x, y + 4, 2, 8, "#8a9096"); };
+  const nightSky = (day, h) => { if (day) PR.sky("#8fb4d8", "#dfe8ee", h || 60); else PR.sky("#0a0f1c", "#1c2636", h || 60); };
 
   /* ---------- 場景 ---------- */
-  // 校門・警衛室（裡面：監視器牆）
-  SC.apt6 = (o) => { SC.apartment(o); for (let k = 0; k < 3; k++){ R(117 + k, 64 - k, 10, 2, k % 2 ? "#e8e4d8" : "#f4f0e4"); P(125 + k, 64 - k, "#c23a2a"); } R(118, 60, 4, 2, "#f4e48a"); };   // 梁靜儀的家（書桌上加三封信）
-  SC.sch_gate = (o) => {
-    wall(72, "#d8d4c4", false); R(0, 64, W, 8, "#8a8a7a");
-    R(10, 10, 30, 24, "#e8dcb0"); for (let i = 0; i < 6; i++) R(13, 13 + i * 3, 18 + (i % 3) * 3, 1, "#6a6a6a"); R(14, 22, 12, 8, "#9aa4ae");   // 舊報紙
-    for (let r = 0; r < 2; r++) for (let c = 0; c < 4; c++){ const x = 120 + c * 17, y = 14 + r * 13; R(x - 1, y - 1, 16, 12, "#2a2a2e"); R(x, y, 14, 10, night(o) ? "#1a2a3a" : "#3a4a5a"); for (let j = 0; j < 10; j += 2) R(x, y + j, 14, 1, "#00000033"); P(x + 2 + (c * 3 + r) % 9, y + 4 + r, "#e9e4da"); }
-    R(116, 42, 72, 3, "#3a3a3e");
-    OBJ.desk(56, 66, 80); R(60, 56, 22, 10, "#f1ead8"); for (let i = 0; i < 4; i++) R(62, 58 + i * 2, 16, 1, "#6a6a6a");
-    R(100, 58, 26, 8, "#e9e4da"); R(102, 60, 22, 4, "#3a6ab8");
-    R(130, 58, 8, 8, "#5a7a6a"); R(131, 56, 6, 2, "#3a4a3a");
-    windowBox(46, 12, 40, 26, night(o) ? "#1a2238" : "#a8c8e0");
-    lamp(96, 0, "#f4e8a8");
-    floor(72, "#9a9488", "#8a8478");
+  // 濱海路・彎道（o.day：白天；o.clean：現場收掉了）
+  SC.c6_curve = (o) => { const day = o.day, t = o.t || 0;
+    nightSky(day, 64); R(0, 44, W, 22, day ? "#4a7a9a" : "#14222e"); for (let x = 0; x < W; x += 7) R(x, 50 + (x % 3) * 4, 4, 1, day ? "#7aa8c4" : "#24384a");   // 海
+    R(150, 6, 40, 20, "#2a2a2e"); R(152, 8, 36, 16, day ? "#e8e0d0" : "#8a8070"); txt("海灣一號", 155, 15, "#2a4a6a", "6px sans-serif"); txt("振東建設 →300M", 154, 22, "#5a3a24", "4px sans-serif"); R(168, 26, 2, 40, "#3a3a3e");   // 看板
+    R(26, 18, 2, 50, "#6a6a6e"); R(20, 18, 14, 14, "#e85a2a"); R(22, 20, 10, 10, day ? "#cfe0ee" : "#3a4a5a"); P(24, 22, "#e8f0f8");   // 反光鏡
+    R(48, 30, 2, 38, "#6a6a6e"); R(44, 30, 10, 10, "#f2c94c"); R(46, 33, 6, 2, INK); R(48, 35, 2, 3, INK);   // 前有彎道
+    R(96, 0, 2, 66, "#3a3a3e"); R(92, 0, 14, 3, "#4a4a4e"); if (!day){ PR.g().fillStyle = "rgba(255,220,150,.12)"; PR.g().fillRect(80, 3, 40, 70); }   // 路燈
+    guard(64, 0, W);
+    floor(74, day ? "#5a5e62" : "#2a2e34", null); for (let x = 4; x < W; x += 20) R(x, 90, 10, 1, "#c8b860");   // 路
+    if (!day) dither(0, 74, W, 34, "#3a4a5a", 5);
+    if (!o.clean){
+      scooter(132, 60, 1, true, true);
+      if (o.body !== false){ R(100, 84, 26, 6, "#2f8a4a"); R(124, 83, 7, 6, "#f2c94c"); R(98, 86, 5, 3, "#2a2a30"); R(104, 89, 10, 3, "#2a2a30"); }   // 柯建宏（綠雨衣、黃安全帽）
+      for (let k = 0; k < 9; k++) P(72 + (k * 5) % 22, 92 + (k * 3) % 6, k % 3 ? "#e8f0f8" : "#8a9096");   // 碎片
+      if (o.mark){ OBJ.marker(74, 98, 1); OBJ.marker(140, 82, 2); OBJ.marker(112, 94, 3); OBJ.tape(0, 102, W); }
+    } else { R(130, 70, 8, 6, "#f4f0f4"); R(132, 67, 4, 4, "#e8e0f0"); }   // 花
+    if (!day) rain(t, 80, "#7a90a8");
   };
-  // 校門外（監視器用）
-  SC.sch_gatecam = (o) => {
-    sky("#0b0f1c", "#27324a", 40);
-    R(0, 30, 70, 44, "#c8c0a8"); R(0, 26, 72, 6, "#8a3a2a"); sign(6, 34, 56, "#2a4a6a", "#e9e4da");
-    R(150, 26, 42, 48, "#c8c0a8"); R(148, 22, 44, 6, "#8a3a2a"); windowBox(160, 36, 20, 16, "#ffd98a");
-    R(70, 56, 80, 4, "#5a5a5a"); for (let x = 72; x < 150; x += 6) R(x, 42, 2, 14, "#6a6a6a"); R(70, 40, 80, 3, "#7a7a7a");
-    lamp(110, 0, "#f4e8a8");
-    R(0, 74, W, 34, "#4a4a46"); dither(0, 74, W, 34, "#3e3e3a", 4); for (let x = 0; x < W; x += 24) R(x, 90, 12, 1, "#c9c9a0");
+  // 濱海路・避車彎
+  SC.c6_turn = (o) => { const day = o.day, t = o.t || 0;
+    nightSky(day, 70); PR.hills(52, day ? "#4a6a4a" : "#18241e", day ? "#3a5a3a" : "#121a16");
+    R(6, 30, 2, 40, "#6a6a6e"); R(2, 30, 10, 10, "#e85a2a"); R(4, 32, 6, 6, day ? "#cfe0ee" : "#3a4a5a");   // 遠處的反光鏡
+    R(150, 22, 6, 52, "#4a3a2a"); for (let k = 0; k < 10; k++) R(132 + (k * 7) % 40, 10 + (k * 5) % 22, 10, 4, day ? "#3a6a3a" : "#1a2a1e");   // 木麻黃
+    floor(74, day ? "#6a5a48" : "#2e2a26", null); dither(0, 74, W, 34, day ? "#7a6a54" : "#3a342e", 4);
+    if (!o.clean){ R(40, 82, 80, 12, day ? "#7a7068" : "#4a4440"); R(46, 83, 3, 2, "#1a1a1a"); R(108, 88, 4, 3, "#1a1a1e"); }   // 乾長方形、機油
+    for (let k = 0; k < 4; k++){ R(124 + k * 5, 86 + (k % 2) * 3, 4, 7, "#1e1a16"); P(125 + k * 5, 87 + (k % 2) * 3, "#4a3a2a"); }   // 鞋印
+    R(150, 72, 4, 1, "#f4f0e0"); R(156, 74, 4, 1, "#e8c890"); R(160, 71, 3, 1, "#f4f0e0");   // 菸蒂
+    for (let x = 0; x < 40; x += 3) R(x, 96 + (x % 5), 2, 1, "#1a1612");   // 甩泥痕
+    if (!day) rain(t, 70, "#7a90a8");
   };
-  // 行政大樓・校長室
-  SC.sch_office = (o) => {
-    wall(72, "#e8e0cc", false); R(0, 64, W, 8, "#8a6a4a");
-    R(20, 10, 40, 24, "#c9a24a"); R(23, 13, 34, 18, "#7a1e24"); R(26, 16, 28, 3, "#f4e8a8"); R(28, 22, 24, 1, "#f4e8a8"); R(30, 26, 20, 1, "#f4e8a8");   // 績優學校獎牌（稍微歪）
-    R(64, 14, 18, 14, "#c9a24a"); R(66, 16, 14, 10, "#2a3a6a"); R(86, 14, 18, 14, "#c9a24a"); R(88, 16, 14, 10, "#2a5a3a");
-    R(150, 20, 20, 20, "#f4f4ee"); R(150, 20, 20, 4, "#c23a2a"); for (let i = 0; i < 12; i++) P(152 + (i % 5) * 4, 26 + Math.floor(i / 5) * 4, "#9a9a92"); R(160, 36, 3, 3, "#c23a2a");
-    OBJ.desk(70, 62, 70); R(78, 54, 18, 8, "#2a2a2e"); R(80, 55, 14, 6, "#3a5a7a"); R(110, 56, 14, 6, "#f1ead8"); R(130, 52, 4, 10, "#2a3a6a"); P(131, 51, "#c9a24a");
-    R(150, 46, 30, 26, "#6b4a2b"); R(152, 48, 26, 10, "#5a3e24"); R(152, 60, 26, 10, "#5a3e24"); P(164, 53, "#c9a24a"); P(164, 65, "#c9a24a");
-    OBJ.plant(8, 66);
-    floor(72, "#8a6a4a", "#7a5a3a");
+  // 濱海路・堤防
+  SC.c6_bank = (o) => { const day = o.day, t = o.t || 0;
+    nightSky(day, 60); R(0, 40, W, 30, day ? "#4a7a9a" : "#101c28"); for (let x = 0; x < W; x += 6) R(x, 46 + (x % 4) * 5, 4, 1, day ? "#7aa8c4" : "#20344a");
+    R(172, 14, 8, 30, "#e8e0d0"); R(170, 12, 12, 4, "#c23a2a"); if (!day){ const a = (t * 1.5) % 6.28; PR.g().fillStyle = "rgba(255,240,180,.25)"; PR.g().beginPath(); PR.g().moveTo(176, 14); PR.g().lineTo(176 - 80 * Math.cos(a), 10 - 10 * Math.sin(a)); PR.g().lineTo(176 - 80 * Math.cos(a), 22 - 10 * Math.sin(a)); PR.g().fill(); }   // 燈塔
+    R(0, 66, W, 10, "#7a7a74"); R(0, 66, W, 2, "#9a9a92");   // 堤防
+    R(120, 30, 1, 36, "#c8b890"); for (let k = 0; k < 20; k++) P(120 - k, 30 + k * k / 14, "#c8c8c8");   // 釣竿
+    floor(76, day ? "#5a5e62" : "#262a30", null);
+    R(56, 84, 48, 8, "#1a2028"); for (let x = 58; x < 104; x += 4) R(x, 84, 2, 8, "#5a5e64"); dither(56, 84, 48, 8, "#3a5a7a", 3);   // 水溝格柵
+    R(140, 68, 14, 10, "#3a6ab8"); R(142, 66, 10, 3, "#2a4a8a"); P(146, 70, "#e8e8f0"); P(149, 71, "#e8e8f0");   // 水桶
+    if (!day) rain(t, 70, "#7a90a8");
   };
-  // 2 樓導師室
-  SC.sch_staff = (o) => {
-    wall(72, "#e4e8e0", false); R(0, 64, W, 8, "#9aa094");
-    windowBox(80, 10, 30, 22, night(o) ? "#1a2238" : "#a8c8e0");
-    R(4, 12, 40, 26, "#f4f4ee"); R(6, 14, 36, 2, "#3a6ab8"); for (let i = 0; i < 5; i++) R(8, 19 + i * 4, 30 - i * 3, 1, "#6a6a6a");   // 行事曆白板
-    // 梁老師的桌子（左）：乾淨
-    OBJ.desk(16, 62, 50); for (let i = 0; i < 3; i++) R(20 + i * 8, 56 - i, 7, 6 + i, "#f1ead8"); R(30, 52, 12, 8, "#f8f4e4"); R(30, 52, 12, 1, "#c8c0a8"); R(56, 50, 5, 6, "#e9e4da"); R(57, 51, 3, 2, "#3a6ab8");
-    // 鄭國豪的桌子（右）：獎盃
-    OBJ.desk(116, 62, 54); for (let i = 0; i < 4; i++){ R(120 + i * 10, 48 - (i % 2) * 4, 6, 10 + (i % 2) * 4, "#c9a24a"); R(121 + i * 10, 58, 4, 4, "#6b4a2b"); } R(146, 46, 14, 12, "#6b4a2b"); R(147, 47, 12, 10, "#a8c0d0"); P(150, 50, "#e8c09a"); P(155, 50, "#e8c09a");
-    lockerRow(176, 40, 1);
-    lamp(96, 0, "#f4f4e8");
-    floor(72, "#a8a89a", "#98988a");
+  // 柯家・客廳
+  SC.c6_ko = (o) => { wall(72, "#c8bca4", false); R(0, 64, W, 8, "#7a6a54");
+    R(20, 20, 18, 22, "#f4f0e0"); for (let k = 0; k < 6; k++) R(22, 24 + k * 3, 14 - (k % 2) * 4, 1, "#3a3a3a"); R(30, 18, 2, 3, "#c23a2a"); txt("等著", 22, 46, "#c23a2a", "5px sans-serif");   // 律師信
+    R(56, 40, 30, 24, "#8a6a4a"); R(60, 18, 22, 16, "#e8e0c8"); R(62, 20, 18, 12, "#9ab0c0"); R(65, 24, 4, 7, "#f2c94c"); R(73, 24, 4, 7, "#f2c94c");   // 櫃子、照片
+    windowBox(140, 14, 36, 26, "#1a2430"); rain(o.t, 18, "#6a80a0", 140, 14, 36, 26);
+    R(96, 62, 50, 3, "#a8845a"); R(98, 65, 2, 9, "#7a5a3a"); R(142, 65, 2, 9, "#7a5a3a"); R(104, 58, 8, 4, "#f4f0f0"); R(124, 58, 8, 4, "#f4f0f0"); R(114, 54, 8, 8, "#e8e8e0"); P(117, 55, "#e04a3a");   // 餐桌、碗、電鍋
+    lamp(110, 0, "#f8e8c0"); floor(72, "#a89a84", "#9a8c76");
   };
-  // 3 樓高二 7 班教室
-  SC.sch_class = (o) => {
-    wall(72, "#f0ecd8", false); R(0, 64, W, 8, "#9a8a6a");
-    R(38, 8, 96, 34, "#2a4a3a"); R(36, 6, 100, 2, "#8a6a4a"); for (let i = 0; i < 5; i++) R(44 + i * 6, 14, 4, 4, "#e9e4da"); for (let i = 0; i < 8; i++) R(76 + i * 5, 14, 3, 4, "#e9e4da"); R(44, 24, 50, 1, "#e9e4da"); R(118, 36, 12, 1, "#e9e4da");
-    windowBox(2, 14, 28, 26, night(o) ? "#0e1424" : "#a8c8e0");
-    windowBox(160, 14, 28, 26, night(o) ? "#0e1424" : "#a8c8e0");
-    floor(72, "#c8b090", "#b8a080");
-    for (let r = 0; r < 2; r++) for (let c = 0; c < 5; c++){ if (r === 1 && c === 4) continue; studentDesk(10 + c * 32, 60 + r * 16); if ((c + r) % 2) R(14 + c * 32, 57 + r * 16, 8, 3, "#f1ead8"); }
-    studentDesk(154, 76, "#d8b080"); R(160, 70, 6, 6, "#8a5a3a"); R(159, 66, 8, 4, "#5fa05a"); P(162, 65, "#7fc07a");   // 空桌子和多肉
+  // 柯家・阿宏的房間
+  SC.c6_koroom = (o) => { wall(72, "#d8d0bc", false); R(0, 64, W, 8, "#8a7a64");
+    for (let k = 0; k < 5; k++) R(14 + k * 10, 16 + (k % 2) * 4, 8, 10, ["#9ab0c0", "#c8b890", "#a8c8a8", "#e8c8a8", "#b8b8c8"][k]);   // 牆上的照片
+    R(60, 62, 70, 3, "#7a5a3a"); R(62, 65, 3, 9, "#5a3e24"); R(125, 65, 3, 9, "#5a3e24");   // 書桌
+    R(70, 56, 14, 6, "#8a6a3a"); R(71, 57, 12, 1, "#f4f0e0");   // 筆記本
+    R(96, 48, 24, 13, "#2a2a2e"); R(97, 49, 22, 10, "#3a5a7a"); R(99, 51, 8, 6, "#9ab0c0"); R(109, 51, 8, 6, "#e8e0c8"); R(96, 60, 24, 2, "#4a4a4e");   // 筆電
+    R(144, 18, 34, 56, "#8a6a4a"); R(150, 40, 16, 12, "#f2c94c"); R(148, 50, 20, 3, "#d8a830");   // 衣櫃、安全帽
+    R(30, 40, 14, 22, "#2f8a4a"); R(34, 38, 6, 3, "#2f8a4a");   // 外送外套
+    lamp(96, 0, "#f8e8c0"); floor(72, "#a89a84", "#9a8c76");
   };
-  // 樓梯間・頂樓門
-  SC.sch_stair = (o) => {
-    wall(74, "#d8d8cc", false);
-    for (let i = 0; i < 9; i++) R(60 + i * 10, 96 - i * 6 - 4, 12, 6, "#a8a49a"), R(60 + i * 10, 96 - i * 6 - 4, 12, 1, "#c8c4ba");
-    R(58, 40, 2, 58, "#6a6a6a"); for (let i = 0; i < 9; i++) R(60 + i * 10, 84 - i * 6, 10, 1, "#6a6a6a");
-    R(140, 26, 26, 22, "#5a646e"); R(142, 28, 22, 20, "#6a747e"); R(160, 36, 3, 4, "#c8c8c8"); R(156, 34, 3, 3, "#2a2a2e");   // 頂樓門
-    R(40, 20, 30, 24, "#f4f4ee"); R(42, 22, 26, 6, "#3a8a6a"); for (let i = 0; i < 3; i++) R(44, 31 + i * 4, 20, 1, "#6a6a6a");   // 海報
-    R(172, 6, 10, 3, "#d6d6d6"); R(174, 9, 6, 4, "#2a2a2e"); P(178, 10, "#e04a3a");   // 監視器
-    lamp(100, 0, "#f4f4e8");
-    R(0, 96, W, 12, "#9a9a90");
+  SC.pol6 = (o) => { SC.police(o); R(176, 40, 14, 30, "#c8a070"); R(178, 43, 10, 8, "#f4f0e0"); R(178, 54, 10, 8, "#f4f0e0"); R(184, 44, 3, 3, "#c23a2a"); };
+  SC.lab6 = (o) => { SC.lab(o); R(22, 38, 16, 26, "#2f8a4a"); R(26, 36, 8, 3, "#2f8a4a"); R(32, 50, 4, 4, "#1a5a2a"); R(128, 56, 8, 6, "#2a2a2e"); R(130, 57, 4, 3, "#5a5a64"); };
+  // 振東建設車庫・停車場
+  SC.c6_garage = (o) => { wall(72, "#9a9a92", false); R(0, 64, W, 8, "#6a6a62"); dither(0, 0, W, 64, "#8a8a82", 6);
+    for (let k = 0; k < 4; k++){ R(6 + k * 48, 2, 24, 2, "#e8f0e8"); PR.g().fillStyle = "rgba(230,240,230,.10)"; PR.g().fillRect(k * 48, 4, 36, 68); }
+    ["ZD-3", "ZD-7", "ZD-1"].forEach((s, i) => { R([14, 104, 164][i], 30, 18, 8, "#f4f0e0"); txt(s, [15, 105, 165][i], 36, "#2a2a2a", "5px monospace"); });
+    floor(72, "#6a6a64", "#5e5e58"); for (let x = 0; x < W; x += 48) R(x + 46, 72, 2, 36, "#e8e0a0");
+    R(10, 56, 40, 14, "#e8e8e4"); R(30, 48, 18, 10, "#e8e8e4"); R(32, 50, 12, 5, "#3a4a5a"); R(12, 54, 18, 3, "#c8c0a8"); R(12, 68, 7, 6, INK); R(38, 68, 7, 6, INK); txt("工務", 14, 64, "#3a5a8a", "4px sans-serif");   // 小貨車
+    suv(92, 52, 1, !o.fixed, false);
+    R(156, 56, 34, 12, "#f0f0ec"); R(162, 50, 20, 7, "#d8d8d4"); R(158, 66, 6, 6, INK); R(180, 66, 6, 6, INK);   // 白色轎車
   };
-  // 頂樓
-  SC.sch_roof = (o) => { const n = night(o);
-    sky(n ? "#0b0f1c" : "#8ab0d0", n ? "#2a3650" : "#e0e8ee", 60);
-    if (n) for (let i = 0; i < 30; i++) P((i * 47) % W, 30 + (i * 13) % 26, "#ffd98a");   // 港口的燈
-    else { R(0, 40, W, 20, "#6a8aa0"); for (let i = 0; i < 6; i++) R(10 + i * 30, 44, 18, 4, "#e9e4da"); }
-    R(10, 20, 40, 44, "#9aa0a6"); R(12, 18, 36, 4, "#b8bec4"); R(14, 30, 32, 1, "#7a8086"); R(14, 44, 32, 1, "#7a8086");   // 水塔
-    R(26, 74, 34, 3, "#8a6a4a"); R(28, 77, 2, 6, "#6a6a6a"); R(56, 77, 2, 6, "#6a6a6a");   // 長椅
-    if (!o.clean){ R(32, 70, 20, 5, "#c8b890"); R(34, 69, 16, 2, "#a8986a"); }   // 帆布包
-    R(96, 60, 96, 14, "#b8b4aa"); R(96, 60, 96, 2, "#d8d4ca");   // 女兒牆
-    if (!o.clean){ R(124, 70, 5, 3, "#1e1e22"); R(130, 70, 5, 3, "#1e1e22"); }   // 鞋子
-    R(122, 66, 14, 4, "#d0ccc2");   // 乾淨的長方形
-    R(172, 24, 2, 50, "#6a6a6a"); R(182, 24, 2, 50, "#6a6a6a"); for (let y = 26; y < 72; y += 6) R(172, y, 12, 1, "#6a6a6a"); R(170, 30, 16, 1, "#4a4a4a");   // 爬梯
-    R(0, 74, W, 34, "#a8a49a"); dust(0, 76, W, 30);
-    if (o.tape) OBJ.tape(96, 76, 96);
-    if (o.markers){ OBJ.marker(120, 80); OBJ.marker(140, 86); OBJ.marker(60, 90); }
+  // 振東建設車庫・警衛亭
+  SC.c6_booth = (o) => { wall(72, "#c8c4b4", false); R(0, 64, W, 8, "#8a8676");
+    R(18, 22, 26, 34, "#5a5e64"); R(20, 24, 22, 28, "#3a3e44"); for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++){ R(22 + c * 5, 26 + r * 8, 2, 4, "#c8a040"); } R(36, 50, 5, 3, "#3ae04a");   // 鑰匙櫃
+    R(58, 18, 34, 24, "#1a1a1e"); R(60, 20, 30, 20, o.nosig ? "#1a2a6a" : "#1a2a1a"); if (o.nosig) txt("NO SIGNAL", 61, 32, "#e8e8f0", "4px monospace"); else for (let k = 0; k < 4; k++) R(61 + (k % 2) * 15, 21 + Math.floor(k / 2) * 10, 13, 8, "#2a3a2a");   // 監視器主機
+    R(96, 40, 18, 12, "#2a2a2e"); R(97, 41, 16, 9, "#2a4a6a"); for (let k = 0; k < 3; k++) R(99, 43 + k * 2, 10, 1, "#9ad0f0");   // 車隊系統
+    R(128, 28, 24, 18, "#2a2a2e"); R(130, 30, 20, 14, "#3a6a3a"); R(136, 36, 8, 4, "#e8e8e0");   // 小電視（球場）
+    R(54, 60, 80, 3, "#7a6a54"); R(56, 63, 2, 11, "#5a4a3a"); R(130, 63, 2, 11, "#5a4a3a"); R(118, 54, 4, 6, "#7a4a2a");   // 桌子、保力達
+    windowBox(158, 30, 30, 26, "#2a3440"); R(162, 50, 22, 4, "#3a3a3e"); R(166, 50, 3, 2, "#c8c8c8"); P(170, 51, "#8a3a2a");   // 窗外的延長線
+    lamp(96, 0, "#f4f4e8"); floor(72, "#8a8676", "#7a7666");
   };
-  // 後中庭
-  SC.sch_yard = (o) => { const n = night(o);
-    R(0, 0, W, H, n ? "#1a1e28" : "#b8b8ac");
-    R(0, 0, 110, 70, n ? "#3a3a40" : "#d8d4c4"); for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) windowBox(8 + c * 26, 6 + r * 20, 16, 12, n ? (r === 2 ? "#3a3a28" : "#0e1424") : "#a8c0d0");   // 教學大樓背面
-    R(150, 10, 42, 60, n ? "#2a2a2e" : "#9a948a"); for (let i = 0; i < 6; i++) R(152 + (i % 3) * 13, 14 + Math.floor(i / 3) * 20, 10, 14, n ? "#1e1e22" : "#7a746a"); R(146, 40, 50, 30, n ? "#2a2826" : "#8a8478");   // 隔壁工地
-    R(110, 60, 40, 12, n ? "#3a3a3a" : "#8a8a80");
-    R(36, 66, 34, 10, "#3a6a3a"); for (let i = 0; i < 8; i++) P(38 + i * 4, 66 + (i % 3), "#d84a7a"); R(56, 68, 8, 4, "#2a4a2a");   // 杜鵑
-    R(0, 74, W, 34, n ? "#3a3a38" : "#9a9a90"); dither(0, 74, W, 34, n ? "#323230" : "#8a8a82", 4);
-    if (o.body){ R(76, 86, 34, 8, "#6a6e74"); R(108, 86, 8, 7, "#1e1a18"); R(70, 88, 7, 4, "#e8c09a"); R(70, 92, 7, 2, "#e8c09a"); R(86, 85, 6, 2, "#e8c09a"); P(90, 85, "#3ab0e0"); OBJ.blood(100, 92, 14); }
-    else if (o.outline){ OBJ.outline(80, 86); }
-    if (o.tape){ OBJ.tape(20, 80, 150); }
-    if (o.markers){ OBJ.marker(72, 96); OBJ.marker(96, 98); OBJ.marker(118, 94); OBJ.marker(58, 80); }
-    if (n) lamp(130, 0, "#f4e8a8");
+  // 范家・客廳
+  SC.c6_fan = (o) => { wall(72, "#e8e0d0", false); R(0, 64, W, 8, "#8a6a4a");
+    for (let k = 0; k < 6; k++) R(16 + (k % 3) * 12, 14 + Math.floor(k / 3) * 14, 10, 12, k === 4 ? "#c8b890" : "#d8b860"); R(42, 34, 10, 8, "#9ab0c0");   // 獎牌牆、小照片
+    R(64, 50, 56, 18, "#5a3a2a"); R(62, 46, 60, 6, "#6a4a32"); R(64, 66, 4, 8, "#3a2a1a"); R(116, 66, 4, 8, "#3a2a1a");   // 沙發
+    R(84, 70, 30, 3, "#c8a878"); R(108, 66, 4, 4, "#f4f0e0"); R(96, 67, 6, 2, "#1a1a1e");   // 茶几、解酒液、墨鏡
+    R(140, 10, 50, 40, "#c8c8c8"); R(142, 12, 46, 36, "#1a2430"); R(150, 20, 28, 18, "#1a1a1e"); R(152, 22, 24, 14, "#2a3a2a");   // 落地窗、監視器螢幕
+    lamp(96, 0, "#fff4e0"); floor(72, "#c8b8a0", "#b8a890");
   };
-  // 體育館
-  SC.sch_gym = (o) => {
-    R(0, 0, W, 74, "#c8b898"); for (let x = 0; x < W; x += 16) R(x, 0, 2, 74, "#b8a888"); R(0, 0, W, 6, "#8a7a5a");
-    for (let i = 0; i < 4; i++){ R(16 + i * 16, 12, 12, 18, ["#c23a2a", "#2a4a8a", "#c23a2a", "#c9a24a"][i]); R(18 + i * 16, 15, 8, 2, "#f4e8a8"); }
-    R(150, 14, 30, 20, "#f4f4ee"); R(152, 16, 26, 16, "#c8c8c8"); R(162, 34, 6, 20, "#6a6a6a"); R(160, 34, 10, 2, "#e86a2a");   // 籃框
-    R(100, 74, 92, 2, "#f4f4ee");
-    R(150, 60, 24, 14, "#6a6a62"); R(152, 58, 20, 3, "#4a4a42");   // 器材室門口的垃圾桶
-    R(0, 74, W, 34, "#c89a5a"); for (let x = 0; x < W; x += 12) R(x, 74, 1, 34, "#b88a4a"); R(0, 92, W, 1, "#f4f4ee"); R(96, 74, 1, 34, "#f4f4ee");
-    if (o.mat){ R(100, 84, 40, 6, "#5a8a9a"); R(142, 82, 4, 8, "#e8c040"); }
-    lamp(60, 0, "#f4f4e8"); lamp(130, 0, "#f4f4e8");
+  // 范家・司機的小房間
+  SC.c6_quarter = (o) => { wall(72, "#d8d4c8", false); R(0, 64, W, 8, "#7a7468");
+    R(40, 18, 16, 14, "#e8e0c8"); R(42, 20, 12, 10, "#9ab0c0"); R(46, 22, 4, 6, "#2a2a3a"); R(58, 20, 10, 14, "#f4f0e0"); R(60, 23, 6, 1, "#c23a2a");   // 照片、繳費單
+    R(130, 54, 50, 12, "#c8c0b0"); R(130, 52, 14, 4, "#f4f0f0");   // 床
+    R(108, 62, 8, 6, "#c8a040"); R(118, 64, 10, 4, "#f4f0e0"); R(118, 64, 10, 1, "#c8c8c8"); R(96, 68, 8, 6, "#2a2a30");   // 蠟、擦車布、雨鞋
+    lamp(90, 0, "#f8e8c8"); floor(72, "#8a8476", "#7a7466");
   };
-  // 2 樓走廊（監視器用）
-  SC.sch_hall = (o) => {
-    wall(74, "#e4e8e0", false); R(0, 66, W, 8, "#9aa094");
-    door(20, 40, 22, 34, "#6a7a8a"); R(22, 34, 18, 6, "#f4f4ee"); R(24, 36, 14, 2, "#3a3a3a");   // 導師室門
-    R(30, 56, 4, 6, "#2a2a2e"); P(31, 57, "#6fd46f");   // 刷卡機
-    for (let i = 0; i < 3; i++) windowBox(60 + i * 30, 20, 22, 20, "#1a2238");
-    R(160, 30, 32, 44, "#c8c4ba"); for (let i = 0; i < 6; i++) R(160 + i * 5, 74 - i * 7, 32 - i * 5, 2, "#a8a49a");   // 樓梯
-    lamp(96, 0, "#f4f4e8");
-    R(0, 74, W, 34, "#a8a89a"); dither(0, 74, W, 34, "#9a9a8c", 5);
+  // 范家車道（監視器畫面；s.wax＝擦車的位置）
+  SC.c6_drive = (o) => { const [s] = stOf(o), t = o.t || 0;
+    R(0, 0, W, H, "#1a1e24"); R(0, 0, W, 30, "#2a3038"); R(20, 20, 150, 4, "#4a4e54"); for (let x = 24; x < 170; x += 30) R(x, 24, 2, 50, "#4a4e54");   // 雨棚
+    floor(74, "#3a3e44", null);
+    if (s.car !== false){ R(60, 60, 64, 14, "#0e0e12"); R(72, 50, 40, 11, "#16161a"); R(74, 52, 16, 7, "#2a3440"); R(94, 52, 16, 7, "#2a3440"); R(64, 72, 10, 6, INK); R(110, 72, 10, 6, INK); P(84, 62, "#c8c8d0"); P(100, 64, "#c8c8d0"); }   // 黑色轎車
+    rain(t, 40, "#5a6a80", 0, 0, 20, H); rain(t, 40, "#5a6a80", 172, 0, 20, H);
+    txt("CAM 大門", 4, 7, "#f4f4f4", "5px monospace");
   };
-  // 操場（監視器用）
-  SC.sch_field = (o) => {
-    sky("#0b0f1c", "#1a2236", 50);
-    R(0, 50, W, 24, "#2a3a2a"); R(0, 74, W, 34, "#6a3a2a"); for (let i = 0; i < 4; i++) R(0, 78 + i * 7, W, 1, "#e9e4da");
-    if (o.bikes){ R(0, 40, W, 34, "#3a3a3e"); R(0, 38, W, 3, "#5a5a5e"); for (let i = 0; i < 6; i++){ R(10 + i * 30, 62, 20, 8, i === 2 ? "#e9e4da" : ["#c23a2a", "#2a4a8a", "#3a3a3a"][i % 3]); R(12 + i * 30, 70, 4, 4, "#1e1e1e"); R(24 + i * 30, 70, 4, 4, "#1e1e1e"); } R(73, 56, 6, 5, "#e8c040"); }
-    if (!o.bikes){ R(120, 92, 8, 4, "#1e1e22"); R(127, 90, 3, 3, "#1e1e22"); P(127, 89, "#1e1e22"); P(129, 89, "#1e1e22"); R(118, 91, 2, 1, "#1e1e22"); P(128, 91, "#e8c040"); }   // 黑貓
-    lamp(100, 0, "#f4e8a8");
+  // 海灣一號・工務所
+  SC.c6_office = (o) => { wall(72, "#d8dce0", false); R(0, 64, W, 8, "#7a8088");
+    R(0, 20, 14, 54, "#5a5e64"); R(2, 22, 10, 52, "#2a3038"); for (let k = 0; k < 4; k++) R(0, 26 + k * 2, 14, 1, "#8a7a64");   // 門框（撞凹）
+    R(50, 22, 14, 26, "#24324e"); R(50, 30, 14, 1, "#e8e8e0"); R(66, 22, 6, 30, "#3a4a6a"); R(66, 48, 6, 1, "#e8e8e0");   // 外套、雨褲
+    R(90, 62, 60, 3, "#8a7a64"); R(92, 65, 2, 9, "#5a4a3a"); R(146, 65, 2, 9, "#5a4a3a"); R(110, 56, 20, 6, "#2a5a8a"); R(112, 57, 16, 1, "#f4f0e0");   // 桌、資料夾
+    R(150, 30, 26, 44, "#8a8e94"); for (let k = 0; k < 4; k++) R(152, 32 + k * 10, 22, 1, "#5a5e64");   // 檔案櫃
+    R(20, 76, 20, 8, "#3a3020"); R(22, 74, 6, 4, "#3a3020"); R(32, 74, 6, 4, "#3a3020"); P(24, 81, "#8a3a2a");   // 工地鞋
+    R(16, 50, 10, 12, "#6a6e74"); R(18, 52, 6, 4, "#3a3e44");   // 水表箱
+    R(100, 14, 40, 26, "#f4f4f0"); for (let k = 0; k < 5; k++) R(104, 18 + k * 4, 30, 1, "#3a3a3a");   // 白板
+    lamp(110, 0, "#f4f4e8"); floor(72, "#9a9a92", "#8a8a82");
   };
-  // 補習班教室
-  SC.cramroom = (o) => {
-    wall(72, "#f4f4ee", false); R(0, 64, W, 8, "#8a8a82");
-    R(30, 8, 130, 40, "#f8f8f8"); R(28, 6, 134, 2, "#8a8a8a"); for (let i = 0; i < 6; i++) R(36 + (i % 3) * 40, 14 + Math.floor(i / 3) * 14, 30, 1, "#2a4a8a"); R(110, 30, 30, 10, "#c23a2a");
-    R(10, 10, 16, 30, "#2a6ab8"); R(12, 14, 12, 4, "#e9e4da"); R(12, 22, 12, 12, "#e9e4da");
-    OBJ.desk(92, 62, 40); R(110, 56, 8, 6, "#2a3a6a");
-    floor(72, "#d8d0c0", "#c8c0b0");
-    for (let c = 0; c < 6; c++) studentDesk(4 + c * 32, 84, "#e8e4d8");
+  // 海灣一號・鷹架下
+  SC.c6_scaf = (o) => { PR.sky("#9cc5e6", "#e8f0f4", 70);
+    R(60, 0, 100, 74, "#b8b4ac"); for (let y = 2; y < 74; y += 8) R(56, y, 108, 1, "#6a6a6a"); for (let x = 56; x < 166; x += 12) R(x, 0, 1, 74, "#6a6a6a");   // 大樓、鷹架
+    dither(56, 0, 108, 60, "#3a8a4a", 2);   // 綠網
+    R(110, 22, 6, 4, "#f4f4f0");   // 吊牌
+    R(150, 34, 30, 22, "#2a5a8a"); R(152, 36, 26, 18, "#f4f4f0"); txt("267", 156, 50, "#c23a2a", "7px monospace");   // 無災害看板
+    floor(74, "#a85a3a", null); dither(0, 74, W, 34, "#8a4a2a", 3);   // 紅土
+    R(28, 62, 22, 12, "#8a2a1a"); R(30, 58, 18, 5, "#a83a2a"); R(36, 64, 6, 6, "#f4f0e0"); R(44, 66, 4, 6, "#f4f4f4");   // 神龕、百合
   };
-  // 北澳漁村・蔡家
-  SC.caihome = (o) => {
-    sky("#8ab0d0", "#e0e8ee", 30);
-    R(0, 30, W, 10, "#3a6a9a"); for (let x = 0; x < W; x += 6) R(x, 33 + (x % 5), 4, 1, "#6a9aca");
-    R(0, 40, W, 34, "#b8ac90"); for (let i = 0; i < 4; i++){ R(i * 50 - 10, 44, 30, 30, ["#c8c0b0", "#a8b0b8", "#d0c4a8", "#b8b0a0"][i]); R(i * 50 - 12, 41, 34, 4, "#5a6a7a"); }
-    R(60, 20, 110, 54, "#c8b8a0"); R(56, 16, 118, 6, "#5a6a7a"); for (let x = 56; x < 174; x += 8) R(x, 16, 1, 6, "#4a5a6a");
-    door(120, 40, 22, 34, "#3a6a8a"); for (let i = 0; i < 5; i++) R(120 + i * 5, 40, 3, 30, ["#e8c040", "#c23a2a", "#3a8a6a", "#e8c040", "#2a6ab8"][i]);   // 門簾
-    windowBox(72, 36, 26, 18, "#a8c8e0");
-    R(4, 66, 50, 8, "#3a6a5a"); for (let i = 0; i < 12; i++) P(6 + i * 4, 64 + (i % 3), "#5a8a7a"); R(20, 60, 8, 6, "#e86a2a");   // 漁網、浮標
-    R(0, 74, W, 34, "#a89a7a"); dither(0, 74, W, 34, "#98896a", 4);
+  // 海灣一號・抽水機房
+  SC.c6_pump = (o) => { wall(72, "#6a6e70", false); R(0, 64, W, 8, "#4a4e50");
+    for (let k = 0; k < 3; k++) R(0, 10 + k * 14, W, 4, "#8a8e90");   // 管線
+    R(80, 26, 34, 36, "#d8dcd8"); R(84, 30, 26, 14, "#1a2a1a"); for (let k = 0; k < 4; k++) R(86, 32 + k * 3, 20, 1, "#6fd46f"); R(86, 48, 5, 5, "#3ae04a"); R(96, 48, 5, 5, "#e04a3a");   // 控制盤
+    R(20, 70, 44, 14, "#1a2a3a"); dither(20, 70, 44, 14, "#3a5a7a", 2); R(20, 70, 44, 1, "#9ab0c0");   // 集水坑
+    R(140, 40, 20, 34, "#5a6a7a"); R(144, 30, 12, 10, "#5a6a7a");   // 抽水機
+    lamp(96, 0, "#e8f0e8"); floor(72, "#5a5e60", "#4e5254");
+  };
+  // 陳家
+  SC.c6_mei = (o) => { wall(72, "#d8c8a8", true); R(0, 64, W, 8, "#7a6a54");
+    R(18, 40, 36, 34, "#8a2a1a"); R(20, 24, 32, 18, "#6a1a10"); R(28, 26, 12, 12, "#e8e0c8"); R(30, 28, 8, 8, "#9ab0c0"); R(42, 34, 8, 6, "#f2c94c"); R(24, 22, 2, 4, "#e04a3a"); R(46, 22, 2, 4, "#e04a3a");   // 神明桌
+    for (let k = 0; k < 6; k++){ const x = 140 + (k % 3) * 16, y = 14 + Math.floor(k / 3) * 18; R(x, y, 14, 16, "#f4f0e0"); R(x + 6, y + 3, 2, 10, "#e8b830"); R(x + 5, y + 2, 4, 2, "#f2c94c"); }   // 長頸鹿的畫
+    R(96, 62, 46, 3, "#a8845a"); R(98, 65, 2, 9, "#7a5a3a"); R(138, 65, 2, 9, "#7a5a3a"); R(110, 58, 18, 4, "#f4f0e0"); R(112, 59, 12, 1, "#3a3a3a");   // 桌上的和解書
+    lamp(96, 0, "#f8e8c0"); floor(72, "#a89a84", "#9a8c76");
+  };
+  // 安全帽攝影機的畫面（POV）：s.v＝畫面種類 ride/hit/ditch/gone；s.suv＝避車彎那台車往後退的位置；s.legs、s.beam；s.lit
+  SC.c6_helmet = (o) => { const [s, p] = stOf(o), t = o.t || 0, v = s.v || "ride";
+    if (v === "ride" || v === "hit"){
+      R(0, 0, W, H, "#0a0e16"); R(0, 52, W, 56, "#1a1e24");
+      const g = PR.g(); g.fillStyle = "#24282e"; g.beginPath(); g.moveTo(40, H); g.lineTo(90, 52); g.lineTo(102, 52); g.lineTo(170, H); g.fill();   // 路
+      g.fillStyle = "rgba(255,240,190,.20)"; g.beginPath(); g.moveTo(60, H); g.lineTo(92, 56); g.lineTo(100, 56); g.lineTo(150, H); g.fill();   // 大燈照的路面
+      for (let k = 0; k < 4; k++){ const y = 60 + ((k * 14 + Math.floor(t * 40)) % 48); R(95 - (y - 52) * 0.05, y, 2, 3 + (y - 52) / 10, "#c8b860"); }
+      for (let x = 130; x < W; x += 2) P(x, 50 + (x - 130) * 0.3, "#c8ccd0");   // 右邊的護欄
+      const sx = s.suv === undefined ? null : kf(s.suv, p); if (sx !== null){ R(sx, 58 - (sx < 30 ? 6 : 0), 26, 12, "#3a3e44"); R(sx + 4, 54 - (sx < 30 ? 6 : 0), 16, 6, "#2a2e34"); R(sx + 6, 55 - (sx < 30 ? 6 : 0), 5, 4, "#1a2028"); }   // 避車彎的車
+      rain(t, 90, "#7a90a8");
+      if (v === "hit"){ R(0, 0, Math.round(80 * p), H, "#08080a"); PR.g().fillStyle = "rgba(255,255,255," + (0.6 * (1 - p)) + ")"; PR.g().fillRect(0, 0, W, H); }
+    } else if (v === "ditch"){
+      R(0, 0, W, H, "#06080c"); for (let x = 0; x < W; x += 2) P(x, 40 + Math.round(Math.sin(x / 9) * 2), "#5a6068"); R(0, 30, W, 4, "#8a9096");   // 往上看的護欄
+      R(0, 80, W, 28, "#0e1620"); dither(0, 80, W, 28, "#2a4a6a", 3); for (let x = 0; x < W; x += 6) R(x, 76, 3, 32, "#2a2e34");   // 水、格柵
+      const lx = s.legs === undefined ? null : kf(s.legs, p); if (lx !== null){ R(lx, 0, 10, 60, "#1e2a3e"); R(lx + 14, 0, 10, 60, "#1e2a3e"); R(lx, 54, 10, 2, "#e8e8d0"); R(lx + 14, 54, 10, 2, "#e8e8d0"); R(lx - 3, 60, 14, 6, "#3a3020"); R(lx + 15, 60, 14, 6, "#3a3020"); }   // 雨褲反光條、工地鞋（外八）
+      const bx = s.beam === undefined ? null : kf(s.beam, p); if (bx !== null){ const g = PR.g(); g.fillStyle = "rgba(255,250,220,.35)"; g.beginPath(); g.moveTo(bx, 0); g.lineTo(bx - 30, H); g.lineTo(bx + 30, H); g.fill(); }
+      if (s.lit){ PR.g().fillStyle = "rgba(255,240,190," + (0.4 * (1 - p)) + ")"; PR.g().fillRect(0, 0, W, 40); }
+      rain(t, 60, "#5a7088");
+    }
+    txt("HELMET CAM", 4, 7, "#f4f4f4", "5px monospace"); R(180, 3, 4, 4, "#e04a3a");
+  };
+  // 案發經過重現：側面（左邊車庫，中間濱海路的避車彎，右邊彎道、護欄、水溝）
+  SC.c6_cut = (o) => { const [s, p] = stOf(o), t = o.t || 0;
+    PR.sky("#0a0f1c", "#1c2636", 70); R(0, 50, W, 20, "#14222e");
+    R(0, 30, 44, 44, "#4a4e52"); R(2, 34, 40, 28, "#2a2e32"); R(28, 54, 10, 6, "#5a5e64"); txt("車庫", 4, 40, "#9a9a92", "5px sans-serif");   // 車庫
+    if (s.cam === false){ R(30, 46, 4, 3, "#1a1a1a"); } else { R(30, 46, 4, 3, "#e04a3a"); }
+    R(66, 40, 4, 34, "#4a3a2a"); for (let k = 0; k < 6; k++) R(56 + (k * 7) % 26, 30 + (k * 5) % 12, 10, 4, "#1a2a1e");   // 木麻黃
+    R(150, 34, 2, 40, "#6a6a6e"); R(146, 34, 10, 10, "#e85a2a"); guard(68, 150, W);
+    floor(76, "#262a30", null); R(60, 76, 70, 4, "#2e2a26");   // 路、避車彎
+    R(160, 92, 32, 8, "#1a2028"); for (let x = 162; x < 192; x += 4) R(x, 92, 2, 8, "#5a5e64");   // 水溝
+    const vx = s.suv === undefined ? null : kf(s.suv, p); if (vx !== null) suv(vx, 58, s.face || 1, s.dmg, s.lit);
+    const kx = s.sc === undefined ? null : kf(s.sc, p); if (kx !== null) scooter(kx, 62, 1, true, s.crash);
+    if (s.flash){ PR.g().fillStyle = "rgba(255,255,255,.35)"; PR.g().fillRect(120, 40, 72, 50); }
+    rain(t, 70, "#7a90a8");
+    R(0, 98, W, 10, "#3a3a40");
   };
 
   /* ---------- 人物造型 ---------- */
   const LOOK = {
-    xiao: { age:"old", skin:"#d8a880", hair:"#8a8a84", hairStyle:"slick", top:"#e9e4da", coat:"#3a3028", bottom:"#3a3028", tie:"#7a1e24", glasses:true, hello:"警官，這件事對學校的傷害已經夠大了。",
-            byPhase:{ 1:{ tie:"#2a3a6a", mood:"worried" }, 2:{ coat:"#1e1e22", bottom:"#1e1e22", tie:"#1e1e22", mood:"worried" } } },
-    zheng:{ skin:"#c99a6e", hair:"#1a1410", hairStyle:"short", top:"#c23a2a", bottom:"#1e1e22", hello:"我很忙，球隊下禮拜比賽。",
-            byPhase:{ 2:{ top:"#2a2a2e", coat:"#1e1e22", mood:"angry" } } },
-    yang: { age:"old", skin:"#d0a080", hair:"#c8c8c0", hairStyle:"short", top:"#2a3a5a", bottom:"#2a3a5a", hat:"cap", capColor:"#2a3a5a", mood:"worried", hello:"……是我發現她的。",
-            byPhase:{ 1:{ hat:null, mood:"tired" }, 2:{ hat:null, mood:"sad" } } },
-    ting: { skin:"#f4d4bc", hair:"#1e1a18", hairStyle:"long", top:"#f4f4ee", bottom:"#2a3a6a", skirt:true, mood:"sad", hello:"……老師她……",
-            byPhase:{ 1:{ mood:"sad", tear:true } } },
-    wang: { skin:"#f0c8a8", hair:"#3a2a20", hairStyle:"bob", top:"#c8b8d8", coat:"#4a4a5a", bottom:"#4a4a5a", skirt:true, glasses:true, mood:"worried", hello:"媒體的事，我會處理。" },
-    sis:  { skin:"#f0c8a8", hair:"#2a2220", hairStyle:"bob", top:"#a8c8d8", bottom:"#3a3a4a", mood:"sad", tear:true, hello:"……她出門前，還幫布丁倒了飼料。",
-            byPhase:{ 2:{ top:"#1e1e22" } } },
-    chen: { skin:"#e0b48c", hair:"#2a2220", hairStyle:"short", top:"#e9e4da", bottom:"#3a4050", glasses:true, mood:"sad", hello:"……我那天不該傳那則訊息。" },
-    cai:  { skin:"#f4d4bc", hair:"#1e1a18", hairStyle:"bob", top:"#e8f0f8", bottom:"#3a5a8a", skirt:true, mood:"worried", hello:"……" },
-    doc:  { skin:"#f0d0b4", hair:"#3a2a20", hairStyle:"long", top:"#f4f4f0", coat:"#f4f6f6", bottom:"#5a5a6a", hello:"請坐。" },
-    he:   { skin:"#e8c09a", hair:"#2a2220", hairStyle:"short", top:"#8a9a8a", coat:"#5a5a4a", bottom:"#3a3a30", glasses:true, hello:"沈警官？可以借一步說話嗎？" },
-    qian: { age:"old", skin:"#d8a880", hair:"#d8d8d0", hairStyle:"short", top:"#f4f6f6", coat:"#f4f6f6", bottom:"#4a4a52", glasses:true, hello:"來啦。她不會跑，你慢慢看。" },
-    zhou: { age:"old", skin:"#d8a880", hair:"#6a6a66", hairStyle:"slick", top:"#e9e4da", coat:"#3a3f4a", bottom:"#2a2f3a", hello:"說重點。" },
-    ye:   { skin:"#f0d0b4", hair:"#1e1a18", hairStyle:"long", top:"#f4f4f0", coat:"#6a6e74", bottom:"#6a6e74", skirt:true, hello:"程序要對。說吧。" },
-    wu:   { skin:"#e8c09a", hair:"#2a2a2a", hairStyle:"short", top:"#f4f6f6", coat:"#f4f6f6", bottom:"#3a4050", glasses:true, hello:"要驗什麼，交給我。" }
+    li:     { skin:"#c89a70", hair:"#1a1410", hairStyle:"short", top:"#24324e", bottom:"#3a3a30", hat:"cap", capColor:"#f2c94c", mood:"worried", tall:true, hello:"柯建宏？……可惜了，那孩子人不錯。" },
+    kai:    { skin:"#f0d0b4", hair:"#2a1e18", hairStyle:"slick", top:"#e8e0f0", bottom:"#2a2a3a", sunglasses:true, mood:"tired", hello:"我喝到斷片了，什麼都不記得……",
+              byPhase:{ 2:{ sunglasses:false, mood:"sad" } } },
+    dong:   { age:"old", skin:"#e8c09a", hair:"#c8c8c8", hairStyle:"slick", top:"#e9e4da", coat:"#2a2a30", bottom:"#2a2a30", glasses:true, hello:"我的人做錯事，我會負責。" },
+    zhuang: { skin:"#c89a70", hair:"#8a8a8a", hairStyle:"short", top:"#e9e4da", bottom:"#2a2a3a", mood:"sad", hello:"是我撞的。我認。" },
+    qi:     { skin:"#f4d4bc", hair:"#1e1a18", hairStyle:"pony", top:"#e86a3a", bottom:"#2a3a5a", apron:"#2f8a4a", mood:"cry", hello:"他說會買鹹酥雞回來……",
+              byPhase:{ 1:{ apron:null, top:"#2a2a30", mood:"sad" }, 2:{ apron:null, top:"#2a2a30", mood:"sad" } } },
+    hong:   { age:"old", skin:"#b88a60", hair:"#d8d8d0", hairStyle:"balding", top:"#3a5a3a", bottom:"#3a3a30", hat:"cap", capColor:"#2a4a2a", hello:"碰的一聲，我魚竿都丟了。" },
+    bin:    { skin:"#d8a880", hair:"#5a5a5a", hairStyle:"short", top:"#3a4a6a", bottom:"#2a3a5a", hat:"cap", capColor:"#2a3a5a", mood:"worried", hello:"我、我整晚都有巡啦。" },
+    mei:    { skin:"#e8c09a", hair:"#2a2220", hairStyle:"bun", top:"#5a5a6a", bottom:"#2a2a30", mood:"sad", hello:"阿宏他……又一個。" },
+    he:     { skin:"#e8c09a", hair:"#2a2220", hairStyle:"short", top:"#8a9a8a", coat:"#5a5a4a", bottom:"#3a3a30", glasses:true, hello:"他說今天要給我看一樣東西。他沒來。" },
+    qian:   { age:"old", skin:"#d8a880", hair:"#d8d8d0", hairStyle:"short", top:"#f4f6f6", coat:"#f4f6f6", bottom:"#4a4a52", glasses:true, hello:"下雨天，什麼都被沖掉了。" },
+    wu:     { skin:"#e8c09a", hair:"#2a2a2a", hairStyle:"short", top:"#f4f6f6", coat:"#f4f6f6", bottom:"#3a4050", glasses:true, hello:"學長，他的手機不見了。" },
+    ye:     { skin:"#f0d0b4", hair:"#1e1a18", hairStyle:"long", top:"#f4f4f0", coat:"#6a6e74", bottom:"#6a6e74", skirt:true, hello:"給我理由。" },
+    zhou:   { age:"old", skin:"#d8a880", hair:"#6a6a66", hairStyle:"slick", top:"#e9e4da", coat:"#3a3f4a", bottom:"#2a2f3a", hello:"局長一早就打給我了。" }
   };
   ["qian","zhou","ye","he","wu"].forEach(id => { const a = (typeof ARC !== "undefined" && ARC.look) ? ARC.look(id) : null; if (a) LOOK[id] = Object.assign({}, a, { hello:LOOK[id].hello }); });
   const DAILY = {
-    xiao: [ { room:"soffice", x:100, pose:"phone", doing:"在校長室講電話，聲音壓得很低。" }, { room:"soffice", x:100, pose:"read", doing:"在校長室改記者會的講稿。" }, { room:"soffice", x:100, pose:"cross", doing:"在校長室走來走去，看了好幾次錶。" } ],
-    zheng:[ null, { room:"sgym", x:120, pose:"cross", doing:"在體育館盯著球員練球，吼得比平常大聲。" }, { room:"sstaff", x:140, pose:"phone", doing:"在導師室講電話：「叔，記者一直在問……」" } ],
-    yang: [ { room:"sgate", x:90, pose:"sit", doing:"坐在警衛室，手一直在抖。" }, { room:"sgate", x:90, pose:"sit", doing:"一夜沒睡，坐在警衛室盯著監視器。" }, { room:"sgate", x:90, pose:"stand", doing:"站在警衛室門口，看著禮堂的方向。" } ],
-    ting: [ { room:"sgate", x:150, pose:"cry", doing:"在警衛室等媽媽來接，一直在哭。" }, { room:"sclass", x:150, pose:"sit", doing:"一個人坐在教室最後一排，那張空桌子旁邊。" } ],
-    wang: [ { room:"soffice", x:40, pose:"phone", doing:"在行政大樓講電話安撫家長。" }, { room:"soffice", x:40, pose:"write", doing:"在行政大樓寫家長通知單，寫了又揉掉。" }, { room:"soffice", x:40, pose:"stand", doing:"站在行政大樓的窗邊發呆。" } ],
-    sis:  [ null, { room:"lroom", x:120, pose:"cry", doing:"抱著橘貓坐在妹妹的沙發上。" }, { room:"lroom", x:120, pose:"sit", doing:"在整理妹妹的衣服，一件一件摺好。" } ],
-    chen: [ null, { room:"cramroom", x:110, pose:"sit", doing:"坐在空教室的講台上，看著一個戒指盒。" } ],
-    cai:  [ null, { room:"croom", x:140, pose:"sit", doing:"坐在門簾後面，抱著膝蓋。" } ],
-    doc:  [ null, { room:"clroom", x:120, pose:"sit", doing:"在診間看病歷。" } ],
-    he:   [ null, { room:"sgate", x:40, pose:"write", doing:"站在校門口，在筆記本上寫東西。" } ],
-    qian: [ { room:"syard", x:60, pose:"kneel", doing:"蹲在梁老師旁邊檢查。" }, { x:60, pose:"stand", doing:"在解剖台旁邊寫報告。" } ],
-    zhou: [ null, { room:"pdesk", x:140, pose:"phone", doing:"在辦公室講電話，眉頭皺得很緊。" } ],
-    ye:   [ null, { room:"pdesk", x:60, pose:"read", doing:"在看卷宗。" } ],
-    wu:   [ { room:"sroof", x:90, pose:"kneel", doing:"蹲在頂樓，用手電筒照地上的灰。" }, { x:100, pose:"stand", doing:"在實驗台前盯著電腦。" } ]
+    li:     [ null, { room:"soffice", x:120, pose:"sit", doing:"坐在工務所的桌子前面，翻著施工日誌。" }, { room:"soffice", x:90, pose:"smoke", doing:"站在工務所門口抽菸，看著濱海路那邊。" } ],
+    kai:    [ null, { room:"fliving", x:90, pose:"sit", doing:"窩在沙發上，墨鏡沒拿下來，一直喝解酒液。" }, { room:"fliving", x:100, pose:"stand", doing:"站在落地窗前面，看著車道。" } ],
+    dong:   [ null, { room:"fliving", x:130, pose:"phone", doing:"在客廳講電話，聲音很平靜。" }, { room:"fliving", x:60, pose:"cross", doing:"站在獎牌牆前面，雙手抱胸。" } ],
+    zhuang: [ null, { room:"pdesk", x:140, pose:"sit", doing:"坐在偵訊室裡，兩手放在桌上。" }, { room:"pdesk", x:140, pose:"sit", doing:"在偵訊室，一夜沒睡，一直看著自己的手。" } ],
+    qi:     [ { room:"kliving", x:120, pose:"cry", doing:"坐在餐桌旁邊，看著那兩副碗筷。" }, { room:"kroom", x:90, pose:"stand", doing:"站在哥哥的房間門口，沒有走進去。" }, { room:"kliving", x:80, pose:"sit", doing:"抱著哥哥的外送外套坐在沙發上。" } ],
+    hong:   [ { room:"rbank", x:130, pose:"stand", doing:"站在堤防上，雨衣一直在滴水。" }, { room:"rbank", x:120, pose:"stand", doing:"又來釣魚了，竿子架著，一直往彎道那邊看。" } ],
+    bin:    [ null, { room:"gbooth", x:100, pose:"stand", doing:"站在警衛亭裡，一直搓手。" }, { room:"gbooth", x:110, pose:"sit", doing:"坐在警衛亭，電視關著。" } ],
+    mei:    [ null, { room:"mroom", x:80, pose:"sit", doing:"坐在神明桌前面摺紙蓮花。" }, { room:"mroom", x:100, pose:"stand", doing:"在給女兒的便當盒裝飯。" } ],
+    he:     [ null, { room:"pdesk", x:40, pose:"write", doing:"坐在刑大門口的長椅上，一直在寫筆記。" }, { room:"pdesk", x:40, pose:"phone", doing:"在走廊講電話：「這篇我要自己寫。」" } ],
+    qian:   [ { room:"rcurve", x:110, pose:"kneel", doing:"蹲在柯建宏旁邊，雨水從帽簷一直滴下來。" }, { x:60, pose:"stand", doing:"在解剖台旁邊寫報告。" } ],
+    wu:     [ { room:"rcurve", x:80, pose:"kneel", doing:"打著手電筒，蹲在路上撿碎片。" }, { x:110, pose:"stand", doing:"在實驗台前，用吹風機烘一台小小的攝影機。" } ],
+    ye:     [ null, { room:"pdesk", x:60, pose:"read", doing:"在看莊文福的筆錄。" }, { room:"pdesk", x:60, pose:"read", doing:"看著牆上的時鐘，在等你。" } ],
+    zhou:   [ null, { room:"pdesk", x:170, pose:"phone", doing:"在講電話，眉頭皺得很緊。" } ]
   };
   EP6.suspects.forEach(s => {
     if (LOOK[s.id]){ s.hello = LOOK[s.id].hello; const L = Object.assign({}, LOOK[s.id]); delete L.hello; s.look = L; }
@@ -206,186 +247,173 @@ EP6.art = true;
   });
   const L0 = id => { const L = Object.assign({}, LOOK[id]); delete L.hello; delete L.byPhase; return L; };
   EP6.looks = {
-    liangL: { skin:"#f0c8a8", hair:"#2a2220", hairStyle:"pony", top:"#e9e4da", coat:"#6a6e74", bottom:"#6a6e74", skirt:true },
-    liangB: { skin:"#f0c8a8", hair:"#2a2220", hairStyle:"pony", top:"#e9e4da", coat:"#6a6e74", bottom:"#6a6e74", skirt:true, prop:"bag" },
-    xiaoL: L0("xiao"), yangL: L0("yang"), zhengL: L0("zheng"), tingL: L0("ting"), chenL: L0("chen"),
-    zhengHood: { skin:"#c99a6e", hair:"#1e1e22", hairStyle:"short", top:"#1e1e22", coat:"#1e1e22", bottom:"#1e1e22", hood:"#1e1e22" },
-    stu1: { skin:"#f4d4bc", hair:"#1e1a18", hairStyle:"short", top:"#c23a2a", bottom:"#1e1e22" },
-    stu2: { skin:"#e8c09a", hair:"#1e1a18", hairStyle:"short", top:"#2a4a8a", bottom:"#1e1e22" },
-    stu3: { skin:"#f4d4bc", hair:"#1e1a18", hairStyle:"long", top:"#f4f4ee", bottom:"#2a3a6a", skirt:true }
+    zhuangL: Object.assign(L0("zhuang"), { top:"#3a3a40" }),
+    liC: Object.assign(L0("li"), { top:"#24324e", bottom:"#24324e", hood:"#24324e", hat:null }),
+    koC: { skin:"#e8c09a", hair:"#1a1410", hairStyle:"short", top:"#2f8a4a", bottom:"#2f8a4a", hat:"helmet", capColor:"#f2c94c" },
+    binC: L0("bin"), hongC: L0("hong")
   };
 
   /* ---------- 房間和隱藏小細節 ---------- */
   EP6.rooms = {
-    school: [
-      { id:"sgate", name:"校門・警衛室", scene:"sch_gate", details:[
-        { id:"d6_sign", name:"值班表", hot:[56,56,24,10], text:"值班表上，楊文雄下個月就排到最後一班——他六月退休。" } ] },
-      { id:"soffice", name:"行政大樓・校長室", scene:"sch_office", details:[
-        { id:"d6_tie", name:"衣帽架", hot:[176,10,14,40], text:"衣帽架上掛著一條備用的領帶，還有一件深色西裝外套，是記者會要穿的。" } ] },
-      { id:"sstaff", name:"2 樓導師室", scene:"sch_staff", details:[
-        { id:"d6_board", name:"行事曆白板", hot:[4,12,40,26], text:"白板上寫著：「5/20 7 班家長日（梁）」。她的名字旁邊畫了一個小笑臉。" } ] },
-      { id:"sclass", name:"3 樓高二 7 班", scene:"sch_class", details:[
-        { id:"d6_pencil", name:"講桌上的粉筆", hot:[80,40,30,6], text:"粉筆盒裡，每一支粉筆都被排得整整齊齊。學生說，老師最受不了亂七八糟。" } ] },
-      { id:"sstair", name:"樓梯間・頂樓門", scene:"sch_stair", details:[
-        { id:"d6_rail", name:"扶手", hot:[58,40,100,50], text:"扶手被摸得發亮。最上面幾階的灰塵上，有一串很淺的平底鞋印。" } ] },
-      { id:"sroof", name:"頂樓", scene:"sch_roof", opt:(ph,has)=>({ tape:true, markers:ph===0, clean:ph>0 }), details:[
-        { id:"d6_star", name:"夜空", hot:[0,0,100,30], text:"港口的燈一盞一盞亮著。風很大，吹得人站不穩。" } ] },
-      { id:"syard", name:"後中庭", scene:"sch_yard", opt:(ph,has)=>({ body:ph===0, outline:ph>0, tape:true, markers:ph===0 }), details:[
-        { id:"d6_gum", name:"牆角", hot:[0,90,30,18], text:"牆角有好幾個菸蒂。保全說，這裡是老師們偷偷抽菸的地方——梁老師不抽菸。" } ] },
-      { id:"sgym", name:"體育館", scene:"sch_gym", opt:(ph,has)=>({ mat:ph>0 }), details:[
-        { id:"d6_shoe", name:"場邊的球鞋", hot:[20,86,30,10], text:"場邊一雙球鞋，鞋舌上寫著「經理」兩個字，已經很舊了。" } ] }
+    road: [
+      { id:"rcurve", name:"彎道・護欄", scene:"c6_curve", outdoor:true, opt:(ph) => ({ day:ph > 0, mark:ph === 0, clean:ph > 0, body:ph === 0 }), details:[
+        { id:"d6_cone", name:"路邊的三角錐", hot:[60,80,8,10], text:"派出所擺的三角錐被風吹倒了兩次。值班的員警第三次把它扶起來，壓了一塊石頭。" } ] },
+      { id:"rturn", name:"避車彎", scene:"c6_turn", outdoor:true, opt:(ph) => ({ day:ph > 0 }), details:[
+        { id:"d6_cans", name:"草叢裡", hot:[100,70,14,6], text:"草叢裡有幾個舊的飲料罐，褪色褪得看不出牌子——這裡平常是情侶停車看海的地方。" } ] },
+      { id:"rbank", name:"堤防", scene:"c6_bank", outdoor:true, opt:(ph) => ({ day:ph > 0 }), details:[
+        { id:"d6_crab", name:"消波塊縫裡", hot:[10,60,20,8], text:"消波塊的縫裡，一隻小螃蟹被手電筒照到，橫著跑進更深的縫裡。" } ] }
     ],
-    police: [ { id:"pdesk", name:"刑大辦公室", scene:"police", details:[
-      { id:"d6_coffee", name:"咖啡杯", hot:[150,58,12,8], text:"你的咖啡杯上貼著小吳寫的便條：「學長，記得吃飯」。" } ] } ],
-    lab: [ { id:"lab", name:"法醫室・鑑識中心", scene:"lab", details:[
-      { id:"d6_radio", name:"收音機", hot:[110,40,20,12], text:"老錢的收音機永遠在放老歌，他說死人比較喜歡聽這個。" } ] } ],
-    liangapt: [ { id:"lroom", name:"梁靜儀的家", scene:"apt6", details:[
-      { id:"d6_plant", name:"陽台的花", hot:[160,20,30,40], text:"陽台上的九層塔剛澆過水，土還是濕的——是姐姐澆的。" } ] } ],
-    cram: [ { id:"cramroom", name:"柏宇數學・教室", scene:"cramroom", details:[
-      { id:"d6_rank", name:"榜單", hot:[10,10,16,30], text:"牆上的金榜：「賀　台大醫科　林○○」。陳柏宇說，那是梁老師以前的學生，介紹來補習的。" } ] } ],
-    caihome: [ { id:"croom", name:"蔡家門口", scene:"caihome", details:[
-      { id:"d6_float", name:"浮標", hot:[16,58,20,10], text:"門口堆著橘色的浮標。宜蓁說，外公以前是船長。" } ] } ],
-    clinic: [ { id:"clroom", name:"心晴身心科・候診室", scene:"hospital", details:[
-      { id:"d6_tissue", name:"面紙盒", hot:[100,56,16,10], text:"每張椅子旁邊都放著一盒面紙。" } ] } ]
+    kohome: [
+      { id:"kliving", name:"柯家・客廳", scene:"c6_ko", details:[
+        { id:"d6_shoes", name:"門口的鞋櫃", hot:[150,60,20,12], text:"鞋櫃上擺著一雙還沒拆標籤的女用球鞋，盒子上貼著便利貼：「雅琪　生日快樂　哥」。她的生日是下個禮拜。" } ] },
+      { id:"kroom", name:"阿宏的房間", scene:"c6_koroom", details:[
+        { id:"d6_app", name:"牆上的外送獎狀", hot:[10,40,14,10], text:"外送平台的「五星騎士」獎狀，旁邊一張手寫的表：「目標：100 萬　→ 給美華姐的孩子讀書」。已經存到 31 萬。" } ] }
+    ],
+    police: [ { id:"pdesk", name:"澄港市刑大", scene:"pol6", details:[
+      { id:"d6_noodle", name:"值班台", hot:[20,60,20,8], text:"值班台上一碗泡麵已經泡爛了。值班的員警說：「沈哥，那個自首的，他律師比他早到十分鐘。」" } ] } ],
+    lab: [ { id:"lab", name:"鑑識中心", scene:"lab6", details:[
+      { id:"d6_hair", name:"小吳的吹風機", hot:[120,50,10,8], text:"小吳從家裡帶來的吹風機，粉紅色的，上面貼著他妹妹的名字。「學長，不要說出去。」" } ] } ],
+    garage: [
+      { id:"gpark", name:"振東建設車庫", scene:"c6_garage", details:[
+        { id:"d6_sticker", name:"ZD-7 的後車窗", hot:[94,52,10,6], text:"ZD-7 的後車窗貼著一張小貼紙：一隻戴墨鏡的柴犬。旁邊另一張被撕掉了，只剩一圈膠。" } ] },
+      { id:"gbooth", name:"警衛亭", scene:"c6_booth", opt:(ph) => ({ nosig:false }), details:[
+        { id:"d6_bento", name:"阿彬的便當", hot:[60,56,14,6], text:"桌上一個便當盒，上面寫著「國彬　週三」。他太太每天幫他準備，一個禮拜七個盒子輪流用。" } ] }
+    ],
+    fanhome: [
+      { id:"fliving", name:"范家・客廳", scene:"c6_fan", details:[
+        { id:"d6_fish", name:"客廳的魚缸", hot:[120,30,16,12], text:"一個很大的魚缸，裡面一條紅龍魚慢慢游。旁邊的卡片：「紅龍　凱文十歲時養的」。" } ] },
+      { id:"fquarter", name:"司機的小房間", scene:"c6_quarter", details:[
+        { id:"d6_hat", name:"門後的司機帽", hot:[20,30,10,8], text:"門後掛著一頂舊司機帽，帽沿都磨白了。裡面縫著一塊布：「福」。" } ] }
+    ],
+    site: [
+      { id:"soffice", name:"工務所", scene:"c6_office", details:[
+        { id:"d6_calendar", name:"牆上的月曆", hot:[80,20,14,16], text:"月曆上 6 月 1 日被紅筆圈了三圈：「公開　全員到」。5 月 14 日那一格寫著：「勞安講習」，被劃掉了。" } ] },
+      { id:"sscaf", name:"鷹架下", scene:"c6_scaf", outdoor:true, details:[
+        { id:"d6_radio", name:"鷹架上的收音機", hot:[170,60,10,8], text:"鷹架下掛著一台收音機，在放台語老歌。工人說，那是阿忠的，沒有人敢關。" } ] },
+      { id:"spump", name:"地下二樓・抽水機房", scene:"c6_pump", details:[
+        { id:"d6_line", name:"牆上的水位線", hot:[66,40,10,10], text:"牆上用油漆寫著：「2024 颱風　淹到這裡」，箭頭指著你的膝蓋。" } ] }
+    ],
+    meihome: [ { id:"mroom", name:"陳家・客廳", scene:"c6_mei", details:[
+      { id:"d6_bowl", name:"神明桌上的碗", hot:[42,36,8,4], text:"神明桌上一小碗羊肉爐，還溫溫的。陳美華說：「阿宏說，阿忠欠他一頓。我替他還。」" } ] } ]
   };
 
   /* ---------- 監視器動畫 ---------- */
   const ANIM = {
-    cctv_stair: { scene:"sch_stair", cam:"3F-RF 樓梯", date:"2026-05-13", beats:[
-      { t:"19:36:10", d:4.5, cap:"梁靜儀一個人走上樓梯，肩上背著帆布包，在頂樓門口按了密碼。", m:{ liangB:[152,48,null,1,20,98,[[60,98],[140,48]]] }, out:["liangB"] },
-      { t:"19:40:00", d:3, cap:"（19:36 到 21:16，沒有任何人經過。）" },
-      { t:"21:16:40", d:4.5, cap:"保全楊文雄和校長蕭明德一起上樓。", m:{ yangL:[152,48,null,1,10,98,[[60,98],[140,48]]], xiaoL:[150,48,null,1,-10,98,[[60,98],[140,48]]] }, out:["yangL","xiaoL"] },
-      { t:"21:22:05", d:4.5, cap:"蕭明德先下樓，手上拿著一張摺起來的白紙，邊走邊塞進西裝內袋。", m:{ xiaoL:[20,98,"hold",-1,150,48,[[140,48],[60,98]]] } },
-      { t:"21:24:30", d:4, cap:"楊文雄下樓，一隻手扶著牆。", m:{ yangL:[30,98,null,-1,150,48,[[140,48],[60,98]]] }, out:["xiaoL"] }
+    cctv_helmet: { scene:"c6_helmet", cam:"HELMET CAM", date:"2026-05-13", beats:[
+      { t:"22:43:40", d:3.5, cap:"濱海路往下坡，雨很大。機車的大燈照著路面。", s:{ v:"ride" } },
+      { t:"22:44:05", d:4.5, cap:"左前方的避車彎裡，停著一台很高的深色車，沒開燈。", s:{ v:"ride", suv:[70,40,10] } },
+      { t:"22:44:08", d:3.5, cap:"機車騎過避車彎。左後方傳來引擎猛催的聲音，越來越近。沒有喇叭，沒有煞車。", s:{ v:"ride", suv:[10,-40] } },
+      { t:"22:44:10", d:2.5, cap:"「碰」——一大塊黑影從左邊衝進畫面。畫面翻轉。", s:{ v:"hit" } },
+      { t:"22:44:13", d:3.5, cap:"攝影機掉進水溝，鏡頭朝上：護欄、雨。", s:{ v:"ditch" } },
+      { t:"22:45:02", d:5.5, cap:"腳步聲。手電筒的光掃過來。一雙穿著反光條雨褲和工地鞋的腿，走路外八。男人的聲音：「……在哪……」", s:{ v:"ditch", legs:[200,120,90,110], beam:[150,60,110,40] } },
+      { t:"22:46:10", d:3.5, cap:"遠遠的有人喊：「喂！」腳步聲跑走了，車門關上。", s:{ v:"ditch", legs:[110,220] } },
+      { t:"22:46:20", d:3.5, cap:"一道大燈的光從畫面上方掃過去，引擎聲開遠了。只剩雨聲。", s:{ v:"ditch", lit:true } }
     ] },
-    cctv_gate: { scene:"sch_gatecam", cam:"校門 CAM1", date:"2026-05-13", beats:[
-      { t:"21:00:30", d:3.5, cap:"晚自習結束，學生一個一個走出校門。班長林雨婷留在門口滑手機。", m:{ stu1:[230,98,null,1,110,90], stu2:[240,98,null,1,100,90], tingL:[60,98,"phone",1,110,90] }, out:["stu1","stu2"] },
-      { t:"21:12:20", d:3.5, cap:"一台銀色轎車開進校門，停在行政大樓前面。", cars:{ silver:[-60,40,"#c8ccd0"] } },
-      { t:"21:22:10", d:3.5, cap:"一台黑色休旅車開進來，往後面的教師停車場開過去。車窗上貼著籃球隊的貼紙。", cars:{ suv:[-60,240,"#1e1e22"] } },
-      { t:"21:26:10", d:3, cap:"林雨婷走出校門，她爸爸來接她。", m:{ tingL:[-20,98,null,-1,60,98] }, out:["tingL"] },
-      { t:"21:28:40", d:3, cap:"黑色休旅車開出校門。", cars:{ suv:[240,-60,"#1e1e22"] } },
-      { t:"21:45:00", d:3, cap:"兩台警車開進來。", cars:{ pc1:[-60,90,"#e9e4da"], pc2:[-110,40,"#e9e4da"] } }
-    ] },
-    cctv_gym: { scene:"sch_gym", cam:"GYM CAM", date:"2026-05-13", beats:[
-      { t:"19:20:00", d:3.5, cap:"鄭國豪掛著哨子走進體育館，球員已經在熱身。", m:{ zhengL:[70,98,"stand",1,-14,98], stu1:[120,98,null,-1], stu2:[150,98,null,-1] } },
-      { t:"19:48:00", d:4, cap:"分組對抗。鄭國豪一直站在場邊吹哨、罵人。", m:{ zhengL:[70,98,"point",1], stu1:[140,98,null,1,110,98], stu2:[110,98,null,-1,160,98] } },
-      { t:"20:35:00", d:3.5, cap:"鄭國豪和球員一起走出體育館。", m:{ zhengL:[-20,98,null,-1,70,98], stu1:[-30,98,null,-1,140,98], stu2:[-40,98,null,-1,110,98] }, out:["zhengL","stu1","stu2"] }
-    ] },
-    cctv_hall2: { scene:"sch_hall", cam:"2F 走廊", date:"2026-05-13", beats:[
-      { t:"19:07:10", d:3.5, cap:"鄭國豪走進導師室。", m:{ zhengL:[31,76,null,-1,180,98] }, out:["zhengL"] },
-      { t:"19:10:30", d:3.5, cap:"一個女學生拿著作業走到門口，停住，又轉身走掉。", m:{ tingL:[60,98,"hold",-1,180,98] } },
-      { t:"19:14:00", d:3, cap:"鄭國豪大步走出導師室，用力甩上門。", m:{ zhengL:[200,98,null,1,31,76], tingL:[200,98,"hold",1,60,98] }, out:["zhengL","tingL"] },
-      { t:"19:20:20", d:3, cap:"梁靜儀走出導師室，往樓上走。", m:{ liangL:[176,60,null,1,31,76,[[150,98],[176,60]]] }, out:["liangL"] },
-      { t:"19:31:00", d:3, cap:"梁靜儀回到導師室。", m:{ liangL:[31,76,null,-1,176,60,[[150,98]]] }, out:["liangL"] },
-      { t:"19:34:40", d:3.5, cap:"梁靜儀背著帆布包出來，往樓上走。", m:{ liangB:[176,60,null,1,31,76,[[150,98],[176,60]]] }, out:["liangB"] },
-      { t:"21:24:10", d:3.5, cap:"一個穿黑色連帽外套、拉起帽子的男人走進導師室。看不到臉。", m:{ zhengHood:[31,76,null,-1,176,60,[[150,98]]] }, out:["zhengHood"] },
-      { t:"21:26:20", d:3.5, cap:"那個男人走出來，一隻手插在口袋裡，快步下樓。", m:{ zhengHood:[200,98,null,1,31,76] }, out:["zhengHood"] }
-    ] },
-    cctv_field: { scene:"sch_field", cam:"操場 CAM", date:"2026-05-13", beats:[
-      { t:"19:00:00", d:2.5, cap:"操場上沒有人。" },
-      { t:"20:12:00", d:3.5, cap:"一隻黑貓慢慢走過跑道。" },
-      { t:"21:00:00", d:2.5, cap:"其他什麼都沒有。" }
-    ] },
-    cctv_park: { scene:"sch_field", opt:{ bikes:true }, cam:"機車棚 CAM", date:"2026-05-13", beats:[
-      { t:"17:00:00", d:3, cap:"梁靜儀的白色機車停在機車棚，安全帽掛在把手上。" },
-      { t:"21:05:00", d:3.5, cap:"學生陸續把機車騎走。她的機車一直沒有人碰。", m:{ stu1:[-20,98,null,-1,150,98], stu2:[-30,98,null,-1,180,98] }, out:["stu1","stu2"] }
-    ] },
-    ev_cram_cctv: { scene:"cramroom", cam:"教室 CAM", date:"2026-05-13", beats:[
-      { t:"18:30:00", d:3, cap:"陳柏宇走上講台。四十個學生。", m:{ chenL:[110,98,"stand",1,-14,98] } },
-      { t:"19:30:10", d:3.5, cap:"他低頭看了一下手機，打了幾個字，臉色很難看。", m:{ chenL:[110,98,"phone",1] } },
-      { t:"20:15:00", d:3.5, cap:"他一直在講台上寫黑板、講題目。", m:{ chenL:[80,98,"point",-1,110,98] } }
+    cctv_home: { scene:"c6_drive", cam:"CAM 大門", date:"2026-05-13", beats:[
+      { t:"22:00:00", d:3, cap:"車道上沒有人。雨很大。", s:{ car:false } },
+      { t:"22:20:00", d:4.5, cap:"莊文福把董事長的黑色轎車倒出來，停在雨棚下。", m:{ zhuangL:[130,98,"stand",-1,200,98] } },
+      { t:"22:31:00", d:4, cap:"他開始打蠟，從引擎蓋擦起。", m:{ zhuangL:[126,98,"hold",-1] } },
+      { t:"22:44:00", d:4, cap:"22:44，他還在擦引擎蓋。", m:{ zhuangL:[122,98,"hold",-1,126,98] } },
+      { t:"22:58:00", d:4, cap:"他蹲下來擦輪框。", m:{ zhuangL:[68,100,"kneel",1,122,98] } },
+      { t:"23:05:00", d:4, cap:"他把車開回車庫，關燈，走回車庫旁邊的小房間。", s:{ car:false }, m:{ zhuangL:[200,98,null,1,68,100] }, out:["zhuangL"] }
     ] }
   };
+  Object.values(ANIM).forEach(A => { if (A.beats.some(b => b.s)) A.opt = Object.assign({}, A.opt || {}, { seq:A.beats.map(b => b.s || {}), ds:A.beats.map(b => b.d) }); });
   [...EP6.cctv, ...EP6.evidence].forEach(it => { if (ANIM[it.id]) it.anim = ANIM[it.id]; });
-  const PS = [["sch_yard",{ phase:0, body:true, tape:true, markers:true }],["police",{}],["sch_roof",{ phase:1, clean:true, tape:true }]];
+  const PS = [["c6_curve",{ mark:true }],["pol6",{}],["pol6",{}]];
   EP6.phases.forEach((p,i) => { p.scene = PS[i][0]; p.sceneOpt = PS[i][1]; });
 
   /* ---------- 結案 ---------- */
+  const F = 98;
+  const RB = [
+    { t:"22:02:00", d:5, cap:"5/13 22:02，振東建設車庫。黎國偉繞到警衛亭後面，拔掉監視器的延長線。阿彬在亭子裡看棒球，睡著了。", s:{ cam:false }, m:{ liC:[44,F,"stand",-1,80,F] } },
+    { t:"22:04:00", d:4.5, cap:"22:04，他刷自己的卡打開鑰匙櫃，拿走范凱文那台灰色休旅車的鑰匙——那台車的 GPS，三月就被拆了。", s:{ cam:false }, m:{ liC:[30,F,"hold",-1,44,F] } },
+    { t:"22:35:00", d:5, cap:"22:35，他把車熄燈停在濱海路的避車彎。從這裡，看得到彎道口的反光鏡。他下車抽了三根菸。", s:{ cam:false, suv:60 }, m:{ liC:[104,F,"smoke",1,30,F] }, },
+    { t:"22:39:00", d:4.5, cap:"22:39，他用那支預付卡打給柯建宏：「到哪裡了？」——「快到了，濱海路。」", s:{ cam:false, suv:60 }, m:{ liC:[104,F,"phone",1] } },
+    { t:"22:44:08", d:4, cap:"22:44，柯建宏的大燈出現在反光鏡裡。他騎過避車彎——", s:{ cam:false, suv:[60,62], sc:[40,96] }, out:["liC"] },
+    { t:"22:44:10", d:4, cap:"黎國偉不開燈，油門踩到底，從左後方把他撞上護欄。", s:{ cam:false, suv:[62,128], sc:[96,150], flash:true, dmg:true } },
+    { t:"22:45:00", d:5, cap:"他下車，打開手機架，拿走柯建宏的手機。然後拿手電筒在水溝邊找那台安全帽攝影機——找不到。", s:{ cam:false, suv:128, sc:150, crash:true, dmg:true }, m:{ liC:[172,F,"kneel",1,140,F] } },
+    { t:"22:46:10", d:4.5, cap:"堤防上，洪伯大喊：「喂！」他跑回車上，這時候才打開大燈。", s:{ cam:false, suv:[128,220], sc:150, crash:true, dmg:true, lit:true }, m:{ liC:[150,F,"walk",-1,172,F] }, out:["liC"] },
+    { t:"23:21:00", d:5, cap:"23:21，鑰匙回到鑰匙櫃。23:30，監視器亮了回來。他算準了：老闆兒子的車撞了人，老闆一定會替兒子擺平。", s:{ cam:true }, m:{ liC:[30,F,"stand",1,60,F] } }
+  ];
   EP6.court = {
-    title: "海濱高中禮堂・記者會前十分鐘", scene: "sch_class",
-    who: ph => ["xiao","zheng","yang","wang","sis","chen"],
-    open: ph => "禮堂外面已經架好了攝影機。你請校長在記者會開始之前，先跟大家在教室裡坐一下。梁靜文抱著妹妹的照片，坐在最後一排那張空桌子旁邊。",
+    title: "振東建設車庫・5 月 15 日中午", scene: "c6_garage",
+    who: ph => ["li","kai","dong","zhuang","bin","qi"],
+    open: ph => "12:20，振東建設的車庫。葉晴站在 ZD-7 旁邊看了一下錶。莊文福是員警帶過來的，范振東跟范凱文站在另一邊，誰也不看誰。黎國偉戴著安全帽來，進門的時候低了一下頭。柯雅琪站在最後面，手裡抱著哥哥的外送外套。",
     kindLine: {
-      suicide: "梁老師是自己走上頂樓的。可是她留下了一封信——有人不想讓這封信被看見。",
-      murder: "梁老師不是自己掉下去的。有人把她推了下去。",
-      accident: "梁老師是不小心從頂樓摔下去的。"
+      hitrun: "這是一場雨夜的意外。撞到人的那個人，嚇得逃走了。",
+      murder: "這不是意外。有人熄了燈，在避車彎等他。",
+      self: "雨太大，他在彎道自己打滑，撞上了護欄。"
     },
-    murmur: [ "（蕭明德一直看手錶。）", "（鄭國豪雙手抱胸，看著窗外。）", "（楊文雄低著頭，帽子捏在手裡。）" ],
+    murmur: [ "（范凱文一直在摳自己的手指。）", "（莊文福看著地上。）", "（黎國偉把安全帽拿下來，又戴回去。）" ],
     confess: {
-      xiao: [ "……我看到那張紙的時候，第一個念頭是：評鑑完了，學校完了。", "我告訴自己，我是在保護學校，保護一千兩百個學生。", "……可是我連她一個人都沒有保護。" ],
-      zheng: [ "校長打來說：「她留了東西，跟你有關。」我腦袋一片空白，就開車回去了。", "……那支隨身碟，我折斷的時候手在抖。", "我沒有推她。我沒有。" ]
+      li: [ "去年那天，網子晚到了一天。我想說，一天而已，大家小心一點。", "阿忠摔下來的時候，我站在下面。我第一個想到的，不是他，是那三十八萬。", "柯建宏打給我那天，他說：『主任，你出來說，我不會恨你。』我說我考慮。", "我考慮了兩天。……我考慮的是，怎麼樣讓別人替我扛。" ],
+      dong: [ "我以為是凱文。他喝成那樣，車又凹了。我只有這一個兒子。", "我做了三十年建設，什麼都擺得平。……原來我擺的，是別人替我挖好的坑。" ],
+      zhuang: [ "我開了二十年車，從來沒有撞過人。……我只是想讓我女兒讀完書。" ]
     },
-    cornered: { xiao: "……我要等律師來再說。", zheng: "你有證據就去告啊！我叔叔是誰你知道嗎？" },
+    cornered: { li: "……28 號半。工地發的鞋，大家都一樣。可是鞋跟磨成這樣的，只有我。" },
     deny: {
-      yang: "我只是照校長說的做……我對不起梁老師。",
-      wang: "我收了陳情書，卻什麼都沒做。我沒有資格說話。",
-      sis: "我妹妹不會做錯事的！",
-      chen: "我那天在上課……我連去找她都沒有。"
+      kai: "我那天在金麗都！我連車都沒開！",
+      dong: "老莊是自己願意的。我只是幫他女兒一個忙。",
+      zhuang: "是我撞的……是我。",
+      bin: "我整晚都有巡……好啦，我睡著了。",
+      qi: "我哥不會自己摔車。他騎得比誰都小心。"
     },
-    replayText: "5 月 13 日晚上 19:10，鄭國豪在導師室對她說：「你再亂講，我讓你連老師都當不成。」二十六分鐘以後——",
-    replay: { scene:"sch_roof", opt:{ phase:0 }, clean:true, cam:"案發經過重現", date:"2026-05-13", beats:[
-      { t:"19:36:30", d:4.5, cap:"她走上頂樓，把鞋子脫下來，並排擺好。鞋子旁邊，壓著一張寫給大家的信。", m:{ liangB:[126,98,"kneel",1,20,98] } },
-      { t:"19:41:00", d:4.5, cap:"她傳了最後一則訊息給姐姐：「姐，對不起。布丁拜託妳了。」", m:{ liangB:[126,98,"phone",1] }, out:["liangB"] },
-      { t:"21:16:50", d:4, cap:"保全和校長走上頂樓。", m:{ xiaoL:[118,98,null,1,-14,98], yangL:[150,98,null,1,-30,98] } },
-      { t:"21:18:00", d:4.5, cap:"校長撿起那封信，看見自己的名字。他把信摺起來，放進口袋。", m:{ xiaoL:[124,98,"hold",1], yangL:[160,98,"stand",1] } },
-      { t:"21:20:10", d:4.5, cap:"他在頂樓打電話給鄭國豪：「她留了東西，跟你有關。」", m:{ xiaoL:[110,98,"phone",-1,124,98], yangL:[160,98,"stand",1] } },
-      { t:"21:22:05", d:3.5, cap:"他先下樓了。", m:{ xiaoL:[-20,98,null,-1,110,98], yangL:[160,98,"stand",1] }, out:["xiaoL","yangL"] }
-    ] },
-    endGood: "那天下午的記者會，校長沒有出現。站在麥克風前面的是梁靜文，她讀了妹妹的信。\n三天後，教育局宣布重新調查海濱高中的三次陳情。蔡宜蓁寫了一封信給梁老師，放在頂樓那雙鞋子原本的位置。\n\n如果你或身邊的人正感到痛苦，請撥打安心專線 1925（24 小時）。",
-    endBad: "記者會照常開始。校長說：「我們會永遠記得梁老師。」\n台下的梁靜文，把手裡的照片握得很緊。\n\n如果你或身邊的人正感到痛苦，請撥打安心專線 1925（24 小時）。"
+    replayText: "5 月 12 日傍晚，7-11 濱海門市。一個很高的男人低頭閃過門口的吊旗，把一張已經回國的移工的居留證影本放在櫃台上——",
+    replay: { scene:"c6_cut", opt:{ seq:RB.map(b => b.s || {}), ds:RB.map(b => b.d) }, clean:true, cam:"案發經過重現", date:"2026-05-13", beats:RB },
+    endGood: "13:00，葉晴撤回了莊文福的起訴，改用殺人罪起訴黎國偉。范振東被依教唆頂替起訴，莊文福也沒有逃過頂替罪。\n《澄港日報》頭版是何沛恩寫的：〈網子晚到的那一天〉。勞動檢查處重開了陳志忠的案子。\n6 月 1 日，海灣一號沒有開賣。\n柯雅琪把哥哥存的 31 萬，交給了陳美華。陳美華的女兒畫了一隻新的長頸鹿：戴著兩頂安全帽。",
+    endBad: "13:00，葉晴用「過失致死、肇事逃逸」起訴莊文福。他當庭認罪，判了一年十個月，緩刑。\n6 月 1 日，海灣一號公開銷售，第一天賣掉了一半。剪綵的照片上，黎國偉站在董事長旁邊。\n柯建宏筆電裡那個叫「阿忠」的資料夾，沒有人再打開過。"
   };
   if (typeof ARC_INTER !== "undefined" && ARC_INTER[6] && ARC_INTER[6].after) EP6.after = ARC_INTER[6].after;
 
   /* ---------- 走動畫面、地圖、開場 ---------- */
   const RX = i => 116 + i * 198;
-  EP6.outScenes = ["sch_roof","sch_yard","caihome"];
-  EP6.fac = { school:["#e8dcc0","#2a5a3a"], police:["#cfcabb","#3f5a7a"], lab:["#e2e8e8","#3a7a8a"], liangapt:["#d8d0c8","#6a4a5a"], cram:["#f4f4ee","#2a6ab8"], caihome:["#c8b8a0","#3a6a8a"], clinic:["#e8f0e8","#3a8a6a"] };
-  EP6.setting = { school:"town", police:"city", lab:"city", liangapt:"city", cram:"city", caihome:"town", clinic:"city" };
-  const SKY6 = [ ["#0b0f1c","#27324a","#18202a","#1d2630",0,1], ["#7a96b4","#c8d8e4","#4a5a6a","#56666c",1,0], ["#8ab0d0","#e0e8ee","#4a6070","#56707a",0,0] ];
+  EP6.outScenes = ["c6_curve","c6_turn","c6_bank","c6_scaf"];
+  EP6.fac = { road:["#2a2e34","#f2c94c"], kohome:["#c8bca4","#5a4a3a"], police:["#cfcabb","#3f5a7a"], lab:["#e2e8e8","#3a7a8a"], garage:["#9a9a92","#3a4a5a"],
+    fanhome:["#e8e0d0","#8a6a4a"], site:["#b8b4ac","#2a5a8a"], meihome:["#d8c8a8","#7a6a54"] };
+  EP6.setting = { road:"town", kohome:"town", police:"city", lab:"city", garage:"city", fanhome:"city", site:"town", meihome:"town" };
+  const SKY6 = [ ["#0a0f1c","#1c2636","#14181e","#1a1e26",0,0], ["#8a9ab0","#d8dee4","#4a5060","#56606a",0,0], ["#9cb8d8","#e8eef0","#4a6070","#56707a",0,0] ];
   EP6.worldSky = ph => SKY6[Math.min(ph || 0, SKY6.length - 1)];
   EP6.roomDesc = {
-    sgate:"警衛室。牆上一排監視器，桌上一本巡邏紀錄。", soffice:"行政大樓的校長室。牆上掛滿了獎牌。", sstaff:"2 樓的導師室。每個老師一張桌子。",
-    sclass:"高二 7 班的教室。黑板上還留著她的字。", sstair:"通往頂樓的樓梯。最上面是一扇鐵門。", sroof:"頂樓。風很大，看得到整個港口。",
-    syard:"教學大樓後面的中庭。很暗，平常沒有人來。", sgym:"體育館。地板上全是球鞋的刮痕。",
-    pdesk:"澄港市刑大。你的位子在窗邊。", lab:"法醫室和鑑識中心。老錢和小吳都在這裡。", lroom:"梁靜儀的家。小小的，很整齊。一隻橘貓躲在沙發底下。",
-    cramroom:"柏宇數學的教室。白板上還有昨天的題目。", croom:"北澳漁村，蔡家門口。海風吹得門簾一直晃。", clroom:"心晴身心科的候診室。燈光很柔和。"
+    rcurve:"濱海路的彎道。護欄外面就是海。", rturn:"彎道前面三十公尺的避車彎，旁邊一棵木麻黃。", rbank:"彎道下面的堤防，水溝沿著堤防流進海裡。",
+    kliving:"漁港邊的老公寓，兩房一廳。", kroom:"柯建宏的房間。書桌很整齊，牆上貼滿照片。",
+    pdesk:"澄港市刑大。你的位子在窗邊。", lab:"鑑識中心。小吳的桌子永遠很亂。",
+    gpark:"振東建設在濱海工業區的車庫，日光燈嗡嗡地響。", gbooth:"車庫門口的警衛亭，一張桌子、一台小電視、一面鑰匙櫃。",
+    fliving:"范家的客廳，一整面牆的獎牌。", fquarter:"車庫旁邊的小房間，司機莊文福住了二十年。",
+    soffice:"海灣一號的工務所，一個貨櫃屋。門框很低。", sscaf:"大樓腳下。鷹架一路搭到 15 樓，外面掛著綠色的網子。", spump:"地下二樓的抽水機房，很潮濕。",
+    mroom:"北澳漁村的陳家。牆上貼滿小孩的畫。"
   };
-  const YOU = { skin:"#e8c09a", hair:"#2a2220", hairStyle:"short", top:"#e9e4da", coat:"#4a4038", bottom:"#3a3328", tie:"#5a2a2a", hat:"fedora", hatColor:"#3a3226" };
+  const YOU = { skin:"#e8c09a", hair:"#2a2220", hairStyle:"short", top:"#e9e4da", coat:"#3a4250", bottom:"#2a2f3a" };
   const say = (who, text, name) => ({ say:[who, text], name });
-  const FOR = { skin:"#e8c09a", hair:"#1a1410", hairStyle:"short", top:"#f4f6f6", bottom:"#f4f6f6", mask:"#9ac0e0", hood:"#f4f6f6" };
-  const COP = { skin:"#d8a880", hair:"#1a1410", hairStyle:"short", top:"#3a5a8a", bottom:"#24324e", hat:"police", tie:"#1a2236" };
+  const COP = { skin:"#d8a880", hair:"#1a1410", hairStyle:"short", top:"#3a5a8a", bottom:"#24324e", hat:"police" };
   EP6.world = {};
   EP6.locations.forEach(l => { EP6.world[l.id] = { auto:true, you:YOU }; });
-  Object.assign(EP6.world.school, {
+  Object.assign(EP6.world.road, {
     extras: [
-      { id:"for1", name:"鑑識員", phase:0, until:0, x:RX(6) + 120, L:FOR, pose:"cam", facing:-1, lines:[
-        "1 號是手環，2 號是她的髮夾，3 到 6 號是落地的位置。", "她是頭先著地的……不要看太久。" ] },
-      { id:"cop6", name:"派出所員警", phase:0, until:0, x:RX(5) + 30, L:COP, pose:"stand", facing:1, mood:"tired", lines:[
-        "頂樓的門是我們到了以後才封的。之前有誰上來過，要問保全。", "這麼高的牆……不是不小心翻得過去的。" ] },
-      { id:"stu6", name:"籃球隊員", phase:1, x:RX(7) + 60, L:{ skin:"#e8c09a", hair:"#1a1410", hairStyle:"short", top:"#c23a2a", bottom:"#1e1e22" }, pose:"stand", facing:1, lines:[
-        "教練昨天練球一直都在啊，罵得超兇。", "器材室？……教練說那裡是他的地盤，我們不准亂進去。" ] }
+      { id:"cop6", name:"派出所員警", phase:0, until:0, x:RX(0) + 30, L:COP, pose:"stand", facing:1, lines:[
+        "我們 22:58 到的。那個阿伯一直站在雨裡等我們，全身都濕了。", "現場只有那台機車，沒有別的車。肇事的已經跑了。" ] }
     ],
     intro: [
       { set:{ px:-60, bx:-80, cam:0 }, hide:true },
       { car:[-60, 8, 2.4, "#e9e4da"], hide:true },
       { wait:0.5, hide:true },
       { set:{ px:70, bx:50, face:1 } },
-      say("wu", "學長，到了。海濱高中。死者是高二 7 班的導師，梁靜儀，38 歲。", "小吳"),
-      say("wu", "保全九點零五分在教學大樓後面的中庭發現她。可是學校九點半才報警。", "小吳"),
-      say("wu", "校長說他接到電話才趕來。他現在在校長室，一直在打電話。", "小吳"),
-      say("you", "從那麼高的地方掉下來，不是被推，就是自己走上去，或是不小心。我們得知道是哪一個。", "你"),
-      say("wu", "今晚只能在學校查。明天才能申請通聯，去她家、去法醫室。……校長說，星期五要開記者會。", "小吳"),
-      say("wu", "問一題五分鐘，查一樣東西十分鐘。想去哪裡，就點畫面上的箭嘴。到了以後點" + (typeof pinWhere === "function" ? pinWhere() : "左上角") + "的「📍」。要找我就點我。", "小吳")
+      say("wu", "學長，濱海路的彎道。外送員柯建宏，32 歲，機車撞上護欄，人已經走了。", "小吳"),
+      say("wu", "報案的是在堤防釣魚的阿伯，他說聽到『碰』一聲。現場沒有別的車。", "小吳"),
+      say("you", "下這麼大的雨，是自己摔的，還是被撞的？", "你"),
+      say("wu", "老錢在看。地上有一些碎片……雨一直在沖，要看就快點看。", "小吳"),
+      say("wu", "想去哪裡，就點畫面上的箭嘴。到了以後點" + (typeof pinWhere === "function" ? pinWhere() : "左上角") + "的「📍」。要找我就點我。", "小吳")
     ]
   });
-  EP6.mapPos = { school:[120,70,"u"], police:[150,96,"r"], lab:[176,84,"u"], liangapt:[90,104,"l"], cram:[70,60,"l"], caihome:[30,24,"r"], clinic:[110,116,"d"] };
-  EP6.mapRoads = [["school","police"],["police","lab"],["police","liangapt"],["school","cram"],["liangapt","clinic"],["cram","caihome"],["police","clinic"]];
+  EP6.mapPos = { road:[150,104,"d"], kohome:[40,100,"l"], police:[110,50,"u"], lab:[140,40,"u"], garage:[190,70,"r"], fanhome:[60,30,"u"], site:[200,110,"d"], meihome:[16,70,"l"] };
+  EP6.mapRoads = [["police","lab"],["police","road"],["road","site"],["road","kohome"],["police","garage"],["garage","road"],["police","fanhome"],["kohome","meihome"]];
   EP6.mapDraw = (p, t) => {
     const { R, dither } = p;
-    R(0, 0, 240, 135, "#8a9a86"); dither(0, 0, 240, 135, "#96a692", 3);
+    R(0, 0, 240, 135, "#8a9a8a"); dither(0, 0, 240, 135, "#94a494", 3);
     const blocks = (x0, y0, x1, y1, c, c2) => { for (let x = x0; x < x1; x += 8) for (let y = y0; y < y1; y += 7) { R(x, y, 6, 5, c); if ((x + y) % 3 === 0) R(x + 1, y + 1, 2, 2, c2); } };
-    blocks(60, 50, 210, 128, "#c8c0b0", "#b0a898");
-    for (let y = 0; y < 40; y += 2) for (let x = 0; x < 80 - y; x += 4) R(x, y + Math.sin(t + x / 9) * 0.5, 4, 2, "#4a86b4");   // 北邊的海
-    R(110, 62, 20, 12, "#d8c8a0"); R(112, 64, 16, 8, "#6a8a5a");   // 學校操場
+    blocks(70, 20, 180, 80, "#c8c0b0", "#b0a898");
+    R(0, 116, 240, 19, "#3a6a8a"); for (let x = 0; x < 240; x += 6) R(x, 116 + Math.round(Math.sin(t + x / 9)), 4, 1, "#5a8aaa");   // 海
+    R(110, 100, 120, 3, "#5a5a5a");   // 濱海路
+    R(196, 96, 18, 14, "#b8b4ac"); R(200, 92, 10, 6, "#3a8a4a");   // 海灣一號
   };
 })();

@@ -72,7 +72,7 @@ const {chromium}=require('playwright'); const CID=process.env.CASE||'fingers';
  const byPh={}; plan.acts.forEach(a=>{ if(['item','test','q','mark','visit'].includes(a.k) || (a.k==='event' && a.loc)) (byPh[a.ph]=byPh[a.ph]||[]).push(a); });
  const fail=[];
  const NPH=await p.evaluate(()=>phasesOf(C).length); for(let ph=0; ph<NPH; ph++){
-  const acts=byPh[ph]||[]; const rounds=[...new Set(acts.map(a=>a.round))].sort((a,b)=>a-b); const vis=[];
+  const acts=byPh[ph]||[]; const rounds=[...new Set(acts.map(a=>a.round))].sort((a,b)=>a-b); const vis=[], retry=[];
   const doMarks=async()=>{ for(const m of acts.filter(m=>m.k==='mark')) await p.evaluate(m=>{ const x=[...allItems().filter(i=>S.seen.includes(i.id)),...readyTests()].find(x=>x.id===m.doc); if(x && !(S.marks||[]).includes(m.id)) markRow(m.doc,m.row); },m); };
   await doMarks();
   for(const rd of rounds){
@@ -87,9 +87,14 @@ const {chromium}=require('playwright'); const CID=process.env.CASE||'fingers';
       if(a.k==='q'){ const b=S.asked.length; askById(a.sid,a.id); return S.asked.length>b; }
       if(a.k==='event') return S.ev[a.id]!==undefined;
      },a);
-     if(!ok) fail.push(`${a.k} ${a.id} d${ph} t=${await p.evaluate(()=>nowStr())}`);
+     if(!ok){ if(a.k==='test') retry.push(a); else fail.push(`${a.k} ${a.id} d${ph} t=${await p.evaluate(()=>nowStr())}`); }
      await doMarks();
     }
+   }
+   // 同一輪裡，化驗的前提要在後面的地點才拿得到：繞回去再送一次
+   for(const a of retry.splice(0)){
+    const ok=await p.evaluate(async a=>{ if(!here(a.loc)){ await visit(a.loc); mapFrom=a.loc; } const id=a.id.slice(2); await submitTest(id,true); return S.labq[id]!==undefined; },a);
+    if(ok) vis.push(a.loc+'(again)'); else fail.push(`${a.k} ${a.id} d${ph} t=${await p.evaluate(()=>nowStr())}`);
    }
   }
   const locs=vis;
