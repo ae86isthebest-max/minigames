@@ -63,13 +63,27 @@ const WK = (() => {
     for (let y = 0; y < H; y++){ const n = {}; let best = 0, bc = 0; for (let x = 0; x < W; x++){ const v = at(x, y); n[v] = (n[v]||0) + 1; if (n[v] > best){ best = n[v]; bc = v; } } ref.push(best > W * 0.25 ? bc : -1); }
     const near = (a, b) => b >= 0 && Math.abs((a>>16) - (b>>16)) + Math.abs(((a>>8)&255) - ((b>>8)&255)) + Math.abs((a&255) - (b&255)) < 18;
     const sky = (x, y) => { const v = at(x, y); return (near(v, ref[y]) || (y && near(v, ref[y-1])) || near(v, ref[y+1] ?? -1)) && (v & 255) >= (v >> 16); };
-    for (let x = 0; x < W; x++) for (let y = 0; y < H * 0.75; y++){
-      // 天空是偏藍、一整排同色；中間夾著雨滴之類的幾個點也算天空，碰到真的不是天空的東西就停
-      if (!sky(x, y)){ let k = 1; while (k <= 6 && y + k < H && !sky(x, y + k)) k++; if (k > 6) break; for (let j = 0; j < k; j++) px[((y+j)*W + x)*4 + 3] = 0; y += k - 1; continue; }
-      px[(y*W + x)*4 + 3] = 0;
+    // 天空是漸層：跟正上方那一格天空幾乎同色（而且偏藍）的也是天空。
+    // 這樣就算那一排大部分是房子或山（天空不是最多的顏色），房子旁邊也不會留下一塊沒去掉的天空
+    const dist = (a, b) => Math.abs((a>>16) - (b>>16)) + Math.abs(((a>>8)&255) - ((b>>8)&255)) + Math.abs((a&255) - (b&255));
+    for (let x = 0; x < W; x++){ let up = -1;
+      for (let y = 0; y < H * 0.75; y++){
+        const v = at(x, y);
+        if (!sky(x, y) && !(up >= 0 && (v & 255) >= (v >> 16) && dist(v, up) < 7)){
+          // 中間夾著雨滴之類的幾個點也算天空，碰到真的不是天空的東西就停
+          let k = 1; while (k <= 6 && y + k < H && !sky(x, y + k)) k++; if (k > 6) break; for (let j = 0; j < k; j++) px[((y+j)*W + x)*4 + 3] = 0; y += k - 1; up = -1; continue; }
+        px[(y*W + x)*4 + 3] = 0; up = v;
+      }
     }
     g.putImageData(d, 0, 0);
     return src._ns = c;
+  }
+  // 把一張圖染上一層顏色（透明的地方不染）
+  function tinted(src, col, a){
+    const k = col + "|" + a; src._tint = src._tint || {}; if (src._tint[k]) return src._tint[k];
+    const c = document.createElement("canvas"); c.width = src.width; c.height = src.height;
+    const g = c.getContext("2d"); g.drawImage(src, 0, 0); g.globalCompositeOperation = "source-atop"; g.globalAlpha = a; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height);
+    return src._tint[k] = c;
   }
   const roomOpt = r => ({ ...(typeof r.opt === "function" ? r.opt(S.phase, has) : (r.opt || {})), phase:S.phase });
 
@@ -140,11 +154,10 @@ const WK = (() => {
         if (ox > cam + 250 || ox + RW < cam - 10) return;
         const img = roomImg(r.scene, { ...roomOpt(r), ...((o.ropt || {})[r.id] || {}) }); p.ctx(g);
         if (OUT.has(r.scene)){
-          const im2 = noSky(img);
-          g.drawImage(im2, 0, 0, RW, 20, ox, 0, RW, OY + 20); g.drawImage(im2, 0, 20, RW, 88, ox, OY + 20, RW, 88);
-          // 陰天、下雨、晚上：草地跟著變暗；左右兩邊用樹籬接到背景，不會一刀切
+          // 陰天、下雨、晚上：場景跟著變暗（只染畫了東西的地方，不會在天空上留下一個方塊）；左右兩邊用樹籬接到背景，不會一刀切
           const sk = skyOf(ph);
-          if (sk[4] || sk[5]){ g.save(); g.globalAlpha = sk[5] ? 0.45 : 0.22; R(ox, 0, RW, G, sk[5] ? "#0b0f1c" : sk[1]); g.restore(); }
+          const im2 = sk[4] || sk[5] ? tinted(noSky(img), sk[5] ? "#0b0f1c" : sk[1], sk[5] ? 0.45 : 0.22) : noSky(img);
+          g.drawImage(im2, 0, 0, RW, 20, ox, 0, RW, OY + 20); g.drawImage(im2, 0, 20, RW, 88, ox, OY + 20, RW, 88);
           [ox - 3, ox + RW - 4].forEach(hx => { R(hx, 66, 7, G - 66, shade(sk[3], -.25)); R(hx - 1, 62, 9, 6, shade(sk[3], -.1)); for (let y = 70; y < G; y += 7) R(hx + 1 + (y % 3), y, 2, 2, shade(sk[3], .15)); });
           return;
         }
@@ -264,5 +277,5 @@ const WK = (() => {
     return { drive(to, cb){ const a = pt(from), b = pt(to); from = to; anim = { a, b, t0:performance.now(), d:Math.min(1400, 500 + Math.hypot(b[0] - a[0], b[1] - a[1]) * 9), cb }; } };
   }
 
-  return { autoWorld, morning, arrive, drawMap, drawRain, chunks, skyOf, SKY, OY, G };
+  return { autoWorld, morning, arrive, drawMap, drawRain, chunks, skyOf, SKY, OY, G, noSky };
 })();

@@ -832,6 +832,7 @@ function updateNear(){
   el.innerHTML = curNear.length
     ? `<span class="nl">🔎 附近</span>` + curNear.map(q=>`<button class="nb" onclick="WORLD.goSpot('${WORLD.spotKey(q)}')">${esc(nearLabel(q))}</button>`).join("")
     : `<span class="nl nn">🔎 附近沒有還沒看過的東西</span>`;
+  el.scrollLeft = 0;                                                  // 清單換了就回到最左邊，「🔎 附近」和第一個名字不會被捲到畫面外
   el.classList.toggle("more", el.scrollWidth > el.clientWidth + 2);   // 一排放不下：右邊淡出，提示可以往左滑
 }
 function updateRoomBtn(){
