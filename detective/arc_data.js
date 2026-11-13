@@ -35,8 +35,9 @@ ARC.defineCast({
    "hair": "#6a6a66",
    "hairStyle": "slick",
    "top": "#e9e4da",
-   "coat": "#3a3f4a",
-   "bottom": "#2a2f3a"
+   "coat": "#62666e",
+   "bottom": "#2a2f3a",
+   "tie": "#3a4a6a"
   }
  },
  "ye": {
@@ -44,7 +45,7 @@ ARC.defineCast({
   "look": {
    "skin": "#f0d0b4",
    "hair": "#1e1a18",
-   "hairStyle": "long",
+   "hairStyle": "pony",
    "top": "#f4f4f0",
    "coat": "#6a6e74",
    "bottom": "#6a6e74",
@@ -59,6 +60,7 @@ ARC.defineCast({
    "hair": "#4a4440",
    "hairStyle": "bob",
    "top": "#c84a4a",
+   "apron": "#e8e0cc",
    "bottom": "#3a3a44"
   }
  },
@@ -197,7 +199,7 @@ ARC.defineCast({
    "hair": "#3a2a20",
    "hairStyle": "short",
    "top": "#f4f0e6",
-   "coat": "#6a4a2a",
+   "apron": "#6a4a2a",
    "bottom": "#3a3430",
    "beard": true
   }
@@ -211,6 +213,7 @@ ARC.defineCast({
    "top": "#f4f6f6",
    "coat": "#1e2a4a",
    "bottom": "#1e2a4a",
+   "tie": "#8a2a2a",
    "glasses": true
   }
  },

@@ -166,7 +166,7 @@ EP9.art = true;
   };
   ["xu","qian","wu"].forEach(id => { const a = (typeof ARC !== "undefined" && ARC.look) ? ARC.look(id) : null; if (a) LOOK[id] = Object.assign({}, a, { hello:LOOK[id].hello }); });
   // 休假：不穿白袍
-  Object.assign(LOOK.wu, { top:"#e8a040", coat:null }); Object.assign(LOOK.qian, { top:"#c8e0c8", coat:null }); Object.assign(LOOK.xu, { top:"#3a3a4a", coat:null });
+  Object.assign(LOOK.wu, { top:"#e8a040", coat:null }); Object.assign(LOOK.qian, { top:"#c8e0c8", coat:null }); Object.assign(LOOK.xu, { top:"#8a8e94", bottom:"#3a4050", coat:null });
   const DAILY = {
     zhiming:[ { room:"ilobby", x:96, pose:"phone", doing:"在櫃台講電話，一直在擦汗。" }, { room:"icorr", x:140, pose:"stand", doing:"站在湯屋走廊，擋著不讓客人靠近。" }, { room:"ilobby", x:96, pose:"write", doing:"在櫃台寫退房的帳單，手在抖。" } ],
     guorong:[ null, { room:"ilobby", x:40, pose:"sit", doing:"坐在大廳的長椅上，看著窗外的霧。" }, { room:"iback", x:120, pose:"cross", doing:"站在屋後，盯著那面牆。" } ],
