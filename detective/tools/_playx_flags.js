@@ -32,6 +32,7 @@ const {chromium}=require('playwright'); const CID=process.env.CASE||'fingers';
     const startL=PH().startAt; if(startL) mark('L:'+startL+'@'+ph,[],{k:'start',ph,loc:startL});
     for(const it of allItems()){ if(!S.seen.includes(it.id) && itemOpen(it) && unlocked(it) && (!it.loc || here(it.loc))){ const d=[...reqDeps(it), ...(it.loc?['L:'+it.loc+'@'+ph]:[])]; S.seen.push(it.id); S.sp[it.id]=ph; mark(it.id,d,{k:'item',ph,loc:it.loc,mins:costItem(it)}); ch=true; evs(); } }
     for(const t of tests()){ if(S.labq[t.id]===undefined && testOpen(t) && here(t.loc)){ S.labq[t.id]=ph; mark('T:'+t.id,[...reqDeps(t),'L:'+t.loc+'@'+ph],{k:'test',ph,loc:t.loc,mins:costTest()}); ch=true; evs(); } }
+    tests().filter(t=>testReady(t)&&seq[t.id]===undefined).forEach(t=>{ mark(t.id,['T:'+t.id],{k:'ready',ph}); ch=true; evs(); });
     for(const s of C.suspects){ if(isGone(s)) continue; const w=whereOf(s); if(travel() && !here(w)) continue;
      for(const q of s.questions){ if(!S.asked.includes(q.id) && unlocked(q)){ S.asked.push(q.id); S.qp[q.id]=ph; mark(q.id,[...reqDeps(q), ...(w?['L:'+w+'@'+ph]:[])],{k:'q',ph,sid:s.id,loc:w,mins:CLK().ask||5}); ch=true; evs(); } } }
     for(const x of [...allItems().filter(it=>S.seen.includes(it.id)), ...readyTests()]){ if(!x.doc) continue;

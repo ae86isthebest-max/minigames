@@ -290,7 +290,7 @@ EP12.art = true;
     endBad: "09:00，福滿 12 號出港了。\n十天以後它回來，船上少了一個人。蔡金水說，那個臨時工在北邊的港口下船了，不知道去了哪裡。"
   };
   if (typeof ARC_INTER !== "undefined" && ARC_INTER[12]){
-    if (ARC_INTER[12].after) EP12.after = Object.assign({}, ARC_INTER[12].after, { scene:"police" });
+    if (ARC_INTER[12].after) EP12.after = Object.assign({}, ARC_INTER[12].after, { scene:"s15_hall" });
     if (ARC_INTER[12].before) EP12.before = Object.assign({}, ARC_INTER[12].before, { scene:"police" });
   }
 
