@@ -26,14 +26,14 @@ const EP3 = {
   ],
   goal: "查出鄭國華的死因、十根手指是誰切的、真兇是誰。這一集有人會說謊，有人會頂罪；兇手可能不只一個，也可能有人只做了一部分。",
   phases: [
-    { title:"第一天　12月8日（一）", short:"第一天", startAt:"warehouse", questionLimit:4, clock:{ start:"08:30", end:"20:00", ask:5, item:10, cctv:15, test:10 },
+    { title:"第一天　12月8日（一）", short:"第一天", startAt:"warehouse", questionLimit:8, clock:{ start:"08:30", end:"20:00", ask:5, item:10, cctv:15, test:10 },
       reports:[
         { id:"r_scene", title:"小吳的現場初步報告",
           text:"死者鄭國華被封箱膠帶綁在辦公椅上，雙手手腕綁在兩邊扶手，嘴裡塞著一團抹布。\n十根手指全部從根部被切斷。摺疊桌上排著九根，<b>少了一根</b>，倉庫裡怎麼找都找不到。\n地上一大片血，已經乾了。屍體冰冷、全身僵硬，小吳初步推估死了五到八個小時。\n牆上用血寫著「欠債還錢」。\n死者的白色 Lexus 停在倉庫門口，手機在車上的置物箱裡。",
           clue:"死者被綁在椅子上，十指全斷，桌上只排了九根；牆上用血寫「欠債還錢」；手機留在車上",
           tl:[["12/08 06:40","管理員張文雄發現 B-12 倉庫的屍體"],["12/08 08:30","你和小吳抵達現場"]] }
       ]},
-    { title:"第二天　12月9日（二）", short:"第二天", headline:"第二天：解剖", startAt:"police", questionLimit:4, clock:{ start:"09:00", end:"20:00", ask:5, item:10, cctv:15, test:10 },
+    { title:"第二天　12月9日（二）", short:"第二天", headline:"第二天：解剖", startAt:"police", questionLimit:8, clock:{ start:"09:00", end:"20:00", ask:5, item:10, cctv:15, test:10 },
       intro:[
         "昨晚法醫連夜解剖。何法醫一早就打電話來：「你最好親自來看一下，這具屍體會說話。」",
         "從今天起你從新莊分局出發。昨天申請的調閱資料，今天早上到了，就在分局你的桌上。"
@@ -44,15 +44,15 @@ const EP3 = {
           clue:"死因是心肌梗塞（死者本來就有心臟病），死亡時間 12/8 00:20–00:50；十根手指切斷的時間和工具不一樣",
           tl:[["12/08 00:20","死亡時間（解剖推定 00:20–00:50）"]] }
       ]},
-    { title:"第三天　12月10日（三）", short:"第三天", headline:"第三天：有人來自首", startAt:"police", questionLimit:4, clock:{ start:"09:00", end:"20:00", ask:5, item:10, cctv:15, test:10 },
+    { title:"第三天　12月10日（三）", short:"第三天", headline:"第三天：有人來自首", startAt:"police", questionLimit:8, clock:{ start:"09:00", end:"20:00", ask:5, item:10, cctv:15, test:10 },
       intro:[
         "外面下著冷冷的小雨。新聞已經開始報「五股斷指案」，記者擠在分局門口。"
       ]},
-    { title:"第四天　12月11日（四）", short:"第四天", headline:"第四天", startAt:"police", questionLimit:4, clock:{ start:"09:00", end:"20:00", ask:5, item:10, cctv:15, test:10 },
+    { title:"第四天　12月11日（四）", short:"第四天", headline:"第四天", startAt:"police", questionLimit:8, clock:{ start:"09:00", end:"20:00", ask:5, item:10, cctv:15, test:10 },
       intro:[
         "分局長把你叫進辦公室：「檢察官 12 號晚上要看到結論。媒體已經在寫『地下錢莊虐殺會計師』，你最好有更好的答案。」"
       ]},
-    { title:"第五天　12月12日（五）", short:"最後一天", headline:"最後一天", startAt:"police", questionLimit:4, clock:{ start:"09:00", end:"20:00", ask:5, item:10, cctv:15, test:10 },
+    { title:"第五天　12月12日（五）", short:"最後一天", headline:"最後一天", startAt:"police", questionLimit:8, clock:{ start:"09:00", end:"20:00", ask:5, item:10, cctv:15, test:10 },
       intro:[
         "今天是最後一天。20:00 以後就要做出你的推理。",
         "今天才申請的調閱資料，來不及拿到了。"
