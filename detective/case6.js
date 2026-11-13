@@ -107,7 +107,7 @@ const EP6 = {
     { q:"那台車撞他的時候，有開大燈嗎？", requires:["hong2","cctv_helmet"], options:["有，開著遠光燈","沒有，一直關著燈，撞完才打開","只開了霧燈","看不出來"], answer:1 },
     { q:"最後開那台車的人，個子怎麼樣？", requires:["ev_seat"], options:["很矮","跟范凱文差不多","很高","看不出來"], answer:2 },
     { q:"5/13 晚上，是誰從鑰匙櫃拿走那台車的鑰匙？", requires:["h_li_key"], options:["范凱文","莊文福","黎國偉","王國彬"], answer:2 },
-    { q:"21:58 傳簡訊約柯建宏出來的那支預付卡，是誰買的？", requires:["h_store"], requiresAll:["h_burner"], options:["SUSANTO ADI 本人","范振東","黎國偉","莊文福"], answer:2 },
+    { q:"21:58 傳簡訊約柯建宏出來的那支預付卡，是誰買的？", requires:["h_store","ck4","ev_receipt"], requiresAll:["h_burner"], options:["SUSANTO ADI 本人","范振東","黎國偉","莊文福"], answer:2 },
     { q:"范凱文 5/13 晚上 22:44 在哪裡？", requires:["h_taxi"], options:["開著 ZD-7 在濱海路","在金麗都酒店喝酒","在家睡覺","在公司車庫"], answer:1 },
     { q:"黎國偉說他 22:04 是去拿小貨車鑰匙、開去工地看抽水機。是真的嗎？", requires:["h_pickup","ev_pump","ev_pickup"], options:["是真的","不是：小貨車整晚沒動，抽水機房也沒有人進去過","小貨車有開，可是沒去工地","看不出來"], answer:1 },
     { q:"為什麼有人要柯建宏死？", requires:["ev_notebook"], requiresAll:["ev_photos"], options:["他欠了賭債","他有去年工地死人那天沒有安全網的照片，隔天要交給記者","外送的時候跟人起衝突","感情糾紛"], answer:1 }
@@ -304,7 +304,7 @@ EP6.suspects.push(
   { id:"ye", name:"葉晴", role:"檢察官，36 歲", av:"⚖️", where:[null,"police","police"],
     questions:[
       { id:"ye1", q:"莊文福自首，妳打算怎麼辦？", requires:["r_zhuang"], a:"他自己認了，車也找到了。明天下午一點以前，你沒有給我別的理由，我就照他說的起訴。", clue:"葉晴說明天下午一點以前沒有別的理由，就照莊文福的說法起訴" },
-      { id:"ye2", q:"我要搜索黎國偉的工務所。", requires:["h_store"], requiresAll:["h_li_key"], a:"預付卡是他買的，鑰匙是他拿的。夠了，我簽。今天就去。", clue:"葉晴簽了搜索海灣一號工務所的搜索票" },
+      { id:"ye2", q:"我要搜索黎國偉的工務所和住處。", requires:["h_store","ck4"], requiresAll:["h_li_key"], a:"預付卡是他買的，鑰匙是他拿的。夠了，我簽。工務所、他家、他的車，今天就去。", clue:"葉晴簽了搜索黎國偉工務所、住處和車子的搜索票" },
       { id:"ye4", q:"那封簡訊，夠了嗎？", requires:["wu5"], a:"約他出來、熄燈等他、撞完拿走手機。這不是肇事逃逸，是預謀。……莊文福的起訴，我撤。", clue:"葉晴說這是預謀殺人，要撤回莊文福的起訴" },
       { id:"ye3", q:"范振東那 300 萬呢？", requires:["h_transfer"], a:"頂替、教唆頂替。有錢人以為什麼都買得到，連一個人的認罪都可以買。……這一條，我會親自寫。", clue:"葉晴說范振東涉及教唆頂替" }
     ] },

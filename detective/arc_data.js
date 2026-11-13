@@ -1,4 +1,4 @@
-/* 主線資料（第 4–20 集；第 11–20 集另有 before 開場生活小場景）—— 劇透，由「主線」thread 產生。載入順序：arc.js 之後、各集 case 檔之前。
+/* 主線資料（第 4–20 集；第 11–20 集另有 before 開場生活小場景，第 2–20 集全部固定在露天咖啡店「海風咖啡」外面座位，scene 請做 cafe）—— 劇透，由「主線」thread 產生。載入順序：arc.js 之後、各集 case 檔之前。
    1) ARC.defineCast：固定班底。幕間 cast 用這些 id；案件中出場也可以 look:ARC.look("xu")。
    2) ARC.define：主線旗標的標題和筆記內容。ARC_SETS 寫明哪一集的哪樣東西要加 arc:旗標；下一集的 arcRecap 對這些旗標寫 text/miss。
    3) ARC_INTER[集數].after：貼到該集 C.after。scene 只用 PX.SCENES 現有的；sceneWanted＝建議新做的場景（麵攤、高鐵、安全屋、告別式），做好之前只有對話。
@@ -189,6 +189,18 @@ ARC.defineCast({
    "bottom": "#4a5a8a",
    "skirt": true
   }
+ },
+ "barista": {
+  "name": "咖啡店老闆",
+  "look": {
+   "skin": "#d8a880",
+   "hair": "#3a2a20",
+   "hairStyle": "short",
+   "top": "#f4f0e6",
+   "coat": "#6a4a2a",
+   "bottom": "#3a3430",
+   "beard": true
+  }
  }
 });
 
@@ -319,6 +331,116 @@ var ARC_SETS = {
 };
 
 var ARC_INTER = {
+ "2": {
+  "before": {
+   "title": "傍晚・海風咖啡",
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "dusk"
+   },
+   "cast": [
+    {
+     "id": "barista",
+     "x": 30
+    },
+    {
+     "id": "wu",
+     "x": 60
+    },
+    {
+     "id": "_you",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（局對面轉角的露天咖啡店「海風咖啡」。你和小吳坐在外面，風有點大，遮雨棚啪啪作響。）"
+    },
+    {
+     "who": "barista",
+     "text": "颱風好像要轉過來了。今天早點收店。"
+    },
+    {
+     "who": "wu",
+     "text": "學長，你颱風天都在幹嘛？"
+    },
+    {
+     "who": "you",
+     "text": "睡覺。"
+    },
+    {
+     "who": "wu",
+     "text": "真好……我每次颱風天都會被叫回去加班。"
+    },
+    {
+     "who": "barista",
+     "text": "沈先生，照舊美式不加糖？"
+    },
+    {
+     "who": "you",
+     "text": "嗯。"
+    },
+    {
+     "who": "narr",
+     "text": "（你們不知道，今晚的颱風夜會很長。）"
+    }
+   ]
+  }
+ },
+ "3": {
+  "before": {
+   "title": "早上・海風咖啡",
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning"
+   },
+   "cast": [
+    {
+     "id": "barista",
+     "x": 30
+    },
+    {
+     "id": "wu",
+     "x": 60
+    },
+    {
+     "id": "_you",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "barista",
+     "text": "聽說你們上個案子熬了一整晚？"
+    },
+    {
+     "who": "wu",
+     "text": "老闆你怎麼什麼都知道？"
+    },
+    {
+     "who": "barista",
+     "text": "警察喝咖啡的時候話很多。"
+    },
+    {
+     "who": "narr",
+     "text": "（他擦著杯子，像是隨口問。）"
+    },
+    {
+     "who": "barista",
+     "text": "那個案子，最後是誰做的？"
+    },
+    {
+     "who": "you",
+     "text": "結案了。"
+    },
+    {
+     "who": "barista",
+     "text": "……好，好，不問。"
+    }
+   ]
+  }
+ },
  "4": {
   "after": {
    "title": "回程高鐵",
@@ -356,6 +478,57 @@ var ARC_INTER = {
    ],
    "arc": "xu_met_talk",
    "sceneWanted": "train"
+  },
+  "before": {
+   "title": "早上・海風咖啡",
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning"
+   },
+   "cast": [
+    {
+     "id": "wu",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    },
+    {
+     "id": "barista",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（小吳拖著一個登機箱來。）"
+    },
+    {
+     "who": "wu",
+     "text": "學長，你行李呢？"
+    },
+    {
+     "who": "you",
+     "text": "背包。"
+    },
+    {
+     "who": "wu",
+     "text": "你出差只帶一個背包？"
+    },
+    {
+     "who": "barista",
+     "text": "要出遠門？外帶兩杯？"
+    },
+    {
+     "who": "wu",
+     "text": "老闆你又知道了！"
+    },
+    {
+     "who": "barista",
+     "text": "行李箱很好認。"
+    }
+   ]
   }
  },
  "5": {
@@ -420,6 +593,61 @@ var ARC_INTER = {
    ],
    "arc": "noodle_first",
    "sceneWanted": "noodle"
+  },
+  "before": {
+   "title": "早上・海風咖啡",
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning"
+   },
+   "cast": [
+    {
+     "id": "zhou",
+     "x": 30
+    },
+    {
+     "id": "wu",
+     "x": 60
+    },
+    {
+     "id": "_you",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（一個頭髮梳得整齊的中年男人在你們桌邊坐下。他是你的上司，大隊長周振邦。）"
+    },
+    {
+     "who": "zhou",
+     "text": "台北的事辦得不錯。那邊有人打電話來誇你們。"
+    },
+    {
+     "who": "wu",
+     "text": "是誰？是不是那個很兇的鑑識員？"
+    },
+    {
+     "who": "zhou",
+     "text": "你很在意？"
+    },
+    {
+     "who": "wu",
+     "text": "沒有！"
+    },
+    {
+     "who": "narr",
+     "text": "（周振邦的手機響。他看了一眼號碼，起身走到街角才接。）"
+    },
+    {
+     "who": "wu",
+     "text": "隊長每次接電話都要走那麼遠。"
+    },
+    {
+     "who": "you",
+     "text": "嗯。"
+    }
+   ]
   }
  },
  "6": {
@@ -471,6 +699,61 @@ var ARC_INTER = {
    ],
    "arc": "reporter_he",
    "scene": "police"
+  },
+  "before": {
+   "title": "早上・海風咖啡",
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning"
+   },
+   "cast": [
+    {
+     "id": "wu",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    },
+    {
+     "id": "barista",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "wu",
+     "text": "學長，我聽說那個台北的鑑識員，真的申請調來我們這裡了。"
+    },
+    {
+     "who": "you",
+     "text": "你聽誰說的？"
+    },
+    {
+     "who": "wu",
+     "text": "人事室的阿姨。她說調令下來了，這幾天就報到。"
+    },
+    {
+     "who": "barista",
+     "text": "是女生嗎？要不要我先準備一杯熱拿鐵歡迎她？"
+    },
+    {
+     "who": "wu",
+     "text": "她看起來是喝黑咖啡的人。"
+    },
+    {
+     "who": "you",
+     "text": "她喝茶。"
+    },
+    {
+     "who": "narr",
+     "text": "（小吳和老闆同時轉頭看你。）"
+    },
+    {
+     "who": "wu",
+     "text": "……學長你怎麼知道？"
+    }
+   ]
   }
  },
  "7": {
@@ -510,6 +793,69 @@ var ARC_INTER = {
    ],
    "arc": "zhao_smoke",
    "scene": "police"
+  },
+  "before": {
+   "title": "中午・海風咖啡",
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "noon"
+   },
+   "cast": [
+    {
+     "id": "barista",
+     "x": 30
+    },
+    {
+     "id": "xu",
+     "x": 60
+    },
+    {
+     "id": "wu",
+     "x": 90
+    },
+    {
+     "id": "_you",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（許知夏第一次和你們一起坐在外面。她點了一壺烏龍茶。）"
+    },
+    {
+     "who": "barista",
+     "text": "咖啡店點茶，很有個性。"
+    },
+    {
+     "who": "xu",
+     "text": "咖啡因讓我手抖，採證不能手抖。"
+    },
+    {
+     "who": "wu",
+     "text": "所以妳之前在台北……"
+    },
+    {
+     "who": "xu",
+     "text": "我不想聊台北。"
+    },
+    {
+     "who": "narr",
+     "text": "（她把茶杯轉了半圈，看著街對面的警局。）"
+    },
+    {
+     "who": "xu",
+     "text": "這裡的人，都會在這間店講案子？"
+    },
+    {
+     "who": "you",
+     "text": "講得太多的，老闆都記得。"
+    },
+    {
+     "who": "barista",
+     "text": "我只記得誰沒付錢。"
+    }
+   ]
   }
  },
  "8": {
@@ -575,6 +921,57 @@ var ARC_INTER = {
    ],
    "arc": "gun_lab_sent",
    "scene": "lab"
+  },
+  "before": {
+   "title": "下午・海風咖啡",
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "noon"
+   },
+   "cast": [
+    {
+     "id": "barista",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    },
+    {
+     "id": "xu",
+     "x": 90
+    },
+    {
+     "id": "wu",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（你把筆記本放在桌上，去櫃台拿三明治。回來時，老闆正站在你的位子旁邊，低頭看著打開的筆記本。）"
+    },
+    {
+     "who": "barista",
+     "text": "啊，抱歉，你的杯子快被風吹倒了，我幫你扶一下。"
+    },
+    {
+     "who": "you",
+     "text": "……"
+    },
+    {
+     "who": "xu",
+     "text": "（小聲）他剛剛在看你的筆記。"
+    },
+    {
+     "who": "wu",
+     "text": "老闆人很好的啦。"
+    },
+    {
+     "who": "xu",
+     "text": "人很好的人，最會看別人的筆記。"
+    }
+   ]
   }
  },
  "9": {
@@ -610,6 +1007,61 @@ var ARC_INTER = {
    ],
    "arc": "gun_call",
    "scene": "road"
+  },
+  "before": {
+   "title": "早上・海風咖啡",
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning"
+   },
+   "cast": [
+    {
+     "id": "xu",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    },
+    {
+     "id": "qian",
+     "x": 90
+    },
+    {
+     "id": "barista",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（星期六早上。大家難得不穿制服，坐在外面等小吳開車來。）"
+    },
+    {
+     "who": "xu",
+     "text": "我第一次跟同事出去玩。"
+    },
+    {
+     "who": "you",
+     "text": "我也是。"
+    },
+    {
+     "who": "qian",
+     "text": "你們兩個這樣講話，聽起來很可憐。"
+    },
+    {
+     "who": "barista",
+     "text": "玩得開心，不要又遇到案子。"
+    },
+    {
+     "who": "qian",
+     "text": "說這種話會帶衰的！"
+    },
+    {
+     "who": "narr",
+     "text": "（小吳的車在路邊按了兩聲喇叭。）"
+    }
+   ]
   }
  },
  "10": {
@@ -649,6 +1101,53 @@ var ARC_INTER = {
    ],
    "arc": "uncle_shen",
    "scene": "taipei"
+  },
+  "before": {
+   "title": "晚上・海風咖啡",
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "night"
+   },
+   "cast": [
+    {
+     "id": "xu",
+     "x": 30
+    },
+    {
+     "id": "wu",
+     "x": 60
+    },
+    {
+     "id": "barista",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（快打烊了，外面只剩你們這一桌。）"
+    },
+    {
+     "who": "xu",
+     "text": "下禮拜我想請一天假，回台北一趟。"
+    },
+    {
+     "who": "wu",
+     "text": "妳家人在台北？"
+    },
+    {
+     "who": "xu",
+     "text": "我爸。"
+    },
+    {
+     "who": "narr",
+     "text": "（她沒有再說下去。老闆把椅子一張張疊起來，故意疊得很慢。）"
+    },
+    {
+     "who": "barista",
+     "text": "慢慢來，我不趕。"
+    }
+   ]
   }
  },
  "11": {
@@ -694,25 +1193,26 @@ var ARC_INTER = {
    "scene": "lab"
   },
   "before": {
-   "title": "早上・刑事大隊辦公室",
+   "title": "早上・海風咖啡",
+   "sceneWanted": "cafe",
    "cast": [
     {
      "id": "wu",
-     "x": 40
+     "x": 30
     },
     {
      "id": "_you",
-     "x": 80
+     "x": 60
     },
     {
      "id": "xu",
-     "x": 120
+     "x": 90
     }
    ],
    "lines": [
     {
      "who": "narr",
-     "text": "（星期一早上八點。小吳趴在桌上，桌上堆著升等考試的書。）"
+     "text": "（局對面轉角的露天咖啡店「海風咖啡」。你們坐在外面的鐵椅上，星期一早上八點。小吳桌上堆著升等考試的書。）"
     },
     {
      "who": "wu",
@@ -733,9 +1233,19 @@ var ARC_INTER = {
     {
      "who": "wu",
      "text": "那是半杯！"
+    },
+    {
+     "who": "narr",
+     "text": "（小吳的手機響了。他看到你在看，馬上掛掉，把手機螢幕朝下。）"
+    },
+    {
+     "who": "wu",
+     "text": "沒、沒事！詐騙電話！"
     }
    ],
-   "scene": "office"
+   "opt": {
+    "time": "morning"
+   }
   }
  },
  "12": {
@@ -791,25 +1301,26 @@ var ARC_INTER = {
    "sceneWanted": "safehouse"
   },
   "before": {
-   "title": "早餐店",
+   "title": "早上・海風咖啡",
+   "sceneWanted": "cafe",
    "cast": [
     {
+     "id": "barista",
+     "x": 30
+    },
+    {
      "id": "wu",
-     "x": 40
+     "x": 60
     },
     {
      "id": "xu",
-     "x": 80
+     "x": 90
     }
    ],
    "lines": [
     {
-     "who": "narr",
-     "text": "（局對面的早餐店，老闆娘已經認得你們。）"
-    },
-    {
-     "who": "narr",
-     "text": "老闆娘：沈先生照舊，蘿蔔糕加蛋、冰豆漿。"
+     "who": "barista",
+     "text": "沈先生照舊，美式不加糖、一個火腿蛋三明治。"
     },
     {
      "who": "wu",
@@ -825,10 +1336,12 @@ var ARC_INTER = {
     },
     {
      "who": "narr",
-     "text": "（電視新聞正在播：巡佐失聯，家屬報案。大家同時放下筷子。）"
+     "text": "（店裡的電視正在播：巡佐失聯，家屬報案。外面桌的你們同時放下杯子。）"
     }
    ],
-   "sceneWanted": "breakfast"
+   "opt": {
+    "time": "morning"
+   }
   }
  },
  "13": {
@@ -866,25 +1379,26 @@ var ARC_INTER = {
    "scene": "hospital"
   },
   "before": {
-   "title": "鑑識室的午休",
+   "title": "午休・海風咖啡",
+   "sceneWanted": "cafe",
    "cast": [
     {
      "id": "wu",
-     "x": 40
+     "x": 30
     },
     {
      "id": "xu",
-     "x": 80
+     "x": 60
     },
     {
      "id": "qian",
-     "x": 120
+     "x": 90
     }
    ],
    "lines": [
     {
      "who": "narr",
-     "text": "（許知夏的桌上多了一盆多肉植物，名牌寫「證物 A」。）"
+     "text": "（許知夏帶了一盆多肉植物來，放在桌上曬太陽。名牌寫「證物 A」。）"
     },
     {
      "who": "wu",
@@ -904,10 +1418,16 @@ var ARC_INTER = {
     },
     {
      "who": "narr",
-     "text": "（牆上真的貼著一張澆水紀錄表，精確到分鐘。）"
+     "text": "（她從包包拿紀錄表時，掉出一個牛皮紙袋，角落寫著「2011」。她很快撿起來塞回去。）"
+    },
+    {
+     "who": "xu",
+     "text": "看什麼？午休時間禁止參觀。"
     }
    ],
-   "scene": "lab"
+   "opt": {
+    "time": "noon"
+   }
   }
  },
  "14": {
@@ -949,44 +1469,56 @@ var ARC_INTER = {
    "sceneWanted": "funeral"
   },
   "before": {
-   "title": "下班後・小吳的機車",
+   "title": "下班後・海風咖啡",
+   "sceneWanted": "cafe",
    "cast": [
     {
      "id": "wu",
-     "x": 40
+     "x": 30
     },
     {
      "id": "_you",
-     "x": 80
+     "x": 60
+    },
+    {
+     "id": "barista",
+     "x": 90
     }
    ],
    "lines": [
     {
      "who": "narr",
-     "text": "（下雨。小吳的機車發不動。）"
+     "text": "（下雨了。你們躲在咖啡店的遮雨棚下。小吳的機車停在路邊，發不動。）"
     },
     {
      "who": "wu",
-     "text": "學長，可以載我一程嗎……"
+     "text": "學長，等一下可以載我一程嗎……"
     },
     {
      "who": "you",
-     "text": "上車。"
+     "text": "嗯。"
     },
     {
      "who": "wu",
-     "text": "你車上怎麼都是便利商店的飯糰包裝？你都不吃正餐嗎？"
+     "text": "你又只點咖啡。你都不吃正餐嗎？"
     },
     {
      "who": "you",
      "text": "……"
     },
     {
+     "who": "barista",
+     "text": "他每天只吃我的三明治。"
+    },
+    {
      "who": "wu",
      "text": "明天我帶我媽做的滷肉飯給你。不准拒絕。"
     }
    ],
-   "scene": "road"
+   "opt": {
+    "time": "dusk",
+    "rain": true
+   }
   }
  },
  "15": {
@@ -1033,21 +1565,22 @@ var ARC_INTER = {
    "sceneWanted": "noodle（雨夜）"
   },
   "before": {
-   "title": "葉晴的辦公室",
+   "title": "傍晚・海風咖啡",
+   "sceneWanted": "cafe",
    "cast": [
     {
      "id": "ye",
-     "x": 40
+     "x": 30
     },
     {
      "id": "_you",
-     "x": 80
+     "x": 60
     }
    ],
    "lines": [
     {
      "who": "narr",
-     "text": "（檢察署。葉晴桌上有一張弟弟小時候的照片。）"
+     "text": "（葉晴約你在咖啡店外面坐。她的手機桌布是弟弟小時候的照片。）"
     },
     {
      "who": "ye",
@@ -1063,37 +1596,44 @@ var ARC_INTER = {
     },
     {
      "who": "narr",
-     "text": "（她把照片轉過去，又轉回來。）"
+     "text": "（她把手機翻過去，又翻回來。）"
     },
     {
      "who": "ye",
-     "text": "……謝謝你那天的咖啡。很難喝。"
+     "text": "……謝謝你那天的咖啡。很難喝。這裡的比較好。"
     }
    ],
-   "scene": "office"
+   "opt": {
+    "time": "dusk"
+   }
   }
  },
  "16": {
   "before": {
-   "title": "督察組約談室",
+   "title": "早上・海風咖啡",
+   "sceneWanted": "cafe",
    "cast": [
     {
      "id": "li",
-     "x": 40
+     "x": 30
     },
     {
      "id": "_you",
-     "x": 80
+     "x": 60
     },
     {
      "id": "zhou",
-     "x": 120
+     "x": 90
     }
    ],
    "lines": [
     {
      "who": "narr",
-     "text": "（趙德安過世一週。督察組逐一約談。）"
+     "text": "（趙德安過世一週。你一個人坐在外面，黎光耀拿著一杯熱茶在你對面坐下。）"
+    },
+    {
+     "who": "li",
+     "text": "不是約談。只是喝茶。"
     },
     {
      "who": "li",
@@ -1105,11 +1645,7 @@ var ARC_INTER = {
     },
     {
      "who": "li",
-     "text": "你的隊長、你的助手、你的鑑識員，都說沒有。"
-    },
-    {
-     "who": "li",
-     "text": "那就是你們當中有人說謊，或是有人在偷聽。"
+     "text": "你的隊長、你的助手、你的鑑識員，都說沒有。那就是有人說謊，或是有人在偷聽。"
     },
     {
      "who": "narr",
@@ -1117,10 +1653,12 @@ var ARC_INTER = {
     },
     {
      "who": "zhou",
-     "text": "（門外）好了，問完了吧？我的人要去漁港查案。"
+     "text": "（走過來）黎督察，喝茶要不要也叫上我？我的人要去漁港查案了。"
     }
    ],
-   "scene": "police"
+   "opt": {
+    "time": "morning"
+   }
   },
   "after": {
    "title": "漁港碼頭・黃昏",
@@ -1136,6 +1674,10 @@ var ARC_INTER = {
     {
      "id": "_you",
      "x": 120
+    },
+    {
+     "id": "qian",
+     "x": 160
     }
    ],
    "lines": [
@@ -1162,6 +1704,18 @@ var ARC_INTER = {
     {
      "who": "narr",
      "text": "（豆花對著一艘漁船叫了兩聲，船上沒有人。）"
+    },
+    {
+     "who": "qian",
+     "text": "（收拾解剖刀）沈國棟……你是他外甥吧。"
+    },
+    {
+     "who": "you",
+     "text": "您認識他？"
+    },
+    {
+     "who": "qian",
+     "text": "……以前見過。我老了，記不清了。"
     }
    ],
    "sceneWanted": "harbour"
@@ -1169,22 +1723,27 @@ var ARC_INTER = {
  },
  "17": {
   "before": {
-   "title": "阿月姨麵攤・中午",
+   "title": "中午・海風咖啡",
+   "sceneWanted": "cafe",
    "cast": [
     {
      "id": "ayue",
-     "x": 40
+     "x": 30
     },
     {
      "id": "xu",
-     "x": 80
+     "x": 60
     },
     {
      "id": "wu",
-     "x": 120
+     "x": 90
     }
    ],
    "lines": [
+    {
+     "who": "narr",
+     "text": "（阿月姨提著外送的麵來咖啡店，老闆讓她在外面桌放下。）"
+    },
     {
      "who": "ayue",
      "text": "欸，那個女鑑識，妳太瘦了，多吃一顆滷蛋。"
@@ -1206,11 +1765,17 @@ var ARC_INTER = {
      "text": "（小聲）學長，她從來不跟人說「好」的。"
     },
     {
+     "who": "narr",
+     "text": "（一個穿雨鞋的男人經過，阿月姨塞給他一個信封。他點點頭就走了。）"
+    },
+    {
      "who": "ayue",
-     "text": "明天廟會遶境，你們要不要來看？我們這攤會擺到半夜。"
+     "text": "看什麼看，麵要糊了。明天廟會遶境，你們要不要來看？"
     }
    ],
-   "sceneWanted": "noodle"
+   "opt": {
+    "time": "noon"
+   }
   },
   "after": {
    "title": "廟埕・遶境散場",
@@ -1255,21 +1820,30 @@ var ARC_INTER = {
  },
  "18": {
   "before": {
-   "title": "小吳家・出發前",
+   "title": "下午・海風咖啡",
+   "sceneWanted": "cafe",
    "cast": [
     {
      "id": "wu",
-     "x": 40
+     "x": 30
     },
     {
      "id": "_you",
-     "x": 80
+     "x": 60
+    },
+    {
+     "id": "xiaoying",
+     "x": 90
+    },
+    {
+     "id": "barista",
+     "x": 120
     }
    ],
    "lines": [
     {
      "who": "narr",
-     "text": "（小吳穿著太緊的西裝，對著鏡子打領帶，打了五次。）"
+     "text": "（小吳穿著太緊的西裝，坐在外面對著手機鏡頭打領帶，打了五次。妹妹小瑩坐在旁邊喝奶茶。）"
     },
     {
      "who": "wu",
@@ -1281,22 +1855,28 @@ var ARC_INTER = {
     },
     {
      "who": "narr",
-     "text": "（你幫他打好。小吳的妹妹小瑩在旁邊笑到彎腰。）"
+     "text": "（你幫他打好。小瑩笑到彎腰。）"
     },
     {
-     "who": "narr",
-     "text": "小瑩：哥，你看起來像賣保險的。"
+     "who": "xiaoying",
+     "text": "哥，你看起來像賣保險的。"
     },
     {
      "who": "wu",
      "text": "吳小瑩！"
     },
     {
-     "who": "narr",
-     "text": "（小瑩是小吳的妹妹，讀大學二年級。）"
+     "who": "barista",
+     "text": "新郎是你嗎？"
+    },
+    {
+     "who": "wu",
+     "text": "是我表哥啦！"
     }
    ],
-   "sceneWanted": "home"
+   "opt": {
+    "time": "noon"
+   }
   },
   "after": {
    "title": "喜宴散場",
@@ -1376,25 +1956,26 @@ var ARC_INTER = {
  },
  "19": {
   "before": {
-   "title": "許振業的老公寓",
+   "title": "晚上・海風咖啡",
+   "sceneWanted": "cafe",
    "cast": [
     {
      "id": "xuzy",
-     "x": 40
+     "x": 30
     },
     {
      "id": "_you",
-     "x": 80
+     "x": 60
     },
     {
      "id": "xu",
-     "x": 120
+     "x": 90
     }
    ],
    "lines": [
     {
      "who": "narr",
-     "text": "（許知夏帶你去見她爸。屋裡很乾淨，但桌上有三個空酒瓶。）"
+     "text": "（許知夏約她爸在這裡見你。許振業點了一杯熱咖啡，偷偷從外套拿出小酒瓶倒了一點進去。）"
     },
     {
      "who": "xuzy",
@@ -1409,19 +1990,17 @@ var ARC_INTER = {
      "text": "以前一起辦過案。很久以前了。"
     },
     {
-     "who": "narr",
-     "text": "（他倒了一杯茶給你，自己倒了一杯酒。）"
-    },
-    {
      "who": "xu",
      "text": "爸。"
     },
     {
      "who": "xuzy",
-     "text": "最後一杯。"
+     "text": "最後一點。"
     }
    ],
-   "sceneWanted": "apartment"
+   "opt": {
+    "time": "night"
+   }
   },
   "after": {
    "title": "許振業家樓下・深夜",
@@ -1492,25 +2071,26 @@ var ARC_INTER = {
  },
  "20": {
   "before": {
-   "title": "夜市・下班後",
+   "title": "下班後・海風咖啡",
+   "sceneWanted": "cafe",
    "cast": [
     {
      "id": "wu",
-     "x": 40
+     "x": 30
     },
     {
      "id": "xu",
-     "x": 80
+     "x": 60
     },
     {
      "id": "qian",
-     "x": 120
+     "x": 90
     }
    ],
    "lines": [
     {
      "who": "narr",
-     "text": "（案子還沒來。你們難得準時下班，一起逛夜市。）"
+     "text": "（案子還沒來。你們難得準時下班，在咖啡店外面坐著，討論等一下去夜市吃什麼。）"
     },
     {
      "who": "wu",
@@ -1530,10 +2110,12 @@ var ARC_INTER = {
     },
     {
      "who": "narr",
-     "text": "（你們排了二十分鐘的隊。那時候沒人知道，兩天後那攤會上新聞。）"
+     "text": "（那時候沒人知道，兩天後那攤會上新聞。）"
     }
    ],
-   "sceneWanted": "nightmarket"
+   "opt": {
+    "time": "dusk"
+   }
   },
   "after": {
    "title": "何沛恩被翻亂的租屋處",
@@ -1575,6 +2157,18 @@ var ARC_INTER = {
     {
      "who": "he",
      "text": "……上個月分了。"
+    },
+    {
+     "who": "he",
+     "text": "老實說，我的消息有一半是局裡的人傳給我的。隱藏號碼，每次都說得很準。"
+    },
+    {
+     "who": "you",
+     "text": "誰？"
+    },
+    {
+     "who": "he",
+     "text": "我也想知道。"
     }
    ],
    "sceneWanted": "apartment"
