@@ -10,6 +10,7 @@ EP9.art = true;
   const txt = (s, x, y, c, f) => { const g = PR.g(); g.font = f || "6px monospace"; g.fillStyle = c; g.fillText(s, x, y); };
   const jds = bs => Object.assign(bs.map(b => b.d), { j:bs.map(b => !!b.join) });
   const beatAt = (t, ds) => { let el = 0; for (let i = 0; i < ds.length; i++){ const st = el + (ds.j && ds.j[i] ? 0 : 0.5), en = st + ds[i]; if (t < en || i === ds.length - 1) return [i, Math.max(0, Math.min(1, (t - st) / ds[i]))]; el = en; } return [0, 0]; };
+  const kf = (v, p) => Array.isArray(v) ? (() => { if (v.length === 1) return v[0]; const k = p * (v.length - 1), i = Math.min(v.length - 2, Math.floor(k)); return v[i] + (v[i + 1] - v[i]) * (k - i); })() : v;
   const stOf = o => { if (!o.ds) return [{}, 0]; const [i, p] = beatAt(o.t || 0, o.ds); return [(o.seq || [])[i] || {}, p]; };
   const fog = (x, y, w, h, a) => { const g = PR.g(); g.fillStyle = `rgba(220,226,230,${a})`; g.fillRect(x, y, w, h); if (a >= 0.5) for (let i = 0; i < w * h / 90; i++) P(x + (i * 37) % w, y + (i * 53) % h, "#eef2f4"); };
   const wood = (y, h, c, c2) => { R(0, y, W, h, c); for (let x = 0; x < W; x += 12) R(x, y, 1, h, c2); };
@@ -114,12 +115,19 @@ EP9.art = true;
     R(0, 0, 112, 98, "#a8b8a8"); for (let y = 0; y < 98; y += 8) for (let x = (y / 8) % 2 * 8; x < 112; x += 16) R(x, y, 15, 7, "#b8c8b8");
     R(112, 0, 6, 98, "#6a6a62");   // 牆
     R(118, 0, 74, 98, "#5a6a6a"); heater(150, 46, s.flame || 0);
-    if (s.sheet){ const g = PR.g(); g.fillStyle = "rgba(220,235,240,.4)"; g.fillRect(124, 16, 64, 82); R(124, 16, 64, 1, "#8a6a3a"); R(124, 16, 1, 82, "#8a6a3a"); R(188, 16, 1, 82, "#8a6a3a"); }
+    const sh = s.sheet === true ? 1 : kf(s.sheet || 0, p);   // 塑膠棚：1＝整片圍著，越小越少（一片一片扯下來）
+    if (sh > 0.02){ const g = PR.g(), w = Math.round(64 * sh); g.fillStyle = "rgba(220,235,240,.4)"; g.fillRect(188 - w, 16, w, 82); R(188 - w, 16, w, 1, "#8a6a3a"); R(188, 16, 1, 82, "#8a6a3a"); if (sh > 0.9) R(124, 16, 1, 82, "#8a6a3a"); }
+    { const wo = kf(s.win || 0, p);   // 湯屋的窗戶（裡面看、外面看都是同一扇）：漆死（白色油漆封邊）→ 撬開
+      [[96, 14], [118, 14]].forEach(([x, w]) => { R(x, 64, w, 13, "#6a7a6a"); R(x + 1, 65, w - 2, 11, wo > 0.5 ? "#1a2a2a" : "#c8d8d0");
+        if (wo <= 0.5){ R(x, 64, w, 1, "#f4f4f0"); R(x, 76, w, 1, "#f4f4f0"); R(x + (w >> 1), 65, 1, 11, "#f4f4f0"); } else R(x + 1, 65, 4, 11, "#c8d8d0"); }); }
     if (gas > 0) for (let k = 0; k < Math.round(gas * 60); k++){ const inside = k % 3 !== 0; P(inside ? 126 + (k * 29) % 60 : 4 + (k * 37) % 104, 20 + (k * 13) % 70, "#5a5a5a"); }
     R(0, 98, 112, 10, "#8a8a80"); R(118, 98, 74, 10, "#5a4a3a");
     tub(14, 78, 80); txt("松", 4, 8, "#2a4a2a", "7px serif");
     fog(118, 0, 74, 98, 0.35);
   };
+  // 池子前面那片木板：泡在水裡的人，下半身被擋住（所有人都在前景後面）
+  SC.i_cut.frontY = 120;
+  SC.i_cut.front = () => { const g = PR.g(); g.fillStyle = "rgba(122,176,184,.6)"; g.fillRect(16, 80, 76, 4); R(14, 84, 80, 14, "#b8864a"); for (let k = 4; k < 80; k += 10) R(14 + k, 84, 1, 14, "#9a6a3a"); R(14, 84, 80, 1, "#d8a868"); };
 
   /* ---------- 人物造型 ---------- */
   const LOOK = {
@@ -201,11 +209,12 @@ EP9.art = true;
     cctv_corridor: { scene:"i_corr", cam:"CORRIDOR", date:"2026-07-11", beats:[
       { t:"19:58:20", d:3.5, cap:"一個背登山包的年輕人走進湯屋「竹」。", m:{ keL:[DOOR.zhu,DY,null,1,-14,98,[[DOOR.zhu,98]]] }, out:["keL"] },
       { t:"20:41:10", d:4, cap:"他從「竹」出來，扶著牆，走得歪歪的。", m:{ keL:[-20,98,null,-1,DOOR.zhu,DY,[[DOOR.zhu,98],[30,92],[10,98]]] }, out:["keL"] },
-      { t:"20:58:30", d:4, cap:"羅文昌拿著浴巾和一小瓶清酒，走進「松」，關上門。", m:{ luoL:[DOOR.song,DY,null,1,-14,98,[[DOOR.song,98]]] }, out:["luoL"] },
+      { t:"20:58:30", d:4, cap:"羅文昌拿著浴巾和一小瓶清酒，走進「松」，關上門。", m:{ luoL:[DOOR.song,DY,"carry:R@bottle/#e8e4d8&cloth/#f4f4f0",1,-14,98,[[DOOR.song,98]]] }, out:["luoL"] },
       { t:"21:30:00", d:2.5, cap:"（21:00 到 22:05，沒有任何人走近「松」的門。）" },
-      { t:"22:06:10", d:3.5, cap:"杜美玲敲「松」的門，敲了很久。", m:{ duL:[DOOR.song - 6,96,"point",1,-14,98] } },
-      { t:"22:08:00", d:3, cap:"陳芸拿著鑰匙跑過來。", m:{ yunL:[DOOR.song + 8,96,"hold",-1,-14,98], duL:[DOOR.song - 14,98,"cross",1] } },
-      { t:"22:10:05", d:4, cap:"門打開。陳芸走進去，很快又退出來，蹲在地上。", m:{ yunL:[DOOR.song + 4,98,"kneel",-1,DOOR.song,DY,[[DOOR.song + 2,90]]], duL:[DOOR.song - 14,98,"cry",1] } },
+      { t:"22:06:10", d:2, cap:"杜美玲敲「松」的門，敲了很久。", m:{ duL:[DOOR.song - 6,96,null,1,-14,98] } },
+      { t:"22:06:30", d:3, join:true, cap:"杜美玲敲「松」的門，敲了很久。", m:{ duL:[DOOR.song - 6,96,["back+knock","back","back+knock","back","back+knock","back+knock"],1] } },
+      { t:"22:08:00", d:3, cap:"陳芸拿著鑰匙跑過來。", m:{ yunL:[DOOR.song + 8,96,"carry:R@key/#c8a040",-1,-14,98], duL:[DOOR.song - 14,98,"cross",1] } },
+      { t:"22:10:05", d:4, cap:"門打開。陳芸走進去，很快又退出來，蹲在地上。", m:{ yunL:[DOOR.song + 4,98,"kneel",-1,DOOR.song + 8,96,[[DOOR.song,98],[DOOR.song,DY],[DOOR.song,98]]], duL:[DOOR.song - 14,98,"cry",1] } },
       { t:"22:12:00", d:3, cap:"呂志明跑進來。", m:{ zmL:[DOOR.song - 2,DY,null,1,-14,98,[[DOOR.song - 2,98]]] }, out:["zmL"] },
       { t:"22:15:20", d:3.5, cap:"呂志明從走廊盡頭的後門出去。", m:{ zmL:[DOOR.back,DY,null,1,DOOR.song,DY,[[DOOR.song,98],[DOOR.back,98]]] }, out:["zmL"] },
       { t:"22:33:10", d:4, cap:"呂志明從後門回來，褲管和拖鞋都是泥巴。", m:{ zmL:[DOOR.song - 2,98,"stand",-1,DOOR.back,DY,[[DOOR.back,98]]] } }
@@ -218,11 +227,15 @@ EP9.art = true;
   /* ---------- 結案 ---------- */
   const RB = [
     { t:"20:15:00", d:5, cap:"7/11 晚上，一點風都沒有。熱水器排出來的廢氣，被塑膠棚圍住，散不出去，又被吸了回去。面板跳出「E-52」。", st:{ sheet:true, flame:2, gas:0.1, gasUp:true } },
-    { t:"20:58:30", d:4.5, cap:"20:58，羅文昌走進湯屋「松」。排風扇從 7/5 就壞了，窗戶是漆死的。", st:{ sheet:true, flame:2, gas:0.6 }, m:{ luoB:[54,92,"sit",1,-10,98] } },
-    { t:"21:30:00", d:5, cap:"他喝了一點酒，泡在熱水裡。一氧化碳沒有顏色，沒有味道。他只覺得有點睏。", st:{ sheet:true, flame:2, gas:0.8, gasUp:true }, m:{ luoB:[54,92,"sit+drink",1] } },
-    { t:"21:50:00", d:4.5, cap:"他靠在池邊，睡著了。再也沒有醒來。", st:{ sheet:true, flame:2, gas:1.6 }, m:{ luoB:[54,94,"lie",1,54,92] } },
-    { t:"22:15:20", d:5.5, cap:"22:15，呂志明聽了父親的話，從後門出去，把塑膠棚一片一片扯下來。", st:{ sheet:true, flame:2, gas:0.8 }, m:{ zmL:[150,98,"hold",1,200,98], luoB:[54,94,"lie",1] } },
-    { t:"22:31:00", d:4.5, cap:"他關掉熱水器，再從外面撬開那扇漆死的窗戶。然後回到走廊上說：「他大概是喝醉滑倒了。」", st:{ flame:0, gas:0.3 }, m:{ zmL:[200,98,null,1,150,98], luoB:[54,94,"lie",1] }, out:["zmL"] }
+    { t:"20:58:30", d:3, cap:"20:58，羅文昌走進湯屋「松」。排風扇從 7/5 就壞了，窗戶是漆死的。", st:{ sheet:true, flame:2, gas:0.6 }, m:{ luoB:[8,98,null,1,-10,98] } },
+    { t:"20:59:00", d:2, join:true, cap:"20:58，羅文昌走進湯屋「松」。排風扇從 7/5 就壞了，窗戶是漆死的。", st:{ sheet:true, flame:2, gas:0.6 }, m:{ luoB:[54,90,"sit",1,8,98] } },
+    { t:"21:30:00", d:5, cap:"他喝了一點酒，泡在熱水裡。一氧化碳沒有顏色，沒有味道。他只覺得有點睏。", st:{ sheet:true, flame:2, gas:0.8, gasUp:true }, m:{ luoB:[54,90,"sit+drink:R@cup/#e8e4d8",1] } },
+    { t:"21:50:00", d:4.5, cap:"他靠在池邊，睡著了。再也沒有醒來。", st:{ sheet:true, flame:2, gas:1.6 }, m:{ luoB:[50,90,"lie",1,54,90] } },
+    { t:"22:15:20", d:2, cap:"22:15，呂志明聽了父親的話，從後門出去，把塑膠棚一片一片扯下來。", st:{ sheet:true, flame:2, gas:0.8 }, m:{ zmL:[180,98,null,-1,200,98], luoB:[50,90,"lie",1] } },
+    { t:"22:16:00", d:4.5, join:true, cap:"22:15，呂志明聽了父親的話，從後門出去，把塑膠棚一片一片扯下來。", st:{ sheet:[1,0.75,0.5,0.25,0], flame:2, gas:0.8 }, m:{ zmL:[180,98,["reach","drag","reach","drag","reach","drag"],-1], luoB:[50,90,"lie",1] } },
+    { t:"22:31:00", d:3, cap:"他關掉熱水器，再從外面撬開那扇漆死的窗戶。然後回到走廊上說：「他大概是喝醉滑倒了。」", st:{ flame:2, gas:0.4 }, m:{ zmL:[162,98,"back+reach",1,180,98], luoB:[50,90,"lie",1] } },
+    { t:"22:31:30", d:3.5, join:true, cap:"他關掉熱水器，再從外面撬開那扇漆死的窗戶。然後回到走廊上說：「他大概是喝醉滑倒了。」", st:{ flame:0, gas:0.3, win:[0,0,0,1] }, m:{ zmL:[138,98,"reach:R@pipe/#5a5a5a",-1,162,98], luoB:[50,90,"lie",1] } },
+    { t:"22:33:00", d:2.5, join:true, cap:"他關掉熱水器，再從外面撬開那扇漆死的窗戶。然後回到走廊上說：「他大概是喝醉滑倒了。」", st:{ flame:0, gas:0.2, win:1 }, m:{ zmL:[200,98,"carry@pipe/#5a5a5a",1,138,98], luoB:[50,90,"lie",1] }, out:["zmL"] }
   ];
   EP9.court = {
     title: "雲靄山莊大廳・7 月 13 日上午", scene: "i_lobby",
