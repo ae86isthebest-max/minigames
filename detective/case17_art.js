@@ -357,7 +357,7 @@ EP17.art = true;
   EP17.locations.forEach(l => { EP17.world[l.id] = { auto:true, you:YOU }; });
   Object.assign(EP17.world.temple, {
     extras: [
-      { id:"cop17", name:"轄區員警", phase:0, until:0, x:RX(3) + 54, L:COP, pose:"stand", facing:-1, lines:[
+      { id:"cop17", name:"轄區員警", phase:0, until:0, x:RX(3) + 150, L:COP, pose:"stand", facing:-1, lines:[
         "我們 21:10 到的。廟埕的人太多了，我們先把後殿和後巷拉起來。", "問了一圈，三百多個人，沒有一個說聽到槍聲。……那時候鞭炮放成那樣，誰聽得到。" ] },
       { id:"emt17", name:"救護員", phase:0, until:0, x:RX(1) + 64, L:EMT, pose:"stand", facing:-1, lines:[
         "21:14 到場。他坐在椅子上，胸口一個小洞，已經沒有呼吸心跳了。", "我們只量了脈搏，沒有搬動他。" ] }
