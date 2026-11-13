@@ -38,7 +38,7 @@ const EP13 = {
   ],
   goal: "弄清楚阿凱是自己吸毒過量，還是有人讓他死。",
   phases: [
-    { title:"打烊以後　9月19日（六）凌晨", short:"凌晨", startAt:"ktv", questionLimit:4, clock:{ start:"03:00", end:"07:00", ask:5, item:10, cctv:10, test:10 },
+    { title:"打烊以後　9月19日（六）凌晨", short:"凌晨", startAt:"ktv", questionLimit:4, clock:{ start:"03:00", end:"07:30", ask:5, item:10, cctv:10, test:10 },
       reports:[
         { id:"r_119", title:"119 轉報",
           text:"02:43 金曲 KTV 店長黃啟文報案：808 包廂男客沒有呼吸。\n02:51 救護車到場，判定死亡。\n店長說：打烊時 808 的門鎖在「勿擾」，敲門沒人應，用總卡打開，客人倒在沙發上，桌上有白色粉末。\n店裡還在的人：店長黃啟文、櫃台陳怡如、服務生小龍；805 的客人 02:30 已經離開，警察請其中兩位回來說明。",

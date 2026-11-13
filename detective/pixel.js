@@ -382,8 +382,9 @@ const PX = (() => {
     g = canvas.getContext("2d"); canvas.width = W; canvas.height = H; g.imageSmoothingEnabled = false;
     const f = SCENES[name] || SCENES.doc; f(opt);
     drawStaff(opt.staff);
-    const hits = [];
+    const hits = [], SF = SCENES[name] || {}; let fronted = !SF.front;
     (opt.people||[]).forEach((pp,i,arr)=>{
+      if (!fronted && (pp.y !== undefined ? pp.y : 96) > (SF.frontY||999)){ SF.front(opt); fronted = true; }
       const n = arr.length, L = pp.L || pp;
       const x = pp.x !== undefined ? pp.x : opt.solo ? 96 : 24 + (n===1?72:i*(144/(n-1||1)));
       const y = pp.y !== undefined ? pp.y : opt.solo ? 100 : 96;
@@ -392,6 +393,7 @@ const PX = (() => {
       if (pp.id) hits.push({ kind:"person", id:pp.id, ...box });
       if (pp.mark){ R(x-2, box.y-8, 5, 4, "#ffd04a"); R(x-1, box.y-4, 3, 2, "#ffd04a"); }
     });
+    if (!fronted) SF.front(opt);
     (opt.marks||[]).forEach(([x,y])=>spark(x,y));
     if (opt.dim){ g.fillStyle = "#00000088"; g.fillRect(0,0,W,H); }
     return hits;
@@ -442,7 +444,10 @@ const PX = (() => {
       g = canvas.getContext("2d"); canvas.width = W; canvas.height = H; g.imageSmoothingEnabled = false;
       (SCENES[A.scene]||SCENES.doc)({ ...(A.opt||{}), t:sec, p:sec/total });
       Object.values(cars).forEach(c=>OBJ.car(c.x, 80, c.c||"#7a8a6a"));
-      Object.entries(st).sort((a,b)=>a[1].y-b[1].y).forEach(([id,p])=>{ const L = looks(id); if (L) person(p.x, p.y, L, A.s||1.3, p.facing, p.pose); });
+      // 場景可以有前景（例如櫃台、桌子）：SCENES[x].front(opt) 畫在 y ≤ frontY 的人前面、y 比較大的人後面
+      const SF = SCENES[A.scene] || {}, fo = { ...(A.opt||{}), t:sec, p:sec/total }; let fronted = !SF.front;
+      Object.entries(st).sort((a,b)=>a[1].y-b[1].y).forEach(([id,p])=>{ if (!fronted && p.y > (SF.frontY||999)){ SF.front(fo); fronted = true; } const L = looks(id); if (L) person(p.x, p.y, L, A.s||1.3, p.facing, p.pose); });
+      if (!fronted) SF.front(fo);
       // 監視器畫面效果
       if (!A.clean){ g.fillStyle = "rgba(30,60,40,.28)"; g.fillRect(0,0,W,H); for (let y=0;y<H;y+=2){ g.fillStyle="rgba(0,0,0,.16)"; g.fillRect(0,y,W,1); }
         seed = Math.floor(sec*10)+3; for (let i=0;i<40;i++) P(rnd()*W, rnd()*H, "#ffffff33"); }
