@@ -96,6 +96,10 @@ const WORLD = (() => {
     return GROUND;
   }
   const bldAt = x => blds().findIndex(b => x > b.x0 && x < b.x1);
+  // 站在某一層的地板上（不是在樓梯半路）
+  const onLevel = v => Math.abs(v - GROUND) < 1 || floors().some(f => Math.abs(f.y - v) < 1);
+  // 人在樓梯半路：回傳那座樓梯（def.stairs 的一項 { x0,y0 下端, x1,y1 上端, steps 級數 }）
+  const stairAtXY = (x, y) => onLevel(y) ? null : stairs().find(k => x >= Math.min(k.x0,k.x1) - 1 && x <= Math.max(k.x0,k.x1) + 1);
   // 一棟建築的樓層（由上到下）：{ y0, y1, fy 地板 }；沒寫就整棟一層
   const levelsOf = b => b.levels || [{ y0:-99, y1:GROUND + 20, fy:GROUND }];
   const levelAt = (b, y) => levelsOf(b).findIndex(L => y >= L.y0 && y <= L.y1);
@@ -171,7 +175,6 @@ const WORLD = (() => {
     const s = cur.s; x = clampX(x, y);
     s.after = cb;
     let sx = s.px, sy = s.py, pre = [];
-    const onLevel = v => Math.abs(v - GROUND) < 1 || floors().some(f => Math.abs(f.y - v) < 1);
     if (!onLevel(sy)){
       // 正在樓梯上：先走到樓梯的上端或下端，再照常走
       const k = stairs().find(k => sx >= Math.min(k.x0,k.x1) - 1 && sx <= Math.max(k.x0,k.x1) + 1);
@@ -212,6 +215,7 @@ const WORLD = (() => {
       const m = Math.min(d, SPEED*s.spd*dt*(Math.abs(dy) > 1 ? 0.8 : 1));
       if (d > 0){ s.px += dx/d*m; s.py += dy/d*m; }
       s.walking = true;
+      if (Math.abs(s.py - wasY) > 0.01) s.vy = s.py < wasY ? -1 : 1;
       if (Math.hypot(tx - s.px, ty - s.py) < 0.5){
         s.px = tx; s.py = ty; s.path.shift();
         if (!s.path.length){ s.walking = false; const cb = s.after; s.after = null; cb && cb(); if (s.script && step() && step().walk && step().walk[0]==="you") next(); }
@@ -241,10 +245,21 @@ const WORLD = (() => {
       if (Math.abs(bd) > 0.5){ s.bx += Math.sign(bd)*Math.min(Math.abs(bd), SPEED*0.95*dt); }
       else { s.btx = null; resetTrail(s); if (s.script && step() && step().walk && step().walk[0]==="buddy") next(); }
     } else {
-      const [gx, gy] = trailBack(s, BACK), dd = Math.hypot(gx - s.bx, gy - s.by);
+      // 助手跟在後面 BACK 那麼遠；但主角停下來時，助手不可以停在樓梯半路（下半身會被樓板擋住）：
+      // 讓他把樓梯走完，如果這樣太貼近主角，就站到主角的另一邊
+      let fd = BACK, [gx, gy] = trailBack(s, fd);
+      if (!s.walking){
+        while (!onLevel(gy) && fd > 0){ fd = Math.max(0, fd - 2); [gx, gy] = trailBack(s, fd); }
+        if (fd < 10 && onLevel(s.by) && Math.abs(s.by - s.py) < 1){
+          if (!s.bside){ s.bside = s.face || 1; if (Math.abs(clampX(s.px + s.bside*14, s.py) - s.px) < 9) s.bside = -s.bside; }
+          gy = s.py; gx = clampX(s.px + s.bside*14, gy);
+        }
+      } else s.bside = 0;
+      const dd = Math.hypot(gx - s.bx, gy - s.by);
       if (dd > 0.5){ const m = Math.min(dd, SPEED*Math.max(1.05, s.spd*1.05)*dt); s.bx += (gx-s.bx)/dd*m; s.by += (gy-s.by)/dd*m; }
     }
     s.bmove = Math.hypot(s.bx-obx, s.by-oby) > 0.05;
+    if (Math.abs(s.by - oby) > 0.01) s.bvy = s.by < oby ? -1 : 1;
     if (s.bmove && Math.abs(s.bx-obx) > 0.02) s.bface = s.bx > obx ? 1 : -1;
     else if (!s.bmove && !s.walking) s.bface = s.px > s.bx ? 1 : -1;
     // 車
@@ -480,11 +495,16 @@ const WORLD = (() => {
     if (!hideYou) list.push({ id:"you", x:s.px, y:s.py, L:hooks.you, kind:"you" });
     list.sort((a,c) => (a.z||0) - (c.z||0) || a.y - c.y);
     const drawOne = q => {
+      // 上下樓梯：一級一級踏（腳踩在梯級上，不是沿著斜線滑上去）
+      const me = q.kind==="you" || q.kind==="buddy", k = me ? stairAtXY(q.x, q.y) : null;
+      const sr = k ? PX.stairAt([k.x0,k.y0,k.x1,k.y1,k.steps], q.x, (((q.kind==="you" ? s.vy : s.bvy) < 0) === (k.y1 < k.y0)) ? 1 : -1) : null;
+      if (sr) q = { ...q, y: sr.y };
       if (!/lie|fall/.test(q.pose || "")) shadowAt(p, g, q.x, q.y, /sit|kneel/.test(q.pose || "") ? 16 : 13);
       const talking = talkingId === q.id || (talkingId === "wu" && q.kind === "buddy");
-      if (q.kind==="you" || q.kind==="buddy"){
+      if (me){
         const moving = q.kind==="you" ? s.walking : s.bmove, face = q.kind==="you" ? s.face : s.bface;
-        if (moving) PX.profile(q.x, q.y, q.L, Math.floor(s.t*8) + (q.kind==="buddy"?1:0), face);
+        if (sr) PX.profile(q.x, q.y, q.L, sr.frame, face, { stair: sr.stair });
+        else if (moving) PX.profile(q.x, q.y, q.L, Math.floor(s.t*8) + (q.kind==="buddy"?1:0), face);
         else { const a = alive({ x:q.x, pose:q.kind==="buddy" ? "hold" : "stand" }, s.t, talking); PX.person(q.x, q.y, { ...q.L, ...a.fx }, 1, face, a.pose); }
         if (q.kind==="buddy" && !s.script) arrow(p, { ...q, arrow:"#6fd46f" }, s.t);
         return;
