@@ -34,14 +34,15 @@ for (const it of list){
     const tick = () => new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
     for (let bi=B0; bi<Math.min(A.beats.length, B1); bi++){ const [t0,t1] = spans[bi], row = bi - B0;
       for (let k=0;k<N;k++){ const f = N===1 ? 0.97 : [0.12,0.4,0.68,0.97,0.25,0.55,0.82][k] ?? (k+0.5)/N; ctl.seek(t0 + (t1-t0)*f); await tick(); const K = src.width/192; g.drawImage(src, CROP[0]*K, CROP[1]*K, CROP[2]*K, CROP[3]*K, k*CW, row*CH, CW, CH); }
-      g.fillStyle = "#000b"; g.fillRect(0, row*CH, CW*N, 13); g.fillStyle = "#ffe27a"; g.font = "11px sans-serif"; g.fillText(`#${bi+1} ${A.beats[bi].t||""} ${(A.beats[bi].cap||"").slice(0, Math.floor(CW*N/12))}`, 3, row*CH+10);
+      g.fillStyle = "#000b"; g.fillRect(0, row*CH, CW*N, 13); g.fillStyle = "#ffe27a"; g.font = "11px sans-serif"; g.fillText(`#${bi+1} ${A.beats[bi].scene ? "["+A.beats[bi].scene+"] " : ""}${A.beats[bi].t||""} ${(A.beats[bi].cap||"").slice(0, Math.floor(CW*N/12))}`, 3, row*CH+10);
       // 可疑的地方
-      const stt = {}; A.beats.slice(0, bi+1).forEach(bt=>{ Object.entries(bt.m||{}).forEach(([id,v])=>{ const pv = stt[id]||{}; stt[id] = { x:v[0], y:v[1]||96, fx: v[4]!==undefined?v[4]:pv.x!==undefined?pv.x:v[0], fy: v[5]!==undefined?v[5]:pv.y!==undefined?pv.y:(v[1]||96), v, last: bt===A.beats[bi] }; }); if (bt !== A.beats[bi]) (bt.out||[]).forEach(id=>delete stt[id]); });
+      const stt = {}, scOf = b => b.scene || A.scene, cur = A.beats[bi], stairsB = cur.stairs || (cur.scene && cur.scene !== A.scene ? [] : A.stairs) || [], laddersB = cur.ladders || (cur.scene && cur.scene !== A.scene ? [] : A.ladders) || [];
+      A.beats.slice(0, bi+1).forEach((bt,bj)=>{ if (bj > 0 && scOf(bt) !== scOf(A.beats[bj-1])) Object.keys(stt).forEach(k=>delete stt[k]); Object.entries(bt.m||{}).forEach(([id,v])=>{ const pv = stt[id]||{}; stt[id] = { x:v[0], y:v[1]||96, fx: v[4]!==undefined?v[4]:pv.x!==undefined?pv.x:v[0], fy: v[5]!==undefined?v[5]:pv.y!==undefined?pv.y:(v[1]||96), v, last: bt===A.beats[bi] }; }); if (bt !== A.beats[bi]) (bt.out||[]).forEach(id=>delete stt[id]); });
       Object.entries(stt).forEach(([id,o])=>{ if (!o.last) return; const e = PX.poseErr(o.v[2]); if (e) warn.push(`#${bi+1} ${id}：${e}`);
         const pts = [[o.fx,o.fy], ...(o.v[6]||[]), [o.x,o.y]];
         pts.slice(1).forEach((q,i)=>{ const dx = Math.abs(q[0]-pts[i][0]), dy = Math.abs(q[1]-pts[i][1]);
-          const onStair = (A.stairs||[]).some(k => [pts[i],q].every(pt => { const sx = k[2]-k[0], sy = k[3]-k[1], len = Math.hypot(sx,sy)||1; return Math.abs((pt[0]-k[0])*sy - (pt[1]-k[1])*sx)/len <= 4; }));
-          const onLadder = (A.ladders||[]).some(k => Math.abs(q[0]-k[0]) <= 3 && Math.abs(pts[i][0]-k[0]) <= 3);
+          const onStair = stairsB.some(k => [pts[i],q].every(pt => { const sx = k[2]-k[0], sy = k[3]-k[1], len = Math.hypot(sx,sy)||1; return Math.abs((pt[0]-k[0])*sy - (pt[1]-k[1])*sx)/len <= 4; }));
+          const onLadder = laddersB.some(k => Math.abs(q[0]-k[0]) <= 3 && Math.abs(pts[i][0]-k[0]) <= 3);
           if (dy > 28 && dx > 3 && !onStair) warn.push(`#${bi+1} ${id}：從 (${pts[i]}) 斜著走到 (${q})，高度差 ${dy}，不在 A.stairs 的樓梯上——是樓梯就要宣告，是往裡面走就沒問題`);
           if (dy > 20 && dx <= 3 && !onLadder) warn.push(`#${bi+1} ${id}：從 (${pts[i]}) 直上直下到 (${q})——是梯子就要宣告 A.ladders，是走進門裡就沒問題`); }); });
     }

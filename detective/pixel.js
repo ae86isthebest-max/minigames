@@ -78,12 +78,13 @@ const PX = (() => {
        "push@cart/#2a6ad8" 推推車（車上的東西是藍色）   "carry:R@bag"    右手提著袋子
        "door@key&bucket"  一手拿鑰匙開門，另一隻手提著桶子（& 後面＝另一隻手拿的東西，只有單手的動作可以用）
      腿：stand walk1 walk2 sit kneel fall lie stumble prone back（back＝站著、背對鏡頭，例如面向牆邊的機器操作）
+         kick／kick2＝一隻腳往前踢（kick2 是收腳的那一格，兩個輪流就是踢的動作）
          fall → lie＝往後倒、仰躺（頭在面向的反方向）；stumble → prone＝往前撲倒、趴著（頭在面向的那一邊，看到後腦）
      單手（跟著慣用手；人轉身也不會換手）：drink cup eat smoke cig phone carry raise wave wave2 inspect pocket write sign broom broom2
      單手、伸向面對的方向：point aim give reach strike pour knock knock2 wipe wipe2 brush brush2 door stretch（door＝伸手到門把／密碼鎖的高度；stretch＝伸長手去拿比較遠的東西）
      雙手：hold read cross cry cam push drag type type2 handsup lift climb climb2 clutch polish polish2（clutch＝雙手抓住胸口、很痛苦；polish@物件＝拿布擦手上的東西）
      物件：見下面 ITEMS；雙手捧的另外有 pot bucket bag box tray cooler；push 可以用 cart */
-  const LEGS = new Set(["stand","walk1","walk2","sit","kneel","fall","lie","stumble","prone","back"]);
+  const LEGS = new Set(["stand","walk1","walk2","sit","kneel","fall","lie","stumble","prone","back","kick","kick2"]);
   const DIR = { point:[20,11], aim:[20,10], give:[19,13], reach:[18,15], strike:[19,17], pour:[18,9], stretch:[26,12], knock:[17,6], knock2:[18,7], door:[17,5], wipe:[17,14], wipe2:[19,14], brush:[17,14], brush2:[17,16] };
   const ARM1 = new Set(["drink","cup","eat","smoke","cig","phone","carry","raise","wave","wave2","inspect","pocket","write","sign","broom","broom2"]);
   const ARM2 = new Set(["hold","read","cross","cry","cam","push","drag","type","type2","handsup","lift","climb","climb2","clutch","polish","polish2"]);
@@ -215,9 +216,13 @@ const PX = (() => {
     // 腿
     if (low){ add(3,18,4,4,bot); add(9,18,4,4,bot); add(2,21,5,2,shoe); add(9,21,5,2,shoe); if (L.skirt) add(3,17,10,4,bot); }
     else if (climb){ const a = pose==="climb" ? 3 : 0, b = 3 - a; add(4,18,3,8-a,bot); add(9,18,3,8-b,bot); add(3,25-a,4,2,shoe); add(9,25-b,4,2,shoe); if (L.skirt) add(3,17,10,5,bot); }
+    else if (legs==="kick"||legs==="kick2"){ const k = legs==="kick", lc = L.skirt ? skin : bot;   // 後腳站著，前腳往面向的方向踢出去
+      if (L.skirt) add(3,17,10,5,bot); add(4,L.skirt?22:18,3,L.skirt?4:8,lc); add(3,25,4,2,shoe);
+      if (k){ add(9,L.skirt?21:18,3,L.skirt?2:4,lc); add(11,21,4,3,lc); add(15,21,3,3,shoe); add(17,20,1,1,shoe); }
+      else { add(9,L.skirt?22:18,3,L.skirt?2:5,lc); add(10,22,3,2,lc); add(11,24,4,2,shoe); } }
     else if (L.skirt){ add(3,17,10,5,bot); const a=legs==="walk1"?1:0, b=legs==="walk2"?1:0; add(4,22,2,4-a,skin); add(10,22,2,4-b,skin); add(3,25-a,4,2,shoe); add(9,25-b,4,2,shoe); }
     else { const a=legs==="walk1"?1:0, b=legs==="walk2"?1:0; add(4-b,18,3,8-a,bot); add(9+a,18,3,8-b,bot); add(3-b,25-a,4,2,shoe); add(9+a,25-b,4,2,shoe); }
-    if (!low && !L.skirt){ add(5,19,1,5,shade(bot,-.18)); add(10,19,1,5,shade(bot,-.18)); add(3,25,1,1,shade(shoe,.45)); add(9,25,1,1,shade(shoe,.45)); }
+    if (!low && !L.skirt && !/^kick/.test(legs)){ add(5,19,1,5,shade(bot,-.18)); add(10,19,1,5,shade(bot,-.18)); add(3,25,1,1,shade(shoe,.45)); add(9,25,1,1,shade(shoe,.45)); }
     const legEnd = parts.length;
     // 身體（領口、皮帶、衣服皺褶）
     add(3,10,10,9,top);
@@ -626,6 +631,8 @@ const PX = (() => {
      - 單獨一個「到了才做」的動作（point、reach、drink……，還有 sit、kneel）：路上正常走，走到（這一段的 72%）才擺出動作／坐下。
      - look.back:true 的人（不能讓玩家看到臉）永遠只畫背面，不會變成側面。
      - beat.join:true：緊接著上一段，中間不快轉（同一句字幕分幾步做的時候用，字幕寫一樣的）。
+     - beat.scene／beat.opt／beat.s／beat.stairs／beat.ladders：只有這一段換到別的場景（沒寫就用 A 的）。換了場景，上一個場景的人不會帶過來，
+       要在這一段的 m 重新寫出場的人（記得寫「從x, 從y」，不然會從 (到x,到y) 原地出現）。
      - A.stairs:[[x0,y0,x1,y1,級數]]：場景裡的樓梯（下端 → 上端）。路線有一段沿著樓梯走，就會一級一級踏上去／下來。
      - A.ladders:[[x,y上,y下]]：梯子。沿著梯子直上直下，就會變成背面爬梯子。 */
   function play(canvas, A, looks, onCap, auto=true){
@@ -636,7 +643,7 @@ const PX = (() => {
       return m ? { sec: +m[1]*3600 + +m[2]*60 + +(m[3]||0), date: bt.date || s.slice(0, m.index).trim() || null, label: m[1].padStart(2,"0")+":"+m[2] } : { sec:null, date: bt.date || s.trim() || null, label: s.trim() }; };
     const fmt = n => [Math.floor(n/3600)%24, Math.floor(n/60)%60, Math.floor(n)%60].map(v=>String(v).padStart(2,"0")).join(":");
     let lastCap = null;
-    const k0 = k => k[0];
+    const k0 = k => k[0], sceneOf = b => (b && b.scene) || A.scene;
     // 這個點在不在樓梯那條斜線上（差 3 格以內）
     const onLine = (k, q) => { const dx = k[2]-k[0], dy = k[3]-k[1], len = Math.hypot(dx,dy) || 1, t = ((q[0]-k[0])*dx + (q[1]-k[1])*dy)/(len*len);
       return t > -0.1 && t < 1.1 && Math.abs((q[0]-k[0])*dy - (q[1]-k[1])*dx)/len <= 4; };
@@ -648,6 +655,9 @@ const PX = (() => {
       for (; i<A.beats.length; i++){
         const b = A.beats[i], start = el + gapOf(b), end = start + b.d;
         const p = sec < start ? 0 : Math.min(1, (sec-start)/b.d);
+        // 換場景（beat.scene 和上一段不一樣）：上一個場景的人和車都不帶過來
+        if (i > 0 && sceneOf(b) !== sceneOf(A.beats[i-1])){ Object.keys(st).forEach(k=>delete st[k]); Object.keys(cars).forEach(k=>delete cars[k]); }
+        const stairsB = b.stairs || (b.scene && b.scene !== A.scene ? [] : A.stairs) || [], laddersB = b.ladders || (b.scene && b.scene !== A.scene ? [] : A.ladders) || [];
         Object.entries(b.m||{}).forEach(([id,v])=>{
           const prev = st[id] || {};
           const fx = v[4]!==undefined ? v[4] : prev.x!==undefined ? prev.x : v[0], fy = v[5]!==undefined ? v[5] : prev.y!==undefined ? prev.y : (v[1]||96);
@@ -657,7 +667,7 @@ const PX = (() => {
           const raw = v[2] || "stand", single = !Array.isArray(raw), pp0 = single ? parsePose(raw) : null, L0 = looks(id) || {};
           const travel = segs.some(x=>x>0.5);
           // 單獨一個「到了才做」的動作：先走到，再做
-          const arrive = travel && single && (ARRIVE.has(pp0.arm) || /^(sit|kneel|back)$/.test(pp0.legs)) && !/^(lie|fall|prone|stumble)$/.test(pp0.legs);   // 坐下、跪下也是走到了才做
+          const arrive = travel && single && (ARRIVE.has(pp0.arm) || /^(sit|kneel|back|kick|kick2)$/.test(pp0.legs)) && !/^(lie|fall|prone|stumble)$/.test(pp0.legs);   // 坐下、跪下也是走到了才做
           const pm = arrive ? Math.min(1, p/0.72) : p, moving = travel && pm < 1;
           let d = pm*tot, j = 0; while (j < segs.length-1 && d > segs[j]){ d -= segs[j]; j++; }
           const q0 = pts[j], q1 = pts[j+1], u = segs[j] ? Math.min(1, d/segs[j]) : 1;
@@ -672,8 +682,8 @@ const PX = (() => {
             const item = PPo.item || (arrive && PPo.arm==="drink" ? "cup" : arrive && PPo.arm==="aim" ? "gun" : null);
             const hs = PPo.hand || (L0.hand === "left" ? "L" : "R"), dist = pm*tot;
             const near = (hs === "R") === (facing > 0);   // 側面：面向右時靠近鏡頭的是右手
-            const stair = (A.stairs||[]).find(k => onLine(k, q0) && onLine(k, q1) && Math.abs(dirX) > 1 && Math.abs(dirY) > 1);
-            const ladder = (A.ladders||[]).find(k => Math.abs(q0[0]-k[0]) <= 3 && Math.abs(q1[0]-k[0]) <= 3 && Math.abs(dirY) > 1 && Math.abs(dirX) <= 3);
+            const stair = stairsB.find(k => onLine(k, q0) && onLine(k, q1) && Math.abs(dirX) > 1 && Math.abs(dirY) > 1);
+            const ladder = laddersB.find(k => Math.abs(q0[0]-k[0]) <= 3 && Math.abs(q1[0]-k[0]) <= 3 && Math.abs(dirY) > 1 && Math.abs(dirX) <= 3);
             const w = (Math.floor(sec*6)%2) ? "walk1" : "walk2", suffix = (PPo.hand ? ":"+PPo.hand : "") + (item ? "@"+item+(PPo.col ? "/"+PPo.col : "") : "") + (PPo.item2 ? "&"+PPo.item2+(PPo.col2 ? "/"+PPo.col2 : "") : "");
             const frontWalk = /^(stand|walk1|walk2)$/.test(arm) ? w + (item || PPo.item2 ? "+carry" + suffix : "") : w + "+" + arm + suffix;
             if (ladder){ o.pose = Math.floor(dist/4)%2 ? "climb2" : "climb"; o.x = k0(ladder); }
@@ -697,11 +707,13 @@ const PX = (() => {
       const sec = paused ? pauseAt : Math.min(total, (now - t0)/1000);
       const { st, cars, beat, k, gap } = stateAt(sec);
       setup(canvas, HI);
-      (SCENES[A.scene]||SCENES.doc)({ ...(A.opt||{}), t:sec, p:sec/total });
+      // beat.scene／beat.opt：這一段換到別的場景（重播從碼頭切到辦公室之類）。沒寫就是 A.scene／A.opt
+      const sn = sceneOf(beat), so = { ...(beat && beat.scene && beat.scene !== A.scene ? {} : (A.opt||{})), ...((beat && beat.opt)||{}), t:sec, p:sec/total };
+      (SCENES[sn]||SCENES.doc)(so);
       Object.values(cars).forEach(c=>OBJ.car(c.x, 80, c.c||"#7a8a6a"));
       // 場景可以有前景（例如櫃台、桌子）：SCENES[x].front(opt) 畫在 y ≤ frontY 的人前面、y 比較大的人後面
-      const SF = SCENES[A.scene] || {}, fo = { ...(A.opt||{}), t:sec, p:sec/total }; let fronted = !SF.front;
-      Object.entries(st).sort((a,b)=>a[1].y-b[1].y).forEach(([id,p])=>{ if (!fronted && p.y > (SF.frontY||999)){ SF.front(fo); fronted = true; } one(id, p, A.s||1.3); });
+      const SF = SCENES[sn] || {}, fo = so, sc = (beat && beat.s) || A.s || 1.3; let fronted = !SF.front;
+      Object.entries(st).sort((a,b)=>a[1].y-b[1].y).forEach(([id,p])=>{ if (!fronted && p.y > (SF.frontY||999)){ SF.front(fo); fronted = true; } one(id, p, sc); });
       if (!fronted) SF.front(fo);
       // 監視器畫面效果
       if (!A.clean){ g.fillStyle = "rgba(30,60,40,.28)"; g.fillRect(0,0,W,H); for (let y=0;y<H;y+=2){ g.fillStyle="rgba(0,0,0,.16)"; g.fillRect(0,y,W,1); }
