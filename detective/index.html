@@ -281,6 +281,7 @@ function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} 
 function openCase(i){
   C = CASES[i]; KEY = saveKey(C); S = loadFor(C) || fresh();
   (C.cctv||[]).forEach(c=>{ c.cctv = true; });   // 監視器畫面：顯示成 REC 畫面、選單用 📹
+  if (S.rq){ S.rq = false; save(); }   // 重新進來：推理題是蓋著的
   ARC.open(); accusePick = freshPick(); openSuspect = null; openLoc = null; screen = "case"; tab = "brief"; checkEvents();
   wTalk = null; wSay = null; peek = null; mapFrom = null; wRoom = null; wGo = false; talkFrom = null;
   // 有畫面的案件：一揀完就直接進現場（第一晚的開場動畫會自動播）
@@ -991,7 +992,7 @@ function vBrief(){
        📅 案件一共 ${phasesOf(C).length} 天，準備好了就「進入下一天」。<br>
        💡 有些問題、地點要先聽到或看到相關線索才會出現。<br>
        📓 筆記：可以按重點、時間線、人物或證物整理。<br>
-       ⚖️ 推理：隨時都可以推理。推理錯了不會公布真相，可以繼續調查再試。`
+       ⚖️ 推理：隨時都可以推理。推理錯了不會公布真相，可以繼續調查再試。推理題一打開就算用掉一次機會，第一次就全對才有 S。`
     : travel()
     ? `🗺️ 地點：每天有幾個<b>行動點</b>（今天 ${P.actions} 點）。去一個地方要用行動點，到了那裡就可以問在場的人、查那裡的證物。${P.startAt?`今天一開始你在「${esc(LOC(P.startAt).name)}」，不用行動點。`:""}<br>
        🗣️ 問話：每個人每天只會回答你 ${P.questionLimit} 題。有人會說謊。人每天會在不同的地方。<br>
@@ -1000,19 +1001,19 @@ function vBrief(){
        📅 案件一共 ${phasesOf(C).length} 天，準備好了就到這一頁「進入下一天」。沒用完的行動點不會留到隔天。<br>
        💡 有些問題、地點要先聽到或看到相關線索才會出現。<br>
        📓 筆記：可以按重點、時間線、人物或證物整理。<br>
-       ⚖️ 推理：隨時都可以推理。推理錯了不會公布真相，可以繼續調查再試。`
+       ⚖️ 推理：隨時都可以推理。推理錯了不會公布真相，可以繼續調查再試。推理題一打開就算用掉一次機會，第一次就全對才有 S。`
     : m
     ? `🗣️ 問話：每位嫌疑人<b>每天</b>只會回答你幾題（今天 ${P.questionLimit} 題）。有人會說謊。<br>
        🔍 搜證：鑑識人員今天能幫你處理 ${P.searchLimit} 項。<b>沒用完的次數不會留到隔天。</b><br>
        📅 案件分成 ${phasesOf(C).length} 天。準備好了就到這一頁「進入下一天」。<br>
        💡 有些問題要先從別人口中聽到相關的事、或看過相關證物才問得出來。<br>
-       ⚖️ 推理：隨時都可以推理。推理錯了不會公布真相，可以繼續調查再試。`
+       ⚖️ 推理：隨時都可以推理。推理錯了不會公布真相，可以繼續調查再試。推理題一打開就算用掉一次機會，第一次就全對才有 S。`
     : CLK()
     ? `🕐 時間：${esc(C.clockRule || "")}你只有 ${minLabel(clkAt(CLK(), CLK().end) - toMin(CLK().start))}。<b>走路不花時間</b>，但問一題約 ${costAsk()} 分鐘，查一樣證物約 ${CLK().item||10} 分鐘，看監視器要看錄影長度（有些錄影什麼都沒拍到，白白浪費時間）。<br>
        🗣️ 問話：每個人最多只肯回答 ${P.questionLimit} 題；越晚大家越累，${(CLK().tired||[]).map(([t,d])=>`${t} 以後每人少答 ${d} 題`).join("、")}。有人會說謊。<br>
        💡 有些問題要先從別人口中聽到相關的事、或看過證物才問得出來，所以先做什麼很重要。<br>
        📓 筆記：自動記錄你問過、看過的內容。<br>
-       ⚖️ 推理：隨時都可以推理。推理錯了不會公布真相，可以繼續調查再試。`
+       ⚖️ 推理：隨時都可以推理。推理錯了不會公布真相，可以繼續調查再試。推理題一打開就算用掉一次機會，第一次就全對才有 S。`
     : `🗣️ 問話：每位嫌疑人有很多問題可以問，但只會回答你 ${P.questionLimit} 題。有人會說謊。<br>
        🔍 搜證：調閱監視器、檢查證物，總共只能查 ${P.searchLimit} 項。找到關鍵證據會解鎖新的質問問題（質問也算一題）。<br>
        💡 有些問題要先從別人口中聽到相關的事才問得出來，所以先問誰、後問誰很重要。<br>
@@ -1317,9 +1318,10 @@ function vAccuse(){
   const people = allPeople();
   const murder = whoKind(P.kind);
   const lockedR = C.reasoning.filter(r=>!unlocked(r) && (!r.kinds || r.kinds.includes(P.kind))).length;
+  const rqN = C.reasoning.filter(r=>reasonFor(r, P.kind)).length;   // 這個結論要回答的推理題（已解鎖的）
   let n = 1;
   const leftTxt = travel() ? (apLeft()?`你今天還有 ${apLeft()} 個行動點。`:"") : (totalQLeft()+searchLeft()>0?`你${multi()?"今天":""}還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查。`:"");
-  return `<div class="card"><h2>⚖️ 推理真相</h2><p class="muted small" style="margin:0">隨時都可以來這裡推理。推理錯了不會直接公布真相，可以回去繼續調查再推理一次。${leftTxt}${multi()&&!lastPhase()?`案件還有 ${phasesOf(C).length-1-S.phase} 天可以調查。`:""}<br>你查到越多線索，能選的可能性就越多。</p></div>
+  return `<div class="card"><h2>⚖️ 推理真相</h2><p class="muted small" style="margin:0">隨時都可以來這裡推理。推理錯了不會直接公布真相，可以回去繼續調查再推理一次。推理題一打開就算一次機會。${leftTxt}${multi()&&!lastPhase()?`案件還有 ${phasesOf(C).length-1-S.phase} 天可以調查。`:""}<br>你查到越多線索，能選的可能性就越多。</p></div>
   <div class="card"><h3>${n++}. ${esc(C.kindQuestion || "到底發生了什麼事？")}</h3>
     ${kinds.map(k=>`<div class="pick ${P.kind===k.id?"on":""}" onclick="pickKind('${k.id}')"><span class="box">${P.kind===k.id?"✓":""}</span>${esc(k.label)}</div>`).join("")}
     ${lockedKinds?`<p class="muted small">🔒 還有 ${lockedKinds} 種可能性，要先發現相關線索才會出現。</p>`:""}
@@ -1328,7 +1330,10 @@ function vAccuse(){
     ${people.map(s=>`<div class="pick ${P.culprits.includes(s.id)?"on":""}" onclick="toggleCulprit('${s.id}')"><span class="box">${P.culprits.includes(s.id)?"✓":""}</span>${s.av} ${esc(s.name)}</div>`).join("")}
     <p class="muted small">🔒 調查中出現的其他人物，也會加進這裡。</p>
   </div>
-  ${C.reasoning.map((r,i)=>!reasonFor(r, P.kind)?"":`<div class="card"><h3>${n++}. ${esc(r.q)}</h3>
+  ${!rqN ? "" : !S.rq ? `<div class="card"><h3>🧩 推理題（${rqN} 題，先蓋著）</h3>
+    <p class="muted small" style="margin:0 0 8px"><b>一打開推理題，就算用掉一次推理機會</b>，看了不提交也算。這會是你第 ${(S.tries||0)+1} 次推理：第一次就全對才有 S，第二次最高 A，之後最高 B。<br>題目本身也是提示，所以想清楚、查夠了再打開。離開這一頁，題目會再蓋起來。</p>
+    <button class="btn primary" style="text-align:center" onclick="openReasoning()">打開推理題（用掉一次機會）</button></div>`
+  : C.reasoning.map((r,i)=>!reasonFor(r, P.kind)?"":`<div class="card"><h3>${n++}. ${esc(r.q)}</h3>
     ${r.options.map((o,j)=>`<div class="pick ${P.reasoning[i]===j?"on":""}" onclick="pickReason(${i},${j})"><span class="box">${P.reasoning[i]===j?"✓":""}</span>${esc(o)}</div>`).join("")}</div>`).join("")}
   ${lockedR?`<div class="card"><p class="muted small" style="margin:0">🔒 還有 ${lockedR} 題推理題，要先發現相關線索才會出現。沒出現的題目不會得分。</p></div>`:""}`:""}
   ${P.kind===null?"":`<div class="card"><h3>${n++}. 選最多 3 項關鍵證據</h3>
@@ -1340,11 +1345,18 @@ function vAccuse(){
 function pickKind(v){ accusePick.kind=v; if(!whoKind(v)) accusePick.culprits=[]; render(); }
 function toggleCulprit(id){ const c=accusePick.culprits; c.includes(id)?c.splice(c.indexOf(id),1):c.push(id); render(); }
 function pickReason(i,j){ accusePick.reasoning[i]=j; render(); }
+// 推理題平常蓋著：一打開就算用掉一次推理機會（題目本身就是提示），離開推理頁就再蓋起來
+async function openReasoning(){
+  if (S.done || S.rq) return;
+  const nth = (S.tries||0) + 1;
+  if (!await uiConfirm(`打開推理題？\n一打開就算用掉一次推理機會，看了不提交也算。\n這是你第 ${nth} 次推理${nth===1 ? "，第一次就全對才有 S。" : nth===2 ? "，最高只能拿 A。" : "，最高只能拿 B。"}`)) return;
+  S.rq = true; S.tries = nth; save(); render();
+}
 function toggleEv(id){ const e=accusePick.evidence; if(e.includes(id)) e.splice(e.indexOf(id),1); else if(e.length<3) e.push(id); else toast("最多選 3 項"); render(); }
 async function submitAccuse(){
   const P = accusePick, murder = whoKind(P.kind);
   if (murder && !P.culprits.length){ toast(P.kind==="murder" ? "請至少選一名兇手" : "請至少選一個人"); return; }
-  if (murder && C.reasoning.some((r,i)=>reasonFor(r, P.kind) && P.reasoning[i]===undefined)){ toast("推理題還沒答完"); return; }
+  if (murder && C.reasoning.some((r,i)=>reasonFor(r, P.kind) && P.reasoning[i]===undefined)){ toast(S.rq ? "推理題還沒答完" : "要先打開推理題，把題目答完"); return; }
   if (!await uiConfirm("確定提交你的推理？")) return;
   const sol = C.solution;
   let verdict;
@@ -1362,12 +1374,13 @@ async function submitAccuse(){
   if (verdict==="perfect") grade = pts>=max ? "S" : pts>=Math.ceil(max*2/3) ? "A" : "B";
   else if (verdict==="partial") grade = pts>=Math.ceil(max/2) ? "C" : "D";
   else grade = "F";
-  // 第一次就推理正確才有 S；第二次最高 A，第三次以後最高 B（S.tries 這時還沒加上這一次）
-  const nth = (S.tries||0) + 1;
+  // 第一次就推理正確才有 S；第二次最高 A，第三次以後最高 B
+  // 推理題一打開就已經算了一次（S.rq）；沒有推理題、或沒打開就提交的，這裡才算
+  const nth = S.rq ? (S.tries||1) : (S.tries||0) + 1;
   if (verdict==="perfect" && nth === 2 && grade === "S") grade = "A";
   if (verdict==="perfect" && nth >= 3 && grade !== "B") grade = "B";
   S.done = true;
-  S.tries = (S.tries||0) + 1;
+  S.tries = nth; S.rq = false;
   S.revealed = verdict==="perfect";
   S.result = { verdict, evHits, reasonHits, grade, pick: JSON.parse(JSON.stringify(P)), qUsed:S.asked.length, sUsed:S.seen.length + Object.keys(S.labq).length };
   if (art()) S.court = 0;
@@ -1433,6 +1446,7 @@ function render(){
   document.getElementById("nav").style.display = home ? "none" : "";
   document.getElementById("caseTitle").textContent = home ? "🕵️ 偵探檔案" : C.title;
   if (home){ document.getElementById("view").innerHTML = vHome(); return; }
+  if (S.rq && tab !== "accuse"){ S.rq = false; accusePick.reasoning = {}; save(); setTimeout(()=>toast("🧩 推理題蓋起來了，剛才那一次推理機會已經用掉"), 300); }
   renderClock(); renderNav();
   let v = { brief:vBrief, suspects:vSuspects, search:vSearch, map:vMap, notes:vNotes, accuse:vAccuse, scene:()=>openSuspect?vSuspects():worldView(HOME, worldDef(HOME)) }[tab]();
   if (fs && SHEETS.includes(tab)) v = sheetWrap(v);
