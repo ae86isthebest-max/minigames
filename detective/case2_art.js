@@ -187,8 +187,8 @@ EP2.art = true;
       { id:"d_neon", name:"招牌", hot:[40,4,110,22], text:"招牌上寫著「宏發當鋪　高價收購金飾」。\n「宏」字的燈管壞了一半。" },
       { id:"d_gold", name:"玻璃櫃", hot:[26,26,14,14], text:"玻璃櫃裡擺著幾支金錶，標價都很漂亮。" } ] } ],
     care: [ { id:"care", name:"慈恩安養院", scene:"care", details:[
-      { id:"d_bench", name:"長椅", hot:[128,56,44,14], text:"這張長椅正對著山。淑芳阿姨說，天氣好的時候，看得到茶園的方向。" },
-      { id:"d_plants", name:"花盆", hot:[112,54,12,16], text:"花盆裡種的是茶花。" } ] } ],
+      { id:"d_bench", name:"長椅", hot:[124,77,52,21], text:"這張長椅正對著山。淑芳阿姨說，天氣好的時候，看得到茶園的方向。" },
+      { id:"d_plants", name:"花盆", hot:[112,80,14,17], text:"花盆裡種的是茶花。" } ] } ],
     taipei: [ { id:"taipei", name:"仁愛醫院急診室", scene:"taipei", details:[
       { id:"d_notice", name:"公告欄", hot:[8,28,44,34], text:"公告欄上貼著：「本月耗材管控，領用請確實登記。」" },
       { id:"d_chairs", name:"候診椅", hot:[68,56,54,20], text:"候診椅上睡著一個值完大夜班的實習醫生。" } ] } ]
@@ -212,7 +212,7 @@ EP2.art = true;
     ev_dashcam:["shop",[146,48,46,28]], ev_photo:["shop",[88,20,24,24]],
     ev_will:["lawyer",[116,56,22,16]], ev_insurance:["lawyer",[138,58,18,14]],
     ev_chart:["hospital",[150,48,32,20]], ev_iou:["shark",[56,36,20,12]], ev_recording:["shark",[114,34,18,12]],
-    ev_visitlog:["care",[72,54,22,16]], ev_leave:["taipei",[66,48,56,18]], ev_glovelog:["taipei",[146,20,36,46]]
+    ev_visitlog:["care",[78,76,22,19]], ev_leave:["taipei",[66,48,56,18]], ev_glovelog:["taipei",[146,20,36,46]]
   };
   const SC = {
     cctv_living:["monitor"], cctv_gate:["monitor"],
