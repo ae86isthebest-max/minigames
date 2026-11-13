@@ -7,6 +7,7 @@
 - `arr.js`：只靠畫面箭嘴，能不能走到每一個區域。
 - `arctest.js`：跨集記憶（arc.js，主線用）：這一集查到、下一集記得，前情提要兩個版本。最後要印出 ARC TEST PASS。
 - `slots.js`：三個存檔位（arc.js 的 SLOT）各自獨立、舊進度變成存檔 1、刪除只刪那一個；換存檔要先確認（`slotUse` 是 async，腳本裡要 `await`）；存檔碼（`SLOT.code`／`SLOT.load`）匯出再還原內容一樣、亂貼的碼不會弄壞進度。最後要印出 SLOT TEST PASS。
+- `glint.js`：走近才閃（world.js 的 nearYou／glint：還沒看過的證物和小細節，只有主角在同一個區域或 40 格內、同一層樓才閃）和小東西的點擊範圍（至少一根手指大）。最後要印出 GLINT TEST PASS。
 - `backup.js`：自動備份（arc.js 的 BACKUP），用假的 `window.claude` 模擬試玩卡的雲端資料：備份上去、儲存空間不見了自動拿回來、備份比較多時先問、自己刪的不會跑回來、連不上不當機、網站版安靜略過。最後要印出 BACKUP TEST PASS。真的試玩卡要宣告 `capabilities:{ db:{}, user:{} }` 才有備份；有沒有開到，看首頁存檔列是不是寫「☁ 自動備份開著」。
 - `rq.js`：推理題一打開就算一次機會（平常蓋著、離開再蓋起來、第一次全對才有 S）。最後要印出 RQ TEST PASS。
 - `ep1.js`、`play2.js`：照最佳路線玩第一、二集，要拿到 S。

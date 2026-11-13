@@ -127,6 +127,33 @@ const WORLD = (() => {
     return f ? Math.max(f.x0 + 4, Math.min(f.x1 - 4, x)) : x;
   }
 
+  /* ---------- 走近才閃：還沒看過的證物、小細節 ----------
+     「附近」＝跟主角在同一個區域（房間），或左右 40 格以內，而且在同一層樓。走到樓梯半路、劇情進行中都不閃。 */
+  function nearYou(s, q){
+    const cx = q.r[0] + q.r[2]/2, cy = q.r[1] + q.r[3]/2, wx = q.walk ?? cx;
+    if (hiddenAt(s, cx, cy)) return false;
+    const fy = q.walk !== undefined && bldAt(q.walk) < 0 ? GROUND : floorAt(cx, cy);
+    if (Math.abs(fy - s.py) > 3) return false;
+    if (Math.abs(wx - s.px) <= 40 || Math.abs(cx - s.px) <= 40) return true;
+    const a = (cur.def.areas || []).find(a => s.px >= a.x0 && s.px <= a.x1 && Math.abs(s.py - (a.y ?? GROUND)) < 2);
+    return !!a && ((cx >= a.x0 && cx <= a.x1) || (wx >= a.x0 && wx <= a.x1));
+  }
+  // 一顆很小的十字星光，沒有黑邊：每 3.2 秒亮半秒，同一個地方的幾樣東西輪流亮
+  function glint(p, g, s, q, i){
+    const T = 3.2, ph = (((s.t - (s.areaT || 0)) + T - 0.25 - (i % 6) * 0.35) % T + T) % T;
+    if (ph > 0.55) return;
+    const k = Math.sin(Math.PI * ph / 0.55);                       // 0→1→0
+    const x = Math.round(q.r[0] + q.r[2] * (q.r[2] > 8 ? 0.7 : 0.5)), y = Math.round(q.r[1] + q.r[3] * (q.r[3] > 8 ? 0.3 : 0.5));
+    // 亮底（白牆、冰箱）和暗底都要看得到：金色的十字＋白色的芯，最亮的那一下四個角落有很淡的暗點襯底
+    g.save();
+    if (k > 0.75){ g.globalAlpha = 0.22; [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([dx,dy]) => p.R(x+dx, y+dy, 1, 1, "#2a1c0c")); }
+    g.globalAlpha = 0.45 + 0.5 * k;
+    if (k > 0.75){ p.R(x-2, y, 5, 1, "#ffc93a"); p.R(x, y-2, 1, 5, "#ffc93a"); }
+    else if (k > 0.35){ p.R(x-1, y, 3, 1, "#ffc93a"); p.R(x, y-1, 1, 3, "#ffc93a"); }
+    g.globalAlpha = Math.min(1, 0.55 + 0.5 * k); p.R(x, y, 1, 1, "#ffffff");
+    g.restore();
+  }
+
   /* ---------- 點擊 ---------- */
   function tap(e){
     const { canvas, s, hooks } = cur;
@@ -152,17 +179,21 @@ const WORLD = (() => {
     const inBox = (bx,by,bw,bh) => x>=bx && x<=bx+bw && y>=by && y<=by+bh;
     const spots = hooks.spots();
     const target = q => { const cx = q.r[0]+q.r[2]/2, fy = floorAt(cx, q.r[1]+q.r[3]/2); return [q.walk ?? cx, fy]; };
-    // 點的範圍放大一點，手指不用點得很準
-    const M = 5, inR = r => inBox(r[0]-M, r[1]-M, r[2]+M*2, r[3]+M*2);
-    const fresh = spots.find(q => q.k==="item" && q.fresh && inR(q.r)) ;
+    // 點的範圍放大：再小的東西，可以點的範圍也至少有一根手指那麼大（大約 44 CSS 像素；畫面很小時最多放大到 22 格）
+    const FING = Math.min(22, Math.max(10, 44 * VW / r.width));
+    const big = q => { const mx = Math.max(4, (FING - q[2]) / 2), my = Math.max(4, (FING - q[3]) / 2); return [q[0]-mx, q[1]-my, q[2]+mx*2, q[3]+my*2]; };
+    const dist = q => Math.hypot(Math.max(q[0]-x, 0, x-q[0]-q[2]), Math.max(q[1]-y, 0, y-q[1]-q[3]));
+    const inBig = q => inBox(...big(q)), inR = q => inBox(q[0]-5, q[1]-5, q[2]+10, q[3]+10);
+    const fresh = spots.filter(q => q.k==="item" && q.fresh && inR(q.r)).sort((a,c) => dist(a.r) - dist(c.r))[0];
     if (fresh){ const [tx,ty] = target(fresh); return goThen(tx, ty, () => hooks.onSpot(fresh)); }
     const p = ppl.filter(q => inBox(q.x-13, (q.y||GROUND)-36, 26, 38)).sort((a,c) => Math.abs(a.x-x) - Math.abs(c.x-x))[0];
     if (p) return goThen(p.x + (s.px < p.x ? -16 : 16), p.y||GROUND, () => { s.face = s.px < p.x ? 1 : -1; hooks.onPerson(p.id); });
     if (buddy && inBox(s.bx-10, s.by-33, 20, 34)) return hooks.onBuddy ? hooks.onBuddy(buddy.id) : hooks.onPerson(buddy.id);
-    const h = spots.filter(q => inBox(...q.r)).sort((a,b)=>a.r[2]*a.r[3]-b.r[2]*b.r[3])[0];
+    // 其他可以看的東西（小細節、看過的證物）：正好點中的優先（重疊時取小的那個）；沒點中就取放大範圍裡最近的
+    const h = spots.filter(q => inBox(...q.r)).sort((a,b)=>a.r[2]*a.r[3]-b.r[2]*b.r[3])[0]
+      || spots.filter(q => inBig(q.r) && !hiddenAt(s, q.r[0]+q.r[2]/2, q.r[1]+q.r[3]/2)).sort((a,c) => dist(a.r) - dist(c.r))[0];
     if (h){ const [tx,ty] = target(h); return goThen(tx, ty, () => hooks.onSpot(h)); }
     // 什麼都沒點中：附近有沒查過的東西，就當作點它
-    const dist = r => Math.hypot(Math.max(r[0]-x, 0, x-r[0]-r[2]), Math.max(r[1]-y, 0, y-r[1]-r[3]));
     const near = spots.filter(q => q.k==="item" && q.fresh && dist(q.r) < 12).sort((a,c) => dist(a.r) - dist(c.r))[0];
     if (near){ const [tx,ty] = target(near); return goThen(tx, ty, () => hooks.onSpot(near)); }
     s.lastTap = "ground";
@@ -226,7 +257,7 @@ const WORLD = (() => {
       const ar = cur.def.areas.find(a => s.px >= a.x0 && s.px <= a.x1 && Math.abs(s.py - (a.y ?? GROUND)) < 2);
       const aid = ar ? ar.id : null;
       if (aid !== s.lastArea){
-        s.lastArea = aid;
+        s.lastArea = aid; s.areaT = s.t;
         cur.hooks.areaNow && cur.hooks.areaNow(aid, false);
         if (ar && !(cur.hooks.areaSeen && cur.hooks.areaSeen(ar.id))){
           const ph = (cur.hooks.opt() || {}).phase || 0;
@@ -481,6 +512,11 @@ const WORLD = (() => {
     g.translate(-cam, 0);
     def.draw(p, s.t, hooks.opt(), cam, g);
     if (!def.noGroundFx) groundFx(p, g, cam);
+    // 主角走到附近，還沒看過的東西才會微微閃一下（不是整個畫面都亮，還是要自己走過去）
+    if (!s.script && !hooks.noGlint){
+      if (!s.gl || s.t < s.glT || s.t - s.glT > 0.25){ s.gl = hooks.spots().filter(q => q.fresh); s.glT = s.t; }   // 清單每 1/4 秒才重算一次，省電
+      let i = 0; s.gl.forEach(q => { if (nearYou(s, q)) glint(p, g, s, q, i++); });
+    }
     // 還沒查的證物：閃光（在外面看不到建築裡面的）
     if (!hooks.noSpark) hooks.spots().forEach(q => { const cx = q.r[0]+q.r[2]/2; if (q.k==="item" && q.fresh && !hiddenAt(s, cx, q.r[1]+q.r[3]/2) && Math.floor(s.t*2 + q.r[0]) % 3 !== 0) p.spark(cx, q.r[1]+2); });
     // 車
@@ -568,5 +604,5 @@ const WORLD = (() => {
   function indoor(x, y){ if (!cur) return 0; const i = bldAt(x); if (i < 0) return 0; const b = blds()[i]; if (y < (b.y0 ?? 0)) return 0; if ((b.open || []).some(r => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3])) return 0; const k = levelAt(b, y); return lvVis(cur.s, i, k < 0 ? 0 : k); }
   // 外面叫主角走到某個地方（選地方移動用）：到了再呼叫 cb
   function goTo(x, y, cb){ if (!cur || cur.s.script) return false; goThen(x, y ?? GROUND, cb); return true; }
-  return { mount, state, indoor, goTo, walking:() => !!(cur && cur.s.path.length), levelVis:(i, k) => cur ? lvVis(cur.s, i, k) : 0, skip:() => cur && cur.s.script && skip(), VW, VH, GROUND, reset:(lid)=>{ delete st[lid]; } };
+  return { mount, state, indoor, goTo, walking:() => !!(cur && cur.s.path.length), levelVis:(i, k) => cur ? lvVis(cur.s, i, k) : 0, skip:() => cur && cur.s.script && skip(), nearYou:q => !!cur && !cur.s.script && nearYou(cur.s, q), VW, VH, GROUND, reset:(lid)=>{ delete st[lid]; } };
 })();
