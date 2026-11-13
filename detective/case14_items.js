@@ -110,7 +110,7 @@ EP14.evidence.push(
   { id:"o14_notebook", loc:"police", room:"evshelf", hot:[70,99,11,8], arc:"notebook_y", title:"黑色的小筆記本",
     text:"一本黑色的小筆記本，從老鄭胸前的口袋掉了出來。\n裡面密密麻麻都是表格：「2023 淹水報廢清冊」上的品項、數量，和他自己一箱一箱點出來的數字。好幾行對不上，他用紅筆圈了起來。\n最後一頁的頁邊，用很用力的筆跡寫著一個字母：「<b>Y</b>」。",
     clue:"（老鄭的黑色筆記本：淹水報廢清冊和他自己點出來的數字好幾行對不上；最後一頁頁邊寫著一個「Y」）" },
-  { id:"o14_guncase", loc:"police", room:"evshelf", hot:[112,74,16,8], phase:1, requires:["e_dog"], title:"底板夾縫裡的盒子",
+  { id:"o14_guncase", loc:"police", room:"evshelf", hot:[112,74,16,8], phase:1, requires:["e_dog"], title:"底板夾縫裡的盒子", label:"鐵架底板",
     text:"C-3 最下面那塊底板撬開來，底板和地板之間的夾縫裡，塞著一個黑色的槍盒。\n盒子是空的。泡棉上壓出一把手槍的形狀，聞得到淡淡的槍油味。盒子側面的標籤被刮掉了一半。\n它不在任何一本清冊上。",
     clue:"（C-3 底板夾縫裡藏著一個空槍盒，標籤被刮掉，不在任何清冊上）" },
 
@@ -169,7 +169,7 @@ EP14.evidence.push(
   { id:"o14_table", loc:"zhenghome", room:"zliving", hot:[70,50,40,10], phase:1, title:"餐桌上的影印紙",
     text:"餐桌上攤著一疊影印紙：一邊是「2023 淹水報廢清冊」，一邊是一張一張紙箱內容的照片，照片背面寫著案號。\n旁邊一碗沒吃完的泡麵，已經乾了。",
     clue:"（老鄭家的餐桌上攤著淹水報廢清冊的影印本，和一張一張箱子內容的照片）" },
-  { id:"o14_pills", loc:"zhenghome", room:"zliving", hot:[20,24,16,20], phase:1, title:"浴室藥櫃裡的藥罐",
+  { id:"o14_pills", loc:"zhenghome", room:"zliving", hot:[20,24,16,20], phase:1, title:"浴室藥櫃裡的藥罐", label:"浴室藥櫃",
     text:"浴室的藥櫃裡有一罐安眠藥，處方日期 2023 年 3 月，裡面還剩大半罐，瓶蓋上積了一層灰。\n旁邊是一條貼布和一瓶「腰痛專用」的藥膏，藥膏快用完了。",
     clue:"老鄭家藥櫃有一罐 2023 年 3 月的安眠藥，剩大半罐、瓶蓋積灰；腰痛藥膏快用完了" },
   { id:"o14_altar", obj:true, loc:"zhenghome", room:"zliving", hot:[150,20,20,24], phase:1, icon:"🕯️", title:"客廳的小佛桌", text:"佛桌上放著鄭太太的照片，旁邊的香爐插著三支燒完的香。照片前面放了一顆滷蛋。", clue:"（鄭太太 2023 年過世；佛桌前放著一顆滷蛋）" },
