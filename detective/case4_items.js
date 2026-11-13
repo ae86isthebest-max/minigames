@@ -186,16 +186,16 @@ EP4.evidence.push(
     clue:"瑪莉亞的日記：2025/8/2 凌晨一點，葉承浩開保險櫃拿走舊木盒" },
   { id:"o4_altar", obj:true, loc:"yehome", room:"yliving", hot:[20,20,30,40], title:"神明桌", text:"葉父的遺照旁，擺著一張貔貅的照片。老太太每天都會上香。", clue:"（葉老太太很想念丈夫）" },
   { id:"o4_bills", obj:true, loc:"yehome", room:"yliving", hot:[120,60,20,8], title:"桌上的帳單", text:"安養機構的評估報告、地價稅單、遺產稅的分期繳款書。數字都很大。", clue:"葉家確實需要錢" },
-  { id:"o4_window", obj:true, loc:"yehome", room:"ystudy", hot:[90,10,40,30], title:"書房的窗邊椅", text:"窗邊的藤椅上放著一塊小絨布，是老太太每個禮拜天摸貔貅時墊的。", clue:"（老太太每週摸貔貅的地方）" },
+  { id:"o4_window", obj:true, loc:"yehome", room:"ystudy", hot:[94,38,30,34], title:"書房的窗邊椅", text:"窗邊的藤椅上放著一塊小絨布，是老太太每個禮拜天摸貔貅時墊的。", clue:"（老太太每週摸貔貅的地方）" },
 
   /* ---------- 葉承浩的公寓 ---------- */
   { id:"ev_laptop", loc:"haoapt", room:"hapt", hot:[80,46,26,14], title:"葉承浩的筆電",
     text:"螢幕沒關。瀏覽器開著一個線上百家樂的網站，帳號餘額 0。\n書籤裡還有：「翡翠 比重」、「石英岩 仿翡翠 分辨」、「拍賣 被發現仿品 刑責」。最後一個是 3 月 15 日搜尋的。",
     clue:"葉承浩的筆電：線上賭場的帳號，還搜尋過「石英岩仿翡翠怎麼分辨」「拍賣被發現仿品的刑責」" },
-  { id:"ev_iou_copy", loc:"haoapt", room:"hapt", hot:[150,54,20,10], requires:["hao12","h_hb_fuji"], title:"抽屜裡的借據影本",
+  { id:"ev_iou_copy", loc:"haoapt", room:"hapt", hot:[174,56,16,18], requires:["hao12","h_hb_fuji"], title:"抽屜裡的借據影本",
     text:"「今借到何永福新台幣九百萬元整，以翠玉貔貅一件為質，半年內清償，逾期質物歸債權人所有。2025 年 8 月 3 日　葉承浩」",
     clue:"借據影本：2025/8/3 葉承浩以「翠玉貔貅一件」為質，向何永福借 900 萬" },
-  { id:"o4_haobottles", obj:true, loc:"haoapt", room:"hapt", hot:[20,60,30,10], title:"一地的空酒瓶", text:"威士忌、啤酒，一地都是。冰箱裡只有一盒過期的牛奶。", clue:"（葉承浩過得很糟）" },
+  { id:"o4_haobottles", obj:true, loc:"haoapt", room:"hapt", hot:[14,70,52,22], title:"一地的空酒瓶", text:"威士忌、啤酒，一地都是。冰箱裡只有一盒過期的牛奶。", clue:"（葉承浩過得很糟）" },
   { id:"o4_haophoto", obj:true, loc:"haoapt", room:"hapt", hot:[110,20,24,20], title:"牆上的照片", text:"小時候的葉承浩坐在父親腿上，手裡抓著那隻貔貅玩。", clue:"葉承浩小時候拿貔貅玩過" },
 
   /* ---------- 邱師傅工作室 ---------- */
@@ -229,11 +229,11 @@ EP4.evidence.push(
     text:"3/19 22:31　「乾冰 昇華 多久」\n3/19 22:33　「重量感應器 漂移補償」\n3/20 06:40　「極凍乾冰 五股 電話」\n3/20 23:50　「鑑定錯誤 法律責任」",
     clue:"蘇曼文 3/19 22:31 搜尋「乾冰昇華多久」，22:33 搜尋「重量感應器漂移補償」",
     tl:[["03/19 22:31","蘇曼文用手機搜尋「乾冰 昇華 多久」"]] },
-  { id:"ev_sunote", loc:"suhome", room:"sroom", hot:[110,50,20,10], title:"桌上的便條紙",
+  { id:"ev_sunote", loc:"suhome", room:"sroom", hot:[88,52,22,10], title:"桌上的便條紙",
     text:"「21:55　樹脂　氣泡　比重？　——不可能」\n字寫得很亂，最後兩個字被圈了好幾圈。",
     clue:"蘇曼文的便條：「樹脂、氣泡、比重？——不可能」" },
-  { id:"o4_sucat", obj:true, loc:"suhome", room:"sroom", hot:[150,70,20,10], title:"貓", text:"一隻橘貓蹭著你的腳。貓碗是空的，看來主人一整天沒心情餵。", clue:"（蘇曼文一整天沒心思做事）" },
-  { id:"o4_sushelf", obj:true, loc:"suhome", room:"sroom", hot:[10,20,40,40], title:"書架", text:"一整排玉器、陶瓷的專業書，還有一張裱框的證書：「2019 年度最佳鑑定師」。", clue:"蘇曼文很在意自己的專業名聲" },
+  { id:"o4_sucat", obj:true, loc:"suhome", room:"sroom", hot:[148,68,34,14], title:"貓", text:"一隻橘貓蹭著你的腳。貓碗是空的，看來主人一整天沒心情餵。", clue:"（蘇曼文一整天沒心思做事）" },
+  { id:"o4_sushelf", obj:true, loc:"suhome", room:"sroom", hot:[28,18,26,52], title:"書架", text:"一整排玉器、陶瓷的專業書，還有一張裱框的證書：「2019 年度最佳鑑定師」。", clue:"蘇曼文很在意自己的專業名聲" },
 
   /* ---------- 建國玉市・福記 ---------- */
   { id:"ev_real", loc:"market", room:"mstall", hot:[130,40,30,24], requires:["e_ho_safe"], title:"「葉府・貔貅」木盒裡的東西",
@@ -250,5 +250,5 @@ EP4.evidence.push(
 
   /* ---------- 鑑識中心 ---------- */
   { id:"o4_refract", obj:true, loc:"lab", room:"lab", hot:[28,42,20,22], title:"折射儀", text:"許知夏說：「翡翠的折射率大約 1.66，石英岩 1.54。這台機器一滴油就分得出來。」", clue:"翡翠和石英岩的折射率不一樣" },
-  { id:"o4_xudesk", obj:true, loc:"lab", room:"lab", hot:[130,50,30,16], title:"許知夏的桌子", text:"桌上一個舊的鑑識工具箱，箱子上刻著「許」字，看起來比她還老。旁邊壓著一張「人事調動申請表」，地點那一格寫著：澄港。", clue:"許知夏的桌上有一張調職到澄港的申請表" }
+  { id:"o4_xudesk", obj:true, loc:"lab", room:"lab", hot:[124,54,44,10], title:"許知夏的桌子", text:"桌上一個舊的鑑識工具箱，箱子上刻著「許」字，看起來比她還老。旁邊壓著一張「人事調動申請表」，地點那一格寫著：澄港。", clue:"許知夏的桌上有一張調職到澄港的申請表" }
 );

@@ -156,8 +156,8 @@ EP3.art = true;
     R(120, 14, 60, 30, "#1a2028"); R(120, 14, 60, 1, "#3a4048"); dither(122, 16, 56, 26, "#2a323c", 3);   // 單面鏡
     floor(74, "#6a6e72", "#5e6266");
     R(60, 62, 72, 4, "#9a9ea2"); R(64, 66, 3, 20, "#7a7e82"); R(125, 66, 3, 20, "#7a7e82");
-    R(84, 64, 22, 3, "#c8ccd0"); R(86, 63, 18, 1, "#e9e4da");   // 剁刀（證物袋）
-    R(140, 78, 22, 14, "#2a3a4a"); R(144, 76, 14, 3, "#2a3a4a");   // 背包
+    if (o.knife){ R(84, 64, 22, 3, "#c8ccd0"); R(86, 63, 18, 1, "#e9e4da");   // 剁刀（證物袋）
+    R(140, 78, 22, 14, "#2a3a4a"); R(144, 76, 14, 3, "#2a3a4a"); }   // 背包
     lamp(96, 0, "#fff6d8"); R(20, 20, 26, 18, "#d8d8d0"); R(22, 22, 22, 2, "#3a5a8a"); for (let i = 0; i < 4; i++) R(23, 26 + i * 3, 18, 1, "#9a9a92");
   };
   /* =================== 解剖室 =================== */
@@ -457,7 +457,7 @@ EP3.art = true;
       { id:"pdesk", name:"刑事組辦公室", scene:"c3_police", details:[
         { id:"d3_coffee", name:"冷掉的咖啡", hot:[20,58,14,10], text:"桌上一杯冷掉的咖啡，旁邊一疊調閱申請單，每一張都要分局長簽名。" },
         { id:"d3_window", name:"窗戶", hot:[12,12,34,24], text:"窗外擠滿記者，攝影機都對著分局大門。" } ] },
-      { id:"pinterview", name:"偵訊室", scene:"interview", phase:2, requires:["e_confess"], details:[
+      { id:"pinterview", name:"偵訊室", scene:"interview", opt:{ knife:true }, phase:2, requires:["e_confess"], details:[
         { id:"d3_mirror", name:"單面鏡", hot:[120,14,60,30], text:"單面鏡後面，分局長一直站著看。他已經在電話裡跟記者說「破案了」。" } ] }
     ],
     lab: [ { id:"lab", name:"新北鑑識中心", scene:"c3_lab", details:[
@@ -550,7 +550,7 @@ EP3.art = true;
   };
   [...EP3.cctv, ...EP3.evidence].forEach(it => { if (ANIM[it.id]) it.anim = ANIM[it.id]; });
 
-  const PS = [["wback",{phase:0}],["morgue",{}],["interview",{}],["police",{}],["police",{}]];
+  const PS = [["wback",{phase:0}],["morgue",{}],["interview",{ knife:true }],["police",{}],["police",{}]];
   EP3.phases.forEach((p,i) => { p.scene = PS[i][0]; p.sceneOpt = PS[i][1]; });
 
   /* ---------- 結案：所有人到分局的會議室 ---------- */
