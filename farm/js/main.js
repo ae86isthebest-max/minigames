@@ -358,7 +358,7 @@ const tufts = [];
 function buildField() {
   for (let iz = 0; iz < 5; iz++) for (let k = 0; k < 5; k++) {
     const ix = 4 - k, t = P.tuft(); const x = -7.6 + ix * 1.05 + (iz % 2) * 0.3, z = -0.2 + iz * 1.0;
-    t.g.position.set(x, 0, z); t.g.rotation.y = (ix * 7 + iz * 3) % 6; scene.add(t.g);
+    t.g.position.set(x, 0, z); t.g.rotation.y = (ix * 7 + iz * 3) % 6; scene.add(t.g); K.bakeStatic(t.tall);
     tufts.push({ ...t, x, z, grown: true, t: 0, res: null });
   }
   K.add(scene, K.mesh(G.circle(3.4, 10), '#a9d957', false, true), -5.3, 0.006, 1.9).scale.set(1.15, 1, 1);
@@ -367,7 +367,7 @@ function buildField() {
 const trees = [];
 function buildTrees() {
   for (const [x, z] of [[-13.2, -2.6], [-14.6, 0.8], [-12.6, 3.6], [-14.4, 6.6], [-12.9, 9.6], [-15.5, 12.6], [-13.4, 14.8]]) {
-    const t = P.tree(); t.g.position.set(x, 0, z); scene.add(t.g);
+    const t = P.tree(); t.g.position.set(x, 0, z); scene.add(t.g); K.bakeStatic(t.crown);
     trees.push({ ...t, x, z, hp: 3, dead: false, t: 0, shake: 0 });
     box(x - 0.35, z - 0.35, x + 0.35, z + 0.35);
   }
@@ -381,7 +381,7 @@ const COUNTERS = [
 const VIP = { x: 10.6, z: -7.6 };
 function buildCounter(i, instant) {
   const c = COUNTERS[i]; c.on = true;
-  const g = P.counter(); g.position.set(c.x, 0.12, c.z); scene.add(g);
+  const g = P.counter(); g.position.set(c.x, 0.12, c.z); scene.add(g); K.bakeStatic(g);
   box(c.x - 1.45, c.z - 0.55, c.x + 1.45, c.z + 0.55);
   K.add(scene, K.mesh(G.rbox(1.3, 0.04, 1.3, 0.1), '#c9f0c2', false, true), c.pile.x, 0.14, c.pile.z);
   c.pile.grp = K.add(scene, new THREE.Group(), c.pile.x, 0.16, c.pile.z);
@@ -430,13 +430,13 @@ function build(def, instant) {
     b.g.position.set(pos[0], 0, pos[1]); scene.add(b.g);
     const tw = b.trough.getWorldPosition(new THREE.Vector3()), nw = b.nest.getWorldPosition(new THREE.Vector3());
     Object.assign(s, { g: b.g, inPt: tw, outPt: nw, inN: 0, outN: 0, inMax: 10, outMax: 12, timer: 0, inVis: [], outVis: [], animals: [] });
-    for (let i = 0; i < 10; i++) { const m = P.itemMesh('hay'); m.scale.setScalar(0.62); m.position.set(-0.4 + (i % 5) * 0.2, 0.3 + Math.floor(i / 5) * 0.17, (Math.floor(i / 5) % 2) * 0.08 - 0.04); m.visible = false; b.trough.add(m); s.inVis.push(m); }
-    for (let i = 0; i < 12; i++) { const m = P.itemMesh(def.out); m.scale.setScalar(0.85); m.position.set(-0.3 + (i % 4) * 0.2, 0.22 + Math.floor(i / 8) * 0.22, -0.18 + (Math.floor(i / 4) % 2) * 0.3); m.visible = false; b.nest.add(m); s.outVis.push(m); }
+    for (let i = 0; i < 10; i++) { const m = P.itemMesh('hay'); m.scale.setScalar(0.62); m.position.set(-0.4 + (i % 5) * 0.2, 0.3 + Math.floor(i / 5) * 0.17, (Math.floor(i / 5) % 2) * 0.08 - 0.04); m.visible = false; m.userData.dyn = true; b.trough.add(m); s.inVis.push(m); }
+    for (let i = 0; i < 12; i++) { const m = P.itemMesh(def.out); m.scale.setScalar(0.85); m.position.set(-0.3 + (i % 4) * 0.2, 0.22 + Math.floor(i / 8) * 0.22, -0.18 + (Math.floor(i / 4) % 2) * 0.3); m.visible = false; m.userData.dyn = true; b.nest.add(m); s.outVis.push(m); }
     if (isBarn) {
-      for (let i = 0; i < 3; i++) { const c = P.cow(); c.g.position.set(pos[0] - 0.9 + i * 0.9, 0, pos[1] + 0.9); c.g.scale.setScalar(0.85); scene.add(c.g); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.9], rx: 1.0, rz: 0.4, t: Math.random() * 5, tx: 0, tz: 0 }); }
+      for (let i = 0; i < 3; i++) { const c = P.cow(); c.g.position.set(pos[0] - 0.9 + i * 0.9, 0, pos[1] + 0.9); c.g.scale.setScalar(0.85); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.9], rx: 1.0, rz: 0.4, t: Math.random() * 5, tx: 0, tz: 0 }); }
       box(pos[0] - 1.5, pos[1] - 2, pos[0] + 1.5, pos[1] + 0.2); penBoxes(pos[0], pos[1] + 0.9, 3.0, 1.8);
     } else {
-      for (let i = 0; i < 4; i++) { const c = P.chicken(); c.g.position.set(pos[0] - 0.75 + i * 0.5, 0, pos[1] + 0.7); scene.add(c.g); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.75], rx: 0.95, rz: 0.4, t: Math.random() * 5, tx: 0, tz: 0 }); }
+      for (let i = 0; i < 4; i++) { const c = P.chicken(); c.g.position.set(pos[0] - 0.75 + i * 0.5, 0, pos[1] + 0.7); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.75], rx: 0.95, rz: 0.4, t: Math.random() * 5, tx: 0, tz: 0 }); }
       box(pos[0] - 1.2, pos[1] - 1.45, pos[0] + 1.2, pos[1] + 0.25); penBoxes(pos[0], pos[1] + 0.6, 2.4, 1.4);
     }
     const st = state.stock[id]; if (st) { s.inN = st.a || 0; s.outN = st.b || 0; }
@@ -449,8 +449,8 @@ function build(def, instant) {
     m.g.position.set(pos[0], 0, pos[1]); scene.add(m.g);
     const tw = m.inTray.getWorldPosition(new THREE.Vector3()), nw = m.outTray.getWorldPosition(new THREE.Vector3());
     Object.assign(s, { g: m.g, spin: m.spin, inPt: tw, outPt: nw, inN: 0, outN: 0, inMax: 12, outMax: 12, timer: 0, inVis: [], outVis: [] });
-    for (let i = 0; i < 12; i++) { const it = P.itemMesh(def.in); it.scale.setScalar(0.75); it.position.set(-0.3 + (i % 4) * 0.2, 0.25 + Math.floor(i / 8) * 0.2, -0.18 + (Math.floor(i / 4) % 2) * 0.3); it.visible = false; m.inTray.add(it); s.inVis.push(it); }
-    for (let i = 0; i < 12; i++) { const it = P.itemMesh(def.out); it.scale.setScalar(0.75); it.position.set(-0.3 + (i % 4) * 0.2, 0.25 + Math.floor(i / 8) * 0.28, -0.18 + (Math.floor(i / 4) % 2) * 0.3); it.visible = false; m.outTray.add(it); s.outVis.push(it); }
+    for (let i = 0; i < 12; i++) { const it = P.itemMesh(def.in); it.scale.setScalar(0.75); it.position.set(-0.3 + (i % 4) * 0.2, 0.25 + Math.floor(i / 8) * 0.2, -0.18 + (Math.floor(i / 4) % 2) * 0.3); it.visible = false; it.userData.dyn = true; m.inTray.add(it); s.inVis.push(it); }
+    for (let i = 0; i < 12; i++) { const it = P.itemMesh(def.out); it.scale.setScalar(0.75); it.position.set(-0.3 + (i % 4) * 0.2, 0.25 + Math.floor(i / 8) * 0.28, -0.18 + (Math.floor(i / 4) % 2) * 0.3); it.visible = false; it.userData.dyn = true; m.outTray.add(it); s.outVis.push(it); }
     box(pos[0] - 0.85, pos[1] - 0.8, pos[0] + 0.85, pos[1] + 0.4);
     const st = state.stock[id]; if (st) { s.inN = st.a || 0; s.outN = st.b || 0; }
     s.inLabel = label('badge', '', (o) => o.copy(tw).setY(0.95)); s.inLabel.near = 0;
@@ -463,7 +463,7 @@ function build(def, instant) {
     else g.add(P.plot(L.w, L.d));
     s.plants = [];
     for (const [x, z] of L.spots) {
-      const pl = PLANTS[def.plant](); pl.g.position.set(x, def.plant === 'apple' ? 0 : 0.2, z); g.add(pl.g);
+      const pl = PLANTS[def.plant](); pl.g.position.set(x, def.plant === 'apple' ? 0 : 0.2, z); pl.g.userData.dyn = true; pl.fruit.userData.dyn = true; g.add(pl.g); K.bakeStatic(pl.g); K.bakeStatic(pl.fruit);
       s.plants.push({ ...pl, x: pos[0] + x, z: pos[1] + z, ripe: true, t: 0, res: null });
       if (def.plant === 'apple') box(pos[0] + x - 0.25, pos[1] + z - 0.25, pos[0] + x + 0.25, pos[1] + z + 0.25);
     }
@@ -475,7 +475,7 @@ function build(def, instant) {
     const sh = def.fridge ? P2.fridge() : P.shelf(); sh.g.position.set(pos[0], 0.12, pos[1]); scene.add(sh.g);
     Object.assign(s, { g: sh.g, n: 0, vis: [], item: def.item, front: V3(pos[0], 0, pos[1] + 1.25), door: sh.door || null, dk: 0 });
     const ih = ITEMS[def.item].h * 0.95;
-    for (let i = 0; i < 24; i++) { const m = P.itemMesh(def.item); m.position.copy(sh.slots[i % 8]); m.position.y += Math.floor(i / 8) * ih; m.rotation.y = (i % 3) * 0.2 - 0.2; m.visible = false; sh.g.add(m); s.vis.push(m); }
+    for (let i = 0; i < 24; i++) { const m = P.itemMesh(def.item); m.position.copy(sh.slots[i % 8]); m.position.y += Math.floor(i / 8) * ih; m.rotation.y = (i % 3) * 0.2 - 0.2; m.visible = false; m.userData.dyn = true; sh.g.add(m); s.vis.push(m); }
     if (!def.fridge) { const ic = P.itemMesh(def.item); ic.scale.setScalar(0.9); ic.position.set(0, 1.12, -0.38); sh.g.add(ic); }
     const st = state.stock[id]; if (st) s.n = st.a || 0;
     s.label = label('badge big', '', (o) => o.set(pos[0], def.fridge ? 1.6 : 1.95, pos[1]));
@@ -498,6 +498,7 @@ function build(def, instant) {
     for (const z of [-1.4, 1.4]) K.add(g, K.mesh(G.rbox(0.18, 1.1, 0.18, 0.05), C.woodDark), -0.95, 0.55, z);
     K.add(g, K.mesh(G.rbox(0.12, 0.7, 2.9, 0.05), C.roof), -0.95, 1.1, 0);
     truck.ready = true;
+    K.bakeStatic(g);
     if (!instant) popIn(g);
   } else if (def.kind === 'store') {
     const wh = P2.warehouse(); wh.g.position.set(pos[0], 0, pos[1]); scene.add(wh.g);
@@ -519,6 +520,7 @@ function build(def, instant) {
     heli.ready = true;
     if (!instant) popIn(g);
   }
+  if (s.g && s.g.isObject3D) K.bakeStatic(s.g);
   if (!instant) { confetti(pos[0], pos[1]); sfx('unlock'); toast('🎉 ' + def.name + ' 完成！'); }
   refreshZones();
   save();
@@ -578,6 +580,7 @@ function buildMarket(instant) {
   K.add(g, K.mesh(G.circle(0.85, 24), '#ffd1e0', false, true), VIP.x, 0.025, VIP.z);
   shopArea.x0 = -20.8; shopArea.light.position.x = -6.5; shopArea.light.distance = 26;
   if (standWall.g) { scene.remove(standWall.g); standWall.g = null; unbox(standWall.b); }
+  K.bakeStatic(g);
   if (!instant) popIn(g);
 }
 function buildParking(instant) {
@@ -586,6 +589,7 @@ function buildParking(instant) {
   for (let i = 0; i < 5; i++) for (const z of [-3.6, 3.6]) K.add(g, K.mesh(G.plane(0.14, 3.2), '#ffffff', false, true), -4 + i * 2, 0.09, z);
   K.add(g, K.mesh(G.plane(9.6, 0.14), '#ffde59', false, true), 0, 0.09, 0);
   park.ready = true;
+  K.bakeStatic(g);
   if (!instant) popIn(g);
 }
 
@@ -1056,7 +1060,7 @@ function updateVip(dt) {
       const late = state.built.length > 26;
       const order = makeOrder(late ? 3 : 2, late ? 5 : 3, late ? 9 : 6);
       vip.c = { p, order, value: orderValue(order, 5) + 40, st: 'in', path: [ENTRY, [VIP.x, VIP.z]], patience: 120, face: 0, moving: 0 };
-      vip.c.label = label('zone order', '', (o) => o.set(VIP.x, 2.3, VIP.z));
+      vip.c.label = label('zone order', '', (o) => o.set(VIP.x + 0.2, 0.2, VIP.z + 2.6));
       toast('⭐ 特別客人來了！要親手交貨');
     }
     return;

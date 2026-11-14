@@ -74,6 +74,7 @@ export function machine(kind) {
     const wh = add(spin, mesh(G.cyl(0.32, 0.32, 0.06, 12), C.wood), 0, 0, 0); wh.rotation.x = Math.PI / 2;
     for (let i = 0; i < 3; i++) add(spin, mesh(G.rbox(0.6, 0.05, 0.05, 0.02), C.woodDark), 0, 0, 0.04).rotation.z = i * 1.05;
   }
+  spin.userData.dyn = true;
   const inTray = tray(g, -1.45, 0.65, '#f6dd8a');
   const outTray = tray(g, 1.45, 0.65, '#cfe9ff');
   return { g, inTray, outTray, spin };
@@ -169,7 +170,7 @@ export function fridge() {
   // two glass panes; open(k) slides the left pane over the right one
   const panes = [];
   for (const s of [-1, 1]) {
-    const p = add(g, new THREE.Group(), s * W / 4, H + 0.05, 0);
+    const p = add(g, new THREE.Group(), s * W / 4, H + 0.05, 0); p.userData.dyn = true;
     const gl = new THREE.Mesh(G.rbox(W / 2 - 0.06, 0.03, D - 0.12, 0.01), glassMat); p.add(gl);
     add(p, mesh(G.rbox(W / 2 - 0.04, 0.035, 0.05, 0.01), '#e8f2f8'), 0, 0, (D - 0.12) / 2);
     add(p, mesh(G.rbox(W / 2 - 0.04, 0.035, 0.05, 0.01), '#e8f2f8'), 0, 0, -(D - 0.12) / 2);
@@ -204,7 +205,7 @@ export function warehouse() {
   for (let i = 0; i < 6; i++) add(g, mesh(G.rbox(0.06, 2.3, 3.62, 0.02), '#97b2c3'), -1.9 + i * 0.76, 1.2, 0);
   add(g, mesh(G.prism(4.5, 1.0, 3.9), '#6f8ea2'), 0, 2.4, 0);
   add(g, mesh(G.rbox(2.6, 2.1, 0.12, 0.04), '#5d6f7c'), 0, 1.05, 1.78);
-  const door = add(g, new THREE.Group(), 0, 0, 1.86);
+  const door = add(g, new THREE.Group(), 0, 0, 1.86); door.userData.dyn = true;
   add(door, mesh(G.rbox(2.4, 1.9, 0.08, 0.03), '#eef2f5'), 0, 1.0, 0);
   for (let i = 0; i < 6; i++) add(door, mesh(G.rbox(2.42, 0.04, 0.1, 0.01), '#c9d3db'), 0, 0.2 + i * 0.3, 0);
   add(g, mesh(G.rbox(3.0, 0.5, 0.1, 0.05), '#ffd34a'), 0, 2.35, 1.83);

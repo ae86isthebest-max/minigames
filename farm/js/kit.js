@@ -146,6 +146,15 @@ export function person(opt = {}) {
   }
   if (opt.apron) add(torso, mesh(G.rbox(0.42, 0.42, 0.08, 0.04), opt.apron), 0, -0.05, 0.27);
   OUTLINE = prevOL;
+  // body, head and hat never move relative to each other: one mesh (+ one outline) instead of many
+  const statics = [];
+  for (const m of [torso, head]) m.traverse((o) => { if (o.isMesh) statics.push(o); });
+  rig.updateMatrixWorld(true);
+  const merged = mergeList(statics, rig.matrixWorld.clone().invert());
+  rig.remove(torso); rig.remove(head);
+  for (const m of merged) rig.add(m);
+  // small limbs don't need their own sun shadow (the body casts one, and the soft blob sits under the feet)
+  for (const l of legs.concat(arms)) l.traverse((o) => { if (o.isMesh) o.castShadow = false; });
   const back = add(rig, new THREE.Group(), 0, 0.5, -0.42);
   const front = add(rig, new THREE.Group(), 0, 0.55, 0.45);
   let ph = Math.random() * 6, amt = 0;
@@ -177,25 +186,59 @@ export function dashTexture(color = 'rgba(255,255,255,0.95)') {
   return t;
 }
 
-// Merge every static mesh under `group` into one mesh per material (far fewer draw calls on phones).
-export function bake(group, target) {
-  group.updateMatrixWorld(true);
-  const buckets = new Map();
-  group.traverse((o) => {
-    if (!o.isMesh) return;
-    const key = o.material.uuid + (o.castShadow ? 'c' : '') + (o.receiveShadow ? 'r' : '');
+// ---------- static merging (fewer draw calls on phones) ----------
+// Solid Lambert meshes of any colour merge into ONE vertex-coloured mesh; everything else (outlines, glass,
+// soft shadows, textured signs) merges per material. Parts marked userData.dyn (and their children) are skipped.
+const vcMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+function prepGeo(o, m4, keepUv) {
+  const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+  for (const name of Object.keys(g.attributes)) if (name !== 'position' && name !== 'normal' && !(keepUv && name === 'uv')) g.deleteAttribute(name);
+  if (keepUv && !g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+  g.applyMatrix4(m4);
+  return g;
+}
+function mergeList(list, rootInv) {
+  const buckets = new Map(), m4 = new THREE.Matrix4();
+  for (const o of list) {
+    const mat = o.material, flags = (o.castShadow ? 'c' : '') + (o.receiveShadow ? 'r' : '');
+    const vc = mat.isMeshLambertMaterial && !mat.transparent && !mat.map;
+    const key = (vc ? 'vc' : mat.uuid) + flags;
     let b = buckets.get(key);
-    if (!b) { b = { mat: o.material, cast: o.castShadow, recv: o.receiveShadow, order: o.renderOrder, geos: [] }; buckets.set(key, b); }
-    let g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
-    for (const name of Object.keys(g.attributes)) if (name !== 'position' && name !== 'normal' && name !== 'uv') g.deleteAttribute(name);
-    if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
-    g.applyMatrix4(o.matrixWorld);
+    if (!b) { b = { vc, mat, cast: o.castShadow, recv: o.receiveShadow, order: o.renderOrder, geos: [] }; buckets.set(key, b); }
+    m4.multiplyMatrices(rootInv, o.matrixWorld);
+    const g = prepGeo(o, m4, !vc);
+    if (vc) {
+      const n = g.attributes.position.count, arr = new Float32Array(n * 3), c = mat.color;
+      for (let i = 0; i < n; i++) { arr[i * 3] = c.r; arr[i * 3 + 1] = c.g; arr[i * 3 + 2] = c.b; }
+      g.setAttribute('color', new THREE.BufferAttribute(arr, 3));
+    }
     b.geos.push(g);
-  });
+  }
+  const out = [];
   for (const b of buckets.values()) {
-    const m = new THREE.Mesh(mergeGeometries(b.geos, false), b.mat);
+    const m = new THREE.Mesh(mergeGeometries(b.geos, false), b.vc ? vcMat : b.mat);
     m.castShadow = b.cast; m.receiveShadow = b.recv; m.renderOrder = b.order;
-    target.add(m);
+    out.push(m);
     b.geos.forEach((g) => g.dispose());
   }
+  return out;
+}
+function isDyn(o, root) { for (let p = o; p && p !== root; p = p.parent) if (p.userData.dyn) return true; return root.userData.dyn === true && false; }
+// merge the static parts of `group` in place (dynamic parts stay as they are)
+export function bakeStatic(group) {
+  group.updateMatrixWorld(true);
+  const list = [];
+  group.traverse((o) => { if (o.isMesh && !isDyn(o, group)) list.push(o); });
+  if (list.length < 3) return;
+  const inv = group.matrixWorld.clone().invert();
+  const merged = mergeList(list, inv);
+  for (const o of list) if (o.parent) o.parent.remove(o);
+  for (const m of merged) group.add(m);
+}
+// merge everything under `group` into `target` (world space), used for the scenery
+export function bake(group, target) {
+  group.updateMatrixWorld(true);
+  const list = [];
+  group.traverse((o) => { if (o.isMesh) list.push(o); });
+  for (const m of mergeList(list, new THREE.Matrix4())) target.add(m);
 }
