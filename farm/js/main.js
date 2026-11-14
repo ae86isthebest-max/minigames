@@ -216,7 +216,7 @@ function buildWorld() {
   // VIP carpet by the entrance
   // fences, trees, decoration
   for (const seg of [[-21, -4.5, -21, 32], [-21, 32, 12, 32], [-21, -4.5, -10.5, -4.5]]) D.add(P.fenceLine(...seg));
-  box(-21.2, -4.5, -20.8, 32); box(-21, 31.8, 12, 32.2);
+  box(-21.2, -4.5, -20.8, 32); box(-21, 31.8, 12, 32.2); box(-21, -4.65, -10.5, -4.35);
   for (let i = 0; i < 20; i++) { const t = P.tree(); t.g.position.set(-24 - rnd() * 6 + (i % 3), 0, -24 + i * 3.1); t.g.scale.setScalar(0.9 + rnd() * 0.5); D.add(t.g); }
   for (let i = 0; i < 16; i++) { const t = P.tree(); t.g.position.set(-20 + i * 3.1 + rnd(), 0, 35 + rnd() * 3); t.g.scale.setScalar(0.85 + rnd() * 0.4); D.add(t.g); }
   for (let i = 0; i < 12; i++) { const t = P.tree(); t.g.position.set(-22 + i * 3.4 + rnd(), 0, -21.5 - rnd() * 3); D.add(t.g); }
@@ -404,10 +404,10 @@ function build(def, instant) {
     for (let i = 0; i < 12; i++) { const m = P.itemMesh(def.out); m.scale.setScalar(0.85); m.position.set(-0.3 + (i % 4) * 0.2, 0.22 + Math.floor(i / 8) * 0.22, -0.18 + (Math.floor(i / 4) % 2) * 0.3); m.visible = false; b.nest.add(m); s.outVis.push(m); }
     if (isBarn) {
       const c = P.cow(); c.g.position.set(pos[0] - 0.6, 0, pos[1] + 0.9); scene.add(c.g); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.9], rx: 1.0, rz: 0.4, t: Math.random() * 5, tx: 0, tz: 0 });
-      box(pos[0] - 1.5, pos[1] - 2, pos[0] + 1.5, pos[1] + 0.2);
+      box(pos[0] - 1.5, pos[1] - 2, pos[0] + 1.5, pos[1] + 0.2); penBoxes(pos[0], pos[1] + 0.9, 3.0, 1.8);
     } else {
       for (let i = 0; i < 3; i++) { const c = P.chicken(); c.g.position.set(pos[0] - 0.6 + i * 0.6, 0, pos[1] + 0.7); scene.add(c.g); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.75], rx: 0.95, rz: 0.4, t: Math.random() * 5, tx: 0, tz: 0 }); }
-      box(pos[0] - 1.2, pos[1] - 1.45, pos[0] + 1.2, pos[1] + 0.25);
+      box(pos[0] - 1.2, pos[1] - 1.45, pos[0] + 1.2, pos[1] + 0.25); penBoxes(pos[0], pos[1] + 0.6, 2.4, 1.4);
     }
     const st = state.stock[id]; if (st) { s.inN = st.a || 0; s.outN = st.b || 0; }
     s.inLabel = label('badge', '', (o) => o.copy(tw).setY(1.0)); s.inLabel.near = 5;
@@ -441,7 +441,7 @@ function build(def, instant) {
     if (!instant) popIn(g);
   } else if (def.kind === 'shelf') {
     const sh = def.fridge ? P2.fridge() : P.shelf(); sh.g.position.set(pos[0], 0.12, pos[1]); scene.add(sh.g);
-    Object.assign(s, { g: sh.g, n: 0, vis: [], item: def.item, front: V3(pos[0], 0, pos[1] + 1.25) });
+    Object.assign(s, { g: sh.g, n: 0, vis: [], item: def.item, front: V3(pos[0], 0, pos[1] + 1.25), door: sh.door || null, dk: 0 });
     for (const sp of sh.slots) { const m = P.itemMesh(def.item); m.position.copy(sp); m.visible = false; sh.g.add(m); s.vis.push(m); }
     if (!def.fridge) { const ic = P.itemMesh(def.item); ic.scale.setScalar(0.9); ic.position.set(0, 1.12, -0.38); sh.g.add(ic); }
     const st = state.stock[id]; if (st) s.n = st.a || 0;
@@ -489,6 +489,12 @@ function build(def, instant) {
   if (!instant) { confetti(pos[0], pos[1]); sfx('unlock'); toast('🎉 ' + def.name + ' 完成！'); }
   refreshZones();
   save();
+}
+// the three fenced sides of an animal pen are solid
+function penBoxes(cx, cz, w, d) {
+  box(cx - w / 2 - 0.15, cz + d / 2 - 0.15, cx + w / 2 + 0.15, cz + d / 2 + 0.15);
+  box(cx - w / 2 - 0.15, cz - d / 2, cx - w / 2 + 0.15, cz + d / 2);
+  box(cx + w / 2 - 0.15, cz - d / 2, cx + w / 2 + 0.15, cz + d / 2);
 }
 function addSprinkler(s) {
   for (const [dx, dz] of [[-s.w / 2 - 0.15, -s.d / 2 - 0.15], [s.w / 2 + 0.15, s.d / 2 + 0.15]]) {
@@ -1305,6 +1311,11 @@ function updateDoorsAndLights(dt) {
   if (shopDoor.d) { shopDoor.k += ((someoneNear(6.5, -7.3, 2.3) ? 1 : 0) - shopDoor.k) * ease; shopDoor.d.open(shopDoor.k); }
   const wh = stations.warehouse;
   if (wh) { wh.k += ((someoneNear(wh.def.pos[0], wh.def.pos[1] + 2.4, 2.8) ? 1 : 0) - wh.k) * ease; wh.door.position.y = wh.k * 1.85; }
+  for (const sh of listOf('shelf')) {
+    if (!sh.door) continue;
+    sh.dk += ((someoneNear(sh.front.x, sh.front.z, 1.9) ? 1 : 0) - sh.dk) * ease;
+    sh.door.rotation.y = -sh.dk * 1.75;
+  }
   const pp = player.p.root.position;
   for (const A of areas) {
     const inside = pp.x > A.x0 && pp.x < A.x1 && pp.z > A.z0 && pp.z < A.z1;

@@ -157,11 +157,14 @@ export function fridge() {
   add(g, mesh(G.rbox(1.55, 1.7, 0.1, 0.04), '#cfe3ee'), 0, 1.0, -0.46);
   for (const y of [0.42, 1.02]) add(g, mesh(G.rbox(1.5, 0.05, 0.7, 0.02), '#dfe9f0'), 0, y, 0.0);
   add(g, mesh(G.rbox(1.8, 0.22, 1.0, 0.08), '#5aa9ff'), 0, 2.05, -0.05);
-  const glass = new THREE.Mesh(G.rbox(1.55, 1.65, 0.04, 0.02), glassMat); glass.position.set(0, 1.0, 0.43); g.add(glass);
-  add(g, mesh(G.rbox(0.06, 0.6, 0.06, 0.03), '#c9d3db'), 0.66, 1.05, 0.48);
+  // glass door hinged on the left edge
+  const door = add(g, new THREE.Group(), -0.78, 0, 0.45);
+  for (const [x, y, w, h] of [[0.79, 1.82, 1.58, 0.1], [0.79, 0.18, 1.58, 0.1], [0.04, 1.0, 0.08, 1.74], [1.54, 1.0, 0.08, 1.74]]) add(door, mesh(G.rbox(w, h, 0.06, 0.02), '#e8f2f8'), x, y, 0);
+  const glass = new THREE.Mesh(G.rbox(1.4, 1.52, 0.07, 0.02), glassMat); glass.position.set(0.79, 1.0, 0.01); door.add(glass);
+  add(door, mesh(G.rbox(0.07, 0.6, 0.07, 0.03), '#9fb4c2'), 1.42, 1.05, 0.07);
   const slots = [];
   for (const y of [0.45, 1.05]) for (let c = 0; c < 4; c++) slots.push(new THREE.Vector3(-0.54 + c * 0.36, y, 0.05));
-  return { g, slots };
+  return { g, slots, door };
 }
 
 // glass sliding double door; open01 0..1
