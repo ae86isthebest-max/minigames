@@ -190,9 +190,9 @@ export function dashTexture(color = 'rgba(255,255,255,0.95)') {
 // Solid Lambert meshes of any colour merge into ONE vertex-coloured mesh; everything else (outlines, glass,
 // soft shadows, textured signs) merges per material. Parts marked userData.dyn (and their children) are skipped.
 const vcMat = new THREE.MeshLambertMaterial({ vertexColors: true });
-function prepGeo(o, m4, keepUv) {
+function prepGeo(o, m4, keepUv, keepColor) {
   const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
-  for (const name of Object.keys(g.attributes)) if (name !== 'position' && name !== 'normal' && !(keepUv && name === 'uv')) g.deleteAttribute(name);
+  for (const name of Object.keys(g.attributes)) if (name !== 'position' && name !== 'normal' && !(keepUv && name === 'uv') && !(keepColor && name === 'color')) g.deleteAttribute(name);
   if (keepUv && !g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
   g.applyMatrix4(m4);
   return g;
@@ -206,8 +206,10 @@ function mergeList(list, rootInv) {
     let b = buckets.get(key);
     if (!b) { b = { vc, mat, cast: o.castShadow, recv: o.receiveShadow, order: o.renderOrder, geos: [] }; buckets.set(key, b); }
     m4.multiplyMatrices(rootInv, o.matrixWorld);
-    const g = prepGeo(o, m4, !vc);
-    if (vc) {
+    // a mesh that was merged before already carries its colours per vertex: keep them
+    const had = vc && mat.vertexColors && !!o.geometry.attributes.color;
+    const g = prepGeo(o, m4, !vc, had);
+    if (vc && !had) {
       const n = g.attributes.position.count, arr = new Float32Array(n * 3), c = mat.color;
       for (let i = 0; i < n; i++) { arr[i * 3] = c.r; arr[i * 3 + 1] = c.g; arr[i * 3 + 2] = c.b; }
       g.setAttribute('color', new THREE.BufferAttribute(arr, 3));

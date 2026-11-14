@@ -33,7 +33,8 @@ const DEFS = [
   { id: 'barn', name: '牛棚', kind: 'producer', in: 'hay', out: 'milk', pos: [-4.5, 10.2], cost: { money: 420, hay: 20, wood: 18 } },
   { id: 'shelfMilk', name: '牛奶雪櫃', kind: 'shelf', fridge: true, item: 'milk', pos: [4.4, SH_Z], cost: { money: 300 } },
   { id: 'market', name: '超級市場', kind: 'market', zone: [-12, -10], cost: { money: 1500, wood: 40 } },
-  { id: 'juicer', name: '果汁機', kind: 'machine', mk: 'juicer', in: 'tomato', out: 'juice', iv: 3, pos: [5.5, -2.7], cost: { money: 700, wood: 20 } },
+  { id: 'harbor', name: '開分店：海邊漁港', kind: 'mapgate', zone: [11.2, 0.4], cost: { money: 15000 }, req: ['market'], earned: 40000 },
+  { id: 'juicer', name: '果汁機', kind: 'machine', mk: 'juicer', in: 'tomato', out: 'juice', iv: 3, pos: [5.5, -2.7], cost: { money: 700, wood: 20 }, req: ['market'] },
   { id: 'shelfJuice', name: '果汁雪櫃', kind: 'shelf', fridge: true, item: 'juice', pos: [-8.6, SH_Z], cost: { money: 500 } },
   { id: 'shelver2', name: '理貨員', kind: 'hire', role: 'shelver', zone: [-4.4, -5], cost: { money: 800 } },
   { id: 'soy', name: '黃豆田', kind: 'crop', out: 'soybean', plant: 'soy', grow: 9, pos: [-9.5, 18.5], cost: { money: 900, wood: 25 } },
@@ -101,6 +102,10 @@ state.store = state.store || {};
 if (!state.lvl) { state.lvl = {}; if (state.built.length) { for (const k in GROW) state.lvl[k] = GROW[k].max; state.lvl.field = 25; } }
 for (const k in UPS) state.up[k] = state.up[k] || 0;
 const isBuilt = (id) => state.built.includes(id);
+const MAPS_KEY = 'farm_maps_v1';
+function mapsGet() { try { return JSON.parse(localStorage.getItem(MAPS_KEY) || '{}'); } catch (e) { return {}; } }
+function mapsSet(id) { const m = mapsGet(); m[id] = true; try { localStorage.setItem(MAPS_KEY, JSON.stringify(m)); } catch (e) { /* storage off */ } showMapBtn(); }
+function showMapBtn() { const b = document.getElementById('bMap'); if (b) b.classList.toggle('hidden', !Object.keys(mapsGet()).length); }
 function save() {
   for (const id in stations) {
     const s = stations[id];
@@ -513,6 +518,9 @@ function build(def, instant) {
     const lamp = P2.wallLamp(); lamp.g.position.set(pos[0], 2.75, pos[1] + 1.95); scene.add(lamp.g);
     makeArea(pos[0] - 2.6, pos[1] - 2, pos[0] + 2.6, pos[1] + 4, [lamp], pos[0], pos[1] + 2.6);
     if (!instant) popIn(wh.g);
+  } else if (def.kind === 'mapgate') {
+    mapsSet('harbor');
+    if (!instant) setTimeout(() => openPanel('map'), 900);
   } else if (def.kind === 'parking') {
     buildParking(instant);
   } else if (def.kind === 'helipad') {
@@ -602,7 +610,8 @@ function refreshZones() {
   for (let i = 0; i < DEFS.length; i++) {
     const def = DEFS[i];
     if (isBuilt(def.id)) { if (zones[def.id]) killZone(def.id); continue; }
-    const open = def.req ? def.req.every(isBuilt) : def.any ? def.any.some(isBuilt) : isBuilt(DEFS[i - 1].id);
+    let open = def.req ? def.req.every(isBuilt) : def.any ? def.any.some(isBuilt) : isBuilt(DEFS[i - 1].id);
+    if (def.earned && state.earned < def.earned) open = false;
     if (open && !zones[def.id]) makeZone(def);
   }
   for (const def of growDefs()) {
@@ -1236,6 +1245,13 @@ function openPanel(kind) {
     for (const s of Object.values(stations)) if (s.kind === 'producer' || s.kind === 'machine') h += '<span class="chip">' + s.def.name + ' ' + ICON[s.def.in] + s.inN + ' → ' + ICON[s.def.out] + s.outN + '</span>';
     h += '</div><div class="sec">進度</div><div class="chips"><span class="chip">已解鎖 ' + state.built.length + '/' + DEFS.length + '</span><span class="chip">總收入 ' + ICON.money + fmtMoney(state.earned) + '</span></div>';
     body.innerHTML = h;
+  } else if (kind === 'map') {
+    $('pTitle').textContent = '地圖';
+    const m = mapsGet();
+    body.innerHTML = '<div class="mapcard here"><span class="mi" style="background:#c9f0a8">🌾</span><div><b>開心農場</b><small>你而家喺度</small></div></div>' +
+      (m.harbor ? '<a class="mapcard" href="harbor.html"><span class="mi" style="background:#bfe9ff">⚓</span><div><b>海邊漁港</b><small>捕魚、壽司、海鮮餐廳</small></div></a>'
+        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">⚓</span><div><b>海邊漁港</b><small>起好超級市場、總收入 $40,000 後開放</small></div></div>') +
+      '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">🌲</span><div><b>森林伐木場</b><small>之後推出</small></div></div>';
   } else if (kind === 'set') {
     $('pTitle').textContent = '設定';
     body.innerHTML = '<div class="row"><span class="ricon">🔊</span><div class="rmid"><b>聲音</b></div><button class="buy" id="sSnd">' + (state.sound ? '開' : '關') + '</button></div>' +
@@ -1253,6 +1269,8 @@ $('panel').addEventListener('pointerdown', (e) => { if (e.target === $('panel'))
 $('bUp').onclick = () => openPanel('up');
 $('bInv').onclick = () => openPanel('inv');
 $('bSet').onclick = () => openPanel('set');
+$('bMap').onclick = () => openPanel('map');
+showMapBtn();
 
 // ---------- per-frame interactions for the player ----------
 function addMoney(v) { state.money += v; state.earned += v; updateMoney(); }
@@ -1461,8 +1479,10 @@ function frame(now) {
   placeLabels();
   saveT += dt; if (saveT > 4) { saveT = 0; save(); }
 }
+let gateT = 0;
 function step(dt) {
   T += dt;
+  gateT += dt; if (gateT > 3) { gateT = 0; if (!zones.harbor && !isBuilt('harbor') && isBuilt('market') && state.earned >= 40000) refreshZones(); }
   for (let i = later.length - 1; i >= 0; i--) { later[i].t -= dt; if (later[i].t <= 0) { const f = later[i].fn; later.splice(i, 1); f(); } }
   movePlayer(dt);
   playerInteract(dt);
