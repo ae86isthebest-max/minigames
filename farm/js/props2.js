@@ -147,3 +147,67 @@ export function ghostPerson() {
   const h = new THREE.Mesh(G.sphere(0.31, 16, 12), ghostMat); h.position.y = 1.28; g.add(h);
   return g;
 }
+
+// glass-front fridge for cold drinks and cheese; items sit on two inner shelves
+const glassMat = new THREE.MeshLambertMaterial({ color: '#cfefff', transparent: true, opacity: 0.28, depthWrite: false });
+export function fridge() {
+  const g = new THREE.Group();
+  g.add(blob(1.3));
+  add(g, mesh(G.rbox(1.75, 2.0, 0.95, 0.1), '#f4f8fb'), 0, 1.0, -0.05);
+  add(g, mesh(G.rbox(1.55, 1.7, 0.1, 0.04), '#cfe3ee'), 0, 1.0, -0.46);
+  for (const y of [0.42, 1.02]) add(g, mesh(G.rbox(1.5, 0.05, 0.7, 0.02), '#dfe9f0'), 0, y, 0.0);
+  add(g, mesh(G.rbox(1.8, 0.22, 1.0, 0.08), '#5aa9ff'), 0, 2.05, -0.05);
+  const glass = new THREE.Mesh(G.rbox(1.55, 1.65, 0.04, 0.02), glassMat); glass.position.set(0, 1.0, 0.43); g.add(glass);
+  add(g, mesh(G.rbox(0.06, 0.6, 0.06, 0.03), '#c9d3db'), 0.66, 1.05, 0.48);
+  const slots = [];
+  for (const y of [0.45, 1.05]) for (let c = 0; c < 4; c++) slots.push(new THREE.Vector3(-0.54 + c * 0.36, y, 0.05));
+  return { g, slots };
+}
+
+// glass sliding double door; open01 0..1
+export function slidingDoor(w = 1.8) {
+  const g = new THREE.Group();
+  add(g, mesh(G.rbox(w + 0.5, 0.18, 0.3, 0.05), '#8fd1c4'), 0, 1.55, 0);
+  for (const s of [-1, 1]) add(g, mesh(G.rbox(0.14, 1.6, 0.3, 0.04), '#8fd1c4'), s * (w / 2 + 0.18), 0.8, 0);
+  const panels = [];
+  for (const s of [-1, 1]) {
+    const p = add(g, new THREE.Group(), s * w / 4, 0, 0);
+    add(p, mesh(G.rbox(w / 2 - 0.04, 1.42, 0.08, 0.03), '#d8f1ff'), 0, 0.75, 0);
+    add(p, mesh(G.rbox(w / 2 - 0.04, 0.08, 0.1, 0.02), '#9fb4c2'), 0, 0.06, 0);
+    panels.push({ p, s, x0: s * w / 4 });
+  }
+  return { g, open(k) { for (const q of panels) q.p.position.x = q.x0 + q.s * k * (w / 2 - 0.06); } };
+}
+
+// warehouse with a roll-up door facing +z
+export function warehouse() {
+  const g = new THREE.Group();
+  g.add(blob(3));
+  add(g, mesh(G.rbox(4.2, 2.4, 3.6, 0.12), '#a9c3d3'), 0, 1.2, 0);
+  for (let i = 0; i < 6; i++) add(g, mesh(G.rbox(0.06, 2.3, 3.62, 0.02), '#97b2c3'), -1.9 + i * 0.76, 1.2, 0);
+  add(g, mesh(G.prism(4.5, 1.0, 3.9), '#6f8ea2'), 0, 2.4, 0);
+  add(g, mesh(G.rbox(2.6, 2.1, 0.12, 0.04), '#5d6f7c'), 0, 1.05, 1.78);
+  const door = add(g, new THREE.Group(), 0, 0, 1.86);
+  add(door, mesh(G.rbox(2.4, 1.9, 0.08, 0.03), '#eef2f5'), 0, 1.0, 0);
+  for (let i = 0; i < 6; i++) add(door, mesh(G.rbox(2.42, 0.04, 0.1, 0.01), '#c9d3db'), 0, 0.2 + i * 0.3, 0);
+  add(g, mesh(G.rbox(3.0, 0.5, 0.1, 0.05), '#ffd34a'), 0, 2.35, 1.83);
+  return { g, door };
+}
+
+// round floor pad (deposit / withdraw spots)
+export function pad(col) {
+  const g = new THREE.Group();
+  add(g, mesh(G.cyl(0.62, 0.66, 0.06, 24), col, false, true), 0, 0.03, 0);
+  add(g, mesh(G.cyl(0.45, 0.45, 0.065, 24), '#ffffff', false, true), 0, 0.035, 0);
+  return g;
+}
+
+// small wall lamp; set lit(true/false)
+const bulbOn = new THREE.MeshBasicMaterial({ color: '#fff3a6' });
+const bulbOff = new THREE.MeshLambertMaterial({ color: '#d9d4c4' });
+export function wallLamp() {
+  const g = new THREE.Group();
+  add(g, mesh(G.rbox(0.3, 0.12, 0.25, 0.04), '#6a7382'), 0, 0, 0);
+  const b = new THREE.Mesh(G.sphere(0.16, 10, 8), bulbOff); b.position.set(0, -0.15, 0.08); g.add(b);
+  return { g, lit(on) { b.material = on ? bulbOn : bulbOff; } };
+}

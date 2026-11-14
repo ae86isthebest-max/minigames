@@ -143,3 +143,4 @@ html, body {
 .ftxt.big { font-size: 30px; color: #fff4c9; }
 .chips.staff { margin: 4px 0 2px; }
 .buy .ii { width: 1.2em; height: 1.2em; }
+.lbl.badge.pad { background: rgba(255, 255, 255, 0.92); color: #4a3b2e; font-size: 13px; }

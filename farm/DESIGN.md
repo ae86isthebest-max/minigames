@@ -43,3 +43,10 @@ Events: 市集日 double customers, 下雨 crops ×2. 停車場: cars bring extr
 ## UI (kept clean)
 Money top-right. Left column: 升級 (角色 / 員工 / 動物 tabs), 倉庫 (what you carry + stock), 設定.
 Everything else lives in the world (labels on zones, bubbles over customers).
+
+## v3 changes (11-14, girlfriend feedback)
+- Start with $50 and pick 番茄田($30) or 雞舍($40); the chain then branches by `req`/`any` in DEFS.
+- No floating guide arrows. Chunky picket fences, round grass clumps.
+- Shop has front/east walls, an automatic sliding door, wall lamps + light that switch on only while the player is inside.
+- 雪櫃 for milk / juice / soymilk / cheese. 倉庫 (after 理貨員): roll-up door opens when someone comes near, 存入/取出 pads,
+  shelvers pull from it and drop leftovers into it.

@@ -89,22 +89,22 @@ export function tree() {
 export function tuft() {
   const g = new THREE.Group();
   const tall = add(g, new THREE.Group());
-  const cols = ['#d8dc62', '#e9d35b', '#c6d457'];
-  for (let i = 0; i < 4; i++) {
-    const a = i * 1.6 + 0.3, r = i ? 0.13 : 0;
-    const c = add(tall, mesh(G.cone(0.13, 0.55 + (i % 2) * 0.12, 5), cols[i % 3]), Math.cos(a) * r, 0.28, Math.sin(a) * r);
-    c.rotation.z = Math.cos(a) * 0.25; c.rotation.x = Math.sin(a) * 0.25;
+  const cols = ['#d9d564', '#e6cf5a', '#cbd25c'];
+  add(tall, mesh(G.sphere(0.26, 10, 8), cols[0]), 0, 0.24, 0).scale.set(1, 0.85, 1);
+  for (let i = 0; i < 3; i++) {
+    const a = i * 2.1 + 0.4;
+    add(tall, mesh(G.sphere(0.17, 9, 7), cols[(i + 1) % 3]), Math.cos(a) * 0.19, 0.17, Math.sin(a) * 0.19).scale.set(1, 0.8, 1);
   }
-  for (const [x, z] of [[0.05, 0], [-0.08, 0.06], [0.06, -0.08]]) add(tall, mesh(G.sphere(0.055, 6, 5), '#f6c94e'), x, 0.6 + x, z);
+  add(tall, mesh(G.sphere(0.12, 8, 6), '#f0d76a'), 0.02, 0.44, 0.02);
   const stub = add(g, mesh(G.cyl(0.18, 0.2, 0.06, 7), '#93c748'), 0, 0.03, 0);
   return { g, tall, stub };
 }
 
 function pen(w, d) {
   const g = new THREE.Group();
-  const post = (x, z) => add(g, mesh(G.rbox(0.12, 0.55, 0.12, 0.03), C.woodLight), x, 0.27, z);
+  const post = (x, z) => { add(g, mesh(G.rbox(0.2, 0.62, 0.2, 0.06), '#f2d2a2'), x, 0.31, z); add(g, mesh(G.rbox(0.25, 0.09, 0.25, 0.04), '#d99a5e'), x, 0.64, z); };
   const rail = (x, z, len, rot) => {
-    for (const y of [0.22, 0.42]) { const r = add(g, mesh(G.rbox(len, 0.07, 0.06, 0.02), C.woodLight), x, y, z); r.rotation.y = rot; }
+    for (const y of [0.24, 0.48]) { const r = add(g, mesh(G.rbox(len, 0.13, 0.09, 0.04), '#e8b67c'), x, y, z); r.rotation.y = rot; }
   };
   for (const [x, z] of [[-w / 2, -d / 2], [w / 2, -d / 2], [-w / 2, d / 2], [w / 2, d / 2]]) post(x, z);
   rail(0, d / 2, w, 0); rail(-w / 2, 0, d, Math.PI / 2); rail(w / 2, 0, d, Math.PI / 2);
@@ -292,10 +292,11 @@ export function fenceLine(x0, z0, x1, z1) {
   const g = new THREE.Group();
   const len = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(len / 1.6)), rot = -Math.atan2(z1 - z0, x1 - x0);
   for (let i = 0; i <= n; i++) {
-    const t = i / n;
-    add(g, mesh(G.rbox(0.14, 0.7, 0.14, 0.04), C.woodLight), x0 + (x1 - x0) * t, 0.35, z0 + (z1 - z0) * t);
+    const t = i / n, x = x0 + (x1 - x0) * t, z = z0 + (z1 - z0) * t;
+    add(g, mesh(G.rbox(0.28, 0.95, 0.28, 0.08), '#f2d2a2'), x, 0.47, z);
+    add(g, mesh(G.rbox(0.34, 0.12, 0.34, 0.05), '#d99a5e'), x, 0.98, z);
   }
-  for (const y of [0.3, 0.55]) { const r = add(g, mesh(G.rbox(len, 0.08, 0.07, 0.03), C.wood), (x0 + x1) / 2, y, (z0 + z1) / 2); r.rotation.y = rot; }
+  for (const y of [0.36, 0.7]) { const r = add(g, mesh(G.rbox(len, 0.18, 0.12, 0.06), '#e8b67c'), (x0 + x1) / 2, y, (z0 + z1) / 2); r.rotation.y = rot; }
   return g;
 }
 export function lamp() {
