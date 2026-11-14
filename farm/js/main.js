@@ -533,9 +533,11 @@ function applyGrow(s) {
   const id = s.id; if (!GROW[id]) return;
   const n = lvlOf(id);
   if (s.animals) s.animals.forEach((a, i) => { const on = i < n; if (on && !a.g.visible) popIn(a.g); a.g.visible = on; });
+  const fresh = s.plants && !s.plants.some((q) => q.active);
   if (s.plants) s.plants.forEach((pl, i) => {
     const on = i < n;
-    if (on && !pl.active) { pl.g.visible = true; pl.ripe = false; pl.t = 0; pl.fruit.visible = false; if (s.plants.some((q) => q.active)) popIn(pl.g); }
+    // a brand-new field starts ripe; plants added later grow from seed
+    if (on && !pl.active) { pl.g.visible = true; pl.ripe = fresh; pl.t = 0; pl.fruit.visible = fresh; pl.fruit.scale.setScalar(1); if (!fresh) popIn(pl.g); }
     if (!on) { pl.g.visible = false; pl.ripe = false; }
     pl.active = on;
   });
