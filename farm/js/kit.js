@@ -43,9 +43,28 @@ export const G = {
   }),
 };
 
+// Thin dark outline: the same geometry drawn again, back faces only, pushed out along its normals.
+const OUTLINE_COL = '#3a2a22';
+const olCache = new Map();
+export function outlineMat(th) {
+  let m = olCache.get(th);
+  if (!m) {
+    m = new THREE.MeshBasicMaterial({ color: OUTLINE_COL, side: THREE.BackSide });
+    m.onBeforeCompile = (sh) => {
+      sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  transformed += normalize(normal) * ' + th.toFixed(4) + ';');
+    };
+    m.customProgramCacheKey = () => 'ol' + th;
+    olCache.set(th, m);
+  }
+  return m;
+}
+export let OUTLINE = 0.028;
+export function setOutline(th) { OUTLINE = th; }
+// every solid (shadow-casting) prop gets the outline; flat ground pieces don't
 export function mesh(geo, color, cast = true, recv = true) {
   const m = new THREE.Mesh(geo, mat(color));
   m.castShadow = cast; m.receiveShadow = recv;
+  if (cast && OUTLINE > 0) { const o = new THREE.Mesh(geo, outlineMat(OUTLINE)); o.userData.outline = true; m.add(o); }
   return m;
 }
 export function add(parent, m, x = 0, y = 0, z = 0) { m.position.set(x, y, z); parent.add(m); return m; }
@@ -62,9 +81,9 @@ export function makeRenderer(canvas) {
 
 // Warm sky light + green-tinted bounce from the grass + one soft sun. Shadow side = sky/bounce only.
 export function makeLights(scene) {
-  const hemi = new THREE.HemisphereLight('#fff6e6', '#c3e08a', 1.55);
+  const hemi = new THREE.HemisphereLight('#fff4e2', '#a3cb62', 1.1);
   scene.add(hemi);
-  const sun = new THREE.DirectionalLight('#fff1d6', 1.75);
+  const sun = new THREE.DirectionalLight('#fff0d2', 2.25);
   sun.position.set(-9, 18, 7);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -91,6 +110,7 @@ export function blob(r) {
 
 // Faceless capsule person. Root sits at the feet, faces +z. Call anim(dt, speed01) every frame.
 export function person(opt = {}) {
+  const prevOL = OUTLINE; OUTLINE = 0.038;
   const body = opt.body || C.pink, root = new THREE.Group(), rig = new THREE.Group();
   root.add(rig);
   root.add(blob(0.55));
@@ -120,6 +140,7 @@ export function person(opt = {}) {
     add(head, mesh(G.sphere(0.14, 10, 8), opt.hatColor || C.brown), 0, 0.3, -0.08);
   }
   if (opt.apron) add(torso, mesh(G.rbox(0.42, 0.42, 0.08, 0.04), opt.apron), 0, -0.05, 0.27);
+  OUTLINE = prevOL;
   const back = add(rig, new THREE.Group(), 0, 0.5, -0.42);
   const front = add(rig, new THREE.Group(), 0, 0.55, 0.45);
   let ph = Math.random() * 6, amt = 0;
