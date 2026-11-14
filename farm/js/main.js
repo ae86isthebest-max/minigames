@@ -292,8 +292,21 @@ function stackTop(c, out) {
   let h = 0; for (const it of c.carry) h += ITEMS[it.type].h;
   c.p.back.getWorldPosition(out); out.y += h + 0.15; return out;
 }
-function restack(c) { let y = 0; for (const it of c.carry) { it.m.position.set(0, y, 0); y += ITEMS[it.type].h; } }
-function stackAdd(c, type) { const m = P.itemMesh(type); c.p.back.add(m); c.carry.push({ type, m }); restack(c); }
+function restack(c) { let y = 0; for (const it of c.carry) { it.m.position.set(0, y, 0); it.y = y; y += ITEMS[it.type].h; } }
+// spring-driven lean: the tower bends back when walking and wobbles when stopping
+function swayStack(c, speed, dt) {
+  const target = -Math.min(1, speed / 5);
+  c.swv = (c.swv || 0) + ((target - (c.sw || 0)) * 60 - (c.swv || 0) * 9) * dt;
+  c.sw = (c.sw || 0) + c.swv * dt;
+  const n = c.carry.length;
+  for (let i = 0; i < n; i++) {
+    const it = c.carry[i], k = i / Math.max(6, n);
+    it.m.position.z = c.sw * k * k * (0.35 + n * 0.03);
+    it.m.rotation.x = c.sw * k * 0.25;
+    if (it.pop > 0) { it.pop = Math.max(0, it.pop - dt * 5); const q = it.pop; it.m.scale.set(1 + q * 0.35, 1 - q * 0.3, 1 + q * 0.35); }
+  }
+}
+function stackAdd(c, type) { const m = P.itemMesh(type); c.p.back.add(m); c.carry.push({ type, m, pop: 1 }); restack(c); }
 function count(c, type) { let n = 0; for (const it of c.carry) if (it.type === type) n++; return n; }
 function room(c) { return c.cap() - c.carry.length - c.incoming; }
 function giveFrom(c, type, toFn, done) {
@@ -410,8 +423,8 @@ function build(def, instant) {
       box(pos[0] - 1.2, pos[1] - 1.45, pos[0] + 1.2, pos[1] + 0.25); penBoxes(pos[0], pos[1] + 0.6, 2.4, 1.4);
     }
     const st = state.stock[id]; if (st) { s.inN = st.a || 0; s.outN = st.b || 0; }
-    s.inLabel = label('badge', '', (o) => o.copy(tw).setY(1.0)); s.inLabel.near = 5;
-    s.outLabel = label('badge', '', (o) => o.copy(nw).setY(0.95)); s.outLabel.near = 5;
+    s.inLabel = label('badge', '', (o) => o.copy(tw).setY(1.0)); s.inLabel.near = 0;
+    s.outLabel = label('badge', '', (o) => o.copy(nw).setY(0.95)); s.outLabel.near = 0;
     if (!instant) popIn(b.g);
   } else if (def.kind === 'machine') {
     const m = P2.machine(def.mk);
@@ -422,8 +435,8 @@ function build(def, instant) {
     for (let i = 0; i < 12; i++) { const it = P.itemMesh(def.out); it.scale.setScalar(0.75); it.position.set(-0.3 + (i % 4) * 0.2, 0.25 + Math.floor(i / 8) * 0.28, -0.18 + (Math.floor(i / 4) % 2) * 0.3); it.visible = false; m.outTray.add(it); s.outVis.push(it); }
     box(pos[0] - 0.85, pos[1] - 0.8, pos[0] + 0.85, pos[1] + 0.4);
     const st = state.stock[id]; if (st) { s.inN = st.a || 0; s.outN = st.b || 0; }
-    s.inLabel = label('badge', '', (o) => o.copy(tw).setY(0.95)); s.inLabel.near = 5;
-    s.outLabel = label('badge', '', (o) => o.copy(nw).setY(0.95)); s.outLabel.near = 5;
+    s.inLabel = label('badge', '', (o) => o.copy(tw).setY(0.95)); s.inLabel.near = 0;
+    s.outLabel = label('badge', '', (o) => o.copy(nw).setY(0.95)); s.outLabel.near = 0;
     if (!instant) popIn(m.g);
   } else if (def.kind === 'crop') {
     const L = CROP_LAYOUT[def.plant];
@@ -442,10 +455,11 @@ function build(def, instant) {
   } else if (def.kind === 'shelf') {
     const sh = def.fridge ? P2.fridge() : P.shelf(); sh.g.position.set(pos[0], 0.12, pos[1]); scene.add(sh.g);
     Object.assign(s, { g: sh.g, n: 0, vis: [], item: def.item, front: V3(pos[0], 0, pos[1] + 1.25), door: sh.door || null, dk: 0 });
-    for (const sp of sh.slots) { const m = P.itemMesh(def.item); m.position.copy(sp); m.visible = false; sh.g.add(m); s.vis.push(m); }
+    const ih = ITEMS[def.item].h * 0.95;
+    for (let i = 0; i < 24; i++) { const m = P.itemMesh(def.item); m.position.copy(sh.slots[i % 8]); m.position.y += Math.floor(i / 8) * ih; m.rotation.y = (i % 3) * 0.2 - 0.2; m.visible = false; sh.g.add(m); s.vis.push(m); }
     if (!def.fridge) { const ic = P.itemMesh(def.item); ic.scale.setScalar(0.9); ic.position.set(0, 1.12, -0.38); sh.g.add(ic); }
     const st = state.stock[id]; if (st) s.n = st.a || 0;
-    s.label = label('badge', '', (o) => o.set(pos[0], def.fridge ? 2.5 : 1.95, pos[1]));
+    s.label = label('badge big', '', (o) => o.set(pos[0], def.fridge ? 1.6 : 1.95, pos[1]));
     box(pos[0] - 0.85, pos[1] - 0.5, pos[0] + 0.85, pos[1] + 0.5);
     if (!instant) popIn(sh.g);
   } else if (def.kind === 'hire') {
@@ -475,7 +489,7 @@ function build(def, instant) {
     Object.assign(s, { g: wh.g, door: wh.door, depPt, outPt, k: 0 });
     s.depLabel = label('badge pad', '存入', (o) => o.copy(depPt).setY(0.7)); s.depLabel.near = 7;
     s.wdLabel = label('badge pad', '取出', (o) => o.copy(outPt).setY(0.7)); s.wdLabel.near = 7;
-    s.label = label('badge', '', (o) => o.set(pos[0], 3.7, pos[1] + 1)); s.label.near = 9;
+    s.label = label('store', '', (o) => o.set(pos[0], 3.9, pos[1] + 1));
     const lamp = P2.wallLamp(); lamp.g.position.set(pos[0], 2.75, pos[1] + 1.95); scene.add(lamp.g);
     makeArea(pos[0] - 2.6, pos[1] - 2, pos[0] + 2.6, pos[1] + 4, [lamp], pos[0], pos[1] + 2.6);
     if (!instant) popIn(wh.g);
@@ -696,7 +710,7 @@ function depositTo(c, dst, item, dt) {
   } else if (dst.kind === 'shelf') {
     if (dst.n + (dst.pend || 0) >= upVal('shelfCap')) return;
     c.xfer = 0.1; dst.pend = (dst.pend || 0) + 1;
-    giveFrom(c, item, (o) => o.set(dst.def.pos[0], 0.9, dst.def.pos[1]), () => { dst.pend--; dst.n++; });
+    giveFrom(c, item, (o) => o.set(dst.def.pos[0], 0.9, dst.def.pos[1]), () => { dst.pend--; dst.n++; const m = dst.vis[dst.n - 1]; if (m) pops.push({ obj: m, t: 0.35 }); });
   } else {
     if (dst.inN + (dst.pend || 0) >= dst.inMax) return;
     c.xfer = 0.1; dst.pend = (dst.pend || 0) + 1;
@@ -1202,7 +1216,8 @@ function playerInteract(dt) {
       let best = null; for (const t in state.store) if (state.store[t] > 0 && (!best || state.store[t] > state.store[best])) best = t;
       if (best) { player.xfer2 = 0.08; state.store[best]--; sfx('pop'); takeInto(player, best, V3(wh.outPt.x, 0.5, wh.outPt.z)); }
     }
-    setLabel(wh.label, '倉庫 ' + storeTotal() + '/' + STORE_CAP);
+    const kinds = Object.keys(state.store).filter((k) => state.store[k] > 0).sort((a, b) => state.store[b] - state.store[a]);
+    setLabel(wh.label, '<div class="zn">倉庫 ' + storeTotal() + '/' + STORE_CAP + '</div>' + (kinds.length ? '<div class="inv">' + kinds.map((k) => '<span>' + ICON[k] + state.store[k] + '</span>').join('') + '</div>' : '<div class="inv">空的</div>'));
   }
   const reach = pets.dog ? 1.6 + upVal('dogR') : 1.6;
   for (const k of COUNTERS) {
@@ -1261,8 +1276,7 @@ function updateWorld(dt, t) {
       }
     } else if (s.kind === 'shelf') {
       if (s.n > cap) s.n = cap;
-      const shown = Math.ceil(s.n / cap * 8);
-      s.vis.forEach((m, i) => { m.visible = i < shown; });
+      s.vis.forEach((m, i) => { m.visible = i < s.n; });
       setLabel(s.label, badge(s.item, s.n, cap));
     }
   }
@@ -1296,7 +1310,8 @@ function movePlayer(dt) {
   if (spd > 0.3) pFace = Math.atan2(pVel.x, pVel.z);
   turn(player.p, pFace, dt);
   player.p.anim(dt, Math.min(1, spd / 4));
-  player.p.back.rotation.x = -Math.min(0.25, spd * 0.03);
+  player.p.back.rotation.x = -Math.min(0.12, spd * 0.015);
+  swayStack(player, spd, dt);
 }
 
 // ---------- automatic doors and lights ----------
@@ -1314,7 +1329,7 @@ function updateDoorsAndLights(dt) {
   for (const sh of listOf('shelf')) {
     if (!sh.door) continue;
     sh.dk += ((someoneNear(sh.front.x, sh.front.z, 1.9) ? 1 : 0) - sh.dk) * ease;
-    sh.door.rotation.y = -sh.dk * 1.75;
+    sh.door.open(sh.dk);
   }
   const pp = player.p.root.position;
   for (const A of areas) {
@@ -1374,7 +1389,7 @@ function step(dt) {
   playerInteract(dt);
   payZones(dt);
   updateWorld(dt, T);
-  for (const w of workers) { updateWorker(w, dt); turn(w.p, w.face, dt); w.p.anim(dt, w.moving); }
+  for (const w of workers) { updateWorker(w, dt); turn(w.p, w.face, dt); w.p.anim(dt, w.moving); swayStack(w, w.moving ? upVal('wspeed') : 0, dt); }
   updateCustomers(dt);
   updateCars(dt);
   updatePets(dt, T);
@@ -1424,4 +1439,5 @@ window.__farm = {
   sim(sec) { for (let i = 0; i < sec * 30; i++) step(1 / 30); },
   guide, guideTarget,
   calls: () => renderer.info.render.calls,
+  lineup(x, z) { Object.keys(ITEMS).forEach((t, i) => { const m = P.itemMesh(t); m.scale.setScalar(2); m.position.set(x + (i % 5) * 1.1, 0, z + Math.floor(i / 5) * 1.2); scene.add(m); }); },
 };

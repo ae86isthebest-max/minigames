@@ -26,7 +26,7 @@ export function appleTree() {
   add(g, mesh(G.sphere(0.7, 9, 7), '#5fbf55'), 0, 1.25, 0);
   add(g, mesh(G.sphere(0.45, 9, 7), '#72cf60'), 0.3, 1.55, 0.2);
   const fruit = add(g, new THREE.Group());
-  for (const [x, y, z] of [[0.55, 1.15, 0.3], [-0.45, 1.3, 0.4], [0.1, 1.05, 0.65], [-0.3, 1.6, -0.35]]) add(fruit, mesh(G.sphere(0.11, 9, 7), '#9bd34b'), x, y, z);
+  for (const [x, y, z] of [[0.55, 1.15, 0.3], [-0.45, 1.3, 0.4], [0.1, 1.05, 0.65], [-0.3, 1.6, -0.35]]) add(fruit, mesh(G.sphere(0.12, 10, 8), '#d8263a'), x, y, z);
   return { g, fruit };
 }
 
@@ -148,23 +148,37 @@ export function ghostPerson() {
   return g;
 }
 
-// glass-front fridge for cold drinks and cheese; items sit on two inner shelves
-const glassMat = new THREE.MeshLambertMaterial({ color: '#cfefff', transparent: true, opacity: 0.28, depthWrite: false });
+// supermarket chest cooler: open-top well with a sliding glass lid, so the goods inside are seen from above
+const glassMat = new THREE.MeshLambertMaterial({ color: '#d6f1ff', transparent: true, opacity: 0.22, depthWrite: false });
 export function fridge() {
   const g = new THREE.Group();
   g.add(blob(1.3));
-  add(g, mesh(G.rbox(1.75, 2.0, 0.95, 0.1), '#f4f8fb'), 0, 1.0, -0.05);
-  add(g, mesh(G.rbox(1.55, 1.7, 0.1, 0.04), '#cfe3ee'), 0, 1.0, -0.46);
-  for (const y of [0.42, 1.02]) add(g, mesh(G.rbox(1.5, 0.05, 0.7, 0.02), '#dfe9f0'), 0, y, 0.0);
-  add(g, mesh(G.rbox(1.8, 0.22, 1.0, 0.08), '#5aa9ff'), 0, 2.05, -0.05);
-  // glass door hinged on the left edge
-  const door = add(g, new THREE.Group(), -0.78, 0, 0.45);
-  for (const [x, y, w, h] of [[0.79, 1.82, 1.58, 0.1], [0.79, 0.18, 1.58, 0.1], [0.04, 1.0, 0.08, 1.74], [1.54, 1.0, 0.08, 1.74]]) add(door, mesh(G.rbox(w, h, 0.06, 0.02), '#e8f2f8'), x, y, 0);
-  const glass = new THREE.Mesh(G.rbox(1.4, 1.52, 0.07, 0.02), glassMat); glass.position.set(0.79, 1.0, 0.01); door.add(glass);
-  add(door, mesh(G.rbox(0.07, 0.6, 0.07, 0.03), '#9fb4c2'), 1.42, 1.05, 0.07);
+  const W = 1.9, D = 1.1, H = 0.9;
+  add(g, mesh(G.rbox(W, 0.18, D, 0.06), '#5aa9ff'), 0, 0.09, 0);
+  add(g, mesh(G.rbox(W, H - 0.1, 0.1, 0.04), '#f4f8fb'), 0, 0.55, D / 2 - 0.05);
+  add(g, mesh(G.rbox(W, H - 0.1, 0.1, 0.04), '#f4f8fb'), 0, 0.55, -D / 2 + 0.05);
+  for (const s of [-1, 1]) add(g, mesh(G.rbox(0.1, H - 0.1, D, 0.04), '#f4f8fb'), s * (W / 2 - 0.05), 0.55, 0);
+  add(g, mesh(G.rbox(W - 0.2, 0.06, D - 0.2, 0.02), '#bfe6fa'), 0, 0.5, 0);
+  for (const s of [-1, 1]) add(g, mesh(G.rbox(W - 0.2, 0.5, 0.03, 0.01), '#d8f1fd', false, true), 0, 0.58, s * (D / 2 - 0.115));
+  // top rim (a frame, not a lid) so the well stays open
+  for (const s of [-1, 1]) {
+    add(g, mesh(G.rbox(W + 0.04, 0.08, 0.12, 0.03), '#5aa9ff'), 0, H, s * (D / 2 - 0.04));
+    add(g, mesh(G.rbox(0.12, 0.08, D + 0.04, 0.03), '#5aa9ff'), s * (W / 2 - 0.04), H, 0);
+  }
+  add(g, mesh(G.rbox(1.0, 0.16, 0.04, 0.03), '#ffffff'), 0, 0.55, D / 2 + 0.01);
+  // two glass panes; open(k) slides the left pane over the right one
+  const panes = [];
+  for (const s of [-1, 1]) {
+    const p = add(g, new THREE.Group(), s * W / 4, H + 0.05, 0);
+    const gl = new THREE.Mesh(G.rbox(W / 2 - 0.06, 0.03, D - 0.12, 0.01), glassMat); p.add(gl);
+    add(p, mesh(G.rbox(W / 2 - 0.04, 0.035, 0.05, 0.01), '#e8f2f8'), 0, 0, (D - 0.12) / 2);
+    add(p, mesh(G.rbox(W / 2 - 0.04, 0.035, 0.05, 0.01), '#e8f2f8'), 0, 0, -(D - 0.12) / 2);
+    panes.push({ p, s });
+  }
+  panes[0].p.position.y += 0.04;
   const slots = [];
-  for (const y of [0.45, 1.05]) for (let c = 0; c < 4; c++) slots.push(new THREE.Vector3(-0.54 + c * 0.36, y, 0.05));
-  return { g, slots, door };
+  for (let r = 0; r < 2; r++) for (let c = 0; c < 4; c++) slots.push(new THREE.Vector3(-0.6 + c * 0.4, 0.54, -0.22 + r * 0.44));
+  return { g, slots, door: { open(k) { panes[0].p.position.x = -W / 4 + k * (W / 2 - 0.05); } } };
 }
 
 // glass sliding double door; open01 0..1

@@ -144,3 +144,8 @@ html, body {
 .chips.staff { margin: 4px 0 2px; }
 .buy .ii { width: 1.2em; height: 1.2em; }
 .lbl.badge.pad { background: rgba(255, 255, 255, 0.92); color: #4a3b2e; font-size: 13px; }
+.lbl.badge.big { font-size: 14px; padding: 3px 10px; }
+.lbl.badge.big .ii { width: 1.5em; height: 1.5em; }
+.lbl.store { text-align: center; background: rgba(40, 60, 80, 0.6); color: #fff; border-radius: 14px; padding: 5px 10px; font-weight: 800; }
+.lbl.store .zn { font-size: 13px; margin-bottom: 3px; }
+.lbl.store .inv { display: flex; flex-wrap: wrap; gap: 4px 8px; justify-content: center; max-width: 190px; font-size: 14px; }

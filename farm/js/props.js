@@ -8,8 +8,8 @@ export const ITEMS = {
   egg: { name: '雞蛋', icon: '🥚', h: 0.27, price: 4 },
   tomato: { name: '番茄', icon: '🍅', h: 0.29, price: 5 },
   corn: { name: '玉米', icon: '🌽', h: 0.26, price: 7 },
-  milk: { name: '牛奶', icon: '🥛', h: 0.36, price: 10 },
-  apple: { name: '蘋果', icon: '🍏', h: 0.28, price: 9 },
+  milk: { name: '牛奶', icon: '🥛', h: 0.38, price: 10 },
+  apple: { name: '蘋果', icon: '🍎', h: 0.3, price: 9 },
   soybean: { name: '黃豆', icon: '🫘', h: 0.26, price: 0 },
   wheat: { name: '小麥', icon: '🌾', h: 0.24, price: 0 },
   juice: { name: '番茄汁', icon: '🧃', h: 0.38, price: 16 },
@@ -30,19 +30,24 @@ export function itemMesh(type) {
   } else if (type === 'egg') {
     add(g, mesh(G.sphere(0.12, 12, 10), '#fff6e8'), 0, 0.14, 0).scale.set(1, 1.22, 1);
   } else if (type === 'tomato') {
-    add(g, mesh(G.sphere(0.145, 12, 10), C.red), 0, 0.14, 0).scale.set(1, 0.88, 1);
-    add(g, mesh(G.cone(0.08, 0.06, 5), C.leaf), 0, 0.27, 0);
+    add(g, mesh(G.sphere(0.15, 14, 10), '#ff4a2e'), 0, 0.13, 0).scale.set(1, 0.78, 1);
+    for (let i = 0; i < 5; i++) { const l = add(g, mesh(G.rbox(0.09, 0.02, 0.035, 0.01), '#3f9a3a'), Math.cos(i * 1.257) * 0.045, 0.245, Math.sin(i * 1.257) * 0.045); l.rotation.y = -i * 1.257; }
+    add(g, mesh(G.cyl(0.015, 0.02, 0.05, 5), '#3f9a3a'), 0, 0.27, 0);
   } else if (type === 'corn') {
-    const cob = add(g, mesh(G.capsule(0.09, 0.22, 8), C.yellow), 0, 0.12, 0); cob.rotation.z = Math.PI / 2;
-    for (const s of [-1, 1]) { const l = add(g, mesh(G.rbox(0.3, 0.03, 0.1, 0.012), C.green), -0.08, 0.1, s * 0.07); l.rotation.y = s * 0.3; }
+    const cob = add(g, mesh(G.capsule(0.085, 0.22, 8), '#ffc93c'), 0, 0.12, 0); cob.rotation.z = Math.PI / 2;
+    for (let r = 0; r < 4; r++) for (let k = 0; k < 4; k++) add(g, mesh(G.sphere(0.03, 5, 4), '#ffe07a', false), -0.1 + k * 0.07, 0.12 + Math.sin(r * 1.2 + 0.6) * 0.075, Math.cos(r * 1.2 + 0.6) * 0.075);
+    for (const s of [-1, 1]) { const l = add(g, mesh(G.rbox(0.3, 0.025, 0.11, 0.012), '#6cc257'), -0.1, 0.1, s * 0.08); l.rotation.y = s * 0.35; l.rotation.x = s * 0.4; }
   } else if (type === 'milk') {
-    add(g, mesh(G.cyl(0.11, 0.12, 0.26, 12), C.white), 0, 0.13, 0);
-    add(g, mesh(G.cyl(0.115, 0.125, 0.09, 12), '#bfe3ff'), 0, 0.13, 0);
-    add(g, mesh(G.cyl(0.06, 0.06, 0.08, 10), C.blue), 0, 0.3, 0);
+    // milk carton: white box, blue band, gable top
+    add(g, mesh(G.rbox(0.22, 0.26, 0.22, 0.03), C.white), 0, 0.13, 0);
+    add(g, mesh(G.rbox(0.225, 0.09, 0.225, 0.02), '#4f9cf0'), 0, 0.1, 0);
+    add(g, mesh(G.prism(0.22, 0.09, 0.22), C.white), 0, 0.26, 0);
+    add(g, mesh(G.rbox(0.03, 0.05, 0.12, 0.01), C.white), 0, 0.36, 0);
   } else if (type === 'apple') {
-    add(g, mesh(G.sphere(0.14, 12, 10), '#9bd34b'), 0, 0.14, 0).scale.set(1, 0.92, 1);
-    add(g, mesh(G.cyl(0.015, 0.015, 0.08, 5), C.brown), 0, 0.29, 0);
-    add(g, mesh(G.rbox(0.09, 0.02, 0.05, 0.01), C.leaf), 0.05, 0.3, 0).rotation.z = 0.4;
+    add(g, mesh(G.sphere(0.15, 14, 12), '#d8263a'), 0, 0.15, 0).scale.set(1.05, 0.98, 1.05);
+    add(g, mesh(G.sphere(0.05, 8, 6), '#a81c2c', false), 0, 0.29, 0).scale.set(1, 0.4, 1);
+    add(g, mesh(G.cyl(0.014, 0.018, 0.1, 5), '#6b3f24'), 0.01, 0.33, 0).rotation.z = -0.25;
+    const leaf = add(g, mesh(G.sphere(0.05, 8, 6), '#4fae4f'), 0.06, 0.35, 0); leaf.scale.set(1.4, 0.3, 0.7); leaf.rotation.z = 0.5;
   } else if (type === 'soybean') {
     add(g, mesh(G.rbox(0.32, 0.24, 0.26, 0.09), '#e8cf94'), 0, 0.12, 0);
     add(g, mesh(G.cyl(0.07, 0.1, 0.06, 8), '#c9a868'), 0, 0.26, 0);
