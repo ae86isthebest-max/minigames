@@ -3,12 +3,19 @@ import * as THREE from 'three';
 import { C, G, mesh, add, blob } from './kit.js';
 
 export const ITEMS = {
-  hay: { name: '禾草', icon: '🌾', h: 0.3, price: 0 },
+  hay: { name: '禾草', icon: '🌿', h: 0.3, price: 0 },
   wood: { name: '木頭', icon: '🪵', h: 0.27, price: 0 },
   egg: { name: '雞蛋', icon: '🥚', h: 0.27, price: 4 },
   tomato: { name: '番茄', icon: '🍅', h: 0.29, price: 5 },
   corn: { name: '玉米', icon: '🌽', h: 0.26, price: 7 },
   milk: { name: '牛奶', icon: '🥛', h: 0.36, price: 10 },
+  apple: { name: '蘋果', icon: '🍏', h: 0.28, price: 9 },
+  soybean: { name: '黃豆', icon: '🫘', h: 0.26, price: 0 },
+  wheat: { name: '小麥', icon: '🌾', h: 0.24, price: 0 },
+  juice: { name: '番茄汁', icon: '🧃', h: 0.38, price: 16 },
+  soymilk: { name: '豆漿', icon: '🥤', h: 0.38, price: 20 },
+  bread: { name: '麵包', icon: '🍞', h: 0.26, price: 26 },
+  cheese: { name: '起司', icon: '🧀', h: 0.24, price: 34 },
   money: { name: '錢', icon: '💵', h: 0.07, price: 0 },
 };
 
@@ -32,6 +39,30 @@ export function itemMesh(type) {
     add(g, mesh(G.cyl(0.11, 0.12, 0.26, 12), C.white), 0, 0.13, 0);
     add(g, mesh(G.cyl(0.115, 0.125, 0.09, 12), '#bfe3ff'), 0, 0.13, 0);
     add(g, mesh(G.cyl(0.06, 0.06, 0.08, 10), C.blue), 0, 0.3, 0);
+  } else if (type === 'apple') {
+    add(g, mesh(G.sphere(0.14, 12, 10), '#9bd34b'), 0, 0.14, 0).scale.set(1, 0.92, 1);
+    add(g, mesh(G.cyl(0.015, 0.015, 0.08, 5), C.brown), 0, 0.29, 0);
+    add(g, mesh(G.rbox(0.09, 0.02, 0.05, 0.01), C.leaf), 0.05, 0.3, 0).rotation.z = 0.4;
+  } else if (type === 'soybean') {
+    add(g, mesh(G.rbox(0.32, 0.24, 0.26, 0.09), '#e8cf94'), 0, 0.12, 0);
+    add(g, mesh(G.cyl(0.07, 0.1, 0.06, 8), '#c9a868'), 0, 0.26, 0);
+    for (const [x, z] of [[-0.06, 0.13], [0.05, 0.135], [0, 0.135]]) add(g, mesh(G.sphere(0.035, 6, 5), '#f2dc8a'), x, 0.18 - Math.abs(x), z);
+  } else if (type === 'wheat') {
+    for (const x of [-0.08, 0, 0.08]) { const st = add(g, mesh(G.cyl(0.015, 0.015, 0.4, 4), '#e2b84f'), x, 0.12, 0); st.rotation.z = Math.PI / 2 + x; }
+    add(g, mesh(G.capsule(0.06, 0.14, 6), '#f0c75a'), 0.2, 0.12, 0).rotation.z = Math.PI / 2;
+    add(g, mesh(G.rbox(0.06, 0.08, 0.14, 0.02), '#c98a3e'), -0.05, 0.12, 0);
+  } else if (type === 'juice' || type === 'soymilk') {
+    const body = type === 'juice' ? '#ff6a4d' : '#f2e2b8', cap = type === 'juice' ? C.green : '#b8865a';
+    add(g, mesh(G.rbox(0.22, 0.28, 0.22, 0.06), body), 0, 0.14, 0);
+    add(g, mesh(G.rbox(0.23, 0.1, 0.23, 0.03), C.white), 0, 0.15, 0);
+    add(g, mesh(G.cyl(0.05, 0.07, 0.07, 8), cap), 0, 0.31, 0);
+  } else if (type === 'bread') {
+    add(g, mesh(G.rbox(0.42, 0.2, 0.24, 0.1), '#e3a257'), 0, 0.1, 0);
+    for (const x of [-0.1, 0.03, 0.15]) { const c = add(g, mesh(G.rbox(0.04, 0.02, 0.18, 0.01), '#f6d79a'), x, 0.2, 0); c.rotation.y = 0.5; }
+  } else if (type === 'cheese') {
+    const w = add(g, mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.16, 12, 1, false, 0, Math.PI * 0.55), '#ffd25a'), 0, 0.08, 0);
+    w.rotation.y = -0.6;
+    add(g, mesh(G.sphere(0.03, 6, 5), '#e8b13a'), 0.06, 0.16, 0.06);
   } else if (type === 'money') {
     add(g, mesh(G.rbox(0.42, 0.06, 0.24, 0.02), C.money), 0, 0.03, 0);
     add(g, mesh(G.rbox(0.1, 0.065, 0.245, 0.01), '#d8f7c8'), 0, 0.03, 0);

@@ -134,3 +134,12 @@ html, body {
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { background: #fff; border-radius: 12px; padding: 6px 10px; font-weight: 800; color: #4a3b2e; box-shadow: 0 2px 0 #eadcc4; font-size: 14px; }
 .empty { color: #b3a28b; font-size: 14px; }
+
+/* item pictures rendered from the 3D models */
+.ii { width: 1.35em; height: 1.35em; vertical-align: -0.32em; margin-right: 2px; }
+.lbl.zone .ii { width: 1.25em; height: 1.25em; }
+.lbl .rew { font-size: 15px; margin-top: 2px; color: #fff4c9; }
+.lbl.zone.order { background: rgba(60, 40, 90, 0.45); border-radius: 14px; padding: 4px 10px 6px; }
+.ftxt.big { font-size: 30px; color: #fff4c9; }
+.chips.staff { margin: 4px 0 2px; }
+.buy .ii { width: 1.2em; height: 1.2em; }

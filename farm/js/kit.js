@@ -2,6 +2,7 @@
 // Every game in the series builds its world from these pieces so they all look the same.
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'rbox';
+import { mergeGeometries } from 'bgu';
 
 // Pastel palette. Shadows are never painted: the lighting turns each colour into a darker tint of itself.
 export const C = {
@@ -111,6 +112,10 @@ export function person(opt = {}) {
   } else if (opt.hat === 'cap') {
     add(head, mesh(G.sphere(0.3, 14, 8), opt.hatColor || C.blue), 0, 0.09, 0).scale.set(1.04, 0.62, 1.04);
     add(head, mesh(G.rbox(0.36, 0.05, 0.26, 0.02), opt.hatColor || C.blue), 0, 0.08, 0.26);
+  } else if (opt.hat === 'crown') {
+    add(head, mesh(G.cyl(0.2, 0.22, 0.14, 10), '#ffcf3a'), 0, 0.32, 0);
+    for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; add(head, mesh(G.cone(0.05, 0.13, 5), '#ffcf3a'), Math.cos(a) * 0.17, 0.44, Math.sin(a) * 0.17); }
+    add(head, mesh(G.sphere(0.045, 6, 5), '#ff5a8a'), 0, 0.33, 0.21);
   } else if (opt.hat === 'bun') {
     add(head, mesh(G.sphere(0.14, 10, 8), opt.hatColor || C.brown), 0, 0.3, -0.08);
   }
@@ -144,4 +149,27 @@ export function dashTexture(color = 'rgba(255,255,255,0.95)') {
   g.arcTo(p, p + s, p, p, r); g.arcTo(p, p, p + s, p, r); g.closePath(); g.stroke();
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
   return t;
+}
+
+// Merge every static mesh under `group` into one mesh per material (far fewer draw calls on phones).
+export function bake(group, target) {
+  group.updateMatrixWorld(true);
+  const buckets = new Map();
+  group.traverse((o) => {
+    if (!o.isMesh) return;
+    const key = o.material.uuid + (o.castShadow ? 'c' : '') + (o.receiveShadow ? 'r' : '');
+    let b = buckets.get(key);
+    if (!b) { b = { mat: o.material, cast: o.castShadow, recv: o.receiveShadow, order: o.renderOrder, geos: [] }; buckets.set(key, b); }
+    let g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+    for (const name of Object.keys(g.attributes)) if (name !== 'position' && name !== 'normal' && name !== 'uv') g.deleteAttribute(name);
+    if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+    g.applyMatrix4(o.matrixWorld);
+    b.geos.push(g);
+  });
+  for (const b of buckets.values()) {
+    const m = new THREE.Mesh(mergeGeometries(b.geos, false), b.mat);
+    m.castShadow = b.cast; m.receiveShadow = b.recv; m.renderOrder = b.order;
+    target.add(m);
+    b.geos.forEach((g) => g.dispose());
+  }
 }

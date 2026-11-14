@@ -20,18 +20,25 @@ Cut grass → 禾草. Chop trees → 木頭. Feed 禾草 to the coop / barn → 
 Carry a stack on your back, stock shelves, customers buy, stand at the counter to take payment,
 collect cash. Walk onto dashed zones to pay (money AND/OR materials) and unlock the next thing.
 
-## Unlock chain
-雞舍(禾草5) → 雞蛋架(木4) → 番茄田($20) → 番茄架($25+木5) → 收銀員($60) → 農夫($100)
-→ 玉米田($120+木8) → 玉米架($90) → 小狗($150+木10) → 理貨員($180) → 牛棚($220+禾草15+木12)
-→ 牛奶架($150) → 貨運站($300+木20) → 小貓($260) → 第二雞舍($350+木15)
+## Unlock chain (v2, 37 steps, ~$62k + upgrades ≈ several hours)
+Farm stand: 雞舍 → 雞蛋架 → 番茄田 → 番茄架 → 收銀員 → 農夫 → 玉米田 → 玉米架 → 小狗 → 理貨員 → 自動灑水器
+→ 牛棚 → 牛奶架 → 超級市場($1500, opens west wing) → 果汁機 → 果汁架 → 理貨員2 → 黃豆田 → 磨豆漿機 → 豆漿架
+→ 貨運站 → 第二收銀台 → 收銀員2 → 小貓 → 停車場 → 小麥田 → 麵包窯 → 麵包架 → 農夫2 → 第二雞舍 → 起司坊
+→ 起司架 → 理貨員3 → 蘋果園 → 蘋果架 → 停機坪($9000) → 理貨員4. Exact costs live in DEFS in js/main.js.
 
-## Workers / pets
-收銀員 stays at the counter. 農夫 cuts grass and feeds coops/barn. 理貨員 moves produce to shelves.
-小狗 follows you and pulls in cash from further away. 小貓 sits by the counter: +1 tip per sale.
+## Workers / pets / automation
+收銀員 ×2 (one per counter). 農夫 ×2 cut grass and feed coops/barn. 理貨員 ×4 run logistics: crops/animal
+outputs → machines, machine outputs/produce → shelves (most-wanted shelf first). 小狗 pulls cash from afar,
+小貓 +1 tip. Machines: 果汁機 番茄→番茄汁, 磨豆漿機 黃豆→豆漿, 麵包窯 小麥→麵包, 起司坊 牛奶→起司.
+自動灑水器 ×1.8 crop growth. Upgrade 自動收款 makes the whole shop run by itself.
 
-## Events
-訂單卡車 (after 貨運站): truck orders items for a big reward. 市集日: double customers.
-下雨: crops grow twice as fast.
+## Special orders (player hands over in person, big rewards)
+⭐ VIP customer (after 超級市場) ×5 value; 🚚 truck (貨運站) ×3; 🚁 helicopter (停機坪) ×6 + 300.
+Events: 市集日 double customers, 下雨 crops ×2. 停車場: cars bring extra customers who buy more.
+
+## Upgrades (4 tabs)
+角色: 背包容量, 移動速度 · 員工: 拿多少, 速度 · 農場: 雞, 牛, 作物, 小狗範圍 · 商店: 售價(10 levels), 貨架容量,
+客人數量, 機器速度, 自動收款.
 
 ## UI (kept clean)
 Money top-right. Left column: 升級 (角色 / 員工 / 動物 tabs), 倉庫 (what you carry + stock), 設定.
