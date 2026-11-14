@@ -106,7 +106,10 @@ const MAPS_KEY = 'farm_maps_v1';
 function mapsGet() { try { return JSON.parse(localStorage.getItem(MAPS_KEY) || '{}'); } catch (e) { return {}; } }
 function mapsSet(id) { const m = mapsGet(); m[id] = true; try { localStorage.setItem(MAPS_KEY, JSON.stringify(m)); } catch (e) { /* storage off */ } showMapBtn(); }
 function showMapBtn() { const b = document.getElementById('bMap'); if (b) b.classList.toggle('hidden', !Object.keys(mapsGet()).length); }
+// set while restarting, so the page's own unload save can't write the old game back
+let resetting = false;
 function save() {
+  if (resetting) return;
   for (const id in stations) {
     const s = stations[id];
     if (s.kind === 'producer' || s.kind === 'machine') state.stock[id] = { a: s.inN, b: s.outN };
@@ -1260,7 +1263,7 @@ function openPanel(kind) {
     let armed = false;
     $('sReset').onclick = (e) => {
       if (!armed) { armed = true; e.target.textContent = '確定？'; return; }
-      localStorage.removeItem(SAVE); location.reload();
+      resetting = true; localStorage.removeItem(SAVE); location.replace(location.pathname);
     };
   }
 }
