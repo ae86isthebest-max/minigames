@@ -23,6 +23,7 @@ const DEFS = [
   { id: 'shelfTomato', name: '番茄架', kind: 'shelf', item: 'tomato', pos: [-1.6, SH_Z], cost: { money: 20 }, req: ['tomato'] },
   { id: 'shelfEgg', name: '雞蛋架', kind: 'shelf', item: 'egg', pos: [-4.6, SH_Z], cost: { money: 10 }, req: ['coop'] },
   { id: 'cashier', name: '收銀員', kind: 'hire', role: 'cashier', counter: 0, zone: [6.6, -12.6], cost: { money: 80 }, any: ['shelfTomato', 'shelfEgg'] },
+  { id: 'keeper', name: '飼養員', kind: 'hire', role: 'keeper', zone: [-1.4, 5.4], cost: { money: 90 }, req: ['coop', 'shelfEgg'] },
   { id: 'corn', name: '玉米田', kind: 'crop', out: 'corn', plant: 'corn', grow: 8, pos: [9, 6.8], cost: { money: 160, wood: 10 }, req: ['cashier'] },
   { id: 'shelfCorn', name: '玉米架', kind: 'shelf', item: 'corn', pos: [1.4, SH_Z], cost: { money: 130 }, req: ['corn'] },
   { id: 'farmer', name: '農夫', kind: 'hire', role: 'farmer', zone: [-2, 1.6], cost: { money: 120 }, req: ['shelfCorn', 'coop'] },
@@ -63,9 +64,9 @@ const DEF = Object.fromEntries(DEFS.map((d) => [d.id, d]));
 const lv = (n, base, k) => Array.from({ length: n }, (_, i) => Math.round(base * Math.pow(k, i) / 10) * 10);
 const UPS = {
   cap: { tab: 0, name: '背包容量', ic: 'hay', vals: [6, 10, 14, 18, 24, 30, 36, 44, 52], cost: [30, 80, 150, 260, 420, 700, 1100, 1700], fmt: (v) => v + ' 個' },
-  speed: { tab: 0, name: '移動速度', ic: 'run', vals: [4.4, 5, 5.5, 6, 6.5, 7, 7.5], cost: [40, 100, 200, 380, 650, 1000], fmt: (v) => v.toFixed(1) },
+  speed: { tab: 0, name: '移動速度', ic: 'run', vals: [5.8, 6.4, 7, 7.6, 8.2, 8.8, 9.4], cost: [40, 100, 200, 380, 650, 1000], fmt: (v) => v.toFixed(1) },
   wcap: { tab: 1, name: '員工一次拿多少', ic: 'egg', vals: [4, 6, 8, 11, 15, 20, 26], cost: [100, 220, 450, 800, 1400, 2400], fmt: (v) => v + ' 個' },
-  wspeed: { tab: 1, name: '員工速度', ic: 'run', vals: [3.4, 3.9, 4.4, 5, 5.6, 6.2, 6.8], cost: [100, 220, 450, 800, 1400, 2400], fmt: (v) => v.toFixed(1) },
+  wspeed: { tab: 1, name: '員工速度', ic: 'run', vals: [4, 4.6, 5.2, 5.8, 6.4, 7, 7.6], cost: [100, 220, 450, 800, 1400, 2400], fmt: (v) => v.toFixed(1) },
   coop: { tab: 2, name: '雞生蛋速度', ic: 'egg', need: 'coop', vals: [3, 2.5, 2, 1.6, 1.3, 1.0], cost: [60, 160, 350, 700, 1300], fmt: (v) => v + ' 秒一顆' },
   barn: { tab: 2, name: '牛奶速度', ic: 'milk', need: 'barn', vals: [5, 4.2, 3.4, 2.7, 2.1, 1.6], cost: [150, 350, 700, 1300, 2400], fmt: (v) => v + ' 秒一瓶' },
   grow: { tab: 2, name: '作物生長速度', ic: 'tomato', need: 'tomato', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [120, 300, 650, 1200, 2200], fmt: (v) => '×' + v },
@@ -74,6 +75,7 @@ const UPS = {
   shelfCap: { tab: 3, name: '貨架容量', ic: 'egg', need: 'cashier', vals: [8, 12, 16, 20, 24], cost: [150, 400, 900, 1800], fmt: (v) => v + ' 個' },
   cust: { tab: 3, name: '客人數量', ic: 'run', need: 'cashier', vals: [1, 1.2, 1.4, 1.6, 1.8, 2], cost: [300, 700, 1400, 2600, 4500], fmt: (v) => '×' + v },
   mach: { tab: 3, name: '機器速度', ic: 'juice', need: 'juicer', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [400, 900, 1800, 3200, 5500], fmt: (v) => '×' + v },
+  keeper: { tab: 1, name: '飼養員工作', ic: 'egg', need: 'keeper', vals: [0, 1, 2, 3], cost: [150, 400, 900], fmt: (v) => ['餵雞', '餵雞＋執蛋上架', '再照顧牛（餵牛、牛奶上架）', '貨架滿就放入倉庫'][v] },
   autoCash: { tab: 3, name: '自動收款', ic: 'money', need: 'cashier2', vals: [0, 1], cost: [6000], fmt: (v) => v ? '錢自動入袋' : '要自己收錢' },
 };
 const upVal = (k) => UPS[k].vals[state.up[k] || 0];
@@ -199,7 +201,7 @@ function buildWorld() {
   const rnd = mulberry(7);
   for (let i = 0; i < 40; i++) {
     const r = 1.5 + rnd() * 3.5, p = K.mesh(G.circle(r, 9), rnd() < 0.5 ? C.grass2 : C.grass3, false, true);
-    p.position.set(-34 + rnd() * 72, 0.004, -30 + rnd() * 70); p.scale.set(1, 1, 0.6 + rnd() * 0.6); p.rotation.y = rnd() * 3; D.add(p);
+    p.position.set(-34 + rnd() * 72, 0.003 + i * 0.0011, -30 + rnd() * 70); p.scale.set(1, 1, 0.6 + rnd() * 0.6); p.rotation.y = rnd() * 3; D.add(p);
   }
   for (let z = -6; z <= 30; z += 1.15) {
     const t = K.mesh(G.rbox(1.0, 0.04, 0.95, 0.12, 2), (Math.round(z * 2) % 2) ? C.dirt : C.dirt2, false, true);
@@ -711,7 +713,7 @@ function payZones(dt) {
 const workers = [];
 function makeWorker(role, at, counter, pop) {
   const look = role === 'cashier' ? { body: '#b48cff', hat: 'bun', hatColor: '#7a4fd6', apron: C.white }
-    : role === 'farmer' ? { body: '#7fcf6a', hat: 'straw' } : { body: '#5aa9ff', hat: 'cap', hatColor: '#ffd34a', apron: '#ffd34a' };
+    : role === 'farmer' ? { body: '#7fcf6a', hat: 'straw' } : role === 'keeper' ? { body: '#ffb347', hat: 'cap', hatColor: '#ff7f6e', apron: '#fff3dd' } : { body: '#5aa9ff', hat: 'cap', hatColor: '#ffd34a', apron: '#ffd34a' };
   const p = K.person(look);
   p.root.position.set(at[0], 0, at[1]); scene.add(p.root); if (pop) popIn(p.root);
   const w = carrier(p);
@@ -817,27 +819,14 @@ function updateWorker(w, dt) {
     if (walkTo(w, c.serve.x, c.serve.z, dt, sp)) w.face = 0;
     return;
   }
-  if (w.role === 'farmer') {
-    const prods = listOf('producer').filter((s) => s.inN + (s.pend || 0) < s.inMax);
-    const hay = count(w, 'hay');
-    if (hay > 0 && (room(w) <= 0 || !tufts.some((t) => t.grown && !t.res) || w.job === 'deliver')) {
-      w.job = 'deliver';
-      const s = prods.sort((a, b) => a.inN - b.inN)[0];
-      if (!s) { w.job = null; idleWander(w, dt, -4.5, 3.6); return; }
-      if (walkTo(w, s.inPt.x - 0.6, s.inPt.z + 0.9, dt, sp) || dist2(w.p.root.position, s.inPt.x, s.inPt.z) < 1.3) depositTo(w, s, 'hay', dt);
-      if (count(w, 'hay') === 0 && !w.incoming) w.job = null;
-    } else if (prods.length && room(w) > 0) {
-      if (!w.target || !w.target.grown || w.target.res !== w) {
-        if (w.target && w.target.res === w) w.target.res = null;
-        let best = null, bd = 1e9;
-        for (const t of tufts) if (t.grown && !t.res) { const d = dist2(w.p.root.position, t.x, t.z); if (d < bd) { bd = d; best = t; } }
-        w.target = best; if (best) best.res = w;
-      }
-      const t = w.target;
-      if (t && walkTo(w, t.x, t.z + 0.3, dt, sp)) { cutTuft(t, w); w.target = null; }
-      if (!t && hay > 0) w.job = 'deliver';
-    } else idleWander(w, dt, -4.5, 3.6);
-    return;
+  if (w.role === 'farmer') { feedAnimals(w, dt, sp, () => true); return; }
+  if (w.role === 'keeper') {
+    // 飼養員: feeds the animals; with upgrades also carries eggs (and milk) to the shop
+    const L = state.up.keeper || 0;
+    if (!w.job || typeof w.job !== 'object') {
+      if (L >= 1 && room(w) >= 2 && !w.incoming && w.job !== 'deliver') { const kj = keeperJob(w, L); if (kj) w.job = kj; }
+      if (!w.job || typeof w.job !== 'object') { feedAnimals(w, dt, sp, (st) => st.def.out === 'egg' || (L >= 2 && st.def.out === 'milk')); return; }
+    }
   }
   // shelver: fetch a full load from a source, then deliver it to a shelf or a machine
   if (!w.job) {
@@ -875,6 +864,39 @@ function updateWorker(w, dt) {
     }
   }
   if (j.phase === 'done') { if (j.plant && j.plant.res === w) j.plant.res = null; w.job = null; }
+}
+
+function feedAnimals(w, dt, sp, ok) {
+  const prods = listOf('producer').filter((s) => ok(s) && s.inN + (s.pend || 0) < s.inMax);
+  const hay = count(w, 'hay');
+  // only cut as much grass as the troughs can still take
+  const need = prods.reduce((a, s) => a + s.inMax - s.inN - (s.pend || 0), 0);
+  if (hay > 0 && (room(w) <= 0 || hay + w.incoming >= need || !tufts.some((t) => t.grown && !t.res) || w.job === 'deliver')) {
+    w.job = 'deliver';
+    const s = prods.sort((a, b) => a.inN - b.inN)[0];
+    if (!s) { w.job = null; idleWander(w, dt, -4.5, 3.6); return; }
+    if (walkTo(w, s.inPt.x - 0.6, s.inPt.z + 0.9, dt, sp) || dist2(w.p.root.position, s.inPt.x, s.inPt.z) < 1.3) depositTo(w, s, 'hay', dt);
+    if (count(w, 'hay') === 0 && !w.incoming) w.job = null;
+  } else if (prods.length && room(w) > 0) {
+    if (!w.target || !w.target.grown || w.target.res !== w) {
+      if (w.target && w.target.res === w) w.target.res = null;
+      let best = null, bd = 1e9;
+      for (const t of tufts) if (t.grown && !t.res) { const d = dist2(w.p.root.position, t.x, t.z); if (d < bd) { bd = d; best = t; } }
+      w.target = best; if (best) best.res = w;
+    }
+    const t = w.target;
+    if (t && walkTo(w, t.x, t.z + 0.3, dt, sp)) { cutTuft(t, w); w.target = null; }
+    if (!t && hay > 0) w.job = 'deliver';
+  } else idleWander(w, dt, -1.5, 4.5);
+}
+function keeperJob(w, L) {
+  for (const s of listOf('producer')) {
+    if (!(s.def.out === 'egg' || (L >= 2 && s.def.out === 'milk')) || s.outN < 3) continue;
+    const shelf = listOf('shelf').find((q) => q.item === s.def.out && upVal('shelfCap') - q.n - (q.pend || 0) >= 2);
+    const dst = shelf || (L >= 3 && stations.warehouse && storeTotal() < STORE_CAP ? stations.warehouse : null);
+    if (dst) return { dst, src: s, item: s.def.out, phase: 'get' };
+  }
+  return null;
 }
 
 // ---------- harvesting helpers ----------

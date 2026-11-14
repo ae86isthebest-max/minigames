@@ -95,7 +95,21 @@ export function makeLights(scene) {
   const sc = sun.shadow.camera; sc.left = -22; sc.right = 22; sc.top = 22; sc.bottom = -22; sc.near = 1; sc.far = 60;
   sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03; sun.shadow.radius = 3;
   scene.add(sun); scene.add(sun.target);
-  return { hemi, sun, follow(x, z) { sun.position.set(x - 9, 18, z + 7); sun.target.position.set(x, 0, z); } };
+  // follow the player, but move the shadow camera in whole shadow-map texels so shadows don't shimmer
+  const dir = new THREE.Vector3(9, -18, -7).normalize();
+  const right = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0, 1, 0)).normalize();
+  const up = new THREE.Vector3().crossVectors(right, dir).normalize();
+  const texel = (sc.right - sc.left) / sun.shadow.mapSize.x, p = new THREE.Vector3(), q = new THREE.Vector3();
+  return {
+    hemi, sun,
+    follow(x, z) {
+      p.set(x, 0, z);
+      const r = Math.round(p.dot(right) / texel) * texel, u = Math.round(p.dot(up) / texel) * texel, d = p.dot(dir);
+      q.copy(right).multiplyScalar(r).addScaledVector(up, u).addScaledVector(dir, d);
+      sun.target.position.copy(q);
+      sun.position.copy(q).addScaledVector(dir, -21);
+    },
+  };
 }
 
 // Soft round contact shadow under moving things (cheap, always the same darker-green tint on grass)
