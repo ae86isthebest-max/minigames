@@ -1,6 +1,6 @@
-// Offline cache: everything is precached on first visit, then served cache-first.
-// Each visit also refreshes the cache in the background, so updates show up on the next open.
-const CACHE = 'mg-v14';
+// Offline cache: everything is precached on first visit. With a connection the newest files are always
+// fetched first (so updates show at once); without one, the cached copy is used.
+const CACHE = 'mg-v15';
 const GAMES = ['bus', 'water', 'zombie', 'crowd', 'parking', 'screw', 'blocks', 'arrows', 'triple', 'pins', 'pixel', 'fruit', 'stack', 'tangle', 'bricks',
   'runner', 'hole', 'survivor', 'bubble', 'snake', 'helix', 'knife', 'bullet', 'merge', 'paper', 'flow', 'ninja', 'piano', 'g2048', 'jumper', 'multiply'];
 const FILES = ['./', 'index.html', 'style.css', 'core.js', 'manifest.json', 'icon-180.png', 'icon-192.png', 'icon-512.png']
@@ -10,9 +10,9 @@ const FILES = ['./', 'index.html', 'style.css', 'core.js', 'manifest.json', 'ico
     'farm/js/input.js', 'farm/vendor/three.module.min.js', 'farm/vendor/RoundedBoxGeometry.js', 'farm/vendor/BufferGeometryUtils.js']);
 
 self.addEventListener('install', (e) => {
-  // cache file by file so one missing file can't break the whole offline install
+  // cache: 'reload' skips the browser's HTTP cache so a fresh install never stores an old copy
   e.waitUntil(caches.open(CACHE)
-    .then((c) => Promise.all(FILES.map((f) => c.add(f).catch(() => {}))))
+    .then((c) => Promise.all(FILES.map((f) => fetch(new Request(f, { cache: 'reload' })).then((r) => { if (r.ok) return c.put(f, r); }).catch(() => {}))))
     .then(() => self.skipWaiting()));
 });
 
@@ -22,16 +22,20 @@ self.addEventListener('activate', (e) => {
     .then(() => self.clients.claim()));
 });
 
+// network first (3.5 s timeout), cache as the offline fallback
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   if (url.origin !== location.origin) return;
-  e.respondWith(caches.open(CACHE).then((c) =>
-    c.match(e.request, { ignoreSearch: true }).then((hit) => {
-      const fresh = fetch(e.request).then((res) => {
-        if (res.ok) c.put(e.request, res.clone());
-        return res;
-      }).catch(() => hit);
-      return hit || fresh;
-    })));
+  if (url.pathname.includes('/detective/')) return;
+  e.respondWith(caches.open(CACHE).then((c) => {
+    const net = fetch(e.request, { cache: 'no-cache' }).then((res) => {
+      if (res.ok) c.put(e.request, res.clone());
+      return res;
+    });
+    const timeout = new Promise((ok) => setTimeout(ok, 3500));
+    return Promise.race([net, timeout.then(() => c.match(e.request, { ignoreSearch: true }).then((hit) => hit || net))])
+      .catch(() => c.match(e.request, { ignoreSearch: true }))
+      .then((res) => res || c.match(e.request, { ignoreSearch: true }));
+  }));
 });
