@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#a5d85a">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:,">
+<title>開心農場鋪</title>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js", "rbox": "./vendor/RoundedBoxGeometry.js" } }
+</script>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="labels"></div>
+<div id="ui">
+  <div id="money"><span class="bill"></span><span id="moneyN">0</span></div>
+  <div id="side">
+    <a class="sbtn back" href="../" aria-label="返回小遊戲合集">‹</a>
+    <button class="sbtn up" id="bUp" aria-label="升級"><span>⬆</span></button>
+    <button class="sbtn inv" id="bInv" aria-label="倉庫"><span>📦</span></button>
+    <button class="sbtn set" id="bSet" aria-label="設定"><span>⚙</span></button>
+  </div>
+  <div id="toast"></div>
+</div>
+<div id="panel" class="hidden">
+  <div class="pcard">
+    <div class="phead"><b id="pTitle"></b><button id="pClose" aria-label="關閉">×</button></div>
+    <div id="pTabs"></div>
+    <div id="pBody"></div>
+  </div>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

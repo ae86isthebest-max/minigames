@@ -44,6 +44,17 @@ html, body {
 .tile .nm { display: block; font-size: 15px; font-weight: 800; }
 .tile .lv { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+.feature {
+  display: block; margin: 0 16px 14px; border-radius: 20px; overflow: hidden; position: relative; text-decoration: none;
+  background: var(--card); color: var(--fg); box-shadow: 0 2px 0 var(--line), 0 4px 12px rgba(120, 90, 50, .1);
+}
+.feature img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #b6e46a; }
+.feature .ftx { display: block; padding: 10px 14px 12px; }
+.feature b { display: block; font-size: 19px; font-weight: 800; }
+.feature small { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.feature .fnew { display: inline-block; font-size: 11px; font-weight: 800; color: #fff; background: var(--accent); border-radius: 99px; padding: 2px 8px; margin-bottom: 4px; }
+.feature:active { transform: scale(.98); }
+
 /* play */
 .topbar { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--bg); }
 .topbar .title { flex: 1; text-align: center; min-width: 0; }
