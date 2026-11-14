@@ -77,12 +77,28 @@ const UPS = {
 };
 const upVal = (k) => UPS[k].vals[state.up[k] || 0];
 
+// small repeatable unlocks next to a building: one more chicken / cow / plant / patch of grass
+const GROW = {
+  coop: { start: 1, max: 4, cost: [30, 80, 180], what: '＋1 隻雞' },
+  coop2: { start: 1, max: 4, cost: [300, 600, 1200], what: '＋1 隻雞' },
+  barn: { start: 1, max: 3, cost: [500, 1200], what: '＋1 頭牛' },
+  tomato: { start: 2, max: 4, cost: [25, 60], what: '＋1 棵番茄' },
+  corn: { start: 3, max: 6, cost: [120, 200, 320], what: '＋1 棵玉米' },
+  soy: { start: 3, max: 6, cost: [700, 1000, 1500], what: '＋1 棵黃豆' },
+  wheat: { start: 4, max: 8, cost: [900, 1200, 1600, 2000], what: '＋1 叢小麥' },
+  orchard: { start: 2, max: 6, cost: [3000, 4000, 5000, 6500], what: '＋1 棵蘋果樹' },
+  field: { start: 6, max: 25, steps: [6, 10, 15, 20, 25], cost: [15, 45, 100, 200], what: '擴大草地' },
+};
+const lvlOf = (id) => state.lvl[id] || GROW[id].start;
+
 // ---------- save ----------
 const SAVE = 'farm_save_v2';
-const state = { money: 50, built: [], paid: {}, up: {}, stock: {}, store: {}, piles: [0, 0], sound: true, earned: 0 };
+const state = { money: 50, built: [], paid: {}, up: {}, stock: {}, store: {}, lvl: null, piles: [0, 0], sound: true, earned: 0 };
 try { Object.assign(state, JSON.parse(localStorage.getItem(SAVE) || '{}')); } catch (e) { /* fresh start */ }
-if (params.has('fresh')) Object.assign(state, { money: 50, built: [], paid: {}, up: {}, stock: {}, store: {}, piles: [0, 0], earned: 0 });
+if (params.has('fresh')) Object.assign(state, { money: 50, built: [], paid: {}, up: {}, stock: {}, store: {}, lvl: {}, piles: [0, 0], earned: 0 });
 state.store = state.store || {};
+// older saves already had full fields and three chickens: keep them that way
+if (!state.lvl) { state.lvl = {}; if (state.built.length) { for (const k in GROW) state.lvl[k] = GROW[k].max; state.lvl.field = 25; } }
 for (const k in UPS) state.up[k] = state.up[k] || 0;
 const isBuilt = (id) => state.built.includes(id);
 function save() {
@@ -340,12 +356,13 @@ let pFace = 0;
 // ---------- resource nodes ----------
 const tufts = [];
 function buildField() {
-  for (let ix = 0; ix < 5; ix++) for (let iz = 0; iz < 5; iz++) {
-    const t = P.tuft(); const x = -7.6 + ix * 1.05 + (iz % 2) * 0.3, z = -0.2 + iz * 1.0;
+  for (let iz = 0; iz < 5; iz++) for (let k = 0; k < 5; k++) {
+    const ix = 4 - k, t = P.tuft(); const x = -7.6 + ix * 1.05 + (iz % 2) * 0.3, z = -0.2 + iz * 1.0;
     t.g.position.set(x, 0, z); t.g.rotation.y = (ix * 7 + iz * 3) % 6; scene.add(t.g);
     tufts.push({ ...t, x, z, grown: true, t: 0, res: null });
   }
   K.add(scene, K.mesh(G.circle(3.4, 10), '#a9d957', false, true), -5.3, 0.006, 1.9).scale.set(1.15, 1, 1);
+  applyField();
 }
 const trees = [];
 function buildTrees() {
@@ -416,13 +433,14 @@ function build(def, instant) {
     for (let i = 0; i < 10; i++) { const m = P.itemMesh('hay'); m.scale.setScalar(0.62); m.position.set(-0.4 + (i % 5) * 0.2, 0.3 + Math.floor(i / 5) * 0.17, (Math.floor(i / 5) % 2) * 0.08 - 0.04); m.visible = false; b.trough.add(m); s.inVis.push(m); }
     for (let i = 0; i < 12; i++) { const m = P.itemMesh(def.out); m.scale.setScalar(0.85); m.position.set(-0.3 + (i % 4) * 0.2, 0.22 + Math.floor(i / 8) * 0.22, -0.18 + (Math.floor(i / 4) % 2) * 0.3); m.visible = false; b.nest.add(m); s.outVis.push(m); }
     if (isBarn) {
-      const c = P.cow(); c.g.position.set(pos[0] - 0.6, 0, pos[1] + 0.9); scene.add(c.g); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.9], rx: 1.0, rz: 0.4, t: Math.random() * 5, tx: 0, tz: 0 });
+      for (let i = 0; i < 3; i++) { const c = P.cow(); c.g.position.set(pos[0] - 0.9 + i * 0.9, 0, pos[1] + 0.9); c.g.scale.setScalar(0.85); scene.add(c.g); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.9], rx: 1.0, rz: 0.4, t: Math.random() * 5, tx: 0, tz: 0 }); }
       box(pos[0] - 1.5, pos[1] - 2, pos[0] + 1.5, pos[1] + 0.2); penBoxes(pos[0], pos[1] + 0.9, 3.0, 1.8);
     } else {
-      for (let i = 0; i < 3; i++) { const c = P.chicken(); c.g.position.set(pos[0] - 0.6 + i * 0.6, 0, pos[1] + 0.7); scene.add(c.g); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.75], rx: 0.95, rz: 0.4, t: Math.random() * 5, tx: 0, tz: 0 }); }
+      for (let i = 0; i < 4; i++) { const c = P.chicken(); c.g.position.set(pos[0] - 0.75 + i * 0.5, 0, pos[1] + 0.7); scene.add(c.g); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.75], rx: 0.95, rz: 0.4, t: Math.random() * 5, tx: 0, tz: 0 }); }
       box(pos[0] - 1.2, pos[1] - 1.45, pos[0] + 1.2, pos[1] + 0.25); penBoxes(pos[0], pos[1] + 0.6, 2.4, 1.4);
     }
     const st = state.stock[id]; if (st) { s.inN = st.a || 0; s.outN = st.b || 0; }
+    applyGrow(s);
     s.inLabel = label('badge', '', (o) => o.copy(tw).setY(1.0)); s.inLabel.near = 0;
     s.outLabel = label('badge', '', (o) => o.copy(nw).setY(0.95)); s.outLabel.near = 0;
     if (!instant) popIn(b.g);
@@ -450,6 +468,7 @@ function build(def, instant) {
       if (def.plant === 'apple') box(pos[0] + x - 0.25, pos[1] + z - 0.25, pos[0] + x + 0.25, pos[1] + z + 0.25);
     }
     s.grow = def.grow; s.g = g; s.w = L.w; s.d = L.d;
+    applyGrow(s);
     if (isBuilt('sprinkler')) addSprinkler(s);
     if (!instant) popIn(g);
   } else if (def.kind === 'shelf') {
@@ -510,6 +529,26 @@ function penBoxes(cx, cz, w, d) {
   box(cx - w / 2 - 0.15, cz - d / 2, cx - w / 2 + 0.15, cz + d / 2);
   box(cx + w / 2 - 0.15, cz - d / 2, cx + w / 2 + 0.15, cz + d / 2);
 }
+function applyGrow(s) {
+  const id = s.id; if (!GROW[id]) return;
+  const n = lvlOf(id);
+  if (s.animals) s.animals.forEach((a, i) => { const on = i < n; if (on && !a.g.visible) popIn(a.g); a.g.visible = on; });
+  if (s.plants) s.plants.forEach((pl, i) => {
+    const on = i < n;
+    if (on && !pl.active) { pl.g.visible = true; pl.ripe = false; pl.t = 0; pl.fruit.visible = false; if (s.plants.some((q) => q.active)) popIn(pl.g); }
+    if (!on) { pl.g.visible = false; pl.ripe = false; }
+    pl.active = on;
+  });
+}
+function applyField() {
+  const n = lvlOf('field');
+  tufts.forEach((t, i) => {
+    const on = i < n;
+    if (on && !t.active) { t.g.visible = true; t.grown = true; t.tall.visible = true; if (tufts.some((q) => q.active)) popIn(t.g); }
+    if (!on) { t.g.visible = false; t.grown = false; }
+    t.active = on;
+  });
+}
 function addSprinkler(s) {
   for (const [dx, dz] of [[-s.w / 2 - 0.15, -s.d / 2 - 0.15], [s.w / 2 + 0.15, s.d / 2 + 0.15]]) {
     const sp = P2.sprinkler(); sp.g.position.set(s.def.pos[0] + dx, 0, s.def.pos[1] + dz); scene.add(sp.g);
@@ -560,11 +599,42 @@ function refreshZones() {
     const open = def.req ? def.req.every(isBuilt) : def.any ? def.any.some(isBuilt) : isBuilt(DEFS[i - 1].id);
     if (open && !zones[def.id]) makeZone(def);
   }
+  for (const def of growDefs()) {
+    const z = zones[def.id];
+    if (z && z.def.lv !== def.lv) killZone(def.id);
+    if (!zones[def.id]) makeZone(def);
+  }
+}
+function frontOf(def) {
+  if (def.kind === 'producer') return [def.pos[0], def.pos[1] + (def.out === 'milk' ? 3.9 : 3.4)];
+  if (def.kind === 'crop') return [def.pos[0], def.pos[1] + CROP_LAYOUT[def.plant].d / 2 + 1.5];
+  return def.pos;
 }
 function zoneSpot(def) {
   if (def.zone) return def.zone;
   if (def.kind === 'shelf') return [def.pos[0], def.pos[1] + 1.7];
+  if (def.kind === 'producer') return frontOf(def);
   return def.pos;
+}
+// the next growth step for each building (or the grass patch), as a zone definition
+function growDefs() {
+  const out = [];
+  for (const key in GROW) {
+    const g = GROW[key], n = lvlOf(key);
+    if (n >= g.max) continue;
+    let spot, idx;
+    if (key === 'field') { if (!isBuilt('coop')) continue; spot = [-5.3, -2.0]; idx = g.steps.indexOf(n); if (idx < 0) idx = 0; }
+    else { if (!isBuilt(key)) continue; spot = frontOf(DEF[key]); idx = n - g.start; }
+    out.push({ id: 'g_' + key, name: g.what, kind: 'grow', target: key, lv: n, zone: spot, cost: { money: g.cost[Math.min(idx, g.cost.length - 1)] } });
+  }
+  return out;
+}
+function grow(def) {
+  const g = GROW[def.target], n = lvlOf(def.target);
+  state.lvl[def.target] = def.target === 'field' ? g.steps[Math.min(g.steps.length - 1, g.steps.indexOf(n) + 1)] : n + 1;
+  if (def.target === 'field') applyField(); else applyGrow(stations[def.target]);
+  confetti(def.zone[0], def.zone[1]); sfx('unlock'); toast('🎉 ' + def.name + '！');
+  refreshZones(); save();
 }
 function makeZone(def) {
   const [x, z] = zoneSpot(def);
@@ -573,7 +643,8 @@ function makeZone(def) {
   const fill = new THREE.Mesh(G.plane(1.9, 1.9), fillMat); fill.renderOrder = 2; fill.position.y = 0.005; fill.scale.set(1, 1, 0.001); g.add(fill);
   if (def.kind === 'hire') g.add(P2.ghostPerson());
   const paid = state.paid[def.id] || {};
-  const z0 = { def, g, fill, x, z, paid, total: Object.values(def.cost).reduce((a, b) => a + b, 0), tick: 0 };
+  // a zone that appears under the player's feet waits until they step off once (no accidental double buys)
+  const z0 = { def, g, fill, x, z, paid, total: Object.values(def.cost).reduce((a, b) => a + b, 0), tick: 0, armed: dist2(player.p.root.position, x, z) > 1.5 };
   z0.label = label('zone', '', (o) => o.set(x, def.kind === 'hire' ? 2.0 : 0.4, z + 0.2));
   zones[def.id] = z0;
   updateZoneLabel(z0);
@@ -592,7 +663,8 @@ function updateZoneLabel(z) {
 function payZones(dt) {
   for (const id in zones) {
     const z = zones[id];
-    if (dist2(player.p.root.position, z.x, z.z) > 1.35) { z.tick = 0; continue; }
+    if (dist2(player.p.root.position, z.x, z.z) > 1.35) { z.tick = 0; z.armed = true; continue; }
+    if (!z.armed) continue;
     z.tick -= dt; if (z.tick > 0) continue;
     z.tick = 0.06;
     let moved = false;
@@ -612,7 +684,7 @@ function payZones(dt) {
     if (moved) {
       state.paid[id] = z.paid; sfx('drop'); updateZoneLabel(z); updateMoney();
       let done = true; for (const k in z.def.cost) if (left(z, k) > 0) done = false;
-      if (done) { delete state.paid[id]; const d = z.def; later.push({ t: 0.3, fn: () => build(d) }); killZone(id); }
+      if (done) { delete state.paid[id]; const d = z.def; later.push({ t: 0.3, fn: () => (d.kind === 'grow' ? grow(d) : build(d)) }); killZone(id); }
     }
   }
 }
@@ -1236,7 +1308,7 @@ function playerInteract(dt) {
 
 // ---------- simulation ----------
 function updateWorld(dt, t) {
-  for (const tf of tufts) if (!tf.grown) {
+  for (const tf of tufts) if (tf.active && !tf.grown) {
     tf.t += dt;
     if (tf.t > 7) { tf.grown = true; tf.tall.visible = true; tf.tall.scale.setScalar(0.01); pops.push({ obj: tf.tall, t: 0 }); }
   }
@@ -1248,7 +1320,7 @@ function updateWorld(dt, t) {
   const cap = upVal('shelfCap');
   for (const s of Object.values(stations)) {
     if (s.kind === 'producer' || s.kind === 'machine') {
-      const iv = s.kind === 'machine' ? s.def.iv / upVal('mach') : s.def.out === 'milk' ? upVal('barn') : upVal('coop');
+      const iv = s.kind === 'machine' ? s.def.iv / upVal('mach') : s.def.out === 'milk' ? upVal('barn') * 1.6 / lvlOf(s.id) : upVal('coop') * 2 / lvlOf(s.id);
       const busy = s.inN > 0 && s.outN < s.outMax;
       if (busy) {
         s.timer += dt;
@@ -1259,6 +1331,7 @@ function updateWorld(dt, t) {
       s.outVis.forEach((m, i) => { m.visible = i < s.outN; });
       setLabel(s.inLabel, badge(s.def.in, s.inN, s.inMax)); setLabel(s.outLabel, badge(s.def.out, s.outN, s.outMax));
       if (s.animals) for (const a of s.animals) {
+        if (!a.g.visible) continue;
         a.t -= dt;
         if (a.t <= 0) { a.t = 1.5 + Math.random() * 3; a.tx = a.home[0] + (Math.random() - 0.5) * 2 * a.rx; a.tz = a.home[1] + (Math.random() - 0.5) * 2 * a.rz; }
         const dx = a.tx - a.g.position.x, dz = a.tz - a.g.position.z, d = Math.hypot(dx, dz);
@@ -1267,7 +1340,7 @@ function updateWorld(dt, t) {
       }
     } else if (s.kind === 'crop') {
       for (const pl of s.plants) {
-        if (!pl.ripe) {
+        if (pl.active && !pl.ripe) {
           pl.t += dt * growK;
           pl.fruit.visible = pl.t > s.grow * 0.35;
           pl.fruit.scale.setScalar(Math.min(1, pl.t / s.grow));
