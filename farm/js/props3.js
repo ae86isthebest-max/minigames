@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { C, G, mesh, add, blob, bakeStatic } from './kit.js';
 
 export const ITEMS = {
-  fish: { name: '魚', icon: '🐟', h: 0.22, price: 6 },
+  fish: { name: '鯛魚', icon: '🐟', h: 0.22, price: 6 },
   seaweed: { name: '海帶', icon: '🌿', h: 0.16, price: 4 },
   rice: { name: '米', icon: '🍚', h: 0.3, price: 0 },
   iced: { name: '冰鮮魚', icon: '🧊', h: 0.25, price: 12 },
@@ -17,7 +17,7 @@ export const ITEMS = {
 };
 
 // a fish lying on its side (pointing +x), so the top-down camera sees its profile
-function fishShape(g, s, body, belly, y0, flat = 1) {
+export function fishShape(g, s, body, belly, y0, flat = 1) {
   const f = add(g, new THREE.Group(), 0, y0, 0);
   f.scale.setScalar(s);
   add(f, mesh(G.sphere(0.13, 14, 10), body), 0.02, 0, 0.015).scale.set(1.75, 0.6 * flat, 0.85);
@@ -40,7 +40,8 @@ export function itemMesh(type) {
 function buildItem(type) {
   const g = new THREE.Group();
   if (type === 'fish') {
-    fishShape(g, 1, '#5b9ee0', '#e8f4ff', 0.11);
+    fishShape(g, 1, '#ff7f86', '#ffe6e2', 0.11);
+    add(g, mesh(G.cone(0.05, 0.12, 4), '#ff5f6a'), 0.06, 0.13, 0.1).rotation.x = Math.PI / 2;
   } else if (type === 'seaweed') {
     // a bundle of wavy kelp ribbons tied in the middle
     const cols = ['#2f8f55', '#3fae66', '#267f47'];
@@ -62,7 +63,7 @@ function buildItem(type) {
     add(g, mesh(G.rbox(0.5, 0.09, 0.32, 0.03), '#ffffff'), 0, 0.045, 0);
     add(g, mesh(G.rbox(0.44, 0.04, 0.26, 0.02), '#bfe8ff'), 0, 0.09, 0);
     for (const [x, z, s] of [[-0.18, 0.08, 0.06], [0.17, -0.08, 0.05], [0.19, 0.08, 0.055], [-0.15, -0.09, 0.05]]) add(g, mesh(G.rbox(s, s, s, 0.012), '#e3f6ff'), x, 0.12, z).rotation.y = x * 4;
-    fishShape(g, 0.85, '#7ab3ea', '#f2f9ff', 0.16);
+    fishShape(g, 0.85, '#ff8f96', '#fff0ec', 0.16);
   } else if (type === 'can') {
     add(g, mesh(G.cyl(0.13, 0.13, 0.18, 16), '#c9d1da'), 0, 0.09, 0);
     add(g, mesh(G.cyl(0.133, 0.133, 0.11, 16), '#ff6b5a'), 0, 0.09, 0);
@@ -180,7 +181,7 @@ export function boat(col) {
   add(b, mesh(new THREE.TorusGeometry(0.14, 0.05, 6, 12), '#ff6b5a'), -0.55, 0.72, 0.41);
   const catchBox = add(b, new THREE.Group(), 0.65, 0.42, 0); catchBox.userData.dyn = true;
   add(catchBox, mesh(G.rbox(0.62, 0.2, 0.55, 0.04), C.woodLight), 0, 0.1, 0);
-  for (const [x, z, r] of [[-0.12, -0.08, 0.3], [0.12, 0.09, -0.4], [0.02, 0.0, 1.2]]) { const f = add(catchBox, new THREE.Group(), x, 0.17, z); f.rotation.y = r; f.scale.setScalar(0.7); fishShape(f, 1, '#5b9ee0', '#e8f4ff', 0.11); }
+  for (const [x, z, r] of [[-0.12, -0.08, 0.3], [0.12, 0.09, -0.4], [0.02, 0.0, 1.2]]) { const f = add(catchBox, new THREE.Group(), x, 0.17, z); f.rotation.y = r; f.scale.setScalar(0.7); fishShape(f, 1, '#ff7f86', '#ffe6e2', 0.11); }
   bakeStatic(catchBox);
   const flag = add(b, new THREE.Group(), 0.55, 1.48, 0); flag.userData.dyn = true;
   add(flag, mesh(G.rbox(0.42, 0.26, 0.03, 0.02), '#ffd34a'), -0.22, 0, 0);

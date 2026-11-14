@@ -19,6 +19,25 @@
   .lbl.bubble.order { font-size: 14px; padding: 2px 7px; }
   .lbl.bubble.order.late { background: #ffe0d6; }
   .lbl.bubble.order.late::after { border-top-color: #ffe0d6; }
+  .sbtn { position: relative; }
+  .sbtn.log { background: #ff8fb1; }
+  .sbtn .dot { position: absolute; top: -3px; right: -3px; width: 14px; height: 14px; border-radius: 50%; background: #ff4d4d; border: 2px solid #fff; }
+  .lbl.badge.grp { display: flex; gap: 6px; align-items: center; }
+  .lbl.badge.grp span { white-space: nowrap; }
+  .lbl.badge.grp .tot { opacity: 0.75; font-size: 0.85em; }
+  .logs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+  .lcard { background: #fff; border-radius: 16px; padding: 8px 6px 10px; text-align: center; box-shadow: 0 2px 0 #eadcc4; }
+  .lcard img { width: 72px; height: 72px; display: block; margin: 0 auto; }
+  .lcard img.sil { opacity: 0.55; }
+  .lcard .big { font-size: 46px; display: block; height: 72px; line-height: 72px; }
+  .lcard b { display: block; font-size: 15px; color: #4a3b2e; margin-top: 2px; }
+  .lcard.unk b { color: #b3a28b; }
+  .lcard small { display: block; font-size: 12px; color: #9b8570; margin-top: 2px; }
+  .rar { display: inline-block; font-size: 11px; font-weight: 800; padding: 1px 8px; border-radius: 999px; color: #fff; margin-top: 3px; }
+  .rar.r0 { background: #aab4bf; } .rar.r1 { background: #59c25b; } .rar.r2 { background: #5aa9ff; } .rar.r3 { background: #a98bff; } .rar.r4 { background: #ffb347; }
+  .preward { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding: 10px 14px; border-radius: 16px; background: #fff3c9; color: #7a5a1e; font-weight: 800; font-size: 14px; }
+  .preward.done { background: #dff5d8; color: #3a7a2a; }
+  #pTabs button { white-space: nowrap; font-size: 13px; }
   .lbl.event { background: rgba(30, 110, 150, 0.7); color: #fff; padding: 4px 12px; border-radius: 999px; font-weight: 900; font-size: 14px; }
 </style>
 <script type="importmap">
@@ -34,6 +53,7 @@
     <a class="sbtn back" href="../" aria-label="返回小遊戲合集">‹</a>
     <button class="sbtn up" id="bUp" aria-label="升級"><span>⬆</span></button>
     <button class="sbtn inv" id="bInv" aria-label="倉庫"><span>📦</span></button>
+    <button class="sbtn log" id="bLog" aria-label="魚獲圖鑑"><span>📖</span><i class="dot hidden"></i></button>
     <button class="sbtn map" id="bMap" aria-label="地圖"><span>🗺</span></button>
     <button class="sbtn set" id="bSet" aria-label="設定"><span>⚙</span></button>
   </div>

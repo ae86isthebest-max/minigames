@@ -1,34 +1,17 @@
-// 海邊漁港 — map 2 of 開心農場鋪. Boats bring fish, process it, run the fish market and a dine-in seafood restaurant.
+// 海邊漁港 — map 2 of 開心農場鋪. A whole fishing industry: boats, anglers, trawlers, traps, deep-sea boats and
+// fish farms bring many species; process them, sell them in the fish market and serve them in a seafood restaurant.
 // Same style kit, controls and UI as the farm (logic adapted from main.js).
 import * as THREE from 'three';
 import * as K from './kit.js';
 import * as P from './props.js';
 import * as P2 from './props2.js';
 import * as P3 from './props3.js';
+import * as P4 from './props4.js';
 import { Joystick } from './input.js';
 
 const { C, G } = K;
-const ITEMS = P3.ITEMS;
-const itemMesh = P3.itemMesh;
-// A pile of one item (crate, shelf, tray, cash pile): all copies are drawn as one instanced mesh per material,
-// so a full shelf costs 2 draw calls instead of 48. set(n) shows the first n slots.
-const _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _sc = new THREE.Vector3();
-function itemStack(type, parent, slots) {
-  const tpl = itemMesh(type), parts = [];
-  tpl.updateMatrixWorld(true);
-  tpl.traverse((o) => { if (o.isMesh) parts.push(o); });
-  const g = new THREE.Group(); g.userData.dyn = true; parent.add(g);
-  const ims = parts.map((o) => {
-    const im = new THREE.InstancedMesh(o.geometry, o.material, slots.length);
-    im.castShadow = o.castShadow; im.receiveShadow = o.receiveShadow; im.count = 0; im.frustumCulled = false; g.add(im);
-    return im;
-  });
-  slots.forEach((sl, i) => {
-    _e.set(sl.rx || 0, sl.ry || 0, 0); _q.setFromEuler(_e); _sc.setScalar(sl.s || 1); _m4.compose(sl.p, _q, _sc);
-    ims.forEach((im, k) => im.setMatrixAt(i, _m4.clone().multiply(parts[k].matrixWorld)));
-  });
-  return { g, n: 0, max: slots.length, set(n) { n = Math.max(0, Math.min(this.max, n)); if (n !== this.n) { this.n = n; for (const im of ims) im.count = n; } } };
-}
+const ITEMS = { ...P3.ITEMS, ...P4.ITEMS4 };
+const itemMesh = P4.itemMesh;
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -37,60 +20,166 @@ const easeBack = (t) => { const c = 1.7; return 1 + (c + 1) * Math.pow(t - 1, 3)
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
+// ---------- instanced piles ----------
+// A pile of one item (machine tray, cash pile, sink): all copies are one instanced mesh per material. set(n) shows n.
+const _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _sc = new THREE.Vector3();
+function slotMatrix(sl, extra = 1) { _e.set(sl.rx || 0, sl.ry || 0, 0); _q.setFromEuler(_e); _sc.setScalar((sl.s || 1) * extra); return new THREE.Matrix4().compose(sl.p, _q, _sc); }
+function templateParts(type, noOutline) {
+  const tpl = itemMesh(type), parts = [];
+  tpl.updateMatrixWorld(true);
+  tpl.traverse((o) => { if (o.isMesh && !(noOutline && o.material.side === THREE.BackSide)) parts.push(o); });
+  return parts;
+}
+// bounding sphere around every slot, so piles that are off screen are skipped by frustum culling
+function slotSphere(slots) {
+  const c = new THREE.Vector3(); for (const sl of slots) c.add(sl.p); c.divideScalar(slots.length);
+  let r = 0; for (const sl of slots) r = Math.max(r, c.distanceTo(sl.p));
+  return new THREE.Sphere(c, r + 0.8);
+}
+function instGroup(parent, parts, n, slots) {
+  const g = new THREE.Group(); g.userData.dyn = true; parent.add(g);
+  const sphere = slotSphere(slots);
+  const ims = parts.map((o) => {
+    const im = new THREE.InstancedMesh(o.geometry, o.material, n);
+    im.castShadow = false; im.receiveShadow = o.receiveShadow; im.count = 0; im.visible = false;
+    im.boundingSphere = sphere.clone(); im.frustumCulled = true; g.add(im);
+    return im;
+  });
+  return ims;
+}
+function itemStack(type, parent, slots) {
+  const parts = templateParts(type), ims = instGroup(parent, parts, slots.length, slots);
+  slots.forEach((sl, i) => { const m = slotMatrix(sl, ITEMS[type].ss || 1); ims.forEach((im, k) => im.setMatrixAt(i, _m4.multiplyMatrices(m, parts[k].matrixWorld))); });
+  return { n: 0, max: slots.length, set(n) { n = Math.max(0, Math.min(this.max, n)); if (n !== this.n) { this.n = n; for (const im of ims) { im.count = n; im.visible = n > 0; } } } };
+}
+// A mixed pile (catch crates, fish-market coolers): an ordered list of item types. Each species present gets its own
+// instanced mesh; same species sit next to each other, so the pile reads at a glance and costs 2 draws per species.
+function makeBin(parent, slots, max, noOutline) { return { parent, slots, max: Math.min(max, slots.length), list: [], stacks: {}, dirty: true, noOutline }; }
+const binAdd = (b, t) => { b.list.push(t); b.dirty = true; };
+function binTake(b, t) { const i = t ? b.list.lastIndexOf(t) : b.list.length - 1; if (i < 0) return null; b.dirty = true; return b.list.splice(i, 1)[0]; }
+const binCount = (b, t) => { let n = 0; for (const x of b.list) if (x === t) n++; return n; };
+const binRoom = (b) => b.max - b.list.length - (b.pend || 0);
+function binRender(b) {
+  if (!b.dirty) return; b.dirty = false;
+  const sorted = [...b.list].sort(), byType = {};
+  sorted.forEach((t, i) => { (byType[t] = byType[t] || []).push(i); });
+  for (const t in b.stacks) if (!byType[t]) for (const im of b.stacks[t].ims) { im.count = 0; im.visible = false; }
+  for (const t in byType) {
+    let st = b.stacks[t];
+    if (!st) { const parts = templateParts(t, b.noOutline); st = b.stacks[t] = { parts, ims: instGroup(b.parent, parts, b.slots.length, b.slots), mats: b.slots.map((sl) => slotMatrix(sl, ITEMS[t].ss || 1)) }; }
+    const idx = byType[t];
+    st.ims.forEach((im, k) => { idx.forEach((si, j) => im.setMatrixAt(j, _m4.multiplyMatrices(st.mats[si], st.parts[k].matrixWorld))); im.count = idx.length; im.visible = true; im.instanceMatrix.needsUpdate = true; });
+  }
+}
+const crateSlots = () => { const s = []; for (let i = 0; i < 30; i++) s.push({ p: V3(-0.48 + (i % 5) * 0.24, 0.31 + Math.floor(i / 10) * 0.11, -0.2 + (Math.floor(i / 5) % 2) * 0.4), ry: Math.PI / 2 + ((i * 0.7) % 0.5) - 0.25, s: 0.85 }); return s; };
+
 // ---------- layout ----------
-const SH_Z = -14.6;
+const SH_Z = -14.6, MID_Z = -11.2;
 const SHOP = { x0: -9.4, x1: 7.95, z0: -17.4, z1: -7.3 };
-const REST = { x0: -23.6, x1: -11.2, z0: -18, z1: -6 };
+const R0 = -23.6, WING_X0 = -40;
+const REST = { x0: R0, x1: -11.2, z0: -18, z1: -6 };
 const R_OUT = [-12.4, -4.9], R_IN = [-12.4, -7.2];
-const LANES = [-22.9, -19.6, -16.4, -13.2];
+const LANES_MAIN = [-22.8, -19.6, -16.4, -13.2], LANES_WING = [-38.8, -35.6, -32.4, -29.2, -26.0];
 const AISLES = [-14.05, -10.4, -7.2];
-const T_POS = [[-14.8, -8.7], [-18.0, -8.7], [-21.2, -8.7], [-14.8, -12.1], [-18.0, -12.1], [-21.2, -12.1]];
+const T_POS = [[-14.8, -8.7], [-18.0, -8.7], [-21.2, -8.7], [-14.8, -12.1], [-18.0, -12.1], [-21.2, -12.1], [-24.4, -8.7], [-27.6, -8.7], [-24.4, -12.1], [-27.6, -12.1]];
 const SINK = { x: -12.4, z: -15.8 };
-const ENTRY = [11.6, -4.9], DOOR = [6.5, -6.0], DOOR_IN = [6.5, -8.4], HALL = [6.9, -12.2];
-const SPAWN = [11.6, 13.5];
+const ENTRY = [11.2, -4.9], DOOR = [6.5, -6.0], DOOR_IN = [6.5, -8.4], HALL = [6.9, -12.2];
+const SPAWN = [11.2, -1.8];   // shoppers arrive along the shore boardwalk, right by the market
 const D_SPAWN = [-12.4, 12.5];   // diners walk up the plank path from the west beach
-const CRUISE = { x: 9.2, z: 27.5, dockX: 16.3 };
-const LIGHT = { x: 17.4, z: -12.6 };
+const CRUISE = { x: 9.2, z: 32.5, dockX: 16.3 };
+const LIGHT = { x: 21.5, z: -15.0 };
 const CRATE_X = 12.4, PIER_X = 13.1;
+const ANGLER_Z = -3.2, TRAP_Z = -8.6, AQUA_Z = 22.4;
+const KITCHEN_Z = -15.6;
+
+// ---------- species, rarity and where each one is caught ----------
+const SPECIES = ['fish', 'sardine', 'mackerel', 'puffer', 'shrimp', 'crab', 'squid', 'octopus', 'salmon', 'tuna', 'swordfish', 'lobster', 'golden'];
+const isRaw = (t) => SPECIES.includes(t);
+const RARITY = { fish: 0, sardine: 0, mackerel: 0, shrimp: 0, crab: 1, squid: 1, octopus: 2, salmon: 1, puffer: 2, tuna: 2, swordfish: 3, lobster: 3, golden: 4 };
+const RAR_NAME = ['普通', '少見', '稀有', '珍稀', '傳說'];
+const LOG_PAGES = [
+  { name: '近海魚', ids: ['fish', 'sardine', 'mackerel', 'puffer'], reward: 500 },
+  { name: '蝦蟹頭足', ids: ['shrimp', 'crab', 'squid', 'octopus'], reward: 2500 },
+  { name: '大洋珍品', ids: ['salmon', 'tuna', 'swordfish', 'lobster', 'golden'], reward: 12000 },
+];
+const CATCH = {
+  boat: { fish: 70, mackerel: 22, squid: 8 },
+  trawl: { sardine: 62, shrimp: 30, squid: 6, octopus: 2 },
+  deep: { tuna: 34, salmon: 30, mackerel: 28, swordfish: 8 },
+  angler: { sardine: 22, fish: 22, mackerel: 18, squid: 12, salmon: 9, puffer: 6, octopus: 5, tuna: 3, swordfish: 1.6, lobster: 1.0, golden: 0.4 },
+  crab: { crab: 60, shrimp: 22, octopus: 12, lobster: 6 },
+  lobster: { lobster: 45, crab: 40, octopus: 15 },
+};
+function roll(table, luck = 1) {
+  let sum = 0; const w = {};
+  for (const t in table) { w[t] = table[t] * (RARITY[t] >= 2 ? luck : 1); sum += w[t]; }
+  let r = Math.random() * sum;
+  for (const t in w) { r -= w[t]; if (r <= 0) return t; }
+  return Object.keys(table)[0];
+}
+const DISHES = ['grilled', 'sushi', 'otoro', 'tempura', 'squidgrill', 'lobstermeal'];
+const DISH_W = { grilled: 3, sushi: 3, otoro: 1.4, tempura: 3, squidgrill: 3, lobstermeal: 0.9 };
 
 // ---------- the unlock chain ----------
+const kz = (x) => [x, KITCHEN_Z];
 const DEFS = [
-  { id: 'pier1', name: '釣魚碼頭', kind: 'pier', out: 'fish', pz: 2, zone: [10.8, 2], cost: { money: 40 }, req: [] },
+  { id: 'pier1', name: '釣魚碼頭', kind: 'pier', boat: 'boat', pz: 2, zone: [10.0, 2], cost: { money: 40 }, req: [] },
   { id: 'seaweed', name: '海帶田', kind: 'crop', out: 'seaweed', plant: 'seaweed', grow: 6, pos: [6.6, 1.8], cost: { money: 30 }, req: [] },
-  { id: 'shelfFish', name: '鮮魚冰櫃', kind: 'shelf', fridge: true, item: 'fish', pos: [4.4, SH_Z], cost: { money: 10 }, req: ['pier1'] },
-  { id: 'shelfSeaweed', name: '海帶架', kind: 'shelf', item: 'seaweed', pos: [1.4, SH_Z], cost: { money: 15 }, req: ['seaweed'] },
+  { id: 'shelfFish', name: '鮮魚冰櫃', kind: 'shelf', fridge: true, items: ['fish', 'sardine', 'mackerel', 'squid'], pos: [4.4, SH_Z], cost: { money: 10 }, req: ['pier1'] },
+  { id: 'shelfSeaweed', name: '海帶架', kind: 'shelf', items: ['seaweed'], pos: [1.4, SH_Z], cost: { money: 15 }, req: ['seaweed'] },
   { id: 'cashier', name: '收銀員', kind: 'hire', role: 'cashier', zone: [6.6, -12.6], cost: { money: 80 }, any: ['shelfFish', 'shelfSeaweed'] },
   { id: 'iceMaker', name: '製冰機', kind: 'machine', mk: 'ice', in: 'fish', out: 'iced', iv: 3, pos: [8.2, 7.6], cost: { money: 200, fish: 6 }, req: ['cashier', 'pier1'] },
-  { id: 'shelfIced', name: '冰鮮魚冰櫃', kind: 'shelf', fridge: true, item: 'iced', pos: [-1.6, SH_Z], cost: { money: 160 }, req: ['iceMaker'] },
+  { id: 'shelfIced', name: '冰鮮魚冰櫃', kind: 'shelf', fridge: true, items: ['iced'], pos: [-1.6, SH_Z], cost: { money: 160 }, req: ['iceMaker'] },
   { id: 'fisher', name: '漁夫', kind: 'hire', role: 'fisher', zone: [10.0, -1.0], cost: { money: 180 }, req: ['shelfIced'] },
   { id: 'cat', name: '小貓', kind: 'pet', zone: [2.6, -11.6], cost: { money: 260, fish: 10 }, req: ['fisher'] },
-  { id: 'shelver', name: '理貨員', kind: 'hire', role: 'shelver', zone: [1.6, -5.8], cost: { money: 320 }, req: ['cat'] },
+  { id: 'anglerPier', name: '釣魚棧橋', kind: 'angler', zone: [10.0, -2.0], cost: { money: 450 }, req: ['cat'] },
+  { id: 'shelver', name: '理貨員', kind: 'hire', role: 'shelver', zone: [1.6, -5.8], cost: { money: 320 }, req: ['anglerPier'] },
   { id: 'warehouse', name: '倉庫', kind: 'store', pos: [11.2, -14.4], zone: [11.2, -10.6], cost: { money: 450 }, req: ['shelver'] },
-  { id: 'cannery', name: '罐頭工廠', kind: 'machine', mk: 'can', in: 'fish', out: 'can', iv: 4, pos: [2.0, 7.6], cost: { money: 650, fish: 15 }, req: ['warehouse'] },
-  { id: 'shelfCan', name: '罐頭架', kind: 'shelf', item: 'can', pos: [-4.6, SH_Z], cost: { money: 480 }, req: ['cannery'] },
+  { id: 'shelfPremium', name: '高級魚冰櫃', kind: 'shelf', fridge: true, items: ['salmon', 'tuna', 'swordfish', 'puffer', 'golden'], pos: [-1.6, MID_Z], cost: { money: 550 }, req: ['warehouse'] },
+  { id: 'cannery', name: '罐頭工廠', kind: 'machine', mk: 'can', in: 'fish', out: 'can', iv: 4, pos: [2.0, 7.6], cost: { money: 650, fish: 15 }, req: ['shelfPremium'] },
+  { id: 'shelfCan', name: '罐頭架', kind: 'shelf', items: ['can', 'crabcan'], pos: [-4.6, SH_Z], cost: { money: 480 }, req: ['cannery'] },
   { id: 'restaurant', name: '海鮮餐廳', kind: 'restaurant', zone: [-12.4, -4.0], cost: { money: 1200, seaweed: 15 }, req: ['shelfCan'] },
-  { id: 'grill', name: '烤魚爐', kind: 'machine', mk: 'grill', in: 'fish', out: 'grilled', iv: 3.5, pos: [-21.2, -15.6], cost: { money: 700, fish: 12 }, req: ['restaurant'] },
+  { id: 'grill', name: '烤魚爐', kind: 'machine', mk: 'grill', in: 'fish', out: 'grilled', iv: 3.5, pos: kz(-20.8), cost: { money: 700, fish: 12 }, req: ['restaurant'] },
   { id: 'waiter', name: '服務生', kind: 'hire', role: 'waiter', zone: [-13.2, -10.4], cost: { money: 850 }, req: ['grill'] },
-  { id: 'table2', name: '第 2 張餐桌', kind: 'table', ti: 1, pos: T_POS[1], cost: { money: 600 }, req: ['waiter'] },
-  { id: 'pier2', name: '第二碼頭', kind: 'pier', out: 'fish', pz: 10, zone: [10.8, 10], cost: { money: 1600 }, req: ['table2'] },
-  { id: 'paddy', name: '稻田', kind: 'crop', out: 'rice', plant: 'rice', grow: 7, pos: [-15.4, 1.8], cost: { money: 1300 }, req: ['pier2'] },
-  { id: 'sushiBar', name: '壽司吧', kind: 'machine', mk: 'sushi', in: 'fish', in2: 'rice', out: 'sushi', iv: 3.5, pos: [-15.2, -15.6], cost: { money: 2200, seaweed: 20 }, req: ['paddy'] },
-  { id: 'table3', name: '第 3 張餐桌', kind: 'table', ti: 2, pos: T_POS[2], cost: { money: 1500 }, req: ['sushiBar'] },
+  { id: 'table2', name: '第 2 張餐桌', kind: 'table', ti: 1, cost: { money: 600 }, req: ['waiter'] },
+  { id: 'pier2', name: '撈網船碼頭', kind: 'pier', boat: 'trawl', pz: 10, zone: [10.0, 10], cost: { money: 1600 }, req: ['table2'] },
+  { id: 'shelfShell', name: '蝦蟹冰櫃', kind: 'shelf', fridge: true, items: ['shrimp', 'crab', 'octopus', 'lobster'], pos: [-4.6, MID_Z], cost: { money: 900 }, req: ['pier2'] },
+  { id: 'dryRack', name: '曬魚架', kind: 'machine', mk: 'dry', in: 'sardine', out: 'dried', iv: 4, pos: [-4.4, 7.6], cost: { money: 1400, sardine: 15 }, req: ['shelfShell'] },
+  { id: 'shelfDried', name: '魚乾架', kind: 'shelf', items: ['dried'], pos: [-7.6, SH_Z], cost: { money: 1100 }, req: ['dryRack'] },
+  { id: 'paddy', name: '稻田', kind: 'crop', out: 'rice', plant: 'rice', grow: 7, pos: [-15.4, 1.8], cost: { money: 1300 }, req: ['shelfDried'] },
+  { id: 'sushiBar', name: '壽司吧', kind: 'machine', mk: 'sushi', in: 'fish', in2: 'rice', out: 'sushi', iv: 3.5, pos: kz(-15.2), cost: { money: 2200, seaweed: 20 }, req: ['paddy'] },
+  { id: 'table3', name: '第 3 張餐桌', kind: 'table', ti: 2, cost: { money: 1500 }, req: ['sushiBar'] },
   { id: 'washer', name: '洗碗員', kind: 'hire', role: 'washer', zone: [-13.2, -13.0], cost: { money: 1900 }, req: ['table3'] },
-  { id: 'dryRack', name: '曬魚架', kind: 'machine', mk: 'dry', in: 'fish', out: 'dried', iv: 5, pos: [-4.4, 7.6], cost: { money: 2600 }, req: ['washer'] },
-  { id: 'shelfDried', name: '魚乾架', kind: 'shelf', item: 'dried', pos: [-7.6, SH_Z], cost: { money: 2000 }, req: ['dryRack'] },
-  { id: 'shelver2', name: '理貨員', kind: 'hire', role: 'shelver', zone: [-2.4, -5.8], cost: { money: 2800 }, req: ['shelfDried'] },
-  { id: 'table4', name: '第 4 張餐桌', kind: 'table', ti: 3, pos: T_POS[3], cost: { money: 3200 }, req: ['shelver2'] },
-  { id: 'waiter2', name: '服務生', kind: 'hire', role: 'waiter', zone: [-22.9, -10.4], cost: { money: 3600 }, req: ['table4'] },
+  { id: 'shelver2', name: '理貨員', kind: 'hire', role: 'shelver', zone: [-2.4, -5.8], cost: { money: 2400 }, req: ['washer'] },
+  { id: 'traps', name: '蟹籠', kind: 'traps', zone: [10.4, TRAP_Z], cost: { money: 2800 }, req: ['shelver2'] },
+  { id: 'crabCannery', name: '蟹肉罐頭廠', kind: 'machine', mk: 'crabcan', in: 'crab', out: 'crabcan', iv: 4, pos: [-4.4, 12.8], cost: { money: 3200, crab: 8 }, req: ['traps'] },
+  { id: 'table4', name: '第 4 張餐桌', kind: 'table', ti: 3, cost: { money: 3200 }, req: ['crabCannery'] },
+  { id: 'waiter2', name: '服務生', kind: 'hire', role: 'waiter', zone: [-22.8, -10.4], cost: { money: 3600 }, req: ['table4'] },
   { id: 'cruise', name: '郵輪碼頭', kind: 'cruise', zone: [CRUISE.x, CRUISE.z], cost: { money: 6500 }, req: ['waiter2'] },
   { id: 'fisher2', name: '漁夫', kind: 'hire', role: 'fisher', zone: [7.6, 11.8], cost: { money: 4500 }, req: ['cruise'] },
-  { id: 'table5', name: '第 5 張餐桌', kind: 'table', ti: 4, pos: T_POS[4], cost: { money: 5500 }, req: ['fisher2'] },
-  { id: 'pier3', name: '第三碼頭', kind: 'pier', out: 'fish', pz: 17, zone: [10.8, 17], cost: { money: 9000 }, req: ['table5'] },
-  { id: 'table6', name: '第 6 張餐桌', kind: 'table', ti: 5, pos: T_POS[5], cost: { money: 8500 }, req: ['pier3'] },
-  { id: 'shelver3', name: '理貨員', kind: 'hire', role: 'shelver', zone: [-6.4, -5.8], cost: { money: 10000 }, req: ['table6'] },
-  { id: 'lighthouse', name: '點亮燈塔', kind: 'lighthouse', note: '漁船出海更快了', zone: [12.2, -8.6], cost: { money: 22000 }, req: ['shelver3'] },
+  { id: 'restWing', name: '餐廳擴建', kind: 'wing', zone: [-30, -4.2], cost: { money: 7000 }, req: ['fisher2'] },
+  { id: 'fryer', name: '炸蝦鍋', kind: 'machine', mk: 'fryer', in: 'shrimp', out: 'tempura', iv: 3, pos: kz(-29.7), cost: { money: 4200, shrimp: 15 }, req: ['restWing'] },
+  { id: 'table5', name: '第 5 張餐桌', kind: 'table', ti: 4, cost: { money: 5500 }, req: ['fryer'] },
+  { id: 'squidGrill', name: '烤魷魚架', kind: 'machine', mk: 'squid', in: 'squid', out: 'squidgrill', iv: 3.5, pos: kz(-33.8), cost: { money: 5200, squid: 10 }, req: ['table5'] },
+  { id: 'pier3', name: '深海漁船碼頭', kind: 'pier', boat: 'deep', pz: 17, zone: [10.0, 17], cost: { money: 9000 }, req: ['squidGrill'] },
+  { id: 'tunaBar', name: '鮪魚壽司台', kind: 'machine', mk: 'tuna', in: 'tuna', out: 'otoro', iv: 4, pos: kz(-25.6), cost: { money: 9500 }, req: ['pier3'] },
+  { id: 'sashimiBar', name: '刺身台', kind: 'machine', mk: 'sashimi', in: 'salmon', out: 'sashimi', iv: 3.5, pos: [2.0, 12.8], cost: { money: 8000, salmon: 10 }, req: ['tunaBar'] },
+  { id: 'shelfSashimi', name: '刺身冰櫃', kind: 'shelf', fridge: true, items: ['sashimi'], pos: [-7.6, MID_Z], cost: { money: 6000 }, req: ['sashimiBar'] },
+  { id: 'table6', name: '第 6 張餐桌', kind: 'table', ti: 5, cost: { money: 8500 }, req: ['shelfSashimi'] },
+  { id: 'aqua', name: '養殖場', kind: 'aqua', zone: [10.0, AQUA_Z], cost: { money: 12000 }, req: ['table6'] },
+  { id: 'waiter3', name: '服務生', kind: 'hire', role: 'waiter', zone: [-26.0, -10.4], cost: { money: 9000 }, req: ['aqua'] },
+  { id: 'table8', name: '第 8 張餐桌', kind: 'table', ti: 7, cost: { money: 10000 }, req: ['waiter3'] },
+  { id: 'lobsterTraps', name: '龍蝦籠', kind: 'lobtraps', zone: [10.5, -6.9], cost: { money: 15000 }, req: ['table8'] },
+  { id: 'lobsterPot', name: '龍蝦鍋', kind: 'machine', mk: 'lobster', in: 'lobster', out: 'lobstermeal', iv: 6, pos: kz(-37.9), cost: { money: 18000, lobster: 4 }, req: ['lobsterTraps'] },
+  { id: 'table9', name: '第 9 張餐桌', kind: 'table', ti: 8, cost: { money: 12000 }, req: ['lobsterPot'] },
+  { id: 'shelver3', name: '理貨員', kind: 'hire', role: 'shelver', zone: [-6.4, -5.8], cost: { money: 12000 }, req: ['table9'] },
+  { id: 'fisher3', name: '漁夫', kind: 'hire', role: 'fisher', zone: [9.6, 16.0], cost: { money: 14000 }, req: ['shelver3'] },
+  { id: 'table10', name: '第 10 張餐桌', kind: 'table', ti: 9, cost: { money: 16000 }, req: ['fisher3'] },
+  { id: 'washer2', name: '洗碗員', kind: 'hire', role: 'washer', zone: [-13.2, -13.0], cost: { money: 15000 }, req: ['table10'] },
+  { id: 'lighthouse', name: '點亮燈塔', kind: 'lighthouse', note: '所有漁船出海更快了', zone: [8.9, -8.2], cost: { money: 25000 }, req: ['washer2'] },
   { id: 'aquarium', name: '水族館', kind: 'aquarium', note: '遊客變多了', pos: [-4, 20.5], zone: [-4, 16.6], cost: { money: 60000 }, req: ['lighthouse'] },
 ];
+for (const d of DEFS) if (d.kind === 'table') d.pos = T_POS[d.ti];
 const DEF = Object.fromEntries(DEFS.map((d) => [d.id, d]));
 
 const lv = (n, base, k) => Array.from({ length: n }, (_, i) => Math.round(base * Math.pow(k, i) / 10) * 10);
@@ -101,6 +190,10 @@ const UPS = {
   wspeed: { tab: 1, name: '員工速度', ic: 'run', vals: [3.4, 3.9, 4.4, 5, 5.6, 6.2, 6.8], cost: [100, 220, 450, 800, 1400, 2400], fmt: (v) => v.toFixed(1) },
   boat: { tab: 2, name: '漁船出海時間', ic: 'boat', need: 'pier1', vals: [12, 10.5, 9, 7.5, 6.5, 5.5], cost: [80, 220, 500, 1000, 1900], fmt: (v) => v + ' 秒' },
   catch: { tab: 2, name: '每趟漁獲', ic: 'fish', need: 'pier1', vals: [3, 4, 5, 6, 7, 8], cost: [120, 320, 750, 1500, 2800], fmt: (v) => v + ' 條' },
+  angler: { tab: 2, name: '釣魚員速度', ic: 'mackerel', need: 'anglerPier', vals: [9, 7.5, 6.2, 5, 4, 3.2], cost: [300, 700, 1400, 2600, 4500], fmt: (v) => v + ' 秒一條' },
+  luck: { tab: 2, name: '幸運魚餌', ic: 'golden', need: 'anglerPier', vals: [1, 1.3, 1.7, 2.2, 3], cost: [500, 1200, 2500, 5000], fmt: (v) => '稀有魚 ×' + v },
+  trap: { tab: 2, name: '收籠時間', ic: 'crab', need: 'traps', vals: [16, 13, 10.5, 8.5, 7], cost: [600, 1400, 2800, 5000], fmt: (v) => v + ' 秒' },
+  aquaT: { tab: 2, name: '養殖速度', ic: 'salmon', need: 'aqua', vals: [12, 10, 8.5, 7, 6], cost: [2000, 4000, 7000, 11000], fmt: (v) => v + ' 秒一條' },
   grow: { tab: 2, name: '海帶／稻子生長', ic: 'seaweed', need: 'seaweed', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [100, 280, 600, 1200, 2200], fmt: (v) => '×' + v },
   mach: { tab: 2, name: '機器速度', ic: 'iced', need: 'iceMaker', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [400, 900, 1800, 3200, 5500], fmt: (v) => '×' + v },
   price: { tab: 3, name: '商品售價', ic: 'money', need: 'cashier', vals: [1, 1.1, 1.2, 1.3, 1.4, 1.55, 1.7, 1.85, 2, 2.2, 2.4], cost: lv(10, 200, 1.6), fmt: (v) => '×' + v },
@@ -115,8 +208,11 @@ const upVal = (k) => UPS[k].vals[state.up[k] || 0];
 // small repeatable unlocks next to a building
 const GROW = {
   pier1: { start: 1, max: 3, cost: [120, 450], what: '＋1 艘漁船' },
-  pier2: { start: 1, max: 3, cost: [1800, 3500], what: '＋1 艘漁船' },
-  pier3: { start: 1, max: 3, cost: [9000, 15000], what: '＋1 艘漁船' },
+  pier2: { start: 1, max: 3, cost: [1800, 3500], what: '＋1 艘撈網船' },
+  pier3: { start: 1, max: 3, cost: [9000, 15000], what: '＋1 艘深海漁船' },
+  anglerPier: { start: 1, max: 5, cost: [250, 700, 1500, 3000], what: '＋1 位釣魚員' },
+  traps: { start: 2, max: 5, cost: [2000, 3500, 6000], what: '＋1 個蟹籠' },
+  aqua: { start: 2, max: 4, cost: [6000, 10000], what: '＋1 座網箱' },
   seaweed: { start: 3, max: 6, cost: [25, 60, 120], what: '＋1 株海帶' },
   paddy: { start: 4, max: 8, cost: [700, 1000, 1400, 1900], what: '＋1 叢稻子' },
 };
@@ -124,23 +220,31 @@ const lvlOf = (id) => state.lvl[id] || GROW[id].start;
 
 // ---------- save ----------
 const SAVE = 'harbor_save_v1';
-const blank = () => ({ money: 50, built: [], paid: {}, up: {}, stock: {}, store: {}, lvl: {}, piles: [0], tpiles: {}, earned: 0 });
+let resetting = false;
+const blank = () => ({ money: 50, built: [], paid: {}, up: {}, stock: {}, store: {}, lvl: {}, piles: [0], tpiles: {}, earned: 0, log: {}, logPaid: {}, logNew: false });
 const state = Object.assign(blank(), { sound: true });
 try { Object.assign(state, JSON.parse(localStorage.getItem(SAVE) || '{}')); } catch (e) { /* fresh start */ }
 if (params.has('fresh')) Object.assign(state, blank());
-for (const k of ['store', 'lvl', 'tpiles', 'stock', 'paid', 'up']) state[k] = state[k] || {};
+for (const k of ['store', 'lvl', 'tpiles', 'stock', 'paid', 'up', 'log', 'logPaid']) state[k] = state[k] || {};
 for (const k in UPS) state.up[k] = state.up[k] || 0;
 const isBuilt = (id) => state.built.includes(id);
 function save() {
+  if (resetting) return;
   for (const id in stations) {
     const s = stations[id];
     if (s.kind === 'machine') state.stock[id] = { a: s.inN, b: s.outN, c: s.inN2 || 0 };
-    else if (s.kind === 'pier') state.stock[id] = { b: s.outN };
-    else if (s.kind === 'shelf') state.stock[id] = { a: s.n };
+    else if (s.bin) state.stock[id] = { l: s.bin.list };
   }
   state.piles = COUNTERS.map((c) => c.pile.value);
   for (const t of tables) state.tpiles[t.i] = t.pile.value;
   try { localStorage.setItem(SAVE, JSON.stringify(state)); } catch (e) { /* storage off */ }
+}
+function loadBin(s, fallbackType) {
+  const st = state.stock[s.id];
+  if (!st) return;
+  if (Array.isArray(st.l)) for (const t of st.l) if (ITEMS[t] && s.bin.list.length < s.bin.max) binAdd(s.bin, t);
+  const old = st.a || st.b || 0;   // saves from round 1 kept plain counts
+  for (let i = 0; i < old && s.bin.list.length < s.bin.max; i++) binAdd(s.bin, fallbackType);
 }
 
 // ---------- sound ----------
@@ -179,29 +283,38 @@ joy.onStart = () => { if (actx && actx.state === 'suspended') actx.resume(); };
 
 const colliders = [];
 const box = (x0, z0, x1, z1) => { const b = { x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1) }; colliders.push(b); return b; };
+function unbox(b) { const i = colliders.indexOf(b); if (i >= 0) colliders.splice(i, 1); }
 function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
-// ---------- item icons: each item's 3D model rendered once to a small picture ----------
-const ICON = {};
+// ---------- item icons: each item's 3D model rendered once (plus a dark silhouette for the catch log) ----------
+const ICON = {}, ICON_BIG = {}, ICON_SIL = {};
 function makeIcons() {
   try {
     const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
-    r.setSize(80, 80); r.outputColorSpace = THREE.SRGBColorSpace;
+    r.setSize(96, 96); r.outputColorSpace = THREE.SRGBColorSpace;
     const sc = new THREE.Scene();
     sc.add(new THREE.HemisphereLight('#fff6e6', '#e8d29c', 1.7));
     const d = new THREE.DirectionalLight('#fff1d6', 1.6); d.position.set(-2, 4, 3); sc.add(d);
     const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
+    const sil = new THREE.MeshBasicMaterial({ color: '#6b5d50' });
     for (const type of Object.keys(ITEMS)) {
       const m = itemMesh(type); sc.add(m);
       const bb = new THREE.Box3().setFromObject(m), c = bb.getCenter(new THREE.Vector3()), s = bb.getSize(new THREE.Vector3()).length();
       cam.position.set(c.x + s * 0.5, c.y + s * 1.6, c.z + s * 1.5); cam.lookAt(c);
       r.render(sc, cam);
-      ICON[type] = '<img class="ii" src="' + r.domElement.toDataURL() + '" alt="">';
+      const url = r.domElement.toDataURL();
+      ICON[type] = '<img class="ii" src="' + url + '" alt="">';
+      ICON_BIG[type] = '<img src="' + url + '" alt="">';
+      if (isRaw(type)) { sc.overrideMaterial = sil; r.render(sc, cam); ICON_SIL[type] = '<img class="sil" src="' + r.domElement.toDataURL() + '" alt="">'; sc.overrideMaterial = null; }
       sc.remove(m);
     }
     r.dispose(); r.forceContextLoss();
   } catch (e) { /* fall back to emoji */ }
-  for (const t in ITEMS) if (!ICON[t]) ICON[t] = '<span class="ic">' + ITEMS[t].icon + '</span>';
+  for (const t in ITEMS) {
+    if (!ICON[t]) ICON[t] = '<span class="ic">' + ITEMS[t].icon + '</span>';
+    if (!ICON_BIG[t]) ICON_BIG[t] = '<span class="big">' + ITEMS[t].icon + '</span>';
+    if (!ICON_SIL[t]) ICON_SIL[t] = '<span class="big">？</span>';
+  }
   ICON.run = '<span class="ic">👟</span>';
   ICON.boat = '<span class="ic">⛵</span>';
 }
@@ -225,19 +338,20 @@ function buildWorld() {
   const D = new THREE.Group();
   const rnd = mulberry(11);
   // sand, wet sand, shallow and deep sea
-  K.add(D, K.mesh(G.plane(100, 150), '#f6e2b0', false, true), -36.4, 0, 6);
-  for (let i = 0; i < 46; i++) {
+  K.add(D, K.mesh(G.plane(100, 160), '#f6e2b0', false, true), -36.4, 0, 8);
+  for (let i = 0; i < 60; i++) {
     const r = 1.2 + rnd() * 3, p = K.mesh(G.circle(r, 20), rnd() < 0.5 ? '#f1d8a0' : '#fbecc8', false, true);
-    p.position.set(-30 + rnd() * 42, 0.003, -26 + rnd() * 60); p.scale.set(1, 1, 0.6 + rnd() * 0.6); p.rotation.y = rnd() * 3; D.add(p);
+    p.position.set(-42 + rnd() * 54, 0.003, -26 + rnd() * 64); p.scale.set(1, 1, 0.6 + rnd() * 0.6); p.rotation.y = rnd() * 3; D.add(p);
   }
-  K.add(D, K.mesh(G.plane(1.8, 150), '#ead095', false, true), 12.9, 0.004, 6);
-  K.add(D, K.mesh(G.plane(2.4, 150), '#86e0dc', false, true), 14.6, 0.008, 6);
-  K.add(D, K.mesh(G.plane(90, 150), '#4cc3d6', false, true), 60.7, 0.006, 6);
-  for (let z = -60; z < 75; z += 0.75) K.add(D, K.mesh(G.circle(0.34 + rnd() * 0.18, 12), '#ffffff', false, true), 13.45 + rnd() * 0.2, 0.01, z);
-  // boardwalks: in front of the market and along the shore
-  for (let x = -12.6; x < 11.0; x += 0.62) K.add(D, K.mesh(G.rbox(0.56, 0.06, 1.5, 0.03, 1), (Math.round(x / 0.62) % 2) ? '#e3ad74' : '#d9a066', false, true), x, 0.03, -4.9);
-  for (let z = -4.0; z < 14; z += 0.62) K.add(D, K.mesh(G.rbox(1.3, 0.06, 0.56, 0.03, 1), (Math.round(z / 0.62) % 2) ? '#e3ad74' : '#d9a066', false, true), -12.4, 0.03, z);
-  for (let z = -5.6; z < 31; z += 0.62) K.add(D, K.mesh(G.rbox(1.5, 0.06, 0.56, 0.03, 1), (Math.round(z / 0.62) % 2) ? '#e3ad74' : '#d9a066', false, true), 11.6, 0.03, z);
+  K.add(D, K.mesh(G.plane(1.8, 160), '#ead095', false, true), 12.9, 0.004, 8);
+  K.add(D, K.mesh(G.plane(2.4, 160), '#86e0dc', false, true), 14.6, 0.008, 8);
+  K.add(D, K.mesh(G.plane(90, 160), '#4cc3d6', false, true), 60.7, 0.006, 8);
+  for (let z = -60; z < 80; z += 0.75) K.add(D, K.mesh(G.circle(0.34 + rnd() * 0.18, 12), '#ffffff', false, true), 13.45 + rnd() * 0.2, 0.01, z);
+  // boardwalks: in front of the market, along the shore and the diners' path from the west beach
+  const plank = (x, z, w, d, i) => K.add(D, K.mesh(G.rbox(w, 0.06, d, 0.03, 1), i % 2 ? '#e3ad74' : '#d9a066', false, true), x, 0.03, z);
+  for (let x = -12.6, i = 0; x < 11.0; x += 0.62, i++) plank(x, -4.9, 0.56, 1.5, i);
+  for (let z = -4.0, i = 0; z < 14; z += 0.62, i++) plank(-12.4, z, 1.3, 0.56, i);
+  for (let z = -5.6, i = 0; z < 34.6; z += 0.62, i++) plank(11.6, z, 1.5, 0.56, i);
   // fish market shell
   const cx = (SHOP.x0 + SHOP.x1) / 2, w = SHOP.x1 - SHOP.x0 + 0.4;
   K.add(D, K.mesh(G.rbox(w, 0.12, 10.4, 0.06, 2), '#e3f1f6', false, true), cx, 0.06, -12.2);
@@ -264,30 +378,31 @@ function buildWorld() {
     const b = K.add(D, P3.barrel(), x, 0.12, z);
     K.add(b, K.mesh(G.sphere(0.26, 8, 6), '#8fd1c4'), 0, 0.72, 0).scale.set(1, 0.5, 1);
   }
-  // decoration: palms, rocks, umbrellas, buoys, barrels, lamps
+  // decoration: palms, rocks, umbrellas, buoys, barrels, lamps, nets
   const palmAt = (x, z, s, solid) => { const p = P3.palm(2.6 + rnd() * 1.2, 0.2 + rnd() * 0.5); p.position.set(x, 0, z); p.rotation.y = rnd() * 6; p.scale.setScalar(s); D.add(p); if (solid) box(x - 0.25, z - 0.25, x + 0.25, z + 0.25); };
-  for (let i = 0; i < 12; i++) palmAt(-24 + i * 3.4 + rnd(), -20.5 - rnd() * 2.5, 0.9 + rnd() * 0.3, false);
-  for (let i = 0; i < 14; i++) palmAt(-26.5 - rnd() * 3, -18 + i * 3.6 + rnd(), 0.9 + rnd() * 0.3, false);
-  for (let i = 0; i < 10; i++) palmAt(-22 + i * 4 + rnd(), 33 + rnd() * 2, 0.9 + rnd() * 0.3, false);
-  for (const [x, z] of [[-8, -2.2], [8.9, -2.3], [-20.5, -3.2], [-9.5, 14], [7.5, 14.5], [-19.5, 9], [-21.5, 20], [8.5, 22], [-13.5, 27.5], [3, 30]]) palmAt(x, z, 1, true);
-  for (const [x, z, s] of [[-20.5, 13.5, 0.55], [-12, 12, 0.4], [9.8, 18.5, 0.45], [-22, 27, 0.6], [4.6, -2.6, 0.35], [14.4, -16, 0.8], [14.2, 30, 0.7]]) {
+  for (let i = 0; i < 17; i++) palmAt(-41 + i * 3.4 + rnd(), -20.5 - rnd() * 2.5, 0.9 + rnd() * 0.3, false);
+  for (let i = 0; i < 16; i++) palmAt(-42.5 - rnd() * 3, -18 + i * 3.5 + rnd(), 0.9 + rnd() * 0.3, false);
+  for (let i = 0; i < 16; i++) palmAt(-40 + i * 3.6 + rnd(), 37 + rnd() * 2, 0.9 + rnd() * 0.3, false);
+  for (const [x, z] of [[-8, -2.2], [8.9, -2.3], [-20.5, -3.2], [-9.5, 14], [7.5, 14.5], [-19.5, 9], [-21.5, 20], [8.5, 22], [-13.5, 27.5], [3, 30], [-30, -2.4], [-36, 3], [-27.5, 9], [-33.5, 16], [-28, 24], [-37, 28]]) palmAt(x, z, 1, true);
+  for (const [x, z, s] of [[-20.5, 13.5, 0.55], [-12, 12, 0.4], [9.8, 18.5, 0.45], [-22, 27, 0.6], [4.6, -2.6, 0.35], [14.4, -16, 0.8], [14.6, 33.6, 0.7], [-38, 10, 0.6], [-31, 31, 0.5]]) {
     const r = P.rock(s); r.position.set(x, 0, z); D.add(r);
     if (x < 12.9) box(x - s * 0.8, z - s * 0.7, x + s * 0.8, z + s * 0.7);
   }
   const umb = [['#ff5a4e', '#ffffff'], ['#5aa9ff', '#ffffff'], ['#ffd34a', '#ff8a6b'], ['#59c25b', '#ffffff'], ['#ff7eb6', '#ffffff']];
-  for (let i = 0; i < 6; i++) {
-    const x = -12 + i * 3.6 + rnd(), z = 26 + (i % 2) * 2.4 + rnd();
+  for (let i = 0; i < 9; i++) {
+    const x = -26 + i * 3.7 + rnd(), z = 26 + (i % 2) * 2.4 + rnd();
+    if (x > -14.5 && x < -10.5) continue;
     const u = P3.umbrella(...umb[i % umb.length]); u.position.set(x, 0, z); D.add(u); box(x - 0.15, z - 0.15, x + 0.15, z + 0.15);
     const tw = P3.towel(umb[(i + 2) % umb.length][0]); tw.position.set(x + 0.9, 0, z + 0.4); tw.rotation.y = 0.3 - rnd() * 0.6; D.add(tw);
   }
   K.add(D, P3.beachBall(), -1.5, 0, 24.5);
   K.add(D, P3.beachBall(), 6.8, 0, 27.5);
-  for (const [x, z, c] of [[17, -3, '#ff5a4e'], [22.5, 6, '#ffd34a'], [17.5, 14, '#ff5a4e'], [22, 21.5, '#ffd34a'], [26, -4, '#ff5a4e'], [28, 12, '#ffd34a']]) K.add(D, P3.buoy(c), x, 0, z);
-  for (const [x, z] of [[10.2, -2.6], [10.2, 15.6], [12.6, 7.4]]) { K.add(D, P3.barrel(), x, 0, z); box(x - 0.32, z - 0.32, x + 0.32, z + 0.32); }
-  for (const z of [-2, 6, 14, 22, 29]) { K.add(D, P.lamp(), 12.6, 0, z); box(12.5, z - 0.1, 12.7, z + 0.1); }
+  for (const [x, z, c] of [[17, 1.0, '#ff5a4e'], [26, 6, '#ffd34a'], [17.5, 14, '#ff5a4e'], [27, 19.5, '#ffd34a'], [27, -2, '#ff5a4e'], [28, 12, '#ffd34a']]) K.add(D, P3.buoy(c), x, 0, z);
+  for (const [x, z] of [[9.4, -3.9], [10.0, 14.6], [12.6, 7.4]]) { K.add(D, P3.barrel(), x, 0, z); box(x - 0.32, z - 0.32, x + 0.32, z + 0.32); }
+  for (const z of [-0.6, 6, 14, 19.4, 26, 33.4]) { K.add(D, P.lamp(), 12.6, 0, z); box(12.5, z - 0.1, 12.7, z + 0.1); }
   K.add(D, P.lamp(), -11.0, 0, -4.0);
-  for (const [x, z, r] of [[-1.2, 12.6, 0], [-8.4, 4.4, 1.57]]) { const n = P3.netRack(); n.position.set(x, 0, z); n.rotation.y = r; D.add(n); box(x - (r ? 0.3 : 1.3), z - (r ? 1.3 : 0.3), x + (r ? 0.3 : 1.3), z + (r ? 1.3 : 0.3)); }
-  for (const [x, z] of [[5.4, 12.4], [-7.6, 11.6], [10.0, -7.8]]) { K.add(D, P3.crateStack(), x, 0, z); box(x - 0.75, z - 0.55, x + 0.75, z + 0.55); }
+  for (const [x, z, r] of [[-10.0, 12.6, 0], [-8.4, 4.4, 1.57]]) { const n = P3.netRack(); n.position.set(x, 0, z); n.rotation.y = r; D.add(n); box(x - (r ? 0.3 : 1.3), z - (r ? 1.3 : 0.3), x + (r ? 0.3 : 1.3), z + (r ? 1.3 : 0.3)); }
+  for (const [x, z] of [[5.6, 15.8], [-7.6, 11.6], [-9.0, -3.2]]) { K.add(D, P3.crateStack(), x, 0, z); box(x - 0.75, z - 0.55, x + 0.75, z + 0.55); }
   for (const [x, z] of [[-10.4, 6.8], [4.6, 4.6]]) { K.add(D, P3.lifeRingStand(), x, 0, z); box(x - 0.15, z - 0.15, x + 0.15, z + 0.15); }
   K.bake(D, scene);
   // the market's sliding door and lamps
@@ -299,14 +414,14 @@ function buildWorld() {
   lightObj = P3.lighthouse(); lightObj.g.position.set(LIGHT.x, 0, LIGHT.z); scene.add(lightObj.g); K.bakeStatic(lightObj.g);
   // gentle waves rolling in to the shore
   for (let i = 0; i < 7; i++) {
-    const m = new THREE.Mesh(G.plane(0.4, 150), new THREE.MeshBasicMaterial({ color: '#dffbff', transparent: true, opacity: 0, depthWrite: false }));
-    m.position.set(26, 0.014, 6); m.renderOrder = 1; scene.add(m);
+    const m = new THREE.Mesh(G.plane(0.4, 160), new THREE.MeshBasicMaterial({ color: '#dffbff', transparent: true, opacity: 0, depthWrite: false }));
+    m.position.set(26, 0.014, 8); m.renderOrder = 1; scene.add(m);
     waves.push({ m, ph: i / 7 });
   }
-  foam = new THREE.Mesh(G.plane(0.7, 150), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.4, depthWrite: false }));
-  foam.position.set(13.7, 0.015, 6); foam.renderOrder = 1; scene.add(foam);
-  for (const [cx2, cz, r, h, sp] of [[15, -1, 5, 3.4, 0.5], [18, 12, 6, 3.8, -0.4], [4, -1, 7, 4.2, 0.35], [-14, -11, 6, 3.9, -0.45], [0, 21, 8, 3.6, 0.3]]) {
-    const gl = P3.gull(); gl.g.scale.setScalar(0.85); scene.add(gl.g); gulls.push({ ...gl, cx: cx2, cz, r, h, sp, ph: rnd() * 6 });
+  foam = new THREE.Mesh(G.plane(0.7, 160), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.4, depthWrite: false }));
+  foam.position.set(13.7, 0.015, 8); foam.renderOrder = 1; scene.add(foam);
+  for (const [cx2, cz, r, h, sp] of [[15, 4, 6, 3.6, 0.45], [4, -1, 7, 4.2, 0.35], [-14, -11, 6, 3.9, -0.45], [-2, 21, 8, 3.6, 0.3]]) {
+    const gl = P3.gull(); gl.g.scale.setScalar(0.85); for (const w of gl.wings) { w.userData.dyn = true; K.bakeStatic(w); } K.bakeStatic(gl.g); scene.add(gl.g); gulls.push({ ...gl, cx: cx2, cz, r, h, sp, ph: rnd() * 6 });
   }
 }
 
@@ -336,6 +451,12 @@ function placeLabels() {
 }
 const badge = (type, n, max) => ICON[type] + n + '/' + max;
 const costRow = (type, n) => '<div class="cost">' + ICON[type] + n + '</div>';
+// a mixed pile's label: every species in it with its exact count, then the total
+function binLabel(b, extra) {
+  const cnt = {}; for (const t of b.list) cnt[t] = (cnt[t] || 0) + 1;
+  const ks = Object.keys(cnt).sort((a, c) => cnt[c] - cnt[a]);
+  return (ks.length ? ks.map((t) => '<span>' + ICON[t] + cnt[t] + '</span>').join('') : '') + '<span class="tot">' + b.list.length + '/' + b.max + '</span>' + (extra || '');
+}
 
 // ---------- particles / floating text / flying items ----------
 const puffs = [];
@@ -381,10 +502,10 @@ function swayStack(c, speed, dt) {
     const it = c.carry[i], k = i / Math.max(6, n);
     it.m.position.z = c.sw * k * k * (0.35 + n * 0.03);
     it.m.rotation.x = c.sw * k * 0.25;
-    if (it.pop > 0) { it.pop = Math.max(0, it.pop - dt * 5); const q = it.pop; it.m.scale.set(1 + q * 0.35, 1 - q * 0.3, 1 + q * 0.35); }
+    if (it.pop > 0) { it.pop = Math.max(0, it.pop - dt * 5); const q = it.pop; it.m.scale.setScalar(ITEMS[it.type].ss || 1); it.m.scale.x *= 1 + q * 0.35; it.m.scale.y *= 1 - q * 0.3; it.m.scale.z *= 1 + q * 0.35; }
   }
 }
-function stackAdd(c, type) { const m = itemMesh(type); m.rotation.y = Math.PI / 2; c.p.back.add(m); c.carry.push({ type, m, pop: 1 }); restack(c); }
+function stackAdd(c, type) { const m = itemMesh(type); m.rotation.y = Math.PI / 2; m.scale.setScalar(ITEMS[type].ss || 1); c.p.back.add(m); c.carry.push({ type, m, pop: 1 }); restack(c); }
 function count(c, type) { let n = 0; for (const it of c.carry) if (it.type === type) n++; return n; }
 function room(c) { return c.cap() - c.carry.length - c.incoming; }
 function giveFrom(c, type, toFn, done) {
@@ -411,6 +532,7 @@ scene.add(player.p.root);
 const pVel = new THREE.Vector3();
 let pFace = 0;
 const legsOf = (p) => p.rig.children.filter((o) => o.isGroup && Math.abs(o.position.y - 0.36) < 1e-3);
+function sitPose(p) { for (const l of legsOf(p)) l.rotation.x = -1.35; }
 
 // ---------- cash counter ----------
 const COUNTERS = [{ x: 4.6, z: -9.9, serve: { x: 4.6, z: -11.3 }, pile: { x: 7.0, z: -10.2, value: 0 }, on: false }];
@@ -437,6 +559,32 @@ function setPile(c) {
 }
 function fmtMoney(v) { return v >= 100000 ? (v / 1000).toFixed(0) + 'K' : v >= 10000 ? (v / 1000).toFixed(1) + 'K' : String(v); }
 
+// ---------- catch log (圖鑑) ----------
+function caught(type, at) {
+  if (!isRaw(type)) return;
+  const L = state.log[type] || (state.log[type] = { n: 0, b: 0 });
+  L.n++;
+  if (L.n === 1) {
+    state.logNew = true; showLogDot();
+    toast('📖 新魚種：' + ITEMS[type].name + '！');
+    if (at) { confetti(at.x, at.z); floatText('NEW ' + ITEMS[type].name, V3(at.x, 2, at.z), 'big'); }
+    sfx('vip');
+    checkPages();
+  } else if (RARITY[type] >= 3 && at) {
+    toast('✨ ' + RAR_NAME[RARITY[type]] + '漁獲：' + ITEMS[type].name + '！');
+    floatText('✨ ' + ITEMS[type].name, V3(at.x, 2, at.z), 'big');
+  }
+}
+function recBest(type, unit) { if (!isRaw(type)) return; const L = state.log[type] || (state.log[type] = { n: 0, b: 0 }); if (unit > L.b) L.b = unit; }
+function checkPages() {
+  LOG_PAGES.forEach((pg, i) => {
+    if (state.logPaid[i] || !pg.ids.every((t) => state.log[t] && state.log[t].n > 0)) return;
+    state.logPaid[i] = true;
+    later.push({ t: 1.2, fn: () => { bonusToPlayer(pg.reward, player.p.root.position.clone()); toast('📖 圖鑑「' + pg.name + '」完成！獎勵 $' + fmtMoney(pg.reward)); } });
+  });
+}
+function showLogDot() { const d = document.querySelector('#bLog .dot'); if (d) d.classList.toggle('hidden', !state.logNew); }
+
 // ---------- stations ----------
 const stations = {};
 const pops = [];
@@ -448,12 +596,30 @@ const CROP_LAYOUT = {
   rice: { w: 3.6, d: 2.8, y: 0.21, spots: [[-1.2, -0.6], [-0.4, -0.6], [0.4, -0.6], [1.2, -0.6], [-1.2, 0.6], [-0.4, 0.6], [0.4, 0.6], [1.2, 0.6]] },
 };
 const BOAT_COLS = ['#ff6b5a', '#5aa9ff', '#59c25b', '#ffb347'];
+const BOATS = {
+  boat: { make: P3.boat, lane: 1.75, tip: 22.3, bin: 20 },
+  trawl: { make: P4.trawler, lane: 1.8, tip: 22.9, bin: 30 },
+  deep: { make: P4.deepBoat, lane: 1.95, tip: 23.4, bin: 16 },
+};
 const sink = { g: null, n: 0, stack: null, t: 0 };
-const rest = { ready: false };
+const rest = { ready: false, wing: false };
 const cruise = { ready: false, st: 'away', t: 50, ship: null, group: [], order: null, value: 0, label: null };
 const tables = [];
 const pets = {};
-const stats = { meals: 0, angry: 0, sales: 0, cruise: 0 };
+const stats = { meals: 0, angry: 0, sales: 0, cruise: 0, catches: 0, dish: {}, sold: {} };
+const BIN_KINDS = ['pier', 'angler', 'traps', 'aqua'];
+// a crate on land at the root of a pier (shared by every catch method)
+function catchCrate(s, z, max) {
+  const cr = P3.crate(); cr.position.set(CRATE_X, 0, z); s.g.add(cr);
+  s.outPt = V3(CRATE_X, 0, z);
+  s.bin = makeBin(cr, crateSlots(), max, true);   // outdoor crates: piles without the outline pass (keeps draw calls down)
+  box(CRATE_X - 0.68, z - 0.5, CRATE_X + 0.68, z + 0.5);
+  s.outLabel = label('badge grp', '', (o) => o.set(CRATE_X, 1.0, z));
+}
+function landCatch(s, type, from, dur = 0.55) {
+  s.bin.pend = (s.bin.pend || 0) + 1;
+  fly(type, from, (o) => o.set(s.outPt.x, 0.45, s.outPt.z), dur, () => { s.bin.pend--; binAdd(s.bin, type); stats.catches++; caught(type, s.outPt); });
+}
 
 function build(def, instant) {
   const id = def.id;
@@ -462,32 +628,83 @@ function build(def, instant) {
   stations[id] = s;
   const pos = def.pos || def.zone;
   if (def.kind === 'pier') {
-    const pz = def.pz, g = new THREE.Group(); scene.add(g);
-    const pr = P3.pier(7.5); pr.position.set(PIER_X, 0, pz); g.add(pr);
-    const cr = P3.crate(); cr.position.set(CRATE_X, 0, pz); g.add(cr);
-    const outPt = V3(CRATE_X, 0, pz);
-    Object.assign(s, { g, outPt, outN: 0, outMax: 20, pend: 0, boats: [] });
-    const slots = [];
-    for (let i = 0; i < 20; i++) slots.push({ p: V3(-0.48 + (i % 5) * 0.24, 0.31 + Math.floor(i / 10) * 0.09, -0.2 + (Math.floor(i / 5) % 2) * 0.4), ry: Math.PI / 2 + ((i * 0.7) % 0.5) - 0.25, s: 0.9 });
-    s.outStack = itemStack('fish', cr, slots);
-    box(CRATE_X - 0.68, pz - 0.5, CRATE_X + 0.68, pz + 0.5);
+    const pz = def.pz, B = BOATS[def.boat]; s.g = new THREE.Group(); scene.add(s.g);
+    const pr = P3.pier(7.5); pr.position.set(PIER_X, 0, pz); s.g.add(pr);
+    catchCrate(s, pz, B.bin);
+    s.boats = [];
     const idx = DEFS.filter((d) => d.kind === 'pier').indexOf(def);
-    [[15.7, pz + 1.75], [15.7, pz - 1.75], [22.3, pz]].forEach(([mx, mz], i) => {
-      const b = P3.boat(BOAT_COLS[(i + idx) % BOAT_COLS.length]);
+    [[15.7, pz + B.lane], [15.7, pz - B.lane], [B.tip, pz]].forEach(([mx, mz], i) => {
+      const b = B.make(BOAT_COLS[(i + idx) % BOAT_COLS.length]);
       b.g.position.set(mx, 0, mz); b.g.rotation.y = Math.PI; scene.add(b.g);
       b.catchBox.visible = false; b.flag.visible = false;
-      s.boats.push({ ...b, mx, mz, x: mx, st: 'dock', t: rand(0, 1.5) + i * 1.3, cargo: 0 });
+      s.boats.push({ ...b, mx, mz, x: mx, st: 'dock', t: rand(0, 1.5) + i * 1.3, cargo: [] });
     });
-    const st = state.stock[id]; if (st) s.outN = Math.min(s.outMax, st.b || 0);
-    if (!instant) { s.outN = 4; const b = s.boats[0]; b.st = 'back'; b.x = b.mx + 7; b.cargo = upVal('catch'); }
+    loadBin(s, 'fish');
+    if (!instant) { for (let i = 0; i < 4; i++) { const t = roll(CATCH[def.boat]); binAdd(s.bin, t); caught(t); } const b = s.boats[0]; b.st = 'back'; b.x = b.mx + 7; b.cargo = tripCatch(def.boat); b.catchBox.visible = true; }
     applyGrow(s);
-    s.outLabel = label('badge', '', (o) => o.set(CRATE_X, 1.0, pz));
-    if (!instant) popIn(g);
+    if (!instant) popIn(s.g);
+  } else if (def.kind === 'angler') {
+    s.g = new THREE.Group(); scene.add(s.g);
+    const pr = P3.pier(8.2); pr.position.set(PIER_X, 0, ANGLER_Z); s.g.add(pr);
+    catchCrate(s, ANGLER_Z, 20);
+    s.anglers = [];
+    [[13.9, -1], [15.2, -1], [16.5, -1], [17.8, -1], [19.1, -1]].forEach(([x, side], i) => {
+      const ez = ANGLER_Z + side * 1.02;
+      const p = K.person({ body: ['#7fd6c9', '#ffb347', '#b48cff', '#5aa9ff', '#ff7eb6'][i], hat: i % 2 ? 'cap' : 'straw', hatColor: '#ffd34a', legs: '#4f8fe8' });
+      p.root.position.set(x, 0.12, ez); p.root.rotation.y = side > 0 ? 0 : Math.PI; sitPose(p);
+      for (const a of p.arms) a.rotation.x = -1.1;
+      scene.add(p.root); K.bakeStatic(p.root);
+      const r = P4.rod(); r.g.position.set(x, 0, ez); r.g.rotation.y = side > 0 ? 0 : Math.PI; scene.add(r.g);
+      r.pole.position.set(0.18, 0.75, 0.25); r.pole.rotation.x = 0.9;
+      r.bob.position.set(0.2, 0, 2.05);
+      K.bakeStatic(r.pole); K.bakeStatic(r.bob);
+      s.anglers.push({ p, r, x, side, t: rand(0, 3), next: rand(3, 8), jerk: 0 });
+    });
+    loadBin(s, 'fish');
+    applyGrow(s);
+    if (!instant) popIn(s.g);
+  } else if (def.kind === 'traps') {
+    s.g = new THREE.Group(); scene.add(s.g);
+    const pr = P3.pier(2.4); pr.position.set(PIER_X, 0, TRAP_Z); s.g.add(pr);
+    catchCrate(s, TRAP_Z, 20);
+    s.cages = [];
+    const addCage = (x, z, kind, on) => { const c = P4.trap(kind); c.g.position.set(x, 0, z); c.g.rotation.y = Math.PI; scene.add(c.g); K.bakeStatic(c.g); c.g.visible = on; s.cages.push({ ...c, x, z, kind, t: rand(0, 6), ripe: false, on }); };
+    for (const [x, z] of [[15.2, -10.6], [18.0, -7.6], [18.4, -10.4], [20.0, -8.6], [16.4, -12.4]]) addCage(x, z, 'crab', true);
+    for (const [x, z] of [[20.8, -11.2], [21.6, -7.6], [18.8, -12.8]]) addCage(x, z, 'lobster', isBuilt('lobsterTraps'));
+    const rb = P4.rowboat(); rb.g.position.set(16.6, 0, TRAP_Z); scene.add(rb.g);
+    const rower = K.person({ body: '#ff9f43', hat: 'cap', hatColor: '#5aa9ff' }); rower.root.position.set(-0.25, 0.1, 0); rower.root.rotation.y = Math.PI / 2; rower.root.scale.setScalar(0.85); sitPose(rower);
+    for (const a of rower.arms) a.rotation.x = -1.2;
+    rb.b.add(rower.root); K.bakeStatic(rower.root);
+    s.tboat = { ...rb, x: 16.6, z: TRAP_Z, home: [16.6, TRAP_Z], st: 'home', t: 0, hold: [], face: 0 };
+    loadBin(s, 'crab');
+    applyGrow(s);
+    if (!instant) popIn(s.g);
+  } else if (def.kind === 'lobtraps') {
+    const tr = stations.traps;
+    if (tr) for (const c of tr.cages) if (c.kind === 'lobster' && !c.on) { c.on = true; c.g.visible = true; if (!instant) popIn(c.g); }
+  } else if (def.kind === 'aqua') {
+    s.g = new THREE.Group(); scene.add(s.g);
+    const pr = P3.pier(2.4); pr.position.set(PIER_X, 0, AQUA_Z); s.g.add(pr);
+    catchCrate(s, AQUA_Z, 20);
+    s.pens = [];
+    for (const [x, z, sp] of [[16.8, AQUA_Z, 'salmon'], [19.6, AQUA_Z, 'shrimp'], [22.4, AQUA_Z, 'salmon'], [19.6, AQUA_Z + 2.8, 'shrimp']]) {
+      const pn = P4.pen(); pn.g.position.set(x, 0, z); scene.add(pn.g);
+      const fishM = itemMesh(sp); fishM.scale.setScalar(1.3); pn.jump.add(fishM); pn.jump.visible = false;
+      K.bakeStatic(pn.g);
+      s.pens.push({ ...pn, x, z, sp, t: rand(0, 5), jt: rand(1, 4), ja: 0 });
+    }
+    const f = K.person({ body: '#59c25b', hat: 'straw', apron: '#4f8fe8' }); f.root.position.set(15.1, 0.12, AQUA_Z); f.root.rotation.y = Math.PI / 2; scene.add(f.root);
+    s.feeder = f;
+    loadBin(s, 'salmon');
+    applyGrow(s);
+    if (!instant) popIn(s.g);
   } else if (def.kind === 'machine') {
-    const m = P3.machine(def.mk);
-    m.g.position.set(pos[0], def.pos[1] < -12 && pos[0] < -11 ? 0.12 : 0, pos[1]); scene.add(m.g);
+    const m = def.mk === 'ice' || def.mk === 'can' || def.mk === 'dry' || def.mk === 'grill' || def.mk === 'sushi' ? P3.machine(def.mk) : P4.machine4(def.mk);
+    const inside = pos[1] < -12 && pos[0] < -11;
+    m.g.position.set(pos[0], inside ? 0.12 : 0, pos[1]); scene.add(m.g);
     const tw = m.inTray.getWorldPosition(new THREE.Vector3()), nw = m.outTray.getWorldPosition(new THREE.Vector3());
     const t2 = m.in2Tray ? m.in2Tray.getWorldPosition(new THREE.Vector3()) : null;
+    K.bakeStatic(m.spin);
     Object.assign(s, { g: m.g, spin: m.spin, inPt: tw, in2Pt: t2, outPt: nw, inN: 0, inN2: 0, outN: 0, inMax: 12, outMax: 12, timer: 0 });
     const fill = (tray, type, dy) => {
       const slots = [];
@@ -516,13 +733,13 @@ function build(def, instant) {
     if (!instant) popIn(g);
   } else if (def.kind === 'shelf') {
     const sh = def.fridge ? P2.fridge() : P.shelf(); sh.g.position.set(pos[0], 0.12, pos[1]); scene.add(sh.g);
-    Object.assign(s, { g: sh.g, n: 0, item: def.item, front: V3(pos[0], 0, pos[1] + 1.25), door: sh.door || null, dk: 0 });
-    const ih = ITEMS[def.item].h * 0.95, slots = [];
-    for (let i = 0; i < 24; i++) slots.push({ p: sh.slots[i % 8].clone().setY(sh.slots[i % 8].y + Math.floor(i / 8) * ih), ry: Math.PI / 2 + (i % 3) * 0.2 - 0.2, s: def.item === 'iced' ? 0.85 : 1 });
-    s.stack = itemStack(def.item, sh.g, slots);
-    if (!def.fridge) { const ic = itemMesh(def.item); ic.scale.setScalar(0.9); ic.position.set(0, 1.12, -0.38); ic.rotation.x = 0.5; ic.userData.dyn = true; sh.g.add(ic); }
-    const st = state.stock[id]; if (st) s.n = st.a || 0;
-    s.label = label('badge big', '', (o) => o.set(pos[0], def.fridge ? 1.6 : 1.95, pos[1]));
+    Object.assign(s, { g: sh.g, items: def.items, front: V3(pos[0], 0, pos[1] + 1.25), door: sh.door || null, dk: 0 });
+    const slots = [];
+    for (let i = 0; i < 24; i++) slots.push({ p: sh.slots[i % 8].clone().setY(sh.slots[i % 8].y + Math.floor(i / 8) * 0.2), ry: Math.PI / 2 + (i % 3) * 0.2 - 0.2, s: def.fridge ? 0.9 : 1 });
+    s.bin = makeBin(sh.g, slots, 24);
+    if (!def.fridge) { const ic = itemMesh(def.items[0]); ic.scale.setScalar(0.9); ic.position.set(0, 1.12, -0.38); ic.rotation.x = 0.5; sh.g.add(ic); }
+    loadBin(s, def.items[0]);
+    s.label = label('badge big grp', '', (o) => o.set(pos[0], def.fridge ? 1.6 : 1.95, pos[1]));
     box(pos[0] - 0.85, pos[1] - 0.5, pos[0] + 0.85, pos[1] + 0.5);
     if (!instant) popIn(sh.g);
   } else if (def.kind === 'hire') {
@@ -545,6 +762,9 @@ function build(def, instant) {
   } else if (def.kind === 'restaurant') {
     buildRestaurant(instant);
     buildTable(0, instant);
+  } else if (def.kind === 'wing') {
+    buildWing(instant);
+    buildTable(6, instant);
   } else if (def.kind === 'table') {
     buildTable(def.ti, instant);
   } else if (def.kind === 'cruise') {
@@ -558,15 +778,19 @@ function build(def, instant) {
     if (!instant) popIn(g);
   }
   if (s.g && s.g.isObject3D) K.bakeStatic(s.g);
-  const fx = def.kind === 'pier' ? def.zone : def.kind === 'lighthouse' ? [LIGHT.x, LIGHT.z] : pos;
-  if (!instant) { confetti(fx[0], fx[1]); sfx('unlock'); toast('🎉 ' + def.name + ' 完成！' + (def.note ? def.note : '')); }
+  const fx = def.kind === 'lighthouse' ? [LIGHT.x, LIGHT.z] : def.kind === 'lobtraps' ? [19, -8] : pos;
+  if (!instant) { confetti(fx[0], fx[1]); sfx('unlock'); toast('🎉 ' + def.name + ' 完成！' + (def.note || '')); }
   refreshZones();
   save();
 }
 function applyGrow(s) {
   const id = s.id; if (!GROW[id]) return;
   const n = lvlOf(id);
-  if (s.boats) s.boats.forEach((b, i) => { const on = i < n; if (on && !b.g.visible) popIn(b.g); b.g.visible = on; });
+  const toggle = (arr, get) => arr.forEach((o, i) => { const g = get(o), on = i < n; if (on && !g.visible) popIn(g); g.visible = on; o.on = on; });
+  if (s.boats) toggle(s.boats, (b) => b.g);
+  if (s.anglers) { toggle(s.anglers, (a) => a.p.root); s.anglers.forEach((a) => { a.r.g.visible = a.on; }); }
+  if (s.pens) toggle(s.pens, (p) => p.g);
+  if (s.cages) s.cages.filter((c) => c.kind === 'crab').forEach((c, i) => { const on = i < n; if (on && !c.g.visible) popIn(c.g); c.g.visible = on; c.on = on; });
   const fresh = s.plants && !s.plants.some((q) => q.active);
   if (s.plants) s.plants.forEach((pl, i) => {
     const on = i < n;
@@ -580,21 +804,20 @@ function applyGrow(s) {
 let restArea = null;
 function buildRestaurant(instant) {
   const g = K.add(scene, new THREE.Group());
-  const cx = (REST.x0 + REST.x1) / 2, w = REST.x1 - REST.x0, d = REST.z1 - REST.z0;
+  const cx = (R0 + REST.x1) / 2, w = REST.x1 - R0, d = REST.z1 - REST.z0;
   K.add(g, K.mesh(G.rbox(w, 0.12, d, 0.06, 2), '#e8b67c', false, true), cx, 0.06, (REST.z0 + REST.z1) / 2);
-  for (let x = REST.x0 + 0.3; x < REST.x1 - 0.1; x += 0.6) K.add(g, K.mesh(G.rbox(0.03, 0.02, d - 0.3, 0.01), '#cf9a62', false, true), x, 0.125, (REST.z0 + REST.z1) / 2);
+  for (let x = R0 + 0.3; x < REST.x1 - 0.1; x += 0.6) K.add(g, K.mesh(G.rbox(0.03, 0.02, d - 0.3, 0.01), '#cf9a62', false, true), x, 0.125, (REST.z0 + REST.z1) / 2);
   K.add(g, K.mesh(G.rbox(w - 0.4, 0.03, 2.6, 0.02, 1), '#e3f1f6', false, true), cx, 0.135, -16.35);
-  for (let x = REST.x0 + 0.4; x < REST.x1 - 0.6; x += 0.8) K.add(g, K.mesh(G.plane(0.38, 2.5), '#cbe5ef', false, true), x + 0.2, 0.152, -16.35);
+  for (let x = R0 + 0.4; x < REST.x1 - 0.6; x += 0.8) K.add(g, K.mesh(G.plane(0.38, 2.5), '#cbe5ef', false, true), x + 0.2, 0.152, -16.35);
   K.add(g, K.mesh(G.rbox(w, 2.2, 0.4, 0.08), C.white), cx, 1.1, -17.8);
   K.add(g, K.mesh(G.rbox(w + 0.06, 0.3, 0.44, 0.04), '#8fd1c4'), cx, 0.75, -17.8);
   K.add(g, K.mesh(G.rbox(w + 0.1, 0.22, 0.46, 0.05), '#ff8a6b'), cx, 2.2, -17.8);
   const sign = P2.signBoard('海鮮餐廳', 4, '#ff8a6b'); sign.position.set(cx, 2.9, -17.7); g.add(sign);
-  for (const [x0, z0, x1, z1] of [[REST.x0, REST.z1, -13.3, REST.z1], [REST.x0, REST.z1, REST.x0, -17.6], [REST.x1, REST.z1, REST.x1, -17.6]]) g.add(P3.railLine(x0, z0, x1, z1));
-  box(REST.x0 - 0.15, REST.z1 - 0.15, -13.2, REST.z1 + 0.15);
-  box(REST.x0 - 0.15, -17.8, REST.x0 + 0.15, REST.z1);
+  for (const [x0, z0, x1, z1] of [[R0, REST.z1, -13.3, REST.z1], [REST.x1, REST.z1, REST.x1, -17.6]]) g.add(P3.railLine(x0, z0, x1, z1));
+  rest.frontBox = box(R0 - 0.15, REST.z1 - 0.15, -13.2, REST.z1 + 0.15);
   box(REST.x1 - 0.15, -17.8, REST.x1 + 0.15, REST.z1);
-  box(REST.x0, -18.1, REST.x1, -17.6);
-  for (const [x, c] of [[REST.x0, '#ff6b5a'], [-18.4, '#ffd34a'], [-13.3, '#ff6b5a'], [REST.x1, '#ffd34a']]) K.add(g, P3.lantern(c), x, 0, REST.z1);
+  rest.backBox = box(R0, -18.1, REST.x1, -17.6);
+  for (const [x, c] of [[-18.4, '#ffd34a'], [-13.3, '#ff6b5a'], [REST.x1, '#ffd34a']]) K.add(g, P3.lantern(c), x, 0, REST.z1);
   const sk = P3.sink(); sk.position.set(SINK.x, 0.12, SINK.z); g.add(sk);
   sink.g = K.add(scene, new THREE.Group(), SINK.x, 0.12, SINK.z);
   const slots = [];
@@ -602,25 +825,60 @@ function buildRestaurant(instant) {
   sink.stack = itemStack('plate', sink.g, slots);
   box(SINK.x - 0.55, SINK.z - 0.45, SINK.x + 0.55, SINK.z + 0.45);
   K.bakeStatic(g);
+  // the west railing goes away when the restaurant is extended
+  if (!isBuilt('restWing')) {
+    rest.westRail = K.add(scene, new THREE.Group());
+    rest.westRail.add(P3.railLine(R0, REST.z1, R0, -17.6)); K.add(rest.westRail, P3.lantern('#ff6b5a'), R0, 0, REST.z1);
+    K.bakeStatic(rest.westRail);
+    rest.westBox = box(R0 - 0.15, -17.8, R0 + 0.15, REST.z1);
+  }
   const lamps = [];
   for (const x of [-21.5, -17.4, -13.3]) { const l = P2.wallLamp(); l.g.position.set(x, 1.85, -17.5); scene.add(l.g); lamps.push(l); }
-  restArea = makeArea(REST.x0, REST.z0, REST.x1, REST.z1, lamps, cx, -12);
+  restArea = makeArea(R0, REST.z0, REST.x1, REST.z1, lamps, cx, -12);
   rest.ready = true;
+  if (!instant) popIn(g);
+}
+function buildWing(instant) {
+  const g = K.add(scene, new THREE.Group());
+  const x0 = WING_X0, x1 = R0, cx = (x0 + x1) / 2, w = x1 - x0, d = REST.z1 - REST.z0;
+  K.add(g, K.mesh(G.rbox(w + 0.1, 0.12, d, 0.06, 2), '#e8b67c', false, true), cx, 0.06, (REST.z0 + REST.z1) / 2);
+  for (let x = x0 + 0.3; x < x1; x += 0.6) K.add(g, K.mesh(G.rbox(0.03, 0.02, d - 0.3, 0.01), '#cf9a62', false, true), x, 0.125, (REST.z0 + REST.z1) / 2);
+  K.add(g, K.mesh(G.rbox(w, 0.03, 2.6, 0.02, 1), '#e3f1f6', false, true), cx, 0.135, -16.35);
+  for (let x = x0 + 0.4; x < x1 - 0.2; x += 0.8) K.add(g, K.mesh(G.plane(0.38, 2.5), '#cbe5ef', false, true), x + 0.2, 0.152, -16.35);
+  K.add(g, K.mesh(G.rbox(w, 2.2, 0.4, 0.08), C.white), cx, 1.1, -17.8);
+  K.add(g, K.mesh(G.rbox(w + 0.06, 0.3, 0.44, 0.04), '#8fd1c4'), cx, 0.75, -17.8);
+  K.add(g, K.mesh(G.rbox(w + 0.1, 0.22, 0.46, 0.05), '#ff8a6b'), cx, 2.2, -17.8);
+  const sign = P2.signBoard('海鮮料理', 4, '#4f9cf0'); sign.position.set(cx, 2.9, -17.7); g.add(sign);
+  for (const [a, b, c, e] of [[x0, REST.z1, x1, REST.z1], [x0, REST.z1, x0, -17.6]]) g.add(P3.railLine(a, b, c, e));
+  for (const [x, c] of [[x0, '#ff6b5a'], [-32, '#ffd34a'], [-27.6, '#ff6b5a']]) K.add(g, P3.lantern(c), x, 0, REST.z1);
+  const tank = P4.fishTank(); tank.position.set(-35.6, 0.12, -7.0); g.add(tank);
+  for (const x of [-39.0, -32.2]) { const pot = K.add(g, new THREE.Group(), x, 0.12, -7.0); K.add(pot, K.mesh(G.cyl(0.32, 0.24, 0.45, 10), C.roof), 0, 0.22, 0); K.add(pot, P.bush(0.35), 0, 0.4, 0); box(x - 0.35, -7.35, x + 0.35, -6.65); }
+  box(-36.85, -7.5, -34.35, -6.5);
+  box(x0 - 0.15, REST.z1 - 0.15, x1, REST.z1 + 0.15);
+  box(x0 - 0.15, -17.8, x0 + 0.15, REST.z1);
+  box(x0, -18.1, x1, -17.6);
+  K.bakeStatic(g);
+  if (rest.westRail) { scene.remove(rest.westRail); rest.westRail = null; }
+  if (rest.westBox) { unbox(rest.westBox); rest.westBox = null; }
+  for (const x of [-37, -32, -27]) { const l = P2.wallLamp(); l.g.position.set(x, 1.85, -17.5); scene.add(l.g); restArea.lamps.push(l); }
+  REST.x0 = x0; restArea.x0 = x0; restArea.light.position.x = -25.6; restArea.light.distance = 30;
+  rest.wing = true;
   if (!instant) popIn(g);
 }
 function buildTable(i, instant) {
   if (tables.some((t) => t.i === i)) return;
   const [x, z] = T_POS[i];
   const tb = P3.diningTable(); tb.g.position.set(x, 0.12, z); scene.add(tb.g);
-  const t = { i, x, z, g: tb.g, st: 'free', seats: [], pile: { value: state.tpiles[i] || 0, vis: [] }, patience: 0, claim: null, t: 0, arrived: 0 };
+  const t = { i, x, z, g: tb.g, st: 'free', seats: [], pile: { value: state.tpiles[i] || 0 }, patience: 0, claim: null, t: 0, arrived: 0 };
   for (const sd of tb.seats) {
-    const seat = { wx: x + sd.x, wz: z + sd.z, face: sd.face, dish: null, got: false, eaten: false, diner: null, claim: null, vis: {} };
-    for (const type of ['sushi', 'grilled', 'plate']) {
+    const seat = { wx: x + sd.x, wz: z + sd.z, face: sd.face, dish: null, got: false, diner: null, claim: null, vis: {} };
+    for (const type of [...DISHES, 'plate']) {
       const m = itemMesh(type); m.position.copy(sd.dish); m.visible = false; m.userData.dyn = true; tb.g.add(m); seat.vis[type] = m;
     }
     t.seats.push(seat);
   }
-  for (let k = 0; k < 4; k++) { const m = itemMesh('money'); m.scale.setScalar(0.8); m.position.set(0.36, 0.83 + k * 0.05, (k % 2) * 0.06 - 0.03); m.rotation.y = Math.PI / 2 + k * 0.2; m.visible = false; m.userData.dyn = true; tb.g.add(m); t.pile.vis.push(m); }
+  const cash = []; for (let k = 0; k < 4; k++) cash.push({ p: V3(0.36, 0.83 + k * 0.05, (k % 2) * 0.06 - 0.03), ry: Math.PI / 2 + k * 0.2, s: 0.8 });
+  t.pile.stack = itemStack('money', tb.g, cash);
   K.bakeStatic(tb.g);
   box(x - 0.66, z - 0.66, x + 0.66, z + 0.66);
   t.label = label('bubble order', '', (o) => o.set(x, 2.15, z)); t.label.show = false;
@@ -631,7 +889,7 @@ function buildTable(i, instant) {
 }
 function setTablePile(t) {
   const p = t.pile, n = p.value > 0 ? Math.min(4, Math.ceil(p.value / 15)) : 0;
-  p.vis.forEach((m, i) => { m.visible = i < n; });
+  p.stack.set(n);
   p.label.show = p.value > 0;
   setLabel(p.label, ICON.money + fmtMoney(p.value));
 }
@@ -668,7 +926,10 @@ function refreshZones() {
   }
 }
 function frontOf(def) {
-  if (def.kind === 'pier') return [10.4, def.pz + 2.6];
+  if (def.kind === 'pier') return [9.6, def.pz + 2.6];
+  if (def.kind === 'angler') return [9.8, -0.4];
+  if (def.kind === 'traps') return [11.1, -10.4];
+  if (def.kind === 'aqua') return [8.8, 24.8];
   if (def.kind === 'crop') return [def.pos[0], def.pos[1] + CROP_LAYOUT[def.plant].d / 2 + 1.5];
   if (def.kind === 'machine' || def.kind === 'shelf' || def.kind === 'table') return [def.pos[0], def.pos[1] + 1.7];
   return def.zone || def.pos;
@@ -689,11 +950,10 @@ function grow(def) {
   confetti(def.zone[0], def.zone[1]); sfx('unlock'); toast('🎉 ' + def.name + '！');
   refreshZones(); save();
 }
+const onFloor = (x, z) => (z < REST.z1 && z > REST.z0 && x > REST.x0 && x < REST.x1) || (z < SHOP.z1 && x > SHOP.x0 && x < SHOP.x1 && z > SHOP.z0);
 function makeZone(def) {
   const [x, z] = zoneSpot(def);
-  const g = new THREE.Group(); g.position.set(x, def.kind === 'machine' && x < -11 ? 0.15 : 0.03, z); scene.add(g);
-  if (z < -6 && x > REST.x0 && x < REST.x1) g.position.y = 0.15;
-  if (z < -7.3 && x > SHOP.x0 && x < SHOP.x1) g.position.y = 0.15;
+  const g = new THREE.Group(); g.position.set(x, onFloor(x, z) ? 0.15 : 0.03, z); scene.add(g);
   const ring = new THREE.Mesh(G.plane(2.4, 2.4), dashMat); ring.renderOrder = 2; g.add(ring);
   const fill = new THREE.Mesh(G.plane(1.9, 1.9), fillMat); fill.renderOrder = 2; fill.position.y = 0.005; fill.scale.set(1, 1, 0.001); g.add(fill);
   if (def.kind === 'hire') g.add(P2.ghostPerson());
@@ -748,10 +1008,11 @@ const inShop = (x, z) => z < SHOP.z1 && z > SHOP.z0 - 0.4 && x > SHOP.x0 && x < 
 const inRest = (x, z) => rest.ready && z < REST.z1 && z > REST.z0 && x > REST.x0 && x < REST.x1;
 const areaOf = (x, z) => (inShop(x, z) ? 'shop' : inRest(x, z) ? 'rest' : 'out');
 function nearestOf(list, v) { let b = list[0]; for (const l of list) if (Math.abs(l - v) < Math.abs(b - v)) b = l; return b; }
+const lanes = () => (rest.wing ? LANES_WING.concat(LANES_MAIN) : LANES_MAIN);
 // inside the restaurant: walk along clear lanes between the tables
 function rPath(fx, fz, tx, tz) {
-  const a0 = nearestOf(LANES, fx), a1 = nearestOf(LANES, tx), pts = [[a0, fz]];
-  if (a0 !== a1) { const L = nearestOf(AISLES, (fz + tz) / 2); pts.push([a0, L], [a1, L]); }
+  const L = lanes(), a0 = nearestOf(L, fx), a1 = nearestOf(L, tx), pts = [[a0, fz]];
+  if (a0 !== a1) { const az = nearestOf(AISLES, (fz + tz) / 2); pts.push([a0, az], [a1, az]); }
   pts.push([a1, tz], [tx, tz]);
   return pts;
 }
@@ -805,6 +1066,7 @@ function turn(p, face, dt) {
   p.root.rotation.y = r + diff * Math.min(1, dt * 12);
 }
 const listOf = (kind) => Object.values(stations).filter((s) => s.kind === kind);
+const binStations = () => Object.values(stations).filter((s) => s.bin && BIN_KINDS.includes(s.kind));
 function idleWander(w, dt, cx, cz) {
   w.wait -= dt;
   if (!w.wp || w.wait <= 0) { w.wp = [cx + (Math.random() - 0.5) * 2.4, cz + (Math.random() - 0.5) * 1.6]; w.wait = 2 + Math.random() * 2; }
@@ -812,16 +1074,29 @@ function idleWander(w, dt, cx, cz) {
 }
 const STORE_CAP = 200;
 const storeTotal = () => Object.values(state.store).reduce((a, b) => a + b, 0);
-const srcCount = (src, item) => src.kind === 'store' ? (state.store[item] || 0) : src.outN;
-function srcTake(src, item) { if (src.kind === 'store') state.store[item]--; else src.outN--; }
+const srcCount = (src, item) => src.kind === 'store' ? (state.store[item] || 0) : src.bin ? binCount(src.bin, item) : src.outN;
+function srcTake(src, item) { if (src.kind === 'store') state.store[item]--; else if (src.bin) binTake(src.bin, item); else src.outN--; }
+const srcPoint = (src) => (src.kind === 'store' ? src.outPt : src.bin ? V3(src.outPt.x - 1.1, 0, src.outPt.z) : V3(src.outPt.x + 0.3, 0, src.outPt.z + 0.9));
 const machIns = (m) => (m.def.in2 ? [m.def.in, m.def.in2] : [m.def.in]);
 const inCount = (m, item) => (item === m.def.in2 ? m.inN2 : m.inN);
 const inPend = (m, item) => (item === m.def.in2 ? (m.pend2 || 0) : (m.pend || 0));
+// can this item be produced at all right now (any catch method / machine / field built that makes it)?
+function producible(t) {
+  for (const s of Object.values(stations)) {
+    if (s.kind === 'pier' && CATCH[s.def.boat][t]) return true;
+    if (s.kind === 'angler' && CATCH.angler[t] >= 3) return true;
+    if (s.kind === 'traps' && (CATCH.crab[t] || (isBuilt('lobsterTraps') && CATCH.lobster[t]))) return true;
+    if (s.kind === 'aqua' && (t === 'salmon' || t === 'shrimp')) return true;
+    if ((s.kind === 'machine' || s.kind === 'crop') && s.def.out === t) return true;
+  }
+  return false;
+}
 function sourceFor(item, w) {
   let best = null, bd = 1e9;
   for (const s of Object.values(stations)) {
     let ok = false;
-    if ((s.kind === 'pier' || s.kind === 'machine') && s.def.out === item && s.outN > 0) ok = true;
+    if (s.bin && BIN_KINDS.includes(s.kind) && binCount(s.bin, item) > 0) ok = true;
+    if (s.kind === 'machine' && s.def.out === item && s.outN > 0) ok = true;
     if (s.kind === 'crop' && s.def.out === item && s.plants.some((p) => p.ripe && (!p.res || p.res === w))) ok = true;
     if (s.kind === 'store' && (state.store[item] || 0) > 0) ok = true;
     if (!ok) continue;
@@ -831,27 +1106,38 @@ function sourceFor(item, w) {
   }
   return best;
 }
+const shelfSpace = (s) => upVal('shelfCap') - s.bin.list.length - (s.pend || 0);
 function pickJob(w) {
-  const only = w.role === 'fisher' ? 'fish' : null;
+  const fisher = w.role === 'fisher';
   const want = (it) => customers.filter((c) => c.st === 'shop' && c.item === it).length;
   let best = null;
-  const cap = upVal('shelfCap');
+  const consider = (k, dst, src, item) => { if (!best || k > best.k) best = { k, dst, src, item }; };
   for (const s of listOf('shelf')) {
-    if (only && s.item !== only) continue;
-    const space = cap - s.n - (s.pend || 0); if (space < 2) continue;
-    const src = sourceFor(s.item, w); if (!src) continue;
-    const taken = workers.some((o) => o !== w && o.job && o.job.dst === s);
-    const k = want(s.item) * 8 + space + Math.random() * 2 - (taken ? 12 : 0);
-    if (!best || k > best.k) best = { k, dst: s, src, item: s.item };
+    const space = shelfSpace(s); if (space < 2) continue;
+    for (const item of s.items) {
+      if (fisher && !isRaw(item)) continue;
+      const src = sourceFor(item, w); if (!src) continue;
+      const taken = workers.some((o) => o !== w && o.job && o.job.dst === s && o.job.item === item);
+      const have = binCount(s.bin, item);
+      consider(want(item) * 8 + space * 0.6 + (have === 0 ? 4 : 0) + Math.random() * 2 - (taken ? 12 : 0), s, src, item);
+    }
   }
   for (const m of listOf('machine')) for (const item of machIns(m)) {
-    if (only && item !== only) continue;
+    if (fisher && !isRaw(item)) continue;
     const space = m.inMax - inCount(m, item) - inPend(m, item); if (space < 3) continue;
     const src = sourceFor(item, w); if (!src) continue;
     const taken = workers.some((o) => o !== w && o.job && o.job.dst === m && o.job.item === item);
-    const dish = m.def.out === 'sushi' || m.def.out === 'grilled';
-    const k = space * 0.9 + (inCount(m, item) === 0 ? 5 : 0) + (dish && demandFor(m.def.out) ? 6 : 0) + Math.random() * 2 - (taken ? 12 : 0);
-    if (!best || k > best.k) best = { k, dst: m, src, item };
+    const dish = DISHES.includes(m.def.out);
+    consider(space * 0.9 + (inCount(m, item) === 0 ? 5 : 0) + (dish && demandFor(m.def.out) ? 6 : 0) + Math.random() * 2 - (taken ? 12 : 0), m, src, item);
+  }
+  // crates filling up with species nobody needs yet: move them to the warehouse so the catch keeps coming
+  const wh = stations.warehouse;
+  if (wh && storeTotal() < STORE_CAP - 10) for (const s of binStations()) {
+    const fill = s.bin.list.length / s.bin.max; if (fill < 0.6) continue;
+    const cnt = {}; for (const t of s.bin.list) cnt[t] = (cnt[t] || 0) + 1;
+    const item = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0];
+    const taken = workers.some((o) => o !== w && o.job && o.job.src === s && o.job.dst === wh);
+    consider((fill >= 0.95 ? 14 : fill * 8 - 1) - (taken ? 12 : 0), wh, s, item);
   }
   return best ? { dst: best.dst, src: best.src, item: best.item, phase: 'get' } : null;
 }
@@ -863,9 +1149,9 @@ function depositTo(c, dst, item, dt) {
     c.xfer = 0.06; dst.pend = (dst.pend || 0) + 1;
     giveFrom(c, item, (o) => o.set(dst.def.pos[0], 0.8, dst.def.pos[1] + 1.6), () => { dst.pend--; state.store[item] = (state.store[item] || 0) + 1; });
   } else if (dst.kind === 'shelf') {
-    if (dst.n + (dst.pend || 0) >= upVal('shelfCap')) return;
+    if (shelfSpace(dst) <= 0) return;
     c.xfer = 0.1; dst.pend = (dst.pend || 0) + 1;
-    giveFrom(c, item, (o) => o.set(dst.def.pos[0], 0.9, dst.def.pos[1]), () => { dst.pend--; dst.n++; });
+    giveFrom(c, item, (o) => o.set(dst.def.pos[0], 0.9, dst.def.pos[1]), () => { dst.pend--; binAdd(dst.bin, item); });
   } else if (dst.kind === 'machine') {
     const two = item === dst.def.in2;
     if (inCount(dst, item) + inPend(dst, item) >= dst.inMax) return;
@@ -885,9 +1171,14 @@ function dstPoint(dst, item) {
   return V3(pt.x, 0, pt.z + 0.9);
 }
 function isFull(dst, item) {
-  if (dst.kind === 'shelf') return dst.n + (dst.pend || 0) >= upVal('shelfCap');
+  if (dst.kind === 'shelf') return shelfSpace(dst) <= 0;
   if (dst.kind === 'store') return storeTotal() >= STORE_CAP;
   return inCount(dst, item) + inPend(dst, item) >= dst.inMax;
+}
+const usable = (t) => DEFS.some((d) => (isBuilt(d.id) || zones[d.id]) && ((d.items && d.items.includes(t)) || d.in === t || d.in2 === t)) || Object.values(zones).some((z) => z.def.cost[t] && left(z, t) > 0) || !!stations.warehouse || cruiseWants(t);
+const cruiseWants = (t) => cruise.st === 'wait' && cruise.order && cruise.order[t] > 0;
+function dstFor(type) {
+  return listOf('shelf').find((s) => s.items.includes(type) && !isFull(s, type)) || listOf('machine').find((m) => machIns(m).includes(type) && !isFull(m, type)) || (stations.warehouse && storeTotal() < STORE_CAP ? stations.warehouse : null);
 }
 function updateWorker(w, dt) {
   const sp = upVal('wspeed');
@@ -895,12 +1186,11 @@ function updateWorker(w, dt) {
   if (w.role === 'cashier') { const c = COUNTERS[0]; if (walkTo(w, c.serve.x, c.serve.z, dt, sp)) w.face = 0; return; }
   if (w.role === 'waiter') { updateWaiter(w, dt, sp); return; }
   if (w.role === 'washer') { updateWasher(w, dt, sp); return; }
-  // fisher (fish only) and shelver: fetch a full load from a source, then deliver it to a shelf or a machine
+  // fisher (seafood only) and shelver: fetch a full load from a source, then deliver it to a shelf, machine or the warehouse
   const home = w.role === 'fisher' ? [10.0, 4.8] : [0, -4.4];
   if (!w.job) {
     if (w.carry.length && !w.incoming) {
-      const type = w.carry[w.carry.length - 1].type;
-      const dst = listOf('shelf').find((s) => s.item === type && !isFull(s, type)) || listOf('machine').find((m) => machIns(m).includes(type) && !isFull(m, type)) || (stations.warehouse && storeTotal() < STORE_CAP ? stations.warehouse : null);
+      const type = w.carry[w.carry.length - 1].type, dst = dstFor(type);
       if (dst) w.job = { dst, item: type, phase: 'put' };
       else { w.hold = (w.hold || 0) + dt; if (w.hold > 8) { w.hold = 0; w.carry.splice(0).forEach((it) => w.p.back.remove(it.m)); } idleWander(w, dt, home[0], home[1]); return; }
     } else if (!w.incoming) w.job = pickJob(w);
@@ -916,9 +1206,8 @@ function updateWorker(w, dt) {
       if (!pl) { j.phase = count(w, j.item) ? 'put' : 'done'; }
       else if (go(w, pl.x, pl.z + 0.7, dt, sp)) { pickPlant(src, pl, w); j.plant = null; }
     } else {
-      const sx = src.kind === 'store' ? src.outPt.x : src.outPt.x + 0.3, sz = src.kind === 'store' ? src.outPt.z : src.outPt.z + (src.kind === 'pier' ? 0 : 0.9);
-      const gx = src.kind === 'pier' ? src.outPt.x - 1.1 : sx;
-      if (go(w, gx, sz, dt, sp) || dist2(w.p.root.position, src.outPt.x, src.outPt.z) < 1.3) {
+      const sp0 = srcPoint(src);
+      if (go(w, sp0.x, sp0.z, dt, sp) || dist2(w.p.root.position, src.outPt.x, src.outPt.z) < 1.3) {
         w.xfer -= dt;
         if (w.xfer <= 0 && srcCount(src, j.item) > 0 && room(w) > 0) { w.xfer = 0.1; srcTake(src, j.item); takeInto(w, j.item, V3(src.outPt.x, 0.4, src.outPt.z)); }
         if ((srcCount(src, j.item) <= 0 || room(w) <= 0) && !w.incoming) j.phase = count(w, j.item) ? 'put' : 'done';
@@ -926,6 +1215,7 @@ function updateWorker(w, dt) {
     }
   } else if (j.phase === 'put') {
     if (!w.incoming) {
+      if (isFull(j.dst, j.item) && count(w, j.item)) { const d2 = dstFor(j.item); if (d2 && d2 !== j.dst) j.dst = d2; }
       const p = dstPoint(j.dst, j.item);
       if (go(w, p.x + 0.4, p.z, dt, sp) || dist2(w.p.root.position, p.x, p.z) < 1.1) {
         depositTo(w, j.dst, j.item, dt);
@@ -936,7 +1226,7 @@ function updateWorker(w, dt) {
   if (j.phase === 'done') { if (j.plant && j.plant.res === w) j.plant.res = null; w.job = null; }
 }
 
-// waiter: take dishes from the grill / sushi bar to the tables that ordered them
+// waiter: take dishes from the kitchen to the tables that ordered them
 function seatOk(t, s, type) { return t.st === 'wait' && s.diner && s.dish === type && !s.got; }
 function demandFor(type) { let n = 0; for (const t of tables) for (const s of t.seats) if (seatOk(t, s, type)) n++; return n; }
 function dishSource(type, w) {
@@ -998,7 +1288,7 @@ function updateWaiter(w, dt, sp) {
   // empty handed: choose the dish most wanted that can be fetched, and claim those seats
   if (!w.job) {
     let bestType = null, bestN = 0;
-    for (const type of ['sushi', 'grilled']) {
+    for (const type of DISHES) {
       let n = 0; for (const t of tables) for (const s of t.seats) if (seatOk(t, s, type) && !s.claim) n++;
       if (n > bestN && dishSource(type, w)) { bestN = n; bestType = type; }
     }
@@ -1074,15 +1364,24 @@ const queueAt = (i) => [COUNTERS[0].x - i * 0.95, COUNTERS[0].z + 1.4];
 let spawnT = 3;
 function customerLook() { return { body: pick(CUST_COLS), hat: Math.random() < 0.3 ? 'cap' : (Math.random() < 0.3 ? 'bun' : null), hatColor: pick(CUST_COLS) }; }
 const crowd = () => upVal('cust') * (events.tour > 0 ? 2 : 1) * (isBuilt('aquarium') ? 1.5 : 1);
+// what a shopper wants from a cooler: something on it if possible, otherwise anything the harbour can make
+function shopperWant(sh) {
+  const stocked = sh.items.filter((t) => binCount(sh.bin, t) > 0);
+  if (stocked.length && Math.random() < 0.85) return pick(stocked);
+  const can = sh.items.filter((t) => producible(t) && RARITY[t] !== 4);
+  return can.length ? pick(can) : null;
+}
 function spawnCustomer() {
-  const shelves = listOf('shelf');
+  const shelves = listOf('shelf').filter((s) => s.items.some((t) => binCount(s.bin, t) > 0 || producible(t)));
   if (!shelves.length) return null;
-  const sh = pick(shelves);
+  const sh = pick(shelves), item = shopperWant(sh);
+  if (!item) return null;
   const p = K.person(customerLook());
   p.root.position.set(SPAWN[0], 0, SPAWN[1]); scene.add(p.root);
-  const need = 1 + Math.floor(Math.random() * Math.min(4, 1 + shelves.length));
+  const big = ITEMS[item].price >= 40;
+  const need = big ? 1 : 1 + Math.floor(Math.random() * Math.min(4, 1 + shelves.length));
   const path = [ENTRY, DOOR, DOOR_IN, HALL, [sh.front.x + rand(-0.75, 0.75), sh.front.z + rand(0.2, 1.1)]];
-  const c = { p, shelf: sh, item: sh.item, need, got: 0, st: 'in', path, t: 0, face: 0, moving: 0, qi: 99 };
+  const c = { p, shelf: sh, item, need, got: 0, st: 'in', path, t: 0, face: 0, moving: 0, qi: 99 };
   c.label = label('bubble', '', (o) => { o.copy(c.p.root.position); o.y = 2.05; });
   customers.push(c);
   return c;
@@ -1099,8 +1398,8 @@ function updateCustomers(dt) {
   const shelfN = listOf('shelf').length;
   if (shelfN) {
     spawnT -= dt * crowd();
-    const maxC = 3 + Math.round(shelfN * 1.5);
-    if (spawnT <= 0 && customers.length < maxC) { spawnCustomer(); spawnT = Math.max(1.6, 7 - shelfN * 0.7) * (0.7 + Math.random() * 0.6); }
+    const maxC = Math.min(12, 3 + Math.round(shelfN * 1.5));
+    if (spawnT <= 0 && customers.length < maxC) { spawnCustomer(); spawnT = Math.max(1.4, 7 - shelfN * 0.7) * (0.7 + Math.random() * 0.6); }
   }
   const c0 = COUNTERS[0];
   const served = workers.some((w) => w.role === 'cashier' && dist2(w.p.root.position, c0.serve.x, c0.serve.z) < 0.6) || dist2(player.p.root.position, c0.serve.x, c0.serve.z) < 1.3;
@@ -1111,8 +1410,8 @@ function updateCustomers(dt) {
     if (c.st === 'in') { if (stepPath(c, dt, 2.6)) { c.st = 'shop'; c.face = Math.PI; c.t = 0.4; c.patience = 32; } }
     else if (c.st === 'shop') {
       c.t -= dt; c.patience -= dt;
-      if (c.t <= 0 && c.shelf.n > 0 && c.got < c.need) {
-        c.t = 0.35; c.shelf.n--; c.got++;
+      if (c.t <= 0 && binCount(c.shelf.bin, c.item) > 0 && c.got < c.need) {
+        c.t = 0.35; binTake(c.shelf.bin, c.item); c.got++;
         fly(c.item, V3(c.shelf.def.pos[0], 0.8, c.shelf.def.pos[1]), (o) => { o.copy(c.p.root.position); o.y = 1.2; }, 0.25, null);
       }
       if (c.patience <= 0 && c.got < c.need) {
@@ -1121,7 +1420,8 @@ function updateCustomers(dt) {
       }
       if (c.st === 'shop' && c.got >= c.need) {
         c.st = 'toQueue'; c.qi = 99;
-        c.path = [[c.p.root.position.x, -12.1], [2.4, -12.1], [2.4, -8.5]];
+        const pz = c.p.root.position.z;
+        c.path = c.shelf.def.pos[1] < -12 ? [[c.p.root.position.x, -12.1], [2.4, -12.1], [2.4, -8.5]] : [[2.4, pz], [2.4, -8.5]];
       }
     } else if (c.st === 'toQueue' || c.st === 'queue') {
       if (stepPath(c, dt, 2.6)) {
@@ -1148,8 +1448,10 @@ function leaveShop(c) {
   c.path = [[c.p.root.position.x, -8.6], DOOR_IN, DOOR, ENTRY, [SPAWN[0], SPAWN[1] + 1]];
 }
 function pay(c) {
-  const v = Math.round(c.got * ITEMS[c.item].price * upVal('price')) + (pets.cat ? 1 : 0);
-  const k = COUNTERS[0]; stats.sales++;
+  const unit = Math.round(ITEMS[c.item].price * upVal('price'));
+  const v = unit * c.got + (pets.cat ? 1 : 0);
+  recBest(c.item, unit);
+  const k = COUNTERS[0]; stats.sales++; stats.sold[c.item] = (stats.sold[c.item] || 0) + c.got;
   k.pile.value += v; setPile(k); sfx('coin');
   floatText('+' + v, V3(k.pile.x, 1.6, k.pile.z), 'money');
   const bag = new THREE.Group(); K.add(bag, K.mesh(G.rbox(0.36, 0.38, 0.24, 0.06), '#cfe9ff'), 0, 0.1, 0); c.p.front.add(bag);
@@ -1159,23 +1461,26 @@ function pay(c) {
 // ---------- restaurant diners ----------
 const diners = [];
 let dinerT = 4;
-function menu() { const m = []; if (isBuilt('grill')) m.push('grilled'); if (isBuilt('sushiBar')) m.push('sushi'); return m; }
+function menu() { const m = []; for (const s of listOf('machine')) if (DISHES.includes(s.def.out)) m.push(s.def.out); return m; }
+function pickDish(mn) { let sum = 0; for (const d of mn) sum += DISH_W[d]; let r = Math.random() * sum; for (const d of mn) { r -= DISH_W[d]; if (r <= 0) return d; } return mn[0]; }
 function spawnGroup(t) {
   const mn = menu(), n = Math.random() < 0.55 ? 2 : 1;
   t.st = 'coming'; t.arrived = 0; t.size = n; t.patience = 90;
   const order = [0, 1].sort(() => Math.random() - 0.5).slice(0, n);
   for (const si of order) {
     const s = t.seats[si];
-    const p = K.person(customerLook());
+    const look = customerLook(), p = K.person(look);
     p.root.position.set(D_SPAWN[0] - 0.4 + Math.random() * 0.8, 0, D_SPAWN[1] + Math.random() * 1.5);
     scene.add(p.root);
-    const d = { p, legs: legsOf(p), t, s, st: 'in', face: 0, moving: 0, path: [[D_SPAWN[0], 0], R_OUT, R_IN, ...rPath(R_IN[0], R_IN[1], s.wx, s.wz)] };
-    s.diner = d; s.dish = pick(mn); s.got = false; s.claim = null; s.eaten = false;
+    const d = { p, look, legs: legsOf(p), t, s, st: 'in', face: 0, moving: 0, path: [[D_SPAWN[0], 0], R_OUT, R_IN, ...rPath(R_IN[0], R_IN[1], s.wx, s.wz)] };
+    s.diner = d; s.dish = pickDish(mn); s.got = false; s.claim = null;
     diners.push(d);
   }
 }
 function leaveTable(d) {
-  d.st = 'leave'; d.p.root.position.y = 0;
+  const at = d.p.root.position.clone(), ry = d.p.root.rotation.y;
+  scene.remove(d.p.root); d.p = K.person(d.look); d.p.root.position.set(at.x, 0.12, at.z); d.p.root.rotation.y = ry; scene.add(d.p.root);
+  d.st = 'leave';
   const pos = d.p.root.position;
   d.path = [...rPath(pos.x, pos.z, R_IN[0], R_IN[1]), R_OUT, [D_SPAWN[0], D_SPAWN[1] + 1.5]];
   d.s.diner = null;
@@ -1186,24 +1491,24 @@ function updateDiners(dt, T) {
     const free = tables.filter((t) => t.st === 'free');
     if (free.length) {
       dinerT -= dt * crowd() * (events.tour > 0 ? 0.75 : 1);
-      if (dinerT <= 0) { spawnGroup(pick(free)); dinerT = Math.max(3, 11 - tables.length * 1.2) * rand(0.7, 1.3); }
+      if (dinerT <= 0) { spawnGroup(pick(free)); dinerT = Math.max(2.6, 11 - tables.length * 1.0) * rand(0.7, 1.3); }
     }
   }
   for (let i = diners.length - 1; i >= 0; i--) {
     const d = diners[i];
     d.moving = 0;
     if (d.st === 'in') {
-      if (stepPath(d, dt, 2.7)) { d.st = 'sit'; d.face = d.s.face; d.t.arrived++; d.p.root.position.set(d.s.wx, 0.18, d.s.wz); }
+      if (stepPath(d, dt, 2.7)) {
+        d.st = 'sit'; d.face = d.s.face; d.t.arrived++; d.p.root.position.set(d.s.wx, 0.18, d.s.wz); d.p.root.rotation.y = d.face;
+        d.p.anim(1, 0); sitPose(d.p); for (const a of d.p.arms) a.rotation.x = -0.7;
+        K.bakeStatic(d.p.rig);
+      }
     } else if (d.st === 'leave') {
       if (stepPath(d, dt, 2.8)) { scene.remove(d.p.root); diners.splice(i, 1); continue; }
     }
     if (d.st !== 'sit') d.p.root.position.y = inRest(d.p.root.position.x, d.p.root.position.z) ? 0.12 : 0;
-    turn(d.p, d.face, dt); d.p.anim(dt, d.moving);
-    if (d.st === 'sit') {
-      for (const l of d.legs) l.rotation.x = -1.35;
-      if (d.t.st === 'eat') { d.p.arms[1].rotation.x = -1.1 + Math.sin(T * 10 + i) * 0.35; d.p.arms[0].rotation.x = -0.6; d.p.rig.rotation.x = 0.12 + Math.sin(T * 5 + i) * 0.05; }
-      else d.p.rig.rotation.x = 0;
-    }
+    if (d.st !== 'sit') { turn(d.p, d.face, dt); d.p.anim(dt, d.moving); }
+    if (d.st === 'sit') d.p.rig.rotation.x = d.t.st === 'eat' ? 0.1 + Math.abs(Math.sin(T * 6 + i)) * 0.12 : 0;
   }
   for (const t of tables) {
     if (t.st === 'coming' && t.arrived >= t.size) t.st = 'wait';
@@ -1228,7 +1533,7 @@ function finishTable(t, angry) {
   let v = 0, plates = 0;
   for (const s of t.seats) {
     if (!s.diner) continue;
-    if (s.vis[s.dish] && s.vis[s.dish].visible) { v += ITEMS[s.dish].price; s.vis[s.dish].visible = false; s.vis.plate.visible = true; plates++; }
+    if (s.vis[s.dish] && s.vis[s.dish].visible) { v += ITEMS[s.dish].price; stats.dish[s.dish] = (stats.dish[s.dish] || 0) + 1; s.vis[s.dish].visible = false; s.vis.plate.visible = true; plates++; }
     s.claim = null;
     const d = s.diner;
     if (angry) { stats.angry++; floatText('😞', V3(d.p.root.position.x, 2.2, d.p.root.position.z)); } else stats.meals++;
@@ -1244,14 +1549,11 @@ function finishTable(t, angry) {
 }
 
 // ---------- special orders ----------
-function sellables() {
-  const s = listOf('shelf').map((x) => x.item);
-  for (const m of listOf('machine')) if (m.def.out === 'sushi' || m.def.out === 'grilled') s.push(m.def.out);
-  return s;
-}
+const ORDER_OK = ['fish', 'sardine', 'mackerel', 'shrimp', 'crab', 'squid', 'salmon', 'tuna', 'seaweed', 'iced', 'can', 'crabcan', 'dried', 'sashimi', ...DISHES];
+function sellables() { return ORDER_OK.filter((t) => producible(t) && !(t === 'tuna' && !isBuilt('pier3'))); }
 function makeOrder(types, lo, hi) {
   const items = sellables(), order = {};
-  for (let i = 0; i < types && items.length; i++) { const it = pick(items); order[it] = (order[it] || 0) + Math.round(rand(lo, hi)); }
+  for (let i = 0; i < types && items.length; i++) { const it = pick(items); const big = ITEMS[it].price >= 40 ? 0.4 : 1; order[it] = (order[it] || 0) + Math.max(1, Math.round(rand(lo, hi) * big)); }
   return order;
 }
 function orderValue(order, mult) { let v = 0; for (const k in order) v += order[k] * ITEMS[k].price; return Math.round(v * upVal('price') * mult); }
@@ -1274,7 +1576,7 @@ function tourist() { return K.person({ body: pick(['#ff7eb6', '#5ec8ff', '#ffd34
 function updateCruise(dt) {
   if (!cruise.ready) return;
   if (!cruise.ship) {
-    cruise.ship = P3.cruiseShip(); K.bakeStatic(cruise.ship); cruise.ship.position.set(34, 0, 80); cruise.ship.visible = false; scene.add(cruise.ship);
+    cruise.ship = P3.cruiseShip(); K.bakeStatic(cruise.ship); cruise.ship.position.set(34, 0, 85); cruise.ship.visible = false; scene.add(cruise.ship);
     cruise.label = label('zone order', '', (o) => o.set(CRUISE.x - 0.3, 0.3, CRUISE.z - 2.1)); cruise.label.show = false;
   }
   const sh = cruise.ship;
@@ -1288,9 +1590,9 @@ function updateCruise(dt) {
     sh.rotation.y += diff * Math.min(1, dt * 1.2); return false;
   };
   if (cruise.st === 'away' && cruise.t <= 0) {
-    const late = state.built.length > 30;
+    const late = state.built.length > 40;
     cruise.order = makeOrder(3, late ? 6 : 4, late ? 12 : 8); cruise.value = orderValue(cruise.order, 6) + 300;
-    cruise.st = 'come'; sh.visible = true; sh.position.set(34, 0, 80); sh.rotation.y = Math.atan2(7, 54);
+    cruise.st = 'come'; sh.visible = true; sh.position.set(34, 0, 85); sh.rotation.y = Math.atan2(17.7, 53.5);
     toast('🛳️ 郵輪靠岸！遊客團要訂大單');
   }
   if (cruise.st === 'come' && sail(CRUISE.dockX, CRUISE.z, 9)) {
@@ -1323,9 +1625,9 @@ function updateCruise(dt) {
   if (cruise.st === 'board' && cruise.group.every((g) => !g.path.length)) {
     cruise.group.forEach((g) => scene.remove(g.p.root)); cruise.group = []; cruise.st = 'leave';
   }
-  // leave in two legs: swing out to sea, then head north past the piers' far ends
-  if (cruise.st === 'leave' && !cruise.leg && sail(27, 14, 6)) cruise.leg = true;
-  else if (cruise.st === 'leave' && cruise.leg && sail(33, -80, 9)) { cruise.leg = false; cruise.st = 'away'; cruise.t = rand(150, 220); sh.visible = false; }
+  // leave the way it came: swing out to sea, then away south past the fish farm
+  if (cruise.st === 'leave' && !cruise.leg && sail(25, 45, 6)) cruise.leg = true;
+  else if (cruise.st === 'leave' && cruise.leg && sail(40, 95, 9)) { cruise.leg = false; cruise.st = 'away'; cruise.t = rand(150, 220); sh.visible = false; }
 }
 
 const events = { contest: 0, tour: 0, next: 80 };
@@ -1351,6 +1653,12 @@ function toast(msg) { if (simming) return; const el = $('toast'); el.textContent
 // ---------- UI ----------
 let shownMoney = -1;
 function updateMoney() { if (shownMoney !== state.money) { shownMoney = state.money; $('moneyN').textContent = fmtMoney(state.money); } }
+function logCard(t) {
+  const L = state.log[t];
+  const r = '<span class="rar r' + RARITY[t] + '">' + RAR_NAME[RARITY[t]] + '</span>';
+  if (!L || !L.n) return '<div class="lcard unk">' + ICON_SIL[t] + '<b>？？？</b>' + r + '<small>尚未捕獲</small></div>';
+  return '<div class="lcard">' + ICON_BIG[t] + '<b>' + ITEMS[t].name + '</b>' + r + '<small>捕獲 ' + L.n + ' 條</small><small>最高售價 ' + (L.b ? '$' + fmtMoney(L.b) : '—') + '</small></div>';
+}
 function openPanel(kind) {
   const P0 = $('panel'), body = $('pBody');
   P0.classList.remove('hidden');
@@ -1365,7 +1673,7 @@ function openPanel(kind) {
       if (ti === 1 && !workers.length) { body.innerHTML = '<div class="empty">解鎖第一位員工後開放</div>'; return; }
       if (ti === 1) {
         const n = (r) => workers.filter((w) => w.role === r).length;
-        body.insertAdjacentHTML('beforeend', '<div class="chips staff">' + [['cashier', '收銀員'], ['fisher', '漁夫'], ['shelver', '理貨員'], ['waiter', '服務生'], ['washer', '洗碗員']].map(([r, nm]) => '<span class="chip">' + nm + ' ×' + n(r) + '</span>').join('') + '</div>');
+        body.insertAdjacentHTML('beforeend', '<div class="chips staff">' + [['cashier', '收銀員'], ['fisher', '漁夫'], ['shelver', '理貨員'], ['waiter', '服務生'], ['washer', '洗碗員']].map(([r, nm]) => '<span class="chip">' + nm + ' ×' + n(r) + '</span>').join('') + (stations.anglerPier ? '<span class="chip">釣魚員 ×' + lvlOf('anglerPier') + '</span>' : '') + '</div>');
       }
       for (const k in UPS) {
         const u = UPS[k]; if (u.tab !== ti) continue;
@@ -1384,24 +1692,31 @@ function openPanel(kind) {
     };
     tabs.forEach((t, i) => { const b = document.createElement('button'); b.textContent = t; b.onclick = () => show(i); $('pTabs').appendChild(b); });
     show(openPanel.tab || 0);
+  } else if (kind === 'log') {
+    $('pTitle').textContent = '魚獲圖鑑';
+    state.logNew = false; showLogDot();
+    const show = (pi) => {
+      openPanel.logTab = pi;
+      [...$('pTabs').children].forEach((b, i) => b.classList.toggle('on', i === pi));
+      const pg = LOG_PAGES[pi], got = pg.ids.filter((t) => state.log[t] && state.log[t].n > 0).length;
+      body.innerHTML = '<div class="logs">' + pg.ids.map(logCard).join('') + '</div>' +
+        '<div class="preward' + (state.logPaid[pi] ? ' done' : '') + '"><b>收集 ' + got + '/' + pg.ids.length + '</b><span>' + (state.logPaid[pi] ? '✓ 已領取獎勵' : '集滿獎勵 ' + ICON.money + fmtMoney(pg.reward)) + '</span></div>';
+    };
+    LOG_PAGES.forEach((pg, i) => { const b = document.createElement('button'); b.textContent = pg.name; b.onclick = () => show(i); $('pTabs').appendChild(b); });
+    show(openPanel.logTab || 0);
   } else if (kind === 'inv') {
     $('pTitle').textContent = '倉庫';
-    const carry = {}; for (const it of player.carry) carry[it.type] = (carry[it.type] || 0) + 1;
-    let h = '<div class="sec">背包 ' + player.carry.length + '/' + player.cap() + '</div><div class="chips">';
-    h += Object.keys(carry).length ? Object.keys(carry).map((k) => '<span class="chip">' + ICON[k] + carry[k] + '</span>').join('') : '<span class="empty">空空的</span>';
-    h += '</div><div class="sec">貨架</div><div class="chips">';
+    const chipsOf = (cnt) => { const ks = Object.keys(cnt).filter((k) => cnt[k] > 0); return ks.length ? ks.map((k) => '<span class="chip">' + ICON[k] + cnt[k] + '</span>').join('') : '<span class="empty">空空的</span>'; };
+    const cntList = (list) => { const o = {}; for (const t of list) o[t] = (o[t] || 0) + 1; return o; };
+    let h = '<div class="sec">背包 ' + player.carry.length + '/' + player.cap() + '</div><div class="chips">' + chipsOf(cntList(player.carry.map((c) => c.type))) + '</div>';
+    h += '<div class="sec">魚市場</div>';
     const sh = listOf('shelf');
-    h += sh.length ? sh.map((s) => '<span class="chip">' + ICON[s.item] + s.n + '/' + upVal('shelfCap') + '</span>').join('') : '<span class="empty">還沒有貨架</span>';
-    if (stations.warehouse) {
-      h += '</div><div class="sec">倉庫 ' + storeTotal() + '/' + STORE_CAP + '</div><div class="chips">';
-      const ks = Object.keys(state.store).filter((k) => state.store[k] > 0);
-      h += ks.length ? ks.map((k) => '<span class="chip">' + ICON[k] + state.store[k] + '</span>').join('') : '<span class="empty">空空的</span>';
-    }
-    h += '</div><div class="sec">碼頭與機器</div><div class="chips">';
-    for (const s of Object.values(stations)) {
-      if (s.kind === 'pier') h += '<span class="chip">' + s.def.name + ' ' + ICON.boat + '×' + lvlOf(s.id) + ' ' + ICON.fish + s.outN + '</span>';
-      if (s.kind === 'machine') h += '<span class="chip">' + s.def.name + ' ' + ICON[s.def.in] + s.inN + (s.def.in2 ? ' ' + ICON[s.def.in2] + s.inN2 : '') + ' → ' + ICON[s.def.out] + s.outN + '</span>';
-    }
+    h += sh.length ? sh.map((s) => '<div class="chips"><span class="chip">' + s.def.name + ' ' + s.bin.list.length + '/' + upVal('shelfCap') + '</span>' + s.items.map((t) => '<span class="chip">' + ICON[t] + binCount(s.bin, t) + '</span>').join('') + '</div>').join('') : '<div class="empty">還沒有貨架</div>';
+    const bs = binStations();
+    if (bs.length) h += '<div class="sec">漁獲箱</div>' + bs.map((s) => '<div class="chips"><span class="chip">' + s.def.name + ' ' + s.bin.list.length + '/' + s.bin.max + '</span>' + chipsOf(cntList(s.bin.list)) + '</div>').join('');
+    if (stations.warehouse) h += '<div class="sec">倉庫 ' + storeTotal() + '/' + STORE_CAP + '</div><div class="chips">' + chipsOf(state.store) + '</div>';
+    h += '<div class="sec">加工機器</div><div class="chips">';
+    for (const s of listOf('machine')) h += '<span class="chip">' + s.def.name + ' ' + ICON[s.def.in] + s.inN + (s.def.in2 ? ' ' + ICON[s.def.in2] + s.inN2 : '') + ' → ' + ICON[s.def.out] + s.outN + '</span>';
     if (tables.length) {
       const busy = tables.filter((t) => t.st === 'wait' || t.st === 'eat' || t.st === 'coming').length, dirty = tables.filter((t) => t.st === 'dirty').length;
       h += '</div><div class="sec">餐廳</div><div class="chips"><span class="chip">餐桌 ' + tables.length + '</span><span class="chip">用餐中 ' + busy + '</span><span class="chip">待清理 ' + dirty + '</span>';
@@ -1422,15 +1737,16 @@ function openPanel(kind) {
     let armed = false;
     $('sReset').onclick = (e) => {
       if (!armed) { armed = true; e.target.textContent = '確定？'; return; }
-      resetting = true; localStorage.removeItem(SAVE); location.reload();
+      // stop every auto-save first, otherwise pagehide would write the old game straight back
+      resetting = true; localStorage.removeItem(SAVE); location.replace(location.pathname);
     };
   }
 }
-let resetting = false;
 $('pClose').onclick = () => $('panel').classList.add('hidden');
 $('panel').addEventListener('pointerdown', (e) => { if (e.target === $('panel')) $('panel').classList.add('hidden'); });
 $('bUp').onclick = () => openPanel('up');
 $('bInv').onclick = () => openPanel('inv');
+$('bLog').onclick = () => openPanel('log');
 $('bSet').onclick = () => openPanel('set');
 $('bMap').onclick = () => openPanel('map');
 
@@ -1455,11 +1771,18 @@ function playerInteract(dt) {
     if (s.kind === 'machine') {
       if (dist2(pp, s.inPt.x, s.inPt.z) < 1.4 && count(player, s.def.in) > 0) depositTo(player, s, s.def.in, dt);
       if (s.in2Pt && dist2(pp, s.in2Pt.x, s.in2Pt.z) < 1.4 && count(player, s.def.in2) > 0) depositTo(player, s, s.def.in2, dt);
+      if (player.xfer2 <= 0 && dist2(pp, s.outPt.x, s.outPt.z) < 1.5 && s.outN > 0 && room(player) > 0) { player.xfer2 = 0.08; s.outN--; sfx('pop'); takeInto(player, s.def.out, V3(s.outPt.x, 0.4, s.outPt.z)); }
+    } else if (s.bin && BIN_KINDS.includes(s.kind)) {
+      if (player.xfer2 <= 0 && dist2(pp, s.outPt.x, s.outPt.z) < 1.7 && s.bin.list.length && room(player) > 0) {
+        // take what can be used now first; anything once the crate is nearly full
+        let t = null;
+        for (let i = s.bin.list.length - 1; i >= 0 && !t; i--) if (usable(s.bin.list[i])) t = s.bin.list[i];
+        if (!t && s.bin.list.length >= s.bin.max * 0.8) t = s.bin.list[s.bin.list.length - 1];
+        if (t) { player.xfer2 = 0.08; binTake(s.bin, t); sfx('pop'); takeInto(player, t, V3(s.outPt.x, 0.4, s.outPt.z)); }
+      }
+    } else if (s.kind === 'shelf' && dist2(pp, s.front.x, s.front.z - 0.6) < 1.7) {
+      for (const t of s.items) if (count(player, t) > 0) { depositTo(player, s, t, dt); break; }
     }
-    if ((s.kind === 'machine' || s.kind === 'pier') && player.xfer2 <= 0 && dist2(pp, s.outPt.x, s.outPt.z) < (s.kind === 'pier' ? 1.7 : 1.5) && s.outN > 0 && room(player) > 0) {
-      player.xfer2 = 0.08; s.outN--; sfx('pop'); takeInto(player, s.def.out, V3(s.outPt.x, 0.4, s.outPt.z));
-    }
-    if (s.kind === 'shelf' && dist2(pp, s.front.x, s.front.z - 0.6) < 1.7 && count(player, s.item) > 0) depositTo(player, s, s.item, dt);
   }
   const wh = stations.warehouse;
   if (wh) {
@@ -1485,21 +1808,27 @@ function playerInteract(dt) {
   if (k.on) collectPile(k.pile, k.pile.x, k.pile.z, dist2(pp, k.pile.x, k.pile.z) <= 1.6, dt, () => setPile(k));
 }
 
-// ---------- simulation ----------
+// ---------- catch methods ----------
+function tripCatch(kind) {
+  const c = upVal('catch') * (events.contest > 0 ? 2 : 1);
+  const n = kind === 'trawl' ? c * 3 : kind === 'deep' ? Math.max(2, Math.round(c * 0.6)) : c;
+  const out = []; for (let i = 0; i < n; i++) out.push(roll(CATCH[kind]));
+  return out;
+}
 function updateBoats(s, dt, T) {
-  const n = lvlOf(s.id);
-  const trip = upVal('boat') * (isBuilt('lighthouse') ? 0.7 : 1), far = 30, speed = far / (trip * 0.35);
+  const n = lvlOf(s.id), kind = s.def.boat;
+  const trip = upVal('boat') * (kind === 'trawl' ? 1.15 : kind === 'deep' ? 2 : 1) * (isBuilt('lighthouse') ? 0.7 : 1), far = 30, speed = far / (trip * 0.35);
   s.boats.forEach((b, i) => {
     if (i >= n) return;
     b.t += dt;
     if (b.st === 'dock') {
       b.x = b.mx; b.g.rotation.y = Math.PI;
-      if (b.cargo > 0) {
+      if (b.cargo.length) {
         b.ut = (b.ut || 0) - dt;
-        if (b.ut <= 0 && s.outN + s.pend < s.outMax) {
-          b.ut = 0.14; b.cargo--; s.pend++;
-          fly('fish', V3(b.x - 0.6, 0.8, b.mz), (o) => o.set(CRATE_X, 0.45, s.def.pz), 0.55, () => { s.pend--; s.outN = Math.min(s.outMax, s.outN + 1); });
-          if (b.cargo <= 0) { b.catchBox.visible = false; b.t = 0; }
+        if (b.ut <= 0 && binRoom(s.bin) > 0) {
+          b.ut = kind === 'trawl' ? 0.09 : 0.14;
+          landCatch(s, b.cargo.pop(), V3(b.x - 0.6, 0.8, b.mz));
+          if (!b.cargo.length) { b.catchBox.visible = false; b.t = 0; }
         }
       } else if (b.t > 1.2) { b.st = 'turn'; b.t = 0; }
     } else if (b.st === 'turn') {
@@ -1510,7 +1839,7 @@ function updateBoats(s, dt, T) {
       b.g.rotation.y = 0; b.x += speed * dt;
       if (b.x >= b.mx + far) { b.st = 'fish'; b.t = 0; b.g.rotation.y = Math.PI; }
     } else if (b.st === 'fish') {
-      if (b.t > trip * 0.3) { b.st = 'back'; b.cargo = upVal('catch') * (events.contest > 0 ? 2 : 1); b.catchBox.visible = true; }
+      if (b.t > trip * 0.3) { b.st = 'back'; b.cargo = tripCatch(kind); b.catchBox.visible = true; }
     } else if (b.st === 'back') {
       b.g.rotation.y = Math.PI; b.x -= speed * dt;
       if (b.x <= b.mx) { b.x = b.mx; b.st = 'dock'; b.t = 0; b.ut = 0.4; if (!simming && dist2(player.p.root.position, b.mx, b.mz) < 14) sfx('splash'); }
@@ -1520,26 +1849,106 @@ function updateBoats(s, dt, T) {
     b.flag.visible = events.contest > 0;
   });
 }
+function updateAnglers(s, dt, T) {
+  const iv = upVal('angler'), luck = upVal('luck');
+  s.anglers.forEach((a, i) => {
+    if (!a.on) return;
+    a.t += dt * (events.contest > 0 ? 2 : 1);
+    a.jerk = Math.max(0, a.jerk - dt * 2.5);
+    a.r.pole.rotation.x = 0.9 - a.jerk * 0.6;
+    a.r.bob.position.y = Math.sin(T * 3 + i) * 0.03 - (a.t > a.next - 0.8 ? 0.06 : 0);
+    if (a.t >= a.next && binRoom(s.bin) > 0) {
+      a.t = 0; a.next = iv * rand(0.75, 1.25); a.jerk = 1;
+      const from = a.r.bob.getWorldPosition(new THREE.Vector3()); from.y = 0.4;
+      landCatch(s, roll(CATCH.angler, luck), from, 0.75);
+      if (!simming) puff(from.x, 0.2, from.z, '#dffbff', 4, 0.5);
+    }
+  });
+}
+function updateTraps(s, dt, T) {
+  const ripeT = upVal('trap'), b = s.tboat, cages = s.cages.filter((c) => c.on);
+  for (const c of cages) if (!c.ripe) { c.t += dt; if (c.t >= ripeT) c.ripe = true; }
+  const goTo = (x, z, sp) => { const dx = x - b.x, dz = z - b.z, d = Math.hypot(dx, dz); if (d < 0.05) return true; const st = Math.min(d, sp * dt); b.x += dx / d * st; b.z += dz / d * st; b.face = Math.atan2(dx, dz) - Math.PI / 2; return false; };
+  if (b.st === 'home') {
+    b.t += dt;
+    const ripe = cages.filter((c) => c.ripe && !c.res);
+    if (ripe.length && b.t > 0.6) { ripe.sort((p, q) => Math.hypot(p.x - b.x, p.z - b.z) - Math.hypot(q.x - b.x, q.z - b.z)); b.cage = ripe[0]; b.cage.res = true; b.st = 'go'; }
+  } else if (b.st === 'go') {
+    if (goTo(b.cage.x - 0.9, b.cage.z + 0.2, 3.4)) { b.st = 'haul'; b.t = 0; }
+  } else if (b.st === 'haul') {
+    b.t += dt;
+    const k = b.t < 0.7 ? b.t / 0.7 : b.t < 1.5 ? 1 : Math.max(0, 1 - (b.t - 1.5) / 0.6);
+    b.cage.cage.position.y = -0.9 + k * 1.25;
+    if (b.t >= 0.7 && !b.cage.hauled) {
+      b.cage.hauled = true;
+      const n = b.cage.kind === 'lobster' ? 1 + (Math.random() < 0.5 ? 1 : 0) : 2 + (Math.random() < 0.4 ? 1 : 0);
+      for (let i = 0; i < n; i++) b.hold.push(roll(CATCH[b.cage.kind]));
+      if (!simming) puff(b.cage.x, 0.3, b.cage.z, '#dffbff', 6, 0.6);
+    }
+    if (b.t >= 2.1) {
+      const c = b.cage; c.ripe = false; c.t = 0; c.res = false; c.hauled = false; c.cage.position.y = -0.9;
+      const more = cages.filter((q) => q.ripe && !q.res);
+      if (b.hold.length < 6 && more.length) { b.cage = more[0]; b.cage.res = true; b.st = 'go'; } else b.st = 'back';
+    }
+  } else if (b.st === 'back') {
+    if (goTo(b.home[0], b.home[1], 3.4)) { b.st = 'unload'; b.t = 0; }
+  } else if (b.st === 'unload') {
+    b.t -= dt;
+    if (!b.hold.length) { b.st = 'home'; b.t = 0; }
+    else if (b.t <= 0 && binRoom(s.bin) > 0) { b.t = 0.18; landCatch(s, b.hold.pop(), V3(b.x, 0.7, b.z)); }
+  }
+  b.g.position.set(b.x, Math.sin(T * 2.2) * 0.03, b.z);
+  let diff = b.face - b.g.rotation.y; while (diff > Math.PI) diff -= Math.PI * 2; while (diff < -Math.PI) diff += Math.PI * 2;
+  b.g.rotation.y += diff * Math.min(1, dt * 5);
+  for (const c of s.cages) if (c.on) c.g.position.y = Math.sin(T * 1.7 + c.x) * 0.03;
+}
+function updateAqua(s, dt, T) {
+  const iv = upVal('aquaT');
+  s.pens.forEach((pn) => {
+    if (!pn.on) return;
+    pn.t += dt;
+    if (pn.t >= iv && binRoom(s.bin) > 0) { pn.t = 0; landCatch(s, pn.sp, V3(pn.x, 0.6, pn.z), 0.9); }
+    if (simming) return;
+    pn.jt -= dt;
+    if (pn.jt <= 0 && pn.ja <= 0) { pn.ja = 1; pn.jt = rand(2, 5); pn.jx = rand(-0.6, 0.6); pn.jz = rand(-0.6, 0.6); }
+    if (pn.ja > 0) {
+      pn.ja = Math.max(0, pn.ja - dt * 1.6); const k = 1 - pn.ja;
+      pn.jump.visible = pn.ja > 0; pn.jump.position.set(pn.jx + k * 0.5, Math.sin(k * Math.PI) * 0.9, pn.jz); pn.jump.rotation.z = (k - 0.5) * 2;
+      if (pn.ja === 0) puff(pn.x + pn.jx + 0.5, 0.1, pn.z + pn.jz, '#dffbff', 4, 0.4);
+    }
+  });
+  if (s.feeder) {
+    const f = s.feeder; f.anim(dt, 0);
+    f.arms[1].rotation.x = -1.4 + Math.max(0, Math.sin(T * 2.2)) * 1.2;
+    if (!simming && Math.sin(T * 2.2) > 0.98 && Math.random() < 0.3) puff(15.9, 0.6, AQUA_Z, '#c9a27a', 3, 0.5);
+  }
+}
+
+// ---------- simulation ----------
 function updateWorld(dt, T) {
   const growK = upVal('grow');
   const cap = upVal('shelfCap');
   for (const s of Object.values(stations)) {
-    if (s.kind === 'pier') {
-      updateBoats(s, dt, T);
-      s.outStack.set(s.outN);
-      setLabel(s.outLabel, badge('fish', s.outN, s.outMax));
-    } else if (s.kind === 'machine') {
+    if (s.kind === 'pier') updateBoats(s, dt, T);
+    else if (s.kind === 'angler') updateAnglers(s, dt, T);
+    else if (s.kind === 'traps') updateTraps(s, dt, T);
+    else if (s.kind === 'aqua') updateAqua(s, dt, T);
+    if (s.bin && BIN_KINDS.includes(s.kind)) { binRender(s.bin); setLabel(s.outLabel, binLabel(s.bin)); }
+    if (s.kind === 'machine') {
       const iv = s.def.iv / upVal('mach');
       const busy = s.inN > 0 && (!s.def.in2 || s.inN2 > 0) && s.outN < s.outMax;
       if (busy) {
         s.timer += dt;
-        if (s.timer >= iv) { s.timer = 0; s.inN--; if (s.def.in2) s.inN2--; s.outN++; puff(s.outPt.x, 0.5, s.outPt.z, s.def.mk === 'grill' ? '#c9c9c9' : '#fff4c9', 3, 0.4); }
+        if (s.timer >= iv) { s.timer = 0; s.inN--; if (s.def.in2) s.inN2--; s.outN++; puff(s.outPt.x, 0.5, s.outPt.z, s.def.mk === 'grill' || s.def.mk === 'squid' ? '#c9c9c9' : '#fff4c9', 3, 0.4); }
       }
-      const ax = s.spin.userData.axis;
-      if (ax === 'z') s.spin.rotation.z += dt * (busy ? 6 : 0);
-      else if (ax === 'sway') s.spin.rotation.z = Math.sin(T * 2) * (busy ? 0.08 : 0.03);
-      else if (ax === 'flip') { s.spin.rotation.x = busy ? Math.max(0, Math.sin(T * 4)) * 0.6 : 0; s.spin.position.y = 0.84 + (busy ? Math.max(0, Math.sin(T * 4)) * 0.12 : 0); }
-      else s.spin.rotation.y += dt * (busy ? 7 : 0);
+      const ax = s.spin.userData.axis, sp = s.spin;
+      if (ax === 'z') sp.rotation.z += dt * (busy ? 6 : 0);
+      else if (ax === 'sway') sp.rotation.z = Math.sin(T * 2) * (busy ? 0.08 : 0.03);
+      else if (ax === 'flip') { sp.rotation.x = busy ? Math.max(0, Math.sin(T * 4)) * 0.6 : 0; sp.position.y = 0.84 + (busy ? Math.max(0, Math.sin(T * 4)) * 0.12 : 0); }
+      else if (ax === 'flip2') sp.rotation.x = busy ? Math.sin(T * 3) * 0.5 : 0;
+      else if (ax === 'chop') sp.rotation.z = busy ? Math.abs(Math.sin(T * 12)) * 0.5 : 0;
+      else if (ax === 'dip') { sp.userData.y0 = sp.userData.y0 ?? sp.position.y; sp.position.y = sp.userData.y0 + (busy ? Math.abs(Math.sin(T * 4)) * 0.12 : 0); }
+      else sp.rotation.y += dt * (busy ? 7 : 0);
       s.inStack.set(s.inN); s.outStack.set(s.outN);
       if (s.in2Stack) s.in2Stack.set(s.inN2);
       setLabel(s.inLabel, badge(s.def.in, s.inN, s.inMax)); setLabel(s.outLabel, badge(s.def.out, s.outN, s.outMax));
@@ -1555,9 +1964,11 @@ function updateWorld(dt, T) {
         if (s.def.plant === 'seaweed' && pl.fruit.visible && !simming) pl.fruit.rotation.z = Math.sin(T * 1.8 + pl.ph) * 0.12;
       }
     } else if (s.kind === 'shelf') {
-      if (s.n > cap) s.n = cap;
-      s.stack.set(s.n);
-      setLabel(s.label, badge(s.item, s.n, cap));
+      while (s.bin.list.length > cap) binTake(s.bin);
+      binRender(s.bin);
+      const cnt = {}; for (const t of s.bin.list) cnt[t] = (cnt[t] || 0) + 1;
+      const shown = s.items.filter((t) => cnt[t]);
+      setLabel(s.label, (shown.length ? shown : s.items.slice(0, 1)).map((t) => '<span>' + ICON[t] + (cnt[t] || 0) + '</span>').join('') + (s.items.length > 1 ? '<span class="tot">' + s.bin.list.length + '/' + cap + '</span>' : '<span class="tot">/' + cap + '</span>'));
     }
   }
   if (sink.g) {
@@ -1603,8 +2014,7 @@ function movePlayer(dt) {
       else { const ex = Math.min(pos.x - b.x0, b.x1 - pos.x), ez = Math.min(pos.z - b.z0, b.z1 - pos.z); if (ex < ez) pos.x = pos.x - b.x0 < b.x1 - pos.x ? b.x0 - r : b.x1 + r; else pos.z = pos.z - b.z0 < b.z1 - pos.z ? b.z0 - r : b.z1 + r; }
     }
   }
-  pos.x = Math.max(-23.2, Math.min(12.9, pos.x)); pos.z = Math.max(-17.0, Math.min(30.5, pos.z));
-  // floor height inside the buildings
+  pos.x = Math.max(-39.6, Math.min(12.9, pos.x)); pos.z = Math.max(-17.0, Math.min(34.0, pos.z));
   pos.y = inShop(pos.x, pos.z) || inRest(pos.x, pos.z) ? 0.12 : 0;
   const spd = Math.hypot(pVel.x, pVel.z);
   if (spd > 0.3) pFace = Math.atan2(pVel.x, pVel.z);
@@ -1668,7 +2078,7 @@ buildWorld();
 buildCounter(0);
 for (const def of DEFS) if (isBuilt(def.id)) build(def, true);
 refreshZones();
-resize(); updateCamera(0, true); updateMoney();
+resize(); updateCamera(0, true); updateMoney(); showLogDot();
 
 let last = performance.now(), saveT = 0, T = 0;
 function frame(now) {
@@ -1717,17 +2127,18 @@ function step(dt) {
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').classList.remove('on'); }
 }
 requestAnimationFrame(frame);
-addEventListener('visibilitychange', () => { if (document.hidden && !resetting) save(); });
-addEventListener('pagehide', () => { if (!resetting) save(); });
+addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+addEventListener('pagehide', save);
 
 // test hooks
 window.__harbor = {
-  state, stations, player, zones, customers, diners, tables, workers, cruise, events, DEFS, COUNTERS, sink, stats, colliders,
+  state, stations, player, zones, customers, diners, tables, workers, cruise, events, DEFS, COUNTERS, sink, stats, colliders, SPECIES, LOG_PAGES,
   give(type, n) { for (let i = 0; i < n && room(player) > 0; i++) stackAdd(player, type); },
   cash(n) { state.money += n; updateMoney(); },
   tp(x, z) { player.p.root.position.set(x, 0, z); updateCamera(0, true); },
   build(id) { if (zones[id]) killZone(id); if (!stations[id]) build(DEF[id]); },
   sim(sec, quiet = true) { simming = quiet; try { for (let i = 0; i < sec * 30; i++) step(1 / 30); } finally { simming = false; } },
   calls: () => renderer.info.render.calls,
-  lineup(x, z) { Object.keys(ITEMS).forEach((t, i) => { const m = itemMesh(t); m.scale.setScalar(2.2); m.position.set(x + (i % 5) * 1.3, 0, z + Math.floor(i / 5) * 1.4); scene.add(m); }); },
+  open: (k) => openPanel(k),
+  lineup(x, z, list) { (list || Object.keys(ITEMS)).forEach((t, i) => { const m = itemMesh(t); m.scale.setScalar(2.2); m.position.set(x + (i % 5) * 1.3, 0, z + Math.floor(i / 5) * 1.4); scene.add(m); }); },
 };
