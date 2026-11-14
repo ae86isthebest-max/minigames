@@ -1,6 +1,6 @@
 // Offline cache: everything is precached on first visit. With a connection the newest files are always
 // fetched first (so updates show at once); without one, the cached copy is used.
-const CACHE = 'mg-v17';
+const CACHE = 'mg-v18';
 const GAMES = ['bus', 'water', 'zombie', 'crowd', 'parking', 'screw', 'blocks', 'arrows', 'triple', 'pins', 'pixel', 'fruit', 'stack', 'tangle', 'bricks',
   'runner', 'hole', 'survivor', 'bubble', 'snake', 'helix', 'knife', 'bullet', 'merge', 'paper', 'flow', 'ninja', 'piano', 'g2048', 'jumper', 'multiply'];
 const FILES = ['./', 'index.html', 'style.css', 'core.js', 'manifest.json', 'icon-180.png', 'icon-192.png', 'icon-512.png']

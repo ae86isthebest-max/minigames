@@ -17,7 +17,12 @@ export const C = {
 const matCache = new Map();
 export function mat(hex) {
   let m = matCache.get(hex);
-  if (!m) { m = new THREE.MeshLambertMaterial({ color: hex }); matCache.set(hex, m); }
+  if (!m) {
+    // a touch more vivid than the palette value (saturation +15%, lightness +2%)
+    const c = new THREE.Color(hex), hsl = {};
+    c.getHSL(hsl); c.setHSL(hsl.h, Math.min(1, hsl.s * 1.15), Math.min(0.97, hsl.l + 0.02));
+    m = new THREE.MeshLambertMaterial({ color: c }); matCache.set(hex, m);
+  }
   return m;
 }
 
@@ -81,9 +86,9 @@ export function makeRenderer(canvas) {
 
 // Warm sky light + green-tinted bounce from the grass + one soft sun. Shadow side = sky/bounce only.
 export function makeLights(scene) {
-  const hemi = new THREE.HemisphereLight('#fff4e2', '#a3cb62', 1.1);
+  const hemi = new THREE.HemisphereLight('#fff6e8', '#a8d066', 1.18);
   scene.add(hemi);
-  const sun = new THREE.DirectionalLight('#fff0d2', 2.25);
+  const sun = new THREE.DirectionalLight('#fff3dc', 2.4);
   sun.position.set(-9, 18, 7);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
