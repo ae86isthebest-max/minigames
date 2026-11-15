@@ -490,7 +490,7 @@ function buildBin() {
   K.bakeStatic(g);
   box(bin.x - 0.4, bin.z - 0.4, bin.x + 0.4, bin.z + 0.4);
   const pd = P2.pad('#ff6b6b'); pd.position.set(bin.px, 0, bin.pz); scene.add(pd);
-  label('zone', '<div class="zn">🗑️ 丟掉手上的東西</div>', (o) => o.set(bin.px, 0.4, bin.pz + 0.2));
+  label('zone', '<div class="zn">🗑️ 垃圾桶</div>', (o) => o.set(bin.px, 0.4, bin.pz + 0.2));
 }
 function updateBin(dt) {
   const pp = player.p.root.position;
