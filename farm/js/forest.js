@@ -107,10 +107,10 @@ const FURN = ['chair', 'table', 'bed', 'bookcase', 'rocker'];
 const DEFS = [
   { id: 'logging', name: '伐木區', kind: 'logging', zone: [-3.3, 3.2], cost: { money: 40 }, req: [], start: true },
   { id: 'mushrooms', name: '蘑菇林', kind: 'crop', plant: 'mush', out: 'shiitake', rare: 'truffle', grow: 6, pos: [1.8, 2.2], cost: { money: 30 }, req: [], start: true },
-  { id: 'shelfWood', name: '木材架', kind: 'shelf', items: ['pine', 'oak', 'maple', 'plank'], pos: [4.4, SH_Z], cost: { money: 10 }, req: ['logging'] },
-  { id: 'shelfMush', name: '菇類架', kind: 'shelf', items: ['shiitake', 'truffle'], pos: [1.4, SH_Z], cost: { money: 15 }, req: ['mushrooms'] },
-  { id: 'counter', name: '收銀台', kind: 'counter', zone: [4.6, -8.7], cost: { money: 0 }, any: ['shelfWood', 'shelfMush'] },
-  { id: 'cashier', name: '收銀員', kind: 'hire', role: 'cashier', zone: [6.6, -12.6], cost: { money: 80 }, req: ['counter'] },
+  { id: 'shelfWood', name: '木材架', kind: 'shelf', items: ['pine', 'oak', 'maple', 'plank'], pos: [4.4, SH_Z], cost: { money: 10 }, req: ['logging', 'counter'] },
+  { id: 'shelfMush', name: '菇類架', kind: 'shelf', items: ['shiitake', 'truffle'], pos: [1.4, SH_Z], cost: { money: 15 }, req: ['mushrooms', 'counter'] },
+  { id: 'counter', name: '收銀台', kind: 'counter', zone: [4.6, -8.7], cost: { money: 0 }, any: ['logging', 'mushrooms'] },
+  { id: 'cashier', name: '收銀員', kind: 'hire', role: 'cashier', zone: [6.6, -12.6], cost: { money: 80 }, req: ['counter'], any: ['shelfWood', 'shelfMush'] },
   { id: 'sawmill', name: '鋸木廠', kind: 'machine', mk: 'sawmill', ins: ['pine', 'oak', 'maple'], need: 1, out: 'plank', iv: 2.5, pos: [9.4, 7.8], cost: { money: 200, pine: 6 }, req: ['cashier', 'logging'] },
   { id: 'lumberjack', name: '伐木工', kind: 'hire', role: 'lumberjack', zone: [-5.2, 0.2], cost: { money: 180 }, req: ['sawmill'] },
   { id: 'squirrel', name: '小松鼠', kind: 'pet', zone: [2.6, -11.6], cost: { money: 260, pine: 10 }, req: ['lumberjack'] },
@@ -200,13 +200,14 @@ const LOG_PAGES = [
 // ---------- save ----------
 const SAVE = 'forest_save_v1';
 let resetting = false;
-const blank = () => ({ money: 50, built: [], paid: {}, up: {}, stock: {}, store: {}, lvl: {}, piles: [0, 0], earned: 0, log: {}, logPaid: {}, logNew: false, extra: {}, sites: {}, festival: false });
+const blank = () => ({ questSeen: false, money: 50, built: [], paid: {}, up: {}, stock: {}, store: {}, lvl: {}, piles: [0, 0], earned: 0, log: {}, logPaid: {}, logNew: false, extra: {}, sites: {}, festival: false });
 const state = Object.assign(blank(), { sound: true });
 try { Object.assign(state, JSON.parse(localStorage.getItem(SAVE) || '{}')); } catch (e) { /* fresh start */ }
 if (params.has('fresh')) Object.assign(state, blank());
 for (const k of ['store', 'lvl', 'stock', 'paid', 'up', 'log', 'logPaid', 'extra', 'sites']) state[k] = state[k] || {};
 for (const k in UPS) state.up[k] = state.up[k] || 0;
 const isBuilt = (id) => state.built.includes(id);
+if (state.built.length > 3) state.questSeen = true;
 const siteDone = (id) => !!(state.sites[id] && state.sites[id].done);
 function save() {
   if (resetting) return;
@@ -796,33 +797,71 @@ function mapsSet(id) { const m = mapsGet(); m[id] = true; try { localStorage.set
 const CAFE_EARNED = 400000;
 const cafeGateOpen = () => siteDone('clockTower') || state.earned >= CAFE_EARNED;
 
-// ---------- opening tutorial ----------
-const guide = { arrows: [], labels: [] };
-function makeArrow() {
-  const g = new THREE.Group();
-  K.add(g, K.mesh(G.cone(0.42, 0.7, 12), '#ffd23f'), 0, 0, 0).rotation.x = Math.PI;
-  K.add(g, K.mesh(G.cyl(0.17, 0.17, 0.6, 10), '#ffd23f'), 0, 0.62, 0);
-  g.visible = false; scene.add(g);
-  return g;
-}
+// ① pick one of the two starting choices → ② the free cash counter → ③ the first shelf for that choice.
+// A line of glowing dots on the ground leads along the walking path to the next thing to build.
+const FIRST_SHELF = { logging: 'shelfWood', mushrooms: 'shelfMush' };
 function guideTargets() {
-  if (isBuilt('counter')) return { ids: [], two: false };
   const starts = DEFS.filter((d) => d.start);
-  if (!starts.some((d) => isBuilt(d.id))) return { ids: starts.map((d) => d.id), two: true };
-  const shelves = DEFS.filter((d) => d.kind === 'shelf' && d.req && d.req.some((r) => starts.some((st) => st.id === r)));
-  if (!shelves.some((d) => isBuilt(d.id))) return { ids: shelves.filter((d) => zones[d.id]).map((d) => d.id), two: false };
-  return { ids: ['counter'], two: false };
+  if (!starts.some((d) => isBuilt(d.id))) return { ids: starts.map((d) => d.id).filter((id) => zones[id]), two: true };
+  if (!isBuilt('counter')) return { ids: zones.counter ? ['counter'] : [], two: false };
+  if (!Object.values(FIRST_SHELF).some(isBuilt)) return { ids: starts.filter((d) => isBuilt(d.id)).map((d) => FIRST_SHELF[d.id]).filter((id) => zones[id]), two: false };
+  return { ids: [], two: false };
 }
-function updateGuide(T) {
+const guide = { labels: [] };
+const dotGeo = G.circle(0.17, 14);
+const dotMat = new THREE.MeshBasicMaterial({ color: '#ffd23f', transparent: true, opacity: 0.95, depthWrite: false });
+const dots = [];
+for (let i = 0; i < 80; i++) { const d = new THREE.Mesh(dotGeo, dotMat); d.renderOrder = 3; d.visible = false; scene.add(d); dots.push(d); }
+let trailT = 0, trailPts = [];
+function updateGuide(dt) {
   const g = guideTargets();
-  while (guide.arrows.length < 2) { guide.arrows.push(makeArrow()); const L = label('guide', '二選一', (o) => o.set(0, 0, 0)); L.show = false; guide.labels.push(L); }
+  while (guide.labels.length < 2) { const L = label('guide', '二選一', (o) => o.set(0, 0, 0)); L.show = false; guide.labels.push(L); }
   for (let i = 0; i < 2; i++) {
-    const z = zones[g.ids[i]], a = guide.arrows[i], L = guide.labels[i];
-    a.visible = !!z; L.show = !!z && g.two;
-    if (!z) continue;
-    a.position.set(z.x, 3.0 + Math.abs(Math.sin(T * 4)) * 0.45, z.z); a.rotation.y += 0.03;
-    L.getPos = (o) => o.set(z.x, 4.3, z.z);
+    const z = zones[g.ids[i]], L = guide.labels[i];
+    L.show = !!z && g.two;
+    if (z) L.getPos = (o) => o.set(z.x, 2.6, z.z);
   }
+  trailT -= dt;
+  if (trailT <= 0) {
+    trailT = 0.25; trailPts = [];
+    const pp = player.p.root.position;
+    for (const id of g.ids) {
+      const z = zones[id]; if (!z) continue;
+      const path = [[pp.x, pp.z]].concat(nav.path(pp.x, pp.z, z.x, z.z));
+      let d = 0.9;
+      for (let k = 1; k < path.length; k++) {
+        const [ax, az] = path[k - 1], [bx, bz] = path[k], seg = Math.hypot(bx - ax, bz - az);
+        while (d < seg) { const x = ax + (bx - ax) * d / seg, zz = az + (bz - az) * d / seg; if (Math.hypot(x - z.x, zz - z.z) > 1.1) trailPts.push([x, zz]); d += 0.7; }
+        d -= seg;
+      }
+    }
+  }
+  dots.forEach((m, i) => {
+    const p = trailPts[i]; m.visible = !!p;
+    if (p) { m.position.set(p[0], onFloor(p[0], p[1]) ? 0.19 : 0.07, p[1]); m.scale.setScalar(1 + 0.4 * Math.max(0, Math.sin(T * 7 - i * 0.55))); }
+  });
+  updateQuest(dt);
+}
+// 新手任務: the three opening steps on the left; when all are done it says so for 4 s and then hides for good
+function questSteps() {
+  const picked = DEFS.find((d) => d.start && isBuilt(d.id));
+  return [
+    { t: '二選一：伐木區或蘑菇林', ok: !!picked },
+    { t: '蓋收銀台', ok: isBuilt('counter') },
+    { t: picked ? '蓋' + DEF[FIRST_SHELF[picked.id]].name : '蓋貨架', ok: Object.values(FIRST_SHELF).some(isBuilt) },
+  ];
+}
+let questHtml = '', questDoneT = -1;
+function updateQuest(dt) {
+  const el = $('quest'); if (!el) return;
+  const steps = questSteps(), all = steps.every((q) => q.ok);
+  if (all && questDoneT < 0) { questDoneT = state.questSeen ? 0 : 4; state.questSeen = true; }
+  if (all) { questDoneT -= dt; if (questDoneT <= 0) { el.classList.add('hidden'); return; } }
+  el.classList.remove('hidden');
+  const cur = steps.findIndex((q) => !q.ok);
+  const html = '<b>新手任務</b>' + steps.map((q, i) => '<div class="q' + (q.ok ? ' ok' : '') + (i === cur ? ' now' : '') + '"><span>' + (q.ok ? '✓' : i + 1) + '</span>' + q.t + '</div>').join('') +
+    (all ? '<div class="qdone">完成！可以自由活動了</div>' : '');
+  if (html !== questHtml) { questHtml = html; el.innerHTML = html; }
 }
 
 // ---------- zones ----------
@@ -833,7 +872,7 @@ const fillMat = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: tru
 function refreshZones() {
   for (const def of DEFS) {
     if (isBuilt(def.id)) { if (zones[def.id]) killZone(def.id); continue; }
-    let open = def.req ? def.req.every(isBuilt) : def.any.some(isBuilt);
+    let open = (!def.req || def.req.every(isBuilt)) && (!def.any || def.any.some(isBuilt));
     if (def.reqDone && !def.reqDone.every(siteDone)) open = false;
     if (def.kind === 'mapgate' && !cafeGateOpen()) open = false;
     if (def.start && DEFS.some((d) => d.start && d !== def && isBuilt(d.id)) && !isBuilt('cashier')) open = false;
@@ -1858,7 +1897,7 @@ function step(dt) {
   }
   dashMat.opacity = 0.75 + Math.sin(T * 4) * 0.25;
   gateT -= dt; if (gateT <= 0) { gateT = 2; if (!zones.cafeGate && !isBuilt('cafeGate') && cafeGateOpen()) refreshZones(); }
-  updateGuide(T);
+  updateGuide(dt);
   updateDoorsAndLights(dt);
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').classList.remove('on'); }
 }

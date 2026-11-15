@@ -46,6 +46,7 @@
   .lbl.roast .rtx { color: #f6e7c8; font-size: 11px; font-weight: 800; text-align: center; margin-top: 2px; white-space: nowrap; }
   .lbl.roast .rtx span { color: #8ff08f; }
   .reg { color: #ffb400; font-weight: 900; margin-right: 1px; }
+  #quest { top: auto; bottom: calc(18px + env(safe-area-inset-bottom)); }   /* bottom-left: under the buttons it covered the left starting zone and the player */
   .lbl.guide { background: #ffd23f; color: #6b4a00; padding: 3px 12px; border-radius: 999px; font-weight: 900; font-size: 15px; box-shadow: 0 3px 0 rgba(150, 100, 0, 0.35); }
   .lbl.event { background: rgba(30, 110, 150, 0.7); color: #fff; padding: 4px 12px; border-radius: 999px; font-weight: 900; font-size: 14px; }
 </style>
@@ -67,6 +68,7 @@
     <button class="sbtn set" id="bSet" aria-label="設定"><span>⚙</span></button>
   </div>
   <div id="toast"></div>
+  <div id="quest" class="hidden"></div>
 </div>
 <div id="panel" class="hidden">
   <div class="pcard">

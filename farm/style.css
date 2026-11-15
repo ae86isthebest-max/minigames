@@ -159,9 +159,9 @@ html, body {
 .mapcard.locked { opacity: 0.55; }
 .lbl.choice { background: #ffd23f; color: #5a3b00; font-weight: 900; font-size: 16px; padding: 5px 14px; border-radius: 999px; box-shadow: 0 3px 0 rgba(0,0,0,0.15); }
 
-/* beginner checklist (left side, under the buttons) */
+/* beginner checklist (bottom-left, clear of the starting zones) */
 #quest {
-  position: absolute; left: calc(12px + env(safe-area-inset-left)); top: calc(300px + env(safe-area-inset-top));
+  position: absolute; left: calc(12px + env(safe-area-inset-left)); bottom: calc(18px + env(safe-area-inset-bottom));
   width: 178px; padding: 10px 12px; border-radius: 16px; background: rgba(255, 250, 240, 0.95);
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.12); color: #4a3b2e; font-size: 13px; pointer-events: none;
 }
