@@ -1,6 +1,6 @@
 // Props for the farm game, all built from the shared style kit.
 import * as THREE from 'three';
-import { C, G, mesh, add, blob, bakeStatic } from './kit.js';
+import { C, G, mesh, add, blob, bakeStatic, itemEdge } from './kit.js';
 
 export const ITEMS = {
   hay: { name: '禾草', icon: '🌿', h: 0.3, price: 0 },
@@ -19,7 +19,8 @@ export const ITEMS = {
   money: { name: '錢', icon: '💵', h: 0.07, price: 0 },
 };
 
-export function itemMesh(type) {
+export const itemMesh = (type) => itemEdge(itemMeshRaw(type));
+function itemMeshRaw(type) {
   const g = new THREE.Group();
   if (type === 'hay') {
     add(g, mesh(G.rbox(0.5, 0.28, 0.36, 0.07), '#f4d466'), 0, 0.14, 0);

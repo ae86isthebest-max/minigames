@@ -1,7 +1,7 @@
 // Forest town props (森林小鎮): wood, forest goods, furniture, trees, machines, the town buildings, train and animals.
 // Built from the shared style kit like the other maps.
 import * as THREE from 'three';
-import { C, G, mesh, add, blob, bakeStatic } from './kit.js';
+import { C, G, mesh, add, blob, bakeStatic, itemEdge } from './kit.js';
 
 // h = stack height on a back, ss = scale on shelves / platforms
 export const ITEMS5 = {
@@ -34,7 +34,8 @@ export const ITEMS5 = {
 };
 
 const cache = new Map();
-export function itemMesh(type) {
+export const itemMesh = (type) => itemEdge(itemMeshRaw(type));
+function itemMeshRaw(type) {
   let t = cache.get(type);
   if (!t) { t = buildItem(type); cache.set(type, t); }
   return t.clone();

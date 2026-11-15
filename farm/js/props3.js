@@ -1,7 +1,7 @@
 // Harbour map props (海邊漁港): items, boats, piers, kitchen machines, tables, beach scenery.
 // Everything is built from the shared style kit so it matches the farm.
 import * as THREE from 'three';
-import { C, G, mesh, add, blob, bakeStatic } from './kit.js';
+import { C, G, mesh, add, blob, bakeStatic, itemEdge } from './kit.js';
 
 export const ITEMS = {
   fish: { name: '鯛魚', icon: '🐟', h: 0.22, price: 6 },
@@ -32,7 +32,8 @@ export function fishShape(g, s, body, belly, y0, flat = 1) {
 }
 
 const itemCache = new Map();
-export function itemMesh(type) {
+export const itemMesh = (type) => itemEdge(itemMeshRaw(type));
+function itemMeshRaw(type) {
   let t = itemCache.get(type);
   if (!t) { t = buildItem(type); itemCache.set(type, t); }
   return t.clone();
@@ -423,7 +424,7 @@ export function aquarium() {
   for (const x of [-2.2, 2.2]) add(g, mesh(G.rbox(1.4, 1.2, 0.08, 0.08), '#5fc0f0'), x, 1.2, 2.1);
   add(g, mesh(G.rbox(1.2, 1.6, 0.1, 0.08), '#4a7fb8'), 0, 0.8, 2.12);
   for (const [x, y, c] of [[-2.4, 1.3, '#ffb347'], [-1.9, 1.0, '#ff7eb6'], [2.0, 1.35, '#ffd34a'], [2.5, 0.95, '#ff8a5c']]) add(g, mesh(G.sphere(0.13, 8, 6), c, false), x, y, 2.16).scale.set(1.5, 1, 0.4);
-  const big = itemMesh('fish'); big.scale.setScalar(5); big.position.set(0.2, 3.7, -0.2); big.rotation.set(-0.5, 0.2, 0.2); big.userData.dyn = true; g.add(big);
+  const big = itemMeshRaw('fish'); big.scale.setScalar(5); big.position.set(0.2, 3.7, -0.2); big.rotation.set(-0.5, 0.2, 0.2); big.userData.dyn = true; g.add(big);
   return g;
 }
 

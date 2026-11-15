@@ -9,6 +9,7 @@ import * as P3 from './props3.js';
 import * as P4 from './props4.js';
 import { Joystick } from './input.js';
 import { createNav } from './nav.js';
+import './update.js';
 
 const { C, G } = K;
 const ITEMS = { ...P3.ITEMS, ...P4.ITEMS4 };
@@ -645,7 +646,7 @@ const BIN_KINDS = ['pier', 'angler', 'traps', 'aqua'];
 function catchCrate(s, z, max) {
   const cr = P3.crate(); cr.position.set(CRATE_X, 0, z); s.g.add(cr);
   s.outPt = V3(CRATE_X, 0, z);
-  s.bin = makeBin(cr, crateSlots(), max, true);   // outdoor crates: piles without the outline pass (keeps draw calls down)
+  s.bin = makeBin(cr, crateSlots(), max);
   box(CRATE_X - 0.68, z - 0.5, CRATE_X + 0.68, z + 0.5);
   s.outLabel = label('badge grp', '', (o) => o.set(CRATE_X, 1.0, z));
 }

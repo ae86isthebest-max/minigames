@@ -9,6 +9,7 @@ import * as P3 from './props3.js';
 import * as P5 from './props5.js';
 import { Joystick } from './input.js';
 import { createNav } from './nav.js';
+import './update.js';
 
 const { C, G } = K;
 const ITEMS = P5.ITEMS5;
@@ -666,7 +667,7 @@ function build(def, instant) {
     s.hives = [];
     HIVES.forEach(([x, z], i) => { const h = P5.hive(); h.g.position.set(x, 0, z); h.g.rotation.y = Math.PI / 2; scene.add(h.g); K.bakeStatic(h.bees); K.bakeStatic(h.g); h.g.visible = false; s.hives.push({ ...h, x, z, t: rand(0, 4), on: false, boxRef: null }); });
     const cr = P3.crate(); cr.position.set(-19.6, 0, 13.6); s.g.add(cr);
-    s.outPt = V3(-19.6, 0, 13.6); s.outBin = makeBin(cr, crateSlots(), 20, true);
+    s.outPt = V3(-19.6, 0, 13.6); s.outBin = makeBin(cr, crateSlots(), 20);
     box(-20.28, 13.1, -18.92, 14.1);
     const st = state.stock[id]; if (st) loadList(s.outBin, st.l);
     s.bin = s.outBin;

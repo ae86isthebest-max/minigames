@@ -51,15 +51,15 @@ export const G = {
 // Thin dark outline: the same geometry drawn again, back faces only, pushed out along its normals.
 const OUTLINE_COL = '#3a2a22';
 const olCache = new Map();
-export function outlineMat(th) {
-  let m = olCache.get(th);
+export function outlineMat(th, col = OUTLINE_COL) {
+  let m = olCache.get(th + col);
   if (!m) {
-    m = new THREE.MeshBasicMaterial({ color: OUTLINE_COL, side: THREE.BackSide });
+    m = new THREE.MeshBasicMaterial({ color: col, side: THREE.BackSide });
     m.onBeforeCompile = (sh) => {
       sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  transformed += normalize(normal) * ' + th.toFixed(4) + ';');
     };
     m.customProgramCacheKey = () => 'ol' + th;
-    olCache.set(th, m);
+    olCache.set(th + col, m);
   }
   return m;
 }
@@ -71,6 +71,12 @@ export function mesh(geo, color, cast = true, recv = true) {
   m.castShadow = cast; m.receiveShadow = recv;
   if (cast && OUTLINE > 0) { const o = new THREE.Mesh(geo, outlineMat(OUTLINE)); o.userData.outline = true; m.add(o); }
   return m;
+}
+// goods (eggs, corn, money…) are small, so they get a slightly thicker, darker edge to stand out
+const ITEM_OL = 0.036, ITEM_OL_COL = '#241812';
+export function itemEdge(g) {
+  g.traverse((o) => { if (o.userData.outline) o.material = outlineMat(ITEM_OL, ITEM_OL_COL); });
+  return g;
 }
 export function add(parent, m, x = 0, y = 0, z = 0) { m.position.set(x, y, z); parent.add(m); return m; }
 

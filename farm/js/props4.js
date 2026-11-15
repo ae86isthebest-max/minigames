@@ -1,7 +1,7 @@
 // Harbour round 2: fish species, seafood dishes, trawler / deep-sea boats, traps, aquaculture pens,
 // angler rods and the extra kitchen machines. Built from the shared style kit like everything else.
 import * as THREE from 'three';
-import { C, G, mesh, add, blob, bakeStatic } from './kit.js';
+import { C, G, mesh, add, blob, bakeStatic, itemEdge } from './kit.js';
 import { fishShape, itemMesh as itemMesh3 } from './props3.js';
 
 // h = stack height, ss = scale on shelves / in crates (big fish shrink a little to fit)
@@ -27,7 +27,8 @@ export const ITEMS4 = {
 };
 
 const cache = new Map();
-export function itemMesh(type) {
+export const itemMesh = (type) => itemEdge(itemMeshRaw(type));
+function itemMeshRaw(type) {
   if (!ITEMS4[type]) return itemMesh3(type);
   let t = cache.get(type);
   if (!t) { t = build(type); cache.set(type, t); }

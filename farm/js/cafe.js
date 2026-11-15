@@ -11,6 +11,7 @@ import * as P5 from './props5.js';
 import * as P6 from './props6.js';
 import { Joystick } from './input.js';
 import { createNav } from './nav.js';
+import './update.js';
 
 const { C, G } = K;
 const ITEMS = { ...P6.ITEMS6 };
@@ -637,7 +638,7 @@ function build(def, instant) {
     const cx = pos[0] + 2.0, cz = pos[1] + 0.8;
     const cr = P3.crate(); cr.position.set(cx - pos[0], 0, cz - pos[1]); s.g.add(cr);
     s.outPt = V3(cx, 0, cz);
-    s.bin = makeBin(cr, crateSlots(), 24, true);
+    s.bin = makeBin(cr, crateSlots(), 24);
     box(cx - 0.68, cz - 0.5, cx + 0.68, cz + 0.5);
     s.outLabel = label('badge grp', '', (o) => o.set(cx, 1.0, cz));
     s.cows = [];

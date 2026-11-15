@@ -2,7 +2,7 @@
 // coffee shrubs and other crops, the cow shed, processing machines, espresso bars and the hillside decor.
 // Built from the shared style kit like the other maps.
 import * as THREE from 'three';
-import { C, G, mesh, add, blob, bakeStatic } from './kit.js';
+import { C, G, mesh, add, blob, bakeStatic, itemEdge } from './kit.js';
 
 // h = stack height on a back, ss = scale on shelves
 export const ITEMS6 = {
@@ -43,7 +43,8 @@ export const ITEMS6 = {
 };
 
 const cache = new Map();
-export function itemMesh(type) {
+export const itemMesh = (type) => itemEdge(itemMeshRaw(type));
+function itemMeshRaw(type) {
   let t = cache.get(type);
   if (!t) { t = buildItem(type); cache.set(type, t); }
   return t.clone();
