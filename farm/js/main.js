@@ -19,8 +19,8 @@ const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 // ---------- the long unlock chain (each opens after the previous one) ----------
 const SH_Z = -14.6;
 const DEFS = [
-  { id: 'tomato', name: '番茄田', kind: 'crop', out: 'tomato', plant: 'tomato', grow: 6, pos: [8.2, 1.2], cost: { money: 30 }, req: [], alt: 'coop' },
-  { id: 'coop', name: '雞舍', kind: 'producer', in: 'hay', out: 'egg', pos: [2, 1], cost: { money: 40 }, req: [], alt: 'tomato' },
+  { id: 'tomato', name: '番茄田', kind: 'crop', out: 'tomato', plant: 'tomato', grow: 6, pos: [7.3, 1.2], cost: { money: 30 }, req: [], alt: 'coop' },
+  { id: 'coop', name: '雞舍', kind: 'producer', in: 'hay', out: 'egg', pos: [2.7, 1], cost: { money: 40 }, req: [], alt: 'tomato' },
   { id: 'shelfTomato', name: '番茄架', kind: 'shelf', item: 'tomato', pos: [-1.6, SH_Z], cost: { money: 20 }, req: ['tomato'] },
   { id: 'shelfEgg', name: '雞蛋架', kind: 'shelf', item: 'egg', pos: [-4.6, SH_Z], cost: { money: 10 }, req: ['coop'] },
   { id: 'counter', name: '收銀台', kind: 'counter1', zone: [4.6, -8.0], cost: { money: 0 }, any: ['shelfTomato', 'shelfEgg'] },
@@ -216,10 +216,14 @@ function buildWorld() {
     const r = 1.5 + rnd() * 3.5, p = K.mesh(G.circle(r, 9), rnd() < 0.5 ? C.grass2 : C.grass3, false, true);
     p.position.set(-34 + rnd() * 72, 0.003 + i * 0.0011, -30 + rnd() * 70); p.scale.set(1, 1, 0.6 + rnd() * 0.6); p.rotation.y = rnd() * 3; D.add(p);
   }
-  for (let z = -6; z <= 30; z += 1.15) {
-    const t = K.mesh(G.rbox(1.0, 0.04, 0.95, 0.12, 2), (Math.round(z * 2) % 2) ? C.dirt : C.dirt2, false, true);
-    t.position.set(-0.6 + Math.sin(z * 0.6) * 0.25, 0.02, z); t.rotation.y = Math.sin(z) * 0.15; D.add(t);
-  }
+  // dirt path: out of the shop door, a branch east to the road, and the main path west then south through the farm
+  const pathPts = [];
+  const lay = (x0, z0, x1, z1) => { const n = Math.max(1, Math.round(Math.hypot(x1 - x0, z1 - z0) / 1.15)); for (let i = 0; i <= n; i++) pathPts.push([x0 + (x1 - x0) * i / n, z0 + (z1 - z0) * i / n]); };
+  lay(6.5, -6.6, 6.5, -4.3); lay(7.6, -4.3, 12.8, -4.3); lay(5.4, -4.3, -0.6, -4.3); lay(-0.6, -3.15, -0.6, 30);
+  pathPts.forEach(([x, z], k) => {
+    const t = K.mesh(G.rbox(1.0, 0.04, 0.95, 0.12, 2), k % 2 ? C.dirt : C.dirt2, false, true);
+    t.position.set(x + Math.sin(k * 1.7) * 0.06, 0.02, z); t.rotation.y = Math.sin(k * 2.3) * 0.12; D.add(t);
+  });
   K.add(D, K.mesh(G.plane(4.2, 160), C.road, false, true), 15.5, 0.006, 0);
   for (let z = -70; z < 70; z += 3) K.add(D, K.mesh(G.plane(0.18, 1.4), C.roadLine, false, true), 15.5, 0.012, z);
   for (const x of [13.3, 17.7]) K.add(D, K.mesh(G.rbox(0.3, 0.12, 160, 0.05, 1), '#d5d9de', false, true), x, 0.06, 0);
@@ -367,7 +371,7 @@ function takeInto(c, type, from) {
 // ---------- player ----------
 const player = carrier(K.person({ body: '#ff7f6e', hat: 'straw' }));
 player.cap = () => upVal('cap');
-player.p.root.position.set(5.0, 0, -2.0);
+player.p.root.position.set(5.0, 0, -1.4);
 scene.add(player.p.root);
 const axe = new THREE.Group();
 K.add(axe, K.mesh(G.rbox(0.06, 0.5, 0.06, 0.02), C.woodDark), 0, -0.25, 0.1);
@@ -1321,7 +1325,9 @@ function openPanel(kind) {
       (m.harbor ? '<a class="mapcard" href="harbor.html"><span class="mi" style="background:#bfe9ff">⚓</span><div><b>海邊漁港</b><small>捕魚、壽司、海鮮餐廳</small></div></a>'
         : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">⚓</span><div><b>海邊漁港</b><small>蓋好超級市場、總收入達 $40,000 後開放</small></div></div>') +
       (m.forest ? '<a class="mapcard" href="forest.html"><span class="mi" style="background:#cdeec0">🌲</span><div><b>森林小鎮</b><small>伐木、家具、幫小鎮蓋房子</small></div></a>'
-        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">🌲</span><div><b>森林小鎮</b><small>在海邊漁港點亮燈塔後開放</small></div></div>');
+        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">🌲</span><div><b>森林小鎮</b><small>在海邊漁港點亮燈塔後開放</small></div></div>') +
+      (m.cafe ? '<a class="mapcard" href="cafe.html"><span class="mi" style="background:#f3dcc4">☕</span><div><b>山城咖啡館</b><small>種咖啡豆、烘豆、做各種咖啡</small></div></a>'
+        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">☕</span><div><b>山城咖啡館</b><small>在森林小鎮蓋好鐘樓後開放</small></div></div>');
   } else if (kind === 'set') {
     $('pTitle').textContent = '設定';
     body.innerHTML = '<div class="row"><span class="ricon">🔊</span><div class="rmid"><b>聲音</b></div><button class="buy" id="sSnd">' + (state.sound ? '開' : '關') + '</button></div>' +
