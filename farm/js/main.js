@@ -474,8 +474,9 @@ function buildWorld() {
   shopArea = makeArea(-6.8, -17.4, 7.9, -7.3, lamps, 0.5, -12);
   buildBin();
 }
-// trash bin by the shop: stand on the red circle to throw away whatever you are carrying
-const bin = { x: 9.1, z: -6.5, px: 9.1, pz: -5.45, lid: null, open: 0, t: 0 };
+// trash bin on the open grass between the coop, the tomato field and the corn field, away from every path: stand on the red circle
+// for half a second to throw away whatever you are carrying
+const bin = { x: 5.0, z: 4.0, px: 5.0, pz: 5.05, lid: null, open: 0, t: 0, dwell: 0 };
 function buildBin() {
   const g = K.add(scene, new THREE.Group(), bin.x, 0, bin.z);
   g.add(K.blob(0.5));
@@ -494,7 +495,9 @@ function buildBin() {
 }
 function updateBin(dt) {
   const pp = player.p.root.position;
-  const on = dist2(pp, bin.px, bin.pz) < 0.75 && player.carry.length > 0;
+  const onPad = dist2(pp, bin.px, bin.pz) < 0.75 && player.carry.length > 0;
+  bin.dwell = onPad ? bin.dwell + dt : 0;
+  const on = onPad && bin.dwell > 0.5;
   bin.t -= dt;
   if (on && bin.t <= 0) {
     bin.t = 0.07;
@@ -1985,7 +1988,7 @@ addEventListener('pagehide', save);
 
 // test hooks
 window.__farm = {
-  state, stations, player, zones, customers, workers, truck, heli, vip, park, events, DEFS, COUNTERS,
+  state, stations, player, zones, customers, workers, truck, heli, vip, park, events, DEFS, COUNTERS, colliders, tufts,
   give(type, n) { for (let i = 0; i < n && room(player) > 0; i++) stackAdd(player, type); },
   giveTo(w, type, n) { for (let i = 0; i < n; i++) stackAdd(w, type); },
   cash(n) { state.money += n; updateMoney(); },
