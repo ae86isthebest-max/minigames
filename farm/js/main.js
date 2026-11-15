@@ -61,6 +61,8 @@ const DEFS = [
   { id: 'shelfApple', name: '蘋果架', kind: 'shelf', item: 'apple', pos: [-11.6, -10.6], cost: { money: 3200 } },
   { id: 'helipad', name: '停機坪', kind: 'helipad', zone: [23.5, 6], cost: { money: 9000, wood: 120 } },
   { id: 'shelver4', name: '理貨員', kind: 'hire', role: 'shelver', zone: [-12.6, -5], cost: { money: 7000 } },
+  // second tomato field (south of the corn): 4 more plants, 8 tomatoes in all
+  { id: 'tomato2', name: '第二番茄田', kind: 'crop', out: 'tomato', plant: 'tomato', grow: 6, pos: [7.5, 13], cost: { money: 300, wood: 10 }, req: ['tomato', 'corn'] },
 ];
 const DEF = Object.fromEntries(DEFS.map((d) => [d.id, d]));
 
@@ -93,7 +95,7 @@ const EXTRA = {
 };
 const EXTRA_MAX = 6;
 // 農夫 harvests every field (and feeds the animals when there is nothing to pick)
-const FARM_CROPS_SRC = ['tomato', 'corn', 'soy', 'wheat', 'orchard'];
+const FARM_CROPS_SRC = ['tomato', 'tomato2', 'corn', 'soy', 'wheat', 'orchard'];
 const FARM_CROPS = ['tomato', 'corn', 'soybean', 'wheat', 'apple'];
 // 專屬工人: one per product line, does only that line (harvest or feed → shelf / machine)
 const LINES = {
@@ -125,6 +127,7 @@ const GROW = {
   coop2: { start: 1, max: 4, cost: [300, 600, 1200], what: '＋1 隻雞' },
   barn: { start: 1, max: 3, cost: [500, 1200], what: '＋1 頭牛' },
   tomato: { start: 2, max: 4, cost: [25, 60], what: '＋1 棵番茄' },
+  tomato2: { start: 2, max: 4, cost: [80, 150], what: '＋1 棵番茄' },
   corn: { start: 3, max: 6, cost: [120, 200, 320], what: '＋1 棵玉米' },
   soy: { start: 3, max: 6, cost: [700, 1000, 1500], what: '＋1 棵黃豆' },
   wheat: { start: 4, max: 8, cost: [900, 1200, 1600, 2000], what: '＋1 叢小麥' },
