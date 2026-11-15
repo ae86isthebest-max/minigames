@@ -1,6 +1,7 @@
-// Offline cache: everything is precached on first visit. With a connection the newest files are always
-// fetched first (so updates show at once); without one, the cached copy is used.
-const CACHE = 'mg-v52';
+// Offline cache: everything is precached on first visit and served from the cache, so a running game never
+// changes under the player. A new version downloads in the background and waits; the game shows a
+// 「有新版本」 button and only switches when the player taps it (the page sends 'skip').
+const CACHE = 'mg-v53';
 const GAMES = ['bus', 'water', 'zombie', 'crowd', 'parking', 'screw', 'blocks', 'arrows', 'triple', 'pins', 'pixel', 'fruit', 'stack', 'tangle', 'bricks',
   'runner', 'hole', 'survivor', 'bubble', 'snake', 'helix', 'knife', 'bullet', 'merge', 'paper', 'flow', 'ninja', 'piano', 'g2048', 'jumper', 'multiply'];
 const FILES = ['./', 'index.html', 'style.css', 'core.js', 'manifest.json', 'icon-180.png', 'icon-192.png', 'icon-512.png']
@@ -13,8 +14,9 @@ self.addEventListener('install', (e) => {
   // cache: 'reload' skips the browser's HTTP cache so a fresh install never stores an old copy
   e.waitUntil(caches.open(CACHE)
     .then((c) => Promise.all(FILES.map((f) => fetch(new Request(f, { cache: 'reload' })).then((r) => { if (r.ok) return c.put(f, r); }).catch(() => {}))))
-    .then(() => self.skipWaiting()));
+  );
 });
+self.addEventListener('message', (e) => { if (e.data === 'skip') self.skipWaiting(); });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys()
@@ -22,21 +24,13 @@ self.addEventListener('activate', (e) => {
     .then(() => self.clients.claim()));
 });
 
-// network first (3.5 s timeout), cache as the offline fallback
+// cache first (this version's files); anything not cached comes from the network and is kept
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   if (url.origin !== location.origin) return;
   if (url.pathname.includes('/detective/')) return;
   if (url.pathname.endsWith('/sw.js')) return; // the in-game version check must always reach the network
-  e.respondWith(caches.open(CACHE).then((c) => {
-    const net = fetch(e.request, { cache: 'no-cache' }).then((res) => {
-      if (res.ok) c.put(e.request, res.clone());
-      return res;
-    });
-    const timeout = new Promise((ok) => setTimeout(ok, 3500));
-    return Promise.race([net, timeout.then(() => c.match(e.request, { ignoreSearch: true }).then((hit) => hit || net))])
-      .catch(() => c.match(e.request, { ignoreSearch: true }))
-      .then((res) => res || c.match(e.request, { ignoreSearch: true }));
-  }));
+  e.respondWith(caches.open(CACHE).then((c) => c.match(e.request, { ignoreSearch: true }).then((hit) => hit
+    || fetch(e.request, { cache: 'no-cache' }).then((res) => { if (res.ok) c.put(e.request, res.clone()); return res; }))));
 });

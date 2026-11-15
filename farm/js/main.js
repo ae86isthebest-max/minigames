@@ -557,7 +557,7 @@ function setLabel(L, html) { if (L.html !== html) { L.html = html; L.el.innerHTM
 function dropLabel(L) { L.el.remove(); const i = labels.indexOf(L); if (i >= 0) labels.splice(i, 1); }
 // clearer labels: zone names sit on a soft plate, far-away zones shrink, and labels that would cover
 // each other are nudged upwards (the one nearer the bottom of the screen keeps its place)
-const LBL2 = params.has('lbl2'); // preview: farm/?lbl2
+const LBL2 = !params.has('lbl1'); // clearer labels are the default (farm/?lbl1 shows the old look)
 if (LBL2) document.body.classList.add('lbl2');
 const shown = [];
 function placeLabels() {
