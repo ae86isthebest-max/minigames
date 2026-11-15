@@ -237,7 +237,6 @@ const UPS = {
   mach: { tab: 2, name: '機器速度', ic: 'greenbean', need: 'dryer', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [400, 900, 1800, 3200, 5500], fmt: (v) => '×' + v },
   roast: { tab: 2, name: '完美烘焙範圍', ic: 'roasted', need: 'roaster', vals: [0.18, 0.24, 0.3, 0.36, 0.42], cost: [500, 1200, 2500, 5000], fmt: (v) => '中焙區 ' + Math.round(v * 100) + '%' },
   luck: { tab: 2, name: '稀有咖啡豆', ic: 'geisha', need: 'shelfBean', vals: [1, 1.3, 1.7, 2.2, 3], cost: [500, 1200, 2500, 5000], fmt: (v) => '稀有豆 ×' + v },
-  paySpeed: { tab: 1, name: '收銀速度', ic: 'money', need: 'cashier', vals: [1, 1.3, 1.6, 2, 2.5, 3], cost: [200, 500, 1100, 2200, 4000], fmt: (v) => v === 1 ? '一般速度' : '結帳快 ×' + v },
   mgrShop: { tab: 1, name: '店長', noLv: true, ic: 'mgr', emo: '👔', need: 'cashier', vals: [0, 1, 2, 3], cost: [1200, 4000, 12000], fmt: (v) => ['還沒請店長', '店長：市集結帳更快、客人給小費', '資深店長：小費更多、客人更有耐心', '金牌店長：小費最多、收銀台的錢自動入袋'][v] },
   mgrFarm: { tab: 1, name: '莊園主管', noLv: true, ic: 'mgr', emo: '🧢', need: 'picker', vals: [0, 1, 2, 3], cost: [1000, 3500, 10000], fmt: (v) => ['還沒請莊園主管', '主管：採豆工、烘豆師、烘焙師走更快', '資深主管：一次拿更多', '金牌主管：又快又能拿'][v] },
   price: { tab: 4, name: '商品售價', ic: 'money', need: 'cashier', vals: [1, 1.2, 1.4, 1.6, 1.85, 2.1, 2.4], cost: [200, 500, 1100, 2400, 5000, 10000], fmt: (v) => '×' + v },
@@ -253,7 +252,7 @@ const UPS = {
 };
 const upVal = (k) => UPS[k].vals[Math.min(state.up[k] || 0, UPS[k].vals.length - 1)];
 // 管理層: 店長 (the market) and 莊園主管 (採豆工 / 烘豆師 / 烘焙師)
-const MGR_PAY = [1, 0.8, 0.7, 0.6], MGR_TIP = [1, 1.1, 1.2, 1.3], MGR_PAT = [0, 0, 10, 15];
+const MGR_PAY = [0.5, 0.3, 0.25, 0.2], MGR_TIP = [1, 1.1, 1.2, 1.3], MGR_PAT = [0, 0, 10, 15];
 const FARM_SP = [1, 1.15, 1.25, 1.35], FARM_CAP = [0, 0, 3, 5];
 const mShop = () => state.up.mgrShop || 0, mFarm = () => state.up.mgrFarm || 0;
 const isFarmRole = (r) => r === 'picker' || r === 'roaster' || r === 'baker';
@@ -286,6 +285,8 @@ const state = Object.assign(blank(), { sound: true });
 try { Object.assign(state, JSON.parse(localStorage.getItem(SAVE) || '{}')); } catch (e) { /* fresh start */ }
 if (params.has('fresh')) Object.assign(state, blank());
 for (const k of ['store', 'lvl', 'tpiles', 'stock', 'paid', 'up', 'log', 'logPaid', 'extra']) state[k] = state[k] || {};
+// 收銀速度 was removed again (checkout is quick as before): give back what was paid for it
+if (state.up.paySpeed) { const back = [200, 500, 1100, 2200, 4000].slice(0, state.up.paySpeed).reduce((a, b) => a + b, 0); state.money += back; delete state.up.paySpeed; setTimeout(() => toast('結帳恢復原本速度，退還收銀速度升級 $' + back), 2500); }
 for (const k in UPS) state.up[k] = Math.min(state.up[k] || 0, UPS[k].vals.length - 1);
 const isBuilt = (id) => state.built.includes(id);
 // backup code: every map's save in one base64 string (same format and keys as the farm, so a code works on every map)
@@ -1939,10 +1940,9 @@ function pickCounter(c) {
   COUNTERS.forEach((k, i) => { if (!k.on) return; const v = queueLen(i) + dist2(c.p.root.position, k.x, k.z) / 12; if (v < bk) { bk = v; best = i; } });
   return best;
 }
-// checkout: 0.8 s plus 0.3 s for every item scanned, faster with 收銀速度 and a 店長
+// checkout: quick (0.5 s), a 店長 makes it quicker
 function payTime(c) {
-  const items = c.list.reduce((a, e) => a + (e.got || 0), 0) || c.got;
-  return (1.2 + 0.45 * items) / upVal('paySpeed') * MGR_PAY[mShop()];
+  return MGR_PAY[mShop()];
 }
 let spawnT = 3;
 function customerLook() { return { body: pick(CUST_COLS), hat: Math.random() < 0.3 ? 'cap' : (Math.random() < 0.3 ? 'bun' : null), hatColor: pick(CUST_COLS) }; }

@@ -92,7 +92,6 @@ const UPS = {
   shelfCap: { tab: 3, name: '貨架容量', ic: 'egg', need: 'cashier', vals: [8, 12, 16, 20, 24], cost: [120, 320, 700, 1400], fmt: (v) => v + ' 個' },
   cust: { tab: 3, name: '客人數量', ic: 'run', need: 'cashier', vals: [1, 1.2, 1.4, 1.6, 1.8, 2], cost: [250, 550, 1100, 2000, 3500], fmt: (v) => '×' + v },
   mach: { tab: 2, name: '所有機器一起加速', ic: 'juice', need: 'juicer', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [350, 750, 1500, 2600, 4400], fmt: (v) => '×' + v },
-  paySpeed: { tab: 1, name: '收銀速度', ic: 'money', need: 'cashier', vals: [1, 1.3, 1.6, 2, 2.5, 3], cost: [150, 400, 900, 1800, 3500], fmt: (v) => v === 1 ? '一般速度' : '結帳快 ×' + v },
   mgrShop: { tab: 1, name: '店長', noLv: true, ic: 'mgr', emo: '👔', need: 'cashier', vals: [0, 1, 2, 3], cost: [1200, 4000, 12000], fmt: (v) => ['還沒請店長', '店長：結帳更快、客人給小費', '資深店長：小費更多、客人更有耐心', '金牌店長：小費最多、錢自動入袋'][v] },
   mgrFarm: { tab: 1, name: '農場主管', noLv: true, ic: 'mgr', emo: '🧢', need: 'keeper', vals: [0, 1, 2, 3], cost: [1000, 3500, 10000], fmt: (v) => ['還沒請農場主管', '主管：飼養員和農夫走更快', '資深主管：一次拿更多', '金牌主管：又快又能拿'][v] },
   floor: { tab: 3, name: '地板翻新', ic: 'shop', need: 'counter', vals: [0, 1, 2, 3], cost: [600, 2400, 7000], fmt: (v) => ['原本的地板', '溫暖木地板', '奶油格子磚', '大理石＋金邊'][v] + (v ? '，客人更多' : '') },
@@ -115,7 +114,7 @@ const FARM_CROPS = ['tomato', 'corn', 'soybean', 'wheat', 'apple'];
 // old saves: the per-product 專屬工人 (removed 11-15) become 飼養員 / 農夫 / 理貨員
 const LINE_TO_ROLE = { egg: 'keeper', milk: 'keeper', tomato: 'farmer', corn: 'farmer', soy: 'farmer', wheat: 'farmer', apple: 'farmer', juice: 'shelver', soymilk: 'shelver', bread: 'shelver', cheese: 'shelver' };
 // 管理層: 店長 (shop) and 農場主管 (farm)
-const MGR_PAY = [1, 0.8, 0.7, 0.6], MGR_TIP = [1, 1.1, 1.2, 1.3], MGR_PAT = [0, 0, 10, 15];
+const MGR_PAY = [0.5, 0.3, 0.25, 0.2], MGR_TIP = [1, 1.1, 1.2, 1.3], MGR_PAT = [0, 0, 10, 15];
 const FARM_SP = [1, 1.15, 1.25, 1.35], FARM_CAP = [0, 0, 3, 5];
 const mShop = () => state.up.mgrShop || 0, mFarm = () => state.up.mgrFarm || 0;
 const isFarmRole = (r) => r === 'keeper' || r === 'farmer';
@@ -176,6 +175,8 @@ if (state.lines) {
 }
 // older saves already had full fields and three chickens: keep them that way
 if (!state.lvl) { state.lvl = {}; if (state.built.length) { for (const k in GROW) state.lvl[k] = GROW[k].max; state.lvl.field = 25; } }
+// 收銀速度 was removed again (checkout is quick as before): give back what was paid for it
+if (state.up.paySpeed) { const back = [150, 400, 900, 1800, 3500].slice(0, state.up.paySpeed).reduce((a, b) => a + b, 0); state.money += back; delete state.up.paySpeed; setTimeout(() => toast('結帳恢復原本速度，退還收銀速度升級 $' + back), 2500); }
 for (const k in UPS) state.up[k] = Math.min(state.up[k] || 0, UPS[k].vals.length - 1);
 const isBuilt = (id) => state.built.includes(id);
 const MAPS_KEY = 'farm_maps_v1';
@@ -1525,10 +1526,9 @@ function updateCustomers(dt) {
     else if (c.st !== 'leave') setLabel(c.label, ICON.money);
   }
 }
-// checkout: 1.2 s plus 0.45 s for every item scanned, faster with 收銀速度 and a 店長
+// checkout: quick (0.5 s), a 店長 makes it quicker
 function payTime(c) {
-  const items = c.list ? c.list.reduce((a, e) => a + e.got, 0) : c.got;
-  return (1.2 + 0.45 * items) / upVal('paySpeed') * MGR_PAY[mShop()];
+  return MGR_PAY[mShop()];
 }
 function leaveShop(c) {
   c.st = 'leave'; c.label.show = false;

@@ -181,7 +181,6 @@ const UPS = {
   speed: { tab: 0, name: '移動速度', ic: 'run', vals: [5.8, 6.4, 7, 7.6, 8.2, 8.8, 9.4], cost: [40, 100, 200, 380, 650, 1000], fmt: (v) => v.toFixed(1) },
   wcap: { tab: 1, name: '員工一次拿多少', ic: 'plank', vals: [4, 6, 8, 11, 15, 20, 26], cost: [100, 220, 450, 800, 1400, 2400], fmt: (v) => v + ' 個' },
   wspeed: { tab: 1, name: '員工速度', ic: 'run', vals: [4, 4.6, 5.2, 5.8, 6.4, 7, 7.6], cost: [100, 220, 450, 800, 1400, 2400], fmt: (v) => v.toFixed(1) },
-  cashSpd: { tab: 1, name: '收銀速度', ic: 'money', need: 'cashier', vals: [1, 1.3, 1.6, 2, 2.5, 3], cost: [300, 800, 1800, 3800, 7500], fmt: (v) => '×' + v },
   mgrShop: { tab: 1, name: '店長', noLv: true, ic: 'mgr', emo: '👔', need: 'cashier', vals: [0, 1, 2, 3], cost: [1200, 4000, 12000], fmt: (v) => ['還沒請店長', '店長：結帳更快、客人給小費', '資深店長：小費更多、客人更有耐心', '金牌店長：小費最多、錢自動入袋'][v] },
   mgrWood: { tab: 1, name: '林場主管', noLv: true, ic: 'mgr', emo: '🧢', need: 'lumberjack', vals: [0, 1, 2, 3], cost: [1000, 3500, 10000], fmt: (v) => ['還沒請林場主管', '主管：伐木工、植樹員、採汁員等林場員工走更快', '資深主管：林場員工一次拿更多', '金牌主管：又快又能拿'][v] },
   chop: { tab: 2, name: '伐木速度', ic: 'pine', need: 'logging', vals: [0.42, 0.35, 0.29, 0.24, 0.2, 0.16], cost: [60, 160, 380, 800, 1600], fmt: (v) => v + ' 秒砍一下' },
@@ -203,7 +202,7 @@ const UPS = {
 };
 const upVal = (k) => UPS[k].vals[Math.min(state.up[k] || 0, UPS[k].vals.length - 1)];
 // 管理層: 店長 (both cash desks) and 林場主管 (lumberjacks, planters and the other forest workers)
-const MGR_PAY = [1, 0.8, 0.7, 0.6], MGR_TIP = [1, 1.1, 1.2, 1.3], MGR_PAT = [0, 0, 10, 15];
+const MGR_PAY = [0.5, 0.3, 0.25, 0.2], MGR_TIP = [1, 1.1, 1.2, 1.3], MGR_PAT = [0, 0, 10, 15];
 const WOOD_SP = [1, 1.15, 1.25, 1.35], WOOD_CAP = [0, 0, 3, 5];
 const mShop = () => Math.min(3, state.up.mgrShop || 0), mWood = () => Math.min(3, state.up.mgrWood || 0);
 const WOOD_ROLES = ['lumberjack', 'planter', 'sapper', 'beekeeper', 'forager', 'carpenter'];
@@ -250,6 +249,8 @@ const state = Object.assign(blank(), { sound: true });
 try { Object.assign(state, JSON.parse(localStorage.getItem(SAVE) || '{}')); } catch (e) { /* fresh start */ }
 if (params.has('fresh')) Object.assign(state, blank());
 for (const k of ['store', 'lvl', 'stock', 'paid', 'up', 'log', 'logPaid', 'extra', 'sites']) state[k] = state[k] || {};
+// 收銀速度 was removed again (checkout is quick as before): give back what was paid for it
+if (state.up.cashSpd) { const back = [300, 800, 1800, 3800, 7500].slice(0, state.up.cashSpd).reduce((a, b) => a + b, 0); state.money += back; delete state.up.cashSpd; setTimeout(() => toast('結帳恢復原本速度，退還收銀速度升級 $' + back), 2500); }
 for (const k in UPS) state.up[k] = state.up[k] || 0;
 // 背包容量 and 商品售價 now take fewer, bigger steps: an older save moves to the first new level that is at least as good
 if (!state.upV) {
@@ -944,7 +945,7 @@ const COUNTERS = [
   { x: 4.6, z: -18.6, serve: { x: 4.6, z: -20.0 }, pile: { x: 7.0, z: -18.9, value: 0 }, qDir: -1, qz: -17.2, qmax: 5, shop: 0, on: false },
 ];
 // checkout time: 0.8 s + 0.3 s per item, shortened by 收銀速度 and the 店長
-const payTime = (c) => (1.2 + 0.45 * c.list.reduce((a, e) => a + (e.got || 0), 0)) / upVal('cashSpd') * MGR_PAY[mShop()];
+const payTime = () => MGR_PAY[mShop()];
 function buildCounter(i) {
   const c = COUNTERS[i]; c.on = true;
   const g = P.counter(); g.position.set(c.x, 0.12, c.z); scene.add(g); K.bakeStatic(g);
