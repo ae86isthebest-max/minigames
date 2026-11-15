@@ -30,13 +30,13 @@ const DEFS = [
   { id: 'corn', name: '玉米田', kind: 'crop', out: 'corn', plant: 'corn', grow: 8, pos: [9, 6.8], cost: { money: 160, wood: 10 }, req: ['cashier'] },
   { id: 'shelfCorn', name: '玉米架', kind: 'shelf', item: 'corn', pos: [1.4, SH_Z], cost: { money: 130 }, req: ['corn'] },
   { id: 'farmer', name: '農夫', kind: 'hire', role: 'farmer', zone: [-2, 1.6], cost: { money: 120 }, req: ['shelfCorn', 'coop'] },
-  { id: 'dog', name: '小狗', kind: 'pet', zone: [-1, -4.6], cost: { money: 200, wood: 12 }, req: ['shelfCorn'] },
+  { id: 'dog', name: '小狗', desc: '跟著你跑，站遠一點也能把錢吸過來；買了才能請理貨員', kind: 'pet', zone: [-1, -4.6], cost: { money: 200, wood: 12 }, req: ['shelfCorn'] },
   { id: 'shelver', name: '理貨員', kind: 'hire', role: 'shelver', zone: [1.6, -5], cost: { money: 250 }, req: ['dog'] },
-  { id: 'warehouse', name: '倉庫', kind: 'store', pos: [10.6, -14.2], zone: [10.6, -10.8], cost: { money: 350, wood: 20 }, req: ['shelver'] },
-  { id: 'sprinkler', name: '自動灑水器', kind: 'sprinkler', zone: [11.6, 4], cost: { money: 320, wood: 15 } },
+  { id: 'warehouse', name: '倉庫', desc: '貨架滿了的貨可以先放這裡，員工會自己拿', kind: 'store', pos: [10.6, -14.2], zone: [10.6, -10.8], cost: { money: 350, wood: 20 }, req: ['shelver'] },
+  { id: 'sprinkler', name: '自動灑水器', desc: '所有作物長得更快', kind: 'sprinkler', zone: [11.6, 4], cost: { money: 320, wood: 15 } },
   { id: 'barn', name: '牛棚', kind: 'producer', in: 'hay', out: 'milk', pos: [-4.5, 10.2], cost: { money: 420, hay: 20, wood: 18 } },
   { id: 'shelfMilk', name: '牛奶冷藏櫃', kind: 'shelf', fridge: true, item: 'milk', pos: [4.4, SH_Z], cost: { money: 300 } },
-  { id: 'market', name: '超級市場', kind: 'market', zone: [-12, -10], cost: { money: 1500, wood: 40 } },
+  { id: 'market', name: '超級市場', desc: '店面加大一倍，可以擺更多貨架', kind: 'market', zone: [-12, -10], cost: { money: 1500, wood: 40 } },
   { id: 'harbor', name: '開分店：海邊漁港', kind: 'mapgate', zone: [11.2, -1.9], cost: { money: 15000 }, req: ['market'], earned: 40000 },
   { id: 'juicer', name: '果汁機', kind: 'machine', mk: 'juicer', in: 'tomato', out: 'juice', iv: 3, pos: [5.5, -2.7], upAt: [2.6, -2.4], cost: { money: 700, wood: 20 }, req: ['market'] },
   { id: 'shelfJuice', name: '果汁冷藏櫃', kind: 'shelf', fridge: true, item: 'juice', pos: [-8.6, SH_Z], cost: { money: 500 } },
@@ -44,11 +44,11 @@ const DEFS = [
   { id: 'soy', name: '黃豆田', kind: 'crop', out: 'soybean', plant: 'soy', grow: 9, pos: [-9.5, 18.5], cost: { money: 900, wood: 25 } },
   { id: 'soyMachine', name: '磨豆漿機', kind: 'machine', mk: 'soy', in: 'soybean', out: 'soymilk', iv: 3.5, pos: [-3, 18.6], upAt: [-3, 21.3], cost: { money: 1100 } },
   { id: 'shelfSoy', name: '豆漿冷藏櫃', kind: 'shelf', fridge: true, item: 'soymilk', pos: [-11.6, SH_Z], cost: { money: 800 } },
-  { id: 'dock', name: '貨運站', kind: 'dock', pos: [12.2, 6], zone: [12, 6], cost: { money: 1200, wood: 30 } },
-  { id: 'counter2', name: '第二收銀台', kind: 'counter2', zone: [-16.5, -9.6], cost: { money: 1000 } },
+  { id: 'dock', name: '貨運站', desc: '貨車會來下大訂單，裝滿就拿大錢', kind: 'dock', pos: [12.2, 6], zone: [12, 6], cost: { money: 1200, wood: 30 } },
+  { id: 'counter2', name: '第二收銀台', desc: '多一個收銀台，客人不用排太久', kind: 'counter2', zone: [-16.5, -9.6], cost: { money: 1000 } },
   { id: 'cashier2', name: '第二收銀員', kind: 'hire', role: 'cashier', counter: 1, zone: [-18.4, -12.8], cost: { money: 1300 } },
-  { id: 'cat', name: '小貓', kind: 'pet', zone: [2.6, -11.6], cost: { money: 1000 } },
-  { id: 'parking', name: '停車場', kind: 'parking', zone: [21, -10], cost: { money: 2600, wood: 60 } },
+  { id: 'cat', name: '小貓', desc: '坐在收銀台，每位客人多付一點小費', kind: 'pet', zone: [2.6, -11.6], cost: { money: 1000 } },
+  { id: 'parking', name: '停車場', desc: '開車來的客人更多', kind: 'parking', zone: [21, -10], cost: { money: 2600, wood: 60 } },
   { id: 'wheat', name: '小麥田', kind: 'crop', out: 'wheat', plant: 'wheat', grow: 10, pos: [-9.5, 24.5], cost: { money: 2200 } },
   { id: 'oven', name: '麵包窯', kind: 'machine', mk: 'oven', in: 'wheat', out: 'bread', iv: 4, pos: [-3, 24.6], upAt: [-3, 27.4], cost: { money: 3000, wood: 50 } },
   { id: 'shelfBread', name: '麵包架', kind: 'shelf', item: 'bread', pos: [-14.6, SH_Z], cost: { money: 2200 } },
@@ -59,7 +59,7 @@ const DEFS = [
   { id: 'shelver3', name: '理貨員', kind: 'hire', role: 'shelver', zone: [-8.6, -5], cost: { money: 3500 } },
   { id: 'orchard', name: '蘋果園', kind: 'crop', out: 'apple', plant: 'apple', grow: 12, pos: [8.5, 23.5], cost: { money: 4500, wood: 70 } },
   { id: 'shelfApple', name: '蘋果架', kind: 'shelf', item: 'apple', pos: [-11.6, -10.6], cost: { money: 3200 } },
-  { id: 'helipad', name: '停機坪', kind: 'helipad', zone: [23.5, 6], cost: { money: 9000, wood: 120 } },
+  { id: 'helipad', name: '停機坪', desc: '直升機會來下超大訂單', kind: 'helipad', zone: [23.5, 6], cost: { money: 9000, wood: 120 } },
   { id: 'shelver4', name: '理貨員', kind: 'hire', role: 'shelver', zone: [-12.6, -5], cost: { money: 7000 } },
 ];
 const DEF = Object.fromEntries(DEFS.map((d) => [d.id, d]));
@@ -73,7 +73,7 @@ const UPS = {
   coop: { tab: 2, name: '雞生蛋速度', ic: 'egg', need: 'coop', vals: [3, 2.5, 2, 1.6, 1.3, 1.0], cost: [60, 160, 350, 700, 1300], fmt: (v) => v + ' 秒一顆' },
   barn: { tab: 2, name: '牛奶速度', ic: 'milk', need: 'barn', vals: [5, 4.2, 3.4, 2.7, 2.1, 1.6], cost: [150, 350, 700, 1300, 2400], fmt: (v) => v + ' 秒一瓶' },
   grow: { tab: 2, name: '作物生長速度', ic: 'tomato', need: 'tomato', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [120, 300, 650, 1200, 2200], fmt: (v) => '×' + v },
-  dogR: { tab: 2, name: '小狗吸錢範圍', ic: 'money', need: 'dog', vals: [3, 5, 7, 9], cost: [150, 400, 900], fmt: (v) => v + ' 格' },
+  dogR: { tab: 2, name: '小狗吸錢範圍', noLv: false, ic: 'money', need: 'dog', vals: [3, 5, 7, 9], cost: [150, 400, 900], fmt: (v) => v + ' 格' },
   price: { tab: 3, name: '商品售價', ic: 'money', need: 'cashier', vals: [1, 1.1, 1.2, 1.3, 1.4, 1.55, 1.7, 1.85, 2, 2.2, 2.4], cost: lv(10, 200, 1.6), fmt: (v) => '×' + v },
   shelfCap: { tab: 3, name: '貨架容量', ic: 'egg', need: 'cashier', vals: [8, 12, 16, 20, 24], cost: [150, 400, 900, 1800], fmt: (v) => v + ' 個' },
   cust: { tab: 3, name: '客人數量', ic: 'run', need: 'cashier', vals: [1, 1.2, 1.4, 1.6, 1.8, 2], cost: [300, 700, 1400, 2600, 4500], fmt: (v) => '×' + v },
@@ -112,8 +112,8 @@ const zoneDef = (def) => (def.kind === 'hire' && HIRE_BASE[def.role] ? { ...def,
 
 // small repeatable unlocks next to a building: one more chicken / cow / plant / patch of grass
 const GROW = {
-  coop: { start: 1, max: 4, cost: [30, 80, 180], what: '＋1 隻雞' },
-  coop2: { start: 1, max: 4, cost: [300, 600, 1200], what: '＋1 隻雞' },
+  coop: { start: 1, max: 8, cost: [30, 80, 180, 300, 450, 650, 900], what: '＋1 隻雞' },
+  coop2: { start: 1, max: 8, cost: [300, 600, 1200, 1600, 2000, 2500, 3000], what: '＋1 隻雞' },
   barn: { start: 1, max: 3, cost: [500, 1200], what: '＋1 頭牛' },
   tomato: { start: 2, max: 8, cost: [25, 60, 150, 250, 400, 600], what: '＋1 棵番茄' },
   juicer: { start: 1, max: 4, cost: [500, 1100, 2200], what: '果汁機做更快' },
@@ -716,8 +716,9 @@ function build(def, instant) {
       for (let i = 0; i < 3; i++) { const c = P.cow(); c.g.position.set(pos[0] - 0.9 + i * 0.9, 0, pos[1] + 0.9); c.g.scale.setScalar(0.85); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.9], rx: 1.0, rz: 0.4, t: Math.random() * 5, tx: 0, tz: 0 }); }
       box(pos[0] - 1.5, pos[1] - 2, pos[0] + 1.5, pos[1] + 0.2); penBoxes(pos[0], pos[1] + 0.9, 3.0, 1.8);
     } else {
-      for (let i = 0; i < 4; i++) { const c = P.chicken(); c.g.position.set(pos[0] - 0.75 + i * 0.5, 0, pos[1] + 0.7); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.75], rx: 0.95, rz: 0.4, t: Math.random() * 5, tx: 0, tz: 0 }); }
-      box(pos[0] - 1.2, pos[1] - 1.45, pos[0] + 1.2, pos[1] + 0.25); penBoxes(pos[0], pos[1] + 0.6, 2.4, 1.4);
+      for (let i = 0; i < 8; i++) { const c = P.chicken(); c.g.position.set(pos[0] - 0.75 + (i % 4) * 0.5, 0, pos[1] + 0.7 + Math.floor(i / 4) * 0.7); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.75], rx: 0.95, rz: 0.4, t: Math.random() * 5, tx: 0, tz: 0 }); }
+      box(pos[0] - 1.2, pos[1] - 1.45, pos[0] + 1.2, pos[1] + 0.25);
+      Object.assign(s, { yard: b.yard, yard2: b.yard2, big: false, penB: penBoxes(pos[0], pos[1] + 0.6, 2.4, 1.4) });
     }
     const st = state.stock[id]; if (st) { s.inN = st.a || 0; s.outN = st.b || 0; }
     applyGrow(s);
@@ -817,13 +818,24 @@ function build(def, instant) {
 }
 // the three fenced sides of an animal pen are solid
 function penBoxes(cx, cz, w, d) {
-  box(cx - w / 2 - 0.15, cz + d / 2 - 0.15, cx + w / 2 + 0.15, cz + d / 2 + 0.15);
-  box(cx - w / 2 - 0.15, cz - d / 2, cx - w / 2 + 0.15, cz + d / 2);
-  box(cx + w / 2 - 0.15, cz - d / 2, cx + w / 2 + 0.15, cz + d / 2);
+  return [box(cx - w / 2 - 0.15, cz + d / 2 - 0.15, cx + w / 2 + 0.15, cz + d / 2 + 0.15),
+    box(cx - w / 2 - 0.15, cz - d / 2, cx - w / 2 + 0.15, cz + d / 2),
+    box(cx + w / 2 - 0.15, cz - d / 2, cx + w / 2 + 0.15, cz + d / 2)];
+}
+// 5+ chickens: the small yard becomes the big picket-fence yard (walls, colliders and roaming area)
+function setYard(s, big, anim) {
+  if (!s.yard2 || s.big === big) return;
+  s.big = big; s.yard.visible = !big; s.yard2.visible = big;
+  if (big && anim) popIn(s.yard2);
+  for (const b of s.penB) unbox(b);
+  const [x, z] = s.def.pos;
+  s.penB = big ? penBoxes(x, z + 0.95, 2.4, 2.1) : penBoxes(x, z + 0.6, 2.4, 1.4);
+  for (const a of s.animals) { a.home = big ? [x, z + 1.0] : [x, z + 0.75]; a.rz = big ? 0.75 : 0.4; }
 }
 function applyGrow(s) {
   const id = s.id; if (!GROW[id]) return;
   const n = lvlOf(id);
+  if (s.yard2) setYard(s, n > 4, s.animals.some((a) => a.g.visible));
   if (s.animals) s.animals.forEach((a, i) => { const on = i < n; if (on && !a.g.visible) popIn(a.g); a.g.visible = on; });
   const fresh = s.plants && !s.plants.some((q) => q.active);
   if (s.plot2) { const on = n > 4; if (on && !s.plot2.visible && s.plants.some((q) => q.active)) popIn(s.plot2); s.plot2.visible = on; }
@@ -968,7 +980,8 @@ function updateZoneLabel(z) {
   let rows = '';
   for (const k in z.def.cost) { const l = left(z, k); if (l > 0) rows += costRow(k, fmtMoney(l)); }
   const d = z.def, how = d.kind === 'machine' ? '<div class="how">' + ICON[d.in] + ' → ' + ICON[d.out] + '</div>'
-    : d.kind === 'grow' && GROW[d.target] && DEF[d.target] && DEF[d.target].kind === 'machine' ? '<div class="how">Lv' + d.lv + ' → Lv' + (d.lv + 1) + '</div>' : '';
+    : d.kind === 'grow' && GROW[d.target] && DEF[d.target] && DEF[d.target].kind === 'machine' ? '<div class="how">Lv' + d.lv + ' → Lv' + (d.lv + 1) + '</div>'
+    : d.desc ? '<div class="desc">' + d.desc + '</div>' : '';
   setLabel(z.label, '<div class="zn">' + d.name + '</div>' + how + rows);
   let paidSum = 0; for (const k in z.def.cost) paidSum += Math.min(z.def.cost[k], z.paid[k] || 0);
   z.fill.scale.set(1, 1, Math.max(0.001, paidSum / z.total));
@@ -1643,7 +1656,7 @@ function openPanel(kind) {
       for (const k in UPS) {
         const u = UPS[k]; if (u.tab !== ti) continue;
         if (k === 'mgrShop') body.insertAdjacentHTML('beforeend', '<div class="sec">管理層</div>');
-        if (u.need && !isBuilt(u.need)) { body.insertAdjacentHTML('beforeend', '<div class="row locked"><span class="ricon">' + (ICON[u.ic] || '<span class="ic">' + (u.emo || '🏪') + '</span>') + '</span><div class="rmid"><b>？？？</b><small>解鎖' + DEF[u.need].name + '後開放</small></div></div>'); continue; }
+        if (u.need && !isBuilt(u.need)) { body.insertAdjacentHTML('beforeend', '<div class="row locked"><span class="ricon">' + (ICON[u.ic] || '<span class="ic">' + (u.emo || '🏪') + '</span>') + '</span><div class="rmid"><b>' + u.name + '</b><small>先在地圖上買「' + DEF[u.need].name + '」就會開放</small></div></div>'); continue; }
         const lvl = state.up[k], max = lvl >= u.cost.length;
         const row = document.createElement('div'); row.className = 'row';
         row.innerHTML = '<span class="ricon">' + (ICON[u.ic] || '<span class="ic">' + (u.emo || '🏪') + '</span>') + '</span><div class="rmid"><b>' + u.name + '</b><small>' + (u.noLv ? '' : '等級 ' + (lvl + 1) + ' · ') + u.fmt(u.vals[lvl]) + (max ? '' : ' → ' + u.fmt(u.vals[lvl + 1])) + '</small><div class="pips">' + u.vals.map((_, i) => '<i class="' + (i <= lvl ? 'on' : '') + '"></i>').join('') + '</div></div>';

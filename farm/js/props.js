@@ -118,6 +118,23 @@ function pen(w, d) {
   return g;
 }
 
+// the bigger yard (5–8 chickens): white picket fence with coral caps, straw floor, water bowl
+function bigPen(w, d) {
+  const g = new THREE.Group();
+  add(g, mesh(G.rbox(w - 0.1, 0.03, d - 0.1, 0.02, 1), '#f3dc8c', false, true), 0, 0.015, 0);
+  const post = (x, z) => { add(g, mesh(G.rbox(0.18, 0.78, 0.18, 0.05), C.white), x, 0.39, z); add(g, mesh(G.cone(0.14, 0.18, 4), '#ff8a6b'), x, 0.87, z).rotation.y = Math.PI / 4; };
+  const side = (x0, z0, x1, z1) => {
+    const len = Math.hypot(x1 - x0, z1 - z0), n = Math.max(2, Math.round(len / 0.24)), rot = -Math.atan2(z1 - z0, x1 - x0);
+    for (const y of [0.22, 0.5]) { const r = add(g, mesh(G.rbox(len, 0.08, 0.06, 0.03), C.white), (x0 + x1) / 2, y, (z0 + z1) / 2); r.rotation.y = rot; }
+    for (let i = 1; i < n; i++) { const t = i / n; add(g, mesh(G.rbox(0.09, 0.6, 0.05, 0.03), C.white), x0 + (x1 - x0) * t, 0.32, z0 + (z1 - z0) * t).rotation.y = rot; }
+  };
+  for (const [x, z] of [[-w / 2, -d / 2], [w / 2, -d / 2], [-w / 2, d / 2], [w / 2, d / 2]]) post(x, z);
+  side(-w / 2, d / 2, w / 2, d / 2); side(-w / 2, -d / 2, -w / 2, d / 2); side(w / 2, -d / 2, w / 2, d / 2);
+  add(g, mesh(G.cyl(0.2, 0.16, 0.1, 12), '#8fd1c4'), w / 2 - 0.35, 0.05, d / 2 - 0.3);
+  add(g, mesh(G.cyl(0.15, 0.15, 0.02, 12), '#7fd3ff', false), w / 2 - 0.35, 0.1, d / 2 - 0.3);
+  return g;
+}
+
 export function chicken() {
   const g = new THREE.Group();
   g.add(blob(0.3));
@@ -145,8 +162,9 @@ export function coop() {
   const nest = add(g, new THREE.Group(), 1.6, 0, 0.75);
   add(nest, mesh(G.rbox(1.0, 0.22, 0.8, 0.06), C.woodLight), 0, 0.11, 0);
   add(nest, mesh(G.rbox(0.86, 0.04, 0.66, 0.02), '#f6dd8a'), 0, 0.22, 0);
-  const yard = add(g, pen(2.4, 1.4), 0, 0, 0.6);
-  return { g, trough, nest, yard };
+  const yard = add(g, pen(2.4, 1.4), 0, 0, 0.6); yard.userData.dyn = true;
+  const yard2 = add(g, bigPen(2.4, 2.1), 0, 0, 0.95); yard2.userData.dyn = true; yard2.visible = false;
+  return { g, trough, nest, yard, yard2 };
 }
 
 export function cow() {

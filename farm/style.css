@@ -184,3 +184,4 @@ html, body {
 .lbl.mtag b { display: block; font-size: 13px; }
 .lbl.mtag span .ii, .lbl.zone .how .ii { width: 1.7em; height: 1.7em; vertical-align: -0.45em; }
 .lbl.zone .how { font-size: 15px; margin-bottom: 2px; }
+.lbl.zone .desc { font-size: 12px; font-weight: 800; color: #fff; background: rgba(60, 90, 40, 0.55); border-radius: 8px; padding: 2px 7px; margin: 1px auto 3px; display: inline-block; text-shadow: none; }
