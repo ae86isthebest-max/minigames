@@ -1,4 +1,4 @@
-// 海邊漁港 — map 2 of 開心農場鋪. A whole fishing industry: boats, anglers, trawlers, traps, deep-sea boats and
+// 海邊漁港 — map 3 of 開心農場鋪 (農場 → 山城咖啡館 → 海邊漁港 → 森林小鎮). A whole fishing industry: boats, anglers, trawlers, traps, deep-sea boats and
 // fish farms bring many species; process them, sell them in the fish market and serve them in a seafood restaurant.
 // Same style kit, controls and UI as the farm (logic adapted from main.js).
 import * as THREE from 'three';
@@ -16,8 +16,8 @@ const ITEMS = { ...P3.ITEMS, ...P4.ITEMS4 };
 const itemMesh = P4.itemMesh;
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
-// The harbour is a branch of the farm, not a separate game: it only opens after 開分店 is bought on the farm
-// (the farm writes {harbor: true} to 'farm_maps_v1'). ?test / ?fresh skip this for testing.
+// The harbour is a branch, not a separate game: it only opens after 開分店 is bought in the 山城咖啡館
+// (the café writes {harbor: true} to 'farm_maps_v1'). ?test / ?fresh skip this for testing.
 {
   let open = false;
   try { open = JSON.parse(localStorage.getItem('farm_maps_v1') || '{}').harbor === true; } catch (e) { /* storage off */ }
@@ -84,6 +84,9 @@ const crateSlots = () => { const s = []; for (let i = 0; i < 30; i++) s.push({ p
 
 // ---------- layout ----------
 const SH_Z = -14.6, MID_Z = -11.2;
+// 百貨公司: the back wall moves from z -17.6 to DEPT_Z; two back rows of shelves (copies of the SH_Z row and the MID_Z row,
+// each straight behind its original) and a 2nd sliding door in the front wall at x DOOR2_X
+const BACK_Z1 = -19.6, BACK_Z2 = -23.6, DEPT_Z = -25.6, DOOR2_X = -6.1;
 const SHOP = { x0: -9.4, x1: 7.95, z0: -17.4, z1: -7.3 };
 const R0 = -23.6, WING_X0 = -40;
 const REST = { x0: R0, x1: -11.2, z0: -18, z1: -6 };
@@ -157,6 +160,15 @@ const DEFS = [
   { id: 'table3', name: '第 3 張餐桌', kind: 'table', ti: 2, cost: { money: 1500 }, req: ['sushiBar'] },
   { id: 'washer', name: '洗碗工', kind: 'hire', role: 'washer', zone: [-13.2, -13.0], cost: { money: 1900 }, req: ['table3'] },
   { id: 'shelver2', name: '理貨員', kind: 'hire', role: 'shelver', zone: [-2.4, -5.8], cost: { money: 2400 }, req: ['washer'] },
+  { id: 'dept', name: '百貨公司', desc: '市場往後擴大、多一道門，可以擺第二排同款貨架', kind: 'dept', zone: [0.7, -10.9], cost: { money: 4000, fish: 40 }, req: ['shelver2'] },
+  { id: 'shelfFish2', name: '鮮魚冷藏櫃２', kind: 'shelf', fridge: true, base: 'shelfFish', items: ['fish', 'sardine', 'mackerel', 'squid'], pos: [4.4, BACK_Z1], cost: { money: 600 }, req: ['dept', 'shelfFish'] },
+  { id: 'shelfSeaweed2', name: '海帶架２', kind: 'shelf', base: 'shelfSeaweed', items: ['seaweed'], pos: [1.4, BACK_Z1], cost: { money: 500 }, req: ['dept', 'shelfSeaweed'] },
+  { id: 'shelfIced2', name: '冷藏鮮魚櫃２', kind: 'shelf', fridge: true, base: 'shelfIced', items: ['iced'], pos: [-1.6, BACK_Z1], cost: { money: 900 }, req: ['dept', 'shelfIced'] },
+  { id: 'shelfCan2', name: '罐頭架２', kind: 'shelf', base: 'shelfCan', items: ['can', 'crabcan'], pos: [-4.6, BACK_Z1], cost: { money: 1200 }, req: ['dept', 'shelfCan'] },
+  { id: 'shelfDried2', name: '魚乾架２', kind: 'shelf', base: 'shelfDried', items: ['dried'], pos: [-7.6, BACK_Z1], cost: { money: 1800 }, req: ['dept', 'shelfDried'] },
+  { id: 'shelfPremium2', name: '高級魚冷藏櫃２', kind: 'shelf', fridge: true, base: 'shelfPremium', items: ['salmon', 'tuna', 'swordfish', 'puffer', 'golden'], pos: [-1.6, BACK_Z2], cost: { money: 2400 }, req: ['dept', 'shelfPremium'] },
+  { id: 'shelfShell2', name: '蝦蟹冷藏櫃２', kind: 'shelf', fridge: true, base: 'shelfShell', items: ['shrimp', 'crab', 'octopus', 'lobster'], pos: [-4.6, BACK_Z2], cost: { money: 3000 }, req: ['dept', 'shelfShell'] },
+  { id: 'shelfSashimi2', name: '生魚片冷藏櫃２', kind: 'shelf', fridge: true, base: 'shelfSashimi', items: ['sashimi'], pos: [-7.6, BACK_Z2], cost: { money: 8000 }, req: ['dept', 'shelfSashimi'] },
   { id: 'traps', name: '蟹籠', kind: 'traps', zone: [10.4, TRAP_Z], cost: { money: 2800 }, req: ['shelver2'] },
   { id: 'crabCannery', name: '蟹肉罐頭廠', kind: 'machine', mk: 'crabcan', in: 'crab', out: 'crabcan', iv: 4, pos: [-4.4, 12.8], cost: { money: 3200, crab: 8 }, req: ['traps'] },
   { id: 'table4', name: '第 4 張餐桌', kind: 'table', ti: 3, cost: { money: 3200 }, req: ['crabCannery'] },
@@ -292,7 +304,8 @@ joy.onStart = () => { if (actx && actx.state === 'suspended') actx.resume(); };
 
 const colliders = [];
 // grid path-finding over the same boxes the player collides with; the sea edge (x 13.2) is the east border
-const nav = createNav(colliders, { x0: -41, x1: 13.2, z0: -18.6, z1: 35 }, 0.5, 0.35);
+const NAV_B = { x0: -41, x1: 13.2, z0: -18.6, z1: 35 };
+let nav = createNav(colliders, NAV_B, 0.5, 0.35);   // rebuilt with a deeper north edge once the 百貨公司 is built
 let navV = 0;   // bumps whenever a box is added or removed, so everyone re-plans their walk
 const box = (x0, z0, x1, z1) => { const b = { x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1) }; colliders.push(b); nav.dirty(); navV++; return b; };
 function unbox(b) { const i = colliders.indexOf(b); if (i >= 0) { colliders.splice(i, 1); nav.dirty(); navV++; } }
@@ -355,6 +368,10 @@ makeIcons();
 
 // ---------- static world ----------
 const shopDoor = { d: null, k: 0 };
+const shopDoor2 = { d: null, k: 0 };
+const backWall = { g: null, b: null };
+const mFront = { g: null, b: [] };
+let backPalms = null, deptG = null, pZMin = -17.0;
 const areas = [];
 let shopArea = null;
 function makeArea(x0, z0, x1, z1, lamps, lx, lz) {
@@ -391,30 +408,32 @@ function buildWorld() {
   K.add(D, K.mesh(G.rbox(w, 0.12, 10.4, 0.06, 2), '#e3f1f6', false, true), cx, 0.06, -12.2);
   for (let x = SHOP.x0; x < SHOP.x1 - 0.8; x += 1.6) for (let z = -17.2; z < -8; z += 1.6) if ((Math.round(x / 1.6) + Math.round(z / 1.6)) % 2 === 0) K.add(D, K.mesh(G.plane(1.58, 1.58), '#cbe5ef', false, true), x + 0.8, 0.125, z + 0.8);
   K.add(D, K.mesh(G.rbox(w, 0.05, 0.6, 0.03, 1), '#cbe5ef', false, true), cx, 0.125, -7.3);
-  K.add(D, K.mesh(G.rbox(w, 2.0, 0.4, 0.08), C.white), cx, 1.0, -17.6);
-  K.add(D, K.mesh(G.rbox(w + 0.1, 0.22, 0.46, 0.05), '#5aa9ff'), cx, 2.0, -17.6);
-  K.add(D, K.mesh(G.rbox(w + 0.05, 0.16, 0.44, 0.04), '#8fd1c4'), cx, 0.5, -17.6);
-  for (const x of [-6.5, -1, 4.5]) K.add(D, K.mesh(G.rbox(2.4, 0.8, 0.08, 0.06), '#bfe9ff'), x, 1.25, -17.38);
+  // back wall in its own group: the 百貨公司 removes it and builds a new one further back
+  const BW = backWall.g = K.add(scene, new THREE.Group());
+  K.add(BW, K.mesh(G.rbox(w, 2.0, 0.4, 0.08), C.white), cx, 1.0, -17.6);
+  K.add(BW, K.mesh(G.rbox(w + 0.1, 0.22, 0.46, 0.05), '#5aa9ff'), cx, 2.0, -17.6);
+  K.add(BW, K.mesh(G.rbox(w + 0.05, 0.16, 0.44, 0.04), '#8fd1c4'), cx, 0.5, -17.6);
+  for (const x of [-6.5, -1, 4.5]) K.add(BW, K.mesh(G.rbox(2.4, 0.8, 0.08, 0.06), '#bfe9ff'), x, 1.25, -17.38);
   for (const x of [SHOP.x0 - 0.2, SHOP.x1]) {
     K.add(D, K.mesh(G.rbox(0.4, 2.0, 10.4, 0.08), C.white), x, 1.0, -12.4);
     K.add(D, K.mesh(G.rbox(0.46, 0.22, 10.5, 0.05), '#5aa9ff'), x, 2.0, -12.4);
   }
-  box(SHOP.x0 - 0.4, -17.8, SHOP.x1 + 0.2, -17.4); box(SHOP.x0 - 0.4, -17.6, SHOP.x0, -7.2); box(SHOP.x1 - 0.2, -17.6, SHOP.x1 + 0.2, -7.2);
+  backWall.b = box(SHOP.x0 - 0.4, -17.8, SHOP.x1 + 0.2, -17.4); box(SHOP.x0 - 0.4, -17.6, SHOP.x0, -7.2); box(SHOP.x1 - 0.2, -17.6, SHOP.x1 + 0.2, -7.2);
   const wallPiece = (x0, x1, z) => {
     K.add(D, K.mesh(G.rbox(x1 - x0, 0.55, 0.3, 0.08), C.white), (x0 + x1) / 2, 0.28, z);
     K.add(D, K.mesh(G.rbox(x1 - x0 - 0.1, 0.62, 0.12, 0.04), '#cfeeff'), (x0 + x1) / 2, 0.85, z);
     K.add(D, K.mesh(G.rbox(x1 - x0, 0.14, 0.32, 0.05), '#5aa9ff'), (x0 + x1) / 2, 1.2, z);
     box(x0, z - 0.2, x1, z + 0.2);
   };
-  wallPiece(SHOP.x0 - 0.4, 5.35, -7.3); wallPiece(7.65, SHOP.x1 + 0.2, -7.3);
-  const sign = P2.signBoard('漁港市場', 4, '#4f9cf0'); sign.position.set(cx, 2.75, -17.55); D.add(sign);
-  for (const [x, z] of [[SHOP.x0 + 0.6, -16.8], [7.2, -16.8]]) {
-    const b = K.add(D, P3.barrel(), x, 0.12, z);
-    K.add(b, K.mesh(G.sphere(0.26, 8, 6), '#8fd1c4'), 0, 0.72, 0).scale.set(1, 0.5, 1);
-  }
+  wallPiece(7.65, SHOP.x1 + 0.2, -7.3);
+  marketFront(isBuilt('dept'));   // the long west part of the front wall (gets a 2nd door with the 百貨公司)
+  const sign = P2.signBoard('漁港市場', 4, '#4f9cf0'); sign.position.set(cx, 2.75, -17.55); BW.add(sign);
+  for (const [x, z] of [[SHOP.x0 + 0.6, -16.8], [7.2, -16.8]]) K.add(BW, shopBarrel(), x, 0.12, z);
   // decoration: palms, rocks, umbrellas, buoys, barrels, lamps, nets
-  const palmAt = (x, z, s, solid) => { const p = P3.palm(2.6 + rnd() * 1.2, 0.2 + rnd() * 0.5); p.position.set(x, 0, z); p.rotation.y = rnd() * 6; p.scale.setScalar(s); D.add(p); if (solid) box(x - 0.25, z - 0.25, x + 0.25, z + 0.25); };
-  for (let i = 0; i < 17; i++) palmAt(-41 + i * 3.4 + rnd(), -20.5 - rnd() * 2.5, 0.9 + rnd() * 0.3, false);
+  const palmAt = (x, z, s, solid, parent = D) => { const p = P3.palm(2.6 + rnd() * 1.2, 0.2 + rnd() * 0.5); p.position.set(x, 0, z); p.rotation.y = rnd() * 6; p.scale.setScalar(s); parent.add(p); if (solid) box(x - 0.25, z - 0.25, x + 0.25, z + 0.25); };
+  // the palms right behind the market sit in their own group: the 百貨公司 pushes them back behind its new wall
+  backPalms = K.add(scene, new THREE.Group());
+  for (let i = 0; i < 17; i++) { const x = -41 + i * 3.4 + rnd(), z = -20.5 - rnd() * 2.5, s = 0.9 + rnd() * 0.3; palmAt(x, z, s, false, x > -12 && x < 10.2 ? backPalms : D); }
   for (let i = 0; i < 16; i++) palmAt(-42.5 - rnd() * 3, -18 + i * 3.5 + rnd(), 0.9 + rnd() * 0.3, false);
   for (let i = 0; i < 16; i++) palmAt(-40 + i * 3.6 + rnd(), 37 + rnd() * 2, 0.9 + rnd() * 0.3, false);
   for (const [x, z] of [[-6.6, -1.4], [2.8, -2.0], [-20.5, -3.2], [-9.5, 14], [6.0, 18.2], [-19.5, 9], [-21.5, 20], [5.4, 23.4], [-13.5, 27.5], [3, 30], [-30, -2.4], [-36, 3], [-27.5, 9], [-33.5, 16], [-28, 24], [-37, 28]]) palmAt(x, z, 1, true);
@@ -439,6 +458,7 @@ function buildWorld() {
   for (const [x, z] of [[5.6, 15.8], [-7.6, 11.6], [-9.0, -3.2]]) { K.add(D, P3.crateStack(), x, 0, z); box(x - 0.75, z - 0.55, x + 0.75, z + 0.55); }
   for (const [x, z] of [[-10.4, 6.8], [4.6, 4.6]]) { K.add(D, P3.lifeRingStand(), x, 0, z); box(x - 0.15, z - 0.15, x + 0.15, z + 0.15); }
   K.bake(D, scene);
+  K.bakeStatic(BW); K.bakeStatic(backPalms);
   // the market's sliding door and lamps
   shopDoor.d = P2.slidingDoor(2.1); shopDoor.d.g.position.set(6.5, 0.1, -7.3); scene.add(shopDoor.d.g);
   const lamps = [];
@@ -806,6 +826,8 @@ function build(def, instant) {
   } else if (def.kind === 'lighthouse') {
     lightObj.lamp.material = new THREE.MeshBasicMaterial({ color: '#fff3a6' });
     lightObj.beam.visible = true;
+  } else if (def.kind === 'dept') {
+    applyDept(!instant);
   } else if (def.kind === 'counter') {
     buildCounter(0);
     if (!instant) popIn(COUNTERS[0].pile.grp);
@@ -952,6 +974,69 @@ function buildCruise(instant) {
   K.bakeStatic(g);
   cruise.ready = true;
   if (!instant) popIn(g);
+}
+
+// ---------- 百貨公司 (department store) ----------
+function shopBarrel() {
+  const b = P3.barrel();
+  K.add(b, K.mesh(G.sphere(0.26, 8, 6), '#8fd1c4'), 0, 0.72, 0).scale.set(1, 0.5, 1);
+  return b;
+}
+// the long west part of the market's glass front wall; with the 百貨公司 it gets a gap and a 2nd sliding door at DOOR2_X
+function marketFront(withDoor) {
+  if (mFront.g) scene.remove(mFront.g);
+  for (const b of mFront.b) unbox(b);
+  const g = K.add(scene, new THREE.Group()); mFront.g = g; mFront.b = [];
+  const piece = (x0, x1) => {
+    K.add(g, K.mesh(G.rbox(x1 - x0, 0.55, 0.3, 0.08), C.white), (x0 + x1) / 2, 0.28, -7.3);
+    K.add(g, K.mesh(G.rbox(x1 - x0 - 0.1, 0.62, 0.12, 0.04), '#cfeeff'), (x0 + x1) / 2, 0.85, -7.3);
+    K.add(g, K.mesh(G.rbox(x1 - x0, 0.14, 0.32, 0.05), '#5aa9ff'), (x0 + x1) / 2, 1.2, -7.3);
+    mFront.b.push(box(x0, -7.5, x1, -7.1));
+  };
+  if (withDoor) { piece(SHOP.x0 - 0.4, DOOR2_X - 1.15); piece(DOOR2_X + 1.15, 5.35); } else piece(SHOP.x0 - 0.4, 5.35);
+  K.bakeStatic(g);
+  if (withDoor && !shopDoor2.d) { shopDoor2.d = P2.slidingDoor(2.1); shopDoor2.d.g.position.set(DOOR2_X, 0.1, -7.3); scene.add(shopDoor2.d.g); }
+}
+// the back wall moves from z -17.6 to DEPT_Z: new floor, side walls, windows, lamps on the new wall and a big purple sign
+function applyDept(anim) {
+  if (!isBuilt('dept') || deptG) return;
+  if (backWall.g) { scene.remove(backWall.g); backWall.g = null; }
+  if (backWall.b) { unbox(backWall.b); backWall.b = null; }
+  const g = K.add(scene, new THREE.Group());
+  const cx = (SHOP.x0 + SHOP.x1) / 2, w = SHOP.x1 - SHOP.x0 + 0.4;
+  // floor (tucked just under the old floor's edge so the two never flicker) and the same checker tiles
+  const fz0 = DEPT_Z - 0.2, fz1 = -17.1;
+  K.add(g, K.mesh(G.rbox(w, 0.12, fz1 - fz0, 0.06, 2), '#e3f1f6', false, true), cx, 0.055, (fz0 + fz1) / 2);
+  for (let x = SHOP.x0; x < SHOP.x1 - 0.8; x += 1.6) for (let z = -25.2; z < -17.3; z += 1.6) if ((Math.round(x / 1.6) + Math.round(z / 1.6)) % 2 === 0) K.add(g, K.mesh(G.plane(1.58, 1.58), '#cbe5ef', false, true), x + 0.8, 0.125, z + 0.8);
+  // new back wall with windows, and the side walls carried back to it
+  K.add(g, K.mesh(G.rbox(w, 2.0, 0.4, 0.08), C.white), cx, 1.0, DEPT_Z);
+  K.add(g, K.mesh(G.rbox(w + 0.1, 0.22, 0.46, 0.05), '#5aa9ff'), cx, 2.0, DEPT_Z);
+  K.add(g, K.mesh(G.rbox(w + 0.05, 0.16, 0.44, 0.04), '#8fd1c4'), cx, 0.5, DEPT_Z);
+  for (const x of [-6.5, -1, 4.5]) K.add(g, K.mesh(G.rbox(2.4, 0.8, 0.08, 0.06), '#bfe9ff'), x, 1.25, DEPT_Z + 0.22);
+  const sz0 = DEPT_Z - 0.2, sz1 = -17.6, szm = (sz0 + sz1) / 2;
+  for (const x of [SHOP.x0 - 0.2, SHOP.x1]) {
+    K.add(g, K.mesh(G.rbox(0.4, 2.0, sz1 - sz0, 0.08), C.white), x, 1.0, szm);
+    K.add(g, K.mesh(G.rbox(0.46, 0.22, sz1 - sz0 + 0.1, 0.05), '#5aa9ff'), x, 2.0, szm);
+    K.add(g, K.mesh(G.rbox(0.44, 0.16, sz1 - sz0, 0.04), '#8fd1c4'), x, 0.5, szm);
+  }
+  const sign = P2.signBoard('百貨公司', 5.4, '#a98bff'); sign.position.set(cx, 2.95, DEPT_Z + 0.05); g.add(sign);
+  // the corner barrels move to the new back corners
+  for (const [x, z] of [[SHOP.x0 + 0.6, DEPT_Z + 0.8], [7.2, DEPT_Z + 0.8]]) { K.add(g, shopBarrel(), x, 0.12, z); box(x - 0.32, z - 0.32, x + 0.32, z + 0.32); }
+  // planks from the boardwalk up to the new door
+  for (let z = -7.0, i = 0; z < -5.5; z += 0.62, i++) K.add(g, K.mesh(G.rbox(2.0, 0.06, 0.56, 0.03, 1), i % 2 ? '#e3ad74' : '#d9a066', false, true), DOOR2_X, 0.03, z);
+  box(SHOP.x0 - 0.4, DEPT_Z - 0.2, SHOP.x1 + 0.2, DEPT_Z + 0.2); box(SHOP.x0 - 0.4, DEPT_Z, SHOP.x0, -17.4); box(SHOP.x1 - 0.2, DEPT_Z, SHOP.x1 + 0.2, -17.4);
+  K.bakeStatic(g); deptG = g;
+  // the shop's name moves over the new door, facing the boardwalk
+  const fs = P2.signBoard('漁港市場', 3.0, '#4f9cf0'); fs.position.set(DOOR2_X, 2.35, -7.1); scene.add(fs);
+  marketFront(true);
+  for (const l of shopArea.lamps) l.g.position.z = DEPT_Z + 0.3;
+  SHOP.z0 = DEPT_Z + 0.2; shopArea.z0 = DEPT_Z + 0.2; shopArea.light.position.z = -16.5; shopArea.light.distance = 30;
+  if (backPalms) backPalms.position.z = -7;
+  // walkers may now go deeper north, but only inside the market: a fence line keeps them off the beach behind it
+  box(-41.5, -18.5, SHOP.x0 - 0.4, -18.1); box(SHOP.x1 + 0.2, -18.5, 13.4, -18.1);
+  nav = createNav(colliders, { ...NAV_B, z0: DEPT_Z - 1.0 }, 0.5, 0.35); navV++;
+  pZMin = DEPT_Z + 0.55;
+  if (anim) { confetti(cx, -21.5); confetti(DOOR2_X, -7.3); for (let i = 0; i < 6; i++) puff(rand(SHOP.x0, SHOP.x1), 1.2, rand(DEPT_Z, -17.6), '#ffffff', 6, 1.2); }
 }
 
 // ---------- maps unlocked across the whole game (shared with the farm) ----------
@@ -1496,34 +1581,50 @@ const queueAt = (i) => [COUNTERS[0].x - i * 0.95, COUNTERS[0].z + 1.4];
 let spawnT = 3;
 function customerLook() { return { body: pick(CUST_COLS), hat: Math.random() < 0.3 ? 'cap' : (Math.random() < 0.3 ? 'bun' : null), hatColor: pick(CUST_COLS) }; }
 const crowd = () => upVal('cust') * (events.tour > 0 ? 2 : 1) * (isBuilt('aquarium') ? 1.5 : 1);
-// what a shopper wants from a cooler: something on it if possible, otherwise anything the harbour can make
-function shopperWant(sh) {
-  const stocked = sh.items.filter((t) => binCount(sh.bin, t) > 0);
-  if (stocked.length && Math.random() < 0.85) return pick(stocked);
-  const can = sh.items.filter((t) => producible(t) && RARITY[t] !== 4);
-  return can.length ? pick(can) : null;
-}
+// a 2nd-row copy (百貨公司) sells the same goods as its original: both count as one kind of shelf
+const shelfKind = (s) => s.def.base || s.id;
+const standAt = (sh) => [sh.front.x + rand(-0.75, 0.75), sh.front.z + rand(0.2, 1.1)];
+// shopping list: 1–3 different goods (about 45% / 37% / 18%), each from its own kind of shelf (a random one of that kind,
+// preferring one that has it in stock), visited front row first; the whole list is paid in one go
 function spawnCustomer() {
   const shelves = listOf('shelf').filter((s) => s.items.some((t) => binCount(s.bin, t) > 0 || producible(t)));
   if (!shelves.length) return null;
-  const sh = pick(shelves), item = shopperWant(sh);
-  if (!item) return null;
+  const kinds = [...new Set(shelves.map(shelfKind))].sort(() => Math.random() - 0.5);
+  const r = Math.random(), nK = Math.min(kinds.length, r < 0.45 ? 1 : r < 0.82 ? 2 : 3);
+  const list = [];
+  for (const k of kinds) {
+    if (list.length >= nK) break;
+    const mine = shelves.filter((s) => shelfKind(s) === k), items = mine[0].items;
+    const stocked = items.filter((t) => mine.some((s) => binCount(s.bin, t) > 0));
+    let item = stocked.length && Math.random() < 0.85 ? pick(stocked) : null;
+    if (!item) { const can = items.filter((t) => producible(t) && RARITY[t] !== 4); item = can.length ? pick(can) : null; }
+    if (!item) continue;
+    const has = mine.filter((s) => binCount(s.bin, item) > 0);
+    const big = ITEMS[item].price >= 40;
+    list.push({ item, shelf: pick(has.length ? has : mine), need: big ? 1 : 1 + Math.floor(Math.random() * Math.min(3, 1 + shelves.length)), got: 0 });
+  }
+  if (!list.length) return null;
+  list.sort((a, b) => b.shelf.front.z - a.shelf.front.z || a.shelf.front.x - b.shelf.front.x);
+  const sh = list[0].shelf;
   const p = K.person(customerLook());
   p.root.position.set(SPAWN[0], 0, SPAWN[1]); scene.add(p.root);
-  const big = ITEMS[item].price >= 40;
-  const need = big ? 1 : 1 + Math.floor(Math.random() * Math.min(4, 1 + shelves.length));
-  const c = { p, shelf: sh, item, need, got: 0, st: 'in', path: [], t: 0, face: 0, moving: 0, qi: 99 };
-  setGoal(c, sh.front.x + rand(-0.75, 0.75), sh.front.z + rand(0.2, 1.1));
+  const c = { p, list, li: 0, shelf: sh, item: list[0].item, need: list[0].need, got: 0, st: 'in', path: [], via: [], t: 0, face: 0, moving: 0, qi: 99, age: 0 };
+  // a first shelf on the west side: come in through the 百貨公司's 2nd door
+  if (shopDoor2.d && sh.front.x < -3) goTo(c, DOOR2_X, -5.7, [[DOOR2_X, -8.6], standAt(sh)]);
+  else goTo(c, ...standAt(sh));
   c.label = label('bubble', '', (o) => { o.copy(c.p.root.position); o.y = 2.05; });
   customers.push(c);
   return c;
 }
+// walk to (x, z), then on through the via points one by one (each leg path-found on its own)
+function goTo(c, x, z, via) { c.via = via || []; setGoal(c, x, z); }
+const nextLeg = (c) => { if (!c.via || !c.via.length) return false; setGoal(c, ...c.via.shift()); return true; };
 function stepPath(c, dt, speed) {
   if (c.goal && c.navV !== navV) setGoal(c, ...c.goal);
-  if (!c.path.length) return true;
+  if (!c.path.length) return !nextLeg(c);
   const [tx, tz] = c.path[0];
   const dx = tx - c.p.root.position.x, dz = tz - c.p.root.position.z, d = Math.hypot(dx, dz);
-  if (d < 0.1) { c.path.shift(); return !c.path.length; }
+  if (d < 0.1) { c.path.shift(); return !c.path.length && !nextLeg(c); }
   const s = Math.min(d, speed * dt); c.p.root.position.x += dx / d * s; c.p.root.position.z += dz / d * s; c.face = Math.atan2(dx, dz); c.moving = 1;
   return false;
 }
@@ -1531,7 +1632,7 @@ function updateCustomers(dt) {
   const shelfN = listOf('shelf').length;
   if (shelfN && COUNTERS[0].on) {
     spawnT -= dt * crowd();
-    const maxC = Math.min(12, 3 + Math.round(shelfN * 1.5));
+    const maxC = Math.min(isBuilt('dept') ? 16 : 12, 3 + Math.round(shelfN * 1.5));
     if (spawnT <= 0 && customers.length < maxC) { spawnCustomer(); spawnT = Math.max(1.4, 7 - shelfN * 0.7) * (0.7 + Math.random() * 0.6); }
   }
   const c0 = COUNTERS[0];
@@ -1539,7 +1640,7 @@ function updateCustomers(dt) {
   customers.filter((c) => c.st === 'queue' || c.st === 'toQueue').sort((a, b) => a.qi - b.qi).forEach((c, i) => { c.qi = i; });
   for (let i = customers.length - 1; i >= 0; i--) {
     const c = customers[i];
-    c.moving = 0;
+    c.moving = 0; c.age += dt;
     if (c.st === 'in') { if (stepPath(c, dt, 2.6)) { c.st = 'shop'; c.face = Math.PI; c.t = 0.4; c.patience = 32; } }
     else if (c.st === 'shop') {
       c.t -= dt; c.patience -= dt;
@@ -1547,13 +1648,22 @@ function updateCustomers(dt) {
         c.t = 0.35; binTake(c.shelf.bin, c.item); c.got++;
         fly(c.item, V3(c.shelf.def.pos[0], 0.8, c.shelf.def.pos[1]), (o) => { o.copy(c.p.root.position); o.y = 1.2; }, 0.25, null);
       }
+      // out of patience: keep what is in the basket and go on to the next item (or leave if the basket stays empty)
       if (c.patience <= 0 && c.got < c.need) {
-        if (c.got > 0) c.need = c.got;
+        const any = c.list.some((e, k) => k < c.li && e.got > 0);
+        if (c.got > 0 || any || c.li < c.list.length - 1) c.need = c.got;
         else { leaveShop(c); floatText('😞', V3(c.p.root.position.x, 2.2, c.p.root.position.z)); }
       }
+      if (c.st === 'shop' && c.got >= c.need && c.li < c.list.length - 1) {
+        const e = c.list[c.li]; e.got = c.got; e.need = c.need;
+        const n = c.list[++c.li];
+        Object.assign(c, { shelf: n.shelf, item: n.item, need: n.need, got: 0, st: 'in' });
+        goTo(c, ...standAt(n.shelf));
+      }
       if (c.st === 'shop' && c.got >= c.need) {
-        c.st = 'toQueue'; c.qi = 99;
-        setGoal(c, 2.4, -8.5);
+        const e = c.list[c.li]; e.got = c.got; e.need = c.need;
+        if (c.list.some((q) => q.got > 0)) { c.st = 'toQueue'; c.qi = 99; goTo(c, 2.4, -8.5); }
+        else { leaveShop(c); floatText('😞', V3(c.p.root.position.x, 2.2, c.p.root.position.z)); }
       }
     } else if (c.st === 'toQueue' || c.st === 'queue') {
       if (stepPath(c, dt, 2.6)) {
@@ -1571,19 +1681,27 @@ function updateCustomers(dt) {
     }
     c.p.root.position.y = inShop(c.p.root.position.x, c.p.root.position.z) ? 0.12 : 0;
     turn(c.p, c.face, dt); c.p.anim(dt, c.moving);
-    if (c.st === 'shop' || c.st === 'in') setLabel(c.label, badge(c.item, c.got, c.need));
+    if (c.st === 'shop' || c.st === 'in') setLabel(c.label, badge(c.item, c.got, c.need) + (c.li < c.list.length - 1 ? '<span class="rest">' + c.list.slice(c.li + 1).map((e) => ICON[e.item]).join('') + '</span>' : ''));
     else if (c.st !== 'leave') setLabel(c.label, ICON.money);
   }
 }
 function leaveShop(c) {
   c.st = 'leave'; c.label.show = false;
-  setGoal(c, SPAWN[0], SPAWN[1] + 1);
+  const pos = c.p.root.position;
+  // still on the west side of the market (gave up waiting): out through the nearer 2nd door
+  if (shopDoor2.d && pos.x < -3 && inShop(pos.x, pos.z)) goTo(c, DOOR2_X, -8.6, [[DOOR2_X, -5.7], [SPAWN[0], SPAWN[1] + 1]]);
+  else goTo(c, SPAWN[0], SPAWN[1] + 1);
 }
 function pay(c) {
-  const unit = Math.round(ITEMS[c.item].price * upVal('price'));
-  const v = unit * c.got + (pets.cat ? 1 : 0);
-  recBest(c.item, unit);
-  const k = COUNTERS[0]; stats.sales++; stats.sold[c.item] = (stats.sold[c.item] || 0) + c.got;
+  // the whole shopping list in one go
+  let v = pets.cat ? 1 : 0;
+  for (const e of c.list) {
+    if (!e.got) continue;
+    const unit = Math.round(ITEMS[e.item].price * upVal('price'));
+    v += unit * e.got; recBest(e.item, unit);
+    stats.sold[e.item] = (stats.sold[e.item] || 0) + e.got;
+  }
+  const k = COUNTERS[0]; stats.sales++;
   k.pile.value += v; setPile(k); sfx('coin');
   floatText('+' + v, V3(k.pile.x, 1.6, k.pile.z), 'money');
   const bag = new THREE.Group(); K.add(bag, K.mesh(G.rbox(0.36, 0.38, 0.24, 0.06), '#cfe9ff'), 0, 0.1, 0); c.p.front.add(bag);
@@ -1870,12 +1988,13 @@ function openPanel(kind) {
   } else if (kind === 'map') {
     $('pTitle').textContent = '地圖';
     const m = mapsGet();
+    // map order: 開心農場 → 山城咖啡館 → 海邊漁港 → 森林小鎮 (each opens from the previous map's 開分店)
     body.innerHTML = '<a class="mapcard" href="./index.html"><span class="mi" style="background:#c9f0a8">🌾</span><div><b>開心農場</b><small>回到農場</small></div></a>' +
+      (m.cafe ? '<a class="mapcard" href="./cafe.html"><span class="mi" style="background:#f3dcc0">☕</span><div><b>山城咖啡館</b><small>咖啡園、烘豆、咖啡館</small></div></a>'
+        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">☕</span><div><b>山城咖啡館</b><small>在開心農場開分店後開放</small></div></div>') +
       '<div class="mapcard here"><span class="mi" style="background:#bfe9ff">⚓</span><div><b>海邊漁港</b><small>你現在在這裡</small></div></div>' +
       (m.forest ? '<a class="mapcard" href="./forest.html"><span class="mi" style="background:#cdeec0">🌲</span><div><b>森林小鎮</b><small>伐木、家具、蓋小鎮</small></div></a>'
-        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">🌲</span><div><b>森林小鎮</b><small>點亮燈塔、漁港總收入 $150,000 後開放</small></div></div>') +
-      (m.cafe ? '<a class="mapcard" href="./cafe.html"><span class="mi" style="background:#f3dcc0">☕</span><div><b>山城咖啡館</b><small>咖啡園、烘豆、咖啡館</small></div></a>'
-        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">☕</span><div><b>山城咖啡館</b><small>在森林小鎮開分店後開放</small></div></div>');
+        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">🌲</span><div><b>森林小鎮</b><small>在海邊漁港開分店後開放（點亮燈塔、漁港總收入 $150,000）</small></div></div>');
     body.querySelectorAll('a.mapcard').forEach((a) => a.addEventListener('click', () => save()));
   } else if (kind === 'set') {
     $('pTitle').textContent = '設定';
@@ -2162,7 +2281,7 @@ function movePlayer(dt) {
       else { const ex = Math.min(pos.x - b.x0, b.x1 - pos.x), ez = Math.min(pos.z - b.z0, b.z1 - pos.z); if (ex < ez) pos.x = pos.x - b.x0 < b.x1 - pos.x ? b.x0 - r : b.x1 + r; else pos.z = pos.z - b.z0 < b.z1 - pos.z ? b.z0 - r : b.z1 + r; }
     }
   }
-  pos.x = Math.max(-39.6, Math.min(12.9, pos.x)); pos.z = Math.max(-17.0, Math.min(34.0, pos.z));
+  pos.x = Math.max(-39.6, Math.min(12.9, pos.x)); pos.z = Math.max(pZMin, Math.min(34.0, pos.z));
   pos.y = inShop(pos.x, pos.z) || inRest(pos.x, pos.z) ? 0.12 : 0;
   const spd = Math.hypot(pVel.x, pVel.z);
   if (spd > 0.3) pFace = Math.atan2(pVel.x, pVel.z);
@@ -2182,6 +2301,7 @@ function someoneNear(x, z, r) {
 function updateDoorsAndLights(dt) {
   const ease = Math.min(1, dt * 7);
   if (shopDoor.d) { shopDoor.k += ((someoneNear(6.5, -7.3, 2.3) ? 1 : 0) - shopDoor.k) * ease; shopDoor.d.open(shopDoor.k); }
+  if (shopDoor2.d) { shopDoor2.k += ((someoneNear(DOOR2_X, -7.3, 2.3) ? 1 : 0) - shopDoor2.k) * ease; shopDoor2.d.open(shopDoor2.k); }
   const wh = stations.warehouse;
   if (wh) { wh.k += ((someoneNear(wh.def.pos[0], wh.def.pos[1] + 2.4, 2.8) ? 1 : 0) - wh.k) * ease; wh.door.position.y = wh.k * 1.85; }
   for (const sh of listOf('shelf')) {
