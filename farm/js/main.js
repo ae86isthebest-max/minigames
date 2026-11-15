@@ -83,6 +83,8 @@ const UPS = {
   floor: { tab: 3, name: '地板翻新', ic: 'shop', need: 'counter', vals: [0, 1, 2, 3], cost: [600, 2400, 7000], fmt: (v) => ['原本的地板', '溫暖木地板', '奶油格子磚', '大理石＋金邊'][v] + (v ? '，客人更多' : '') },
   ad: { tab: 3, name: '路邊廣告牌', ic: 'shop', need: 'cashier', vals: [0, 1, 2, 3], cost: [500, 2000, 6500], fmt: (v) => ['沒有廣告', '木頭立牌', '大型看板', '發光看板'][v] + (v ? '，路過的人更多' : '') },
   look: { tab: 3, name: '商店外觀', ic: 'shop', need: 'counter', vals: [0, 1, 2, 3], cost: [800, 3000, 9000], fmt: (v) => LOOKS[v].name + ['', '・雨棚花台', '・燈串路燈', '・紅地毯旗幟'][v] + (v ? '，客人更多、賣更貴' : '') },
+  lanes: { tab: 3, name: '收銀台升級', ic: 'reg', emo: '🧾', need: 'cashier', noLv: true, vals: [1, 2, 3], cost: [1500, 5000], fmt: (v) => ['一台收銀機，一次結 1 位', '兩台收銀機，同時結 2 位', '三台收銀機＋輸送帶，同時結 3 位'][v - 1] },
+  basket: { tab: 3, name: '購物籃架', ic: 'bk', emo: '🧺', need: 'cashier', noLv: true, vals: [1, 1.2, 1.4], cost: [800, 2500], fmt: (v) => ['還沒有購物籃', '門口放購物籃：客人走更快、拿更快', '更多購物籃：客人又快又順'][Math.round((v - 1) * 5)] },
   autoCash: { tab: 3, name: '自動收款', ic: 'money', need: 'cashier2', vals: [0, 1], cost: [6000], fmt: (v) => v ? '錢自動入袋' : '要自己收錢' },
 };
 const upVal = (k) => UPS[k].vals[state.up[k] || 0];
@@ -533,18 +535,47 @@ function label(cls, html, getPos) {
   labels.push(L);
   return L;
 }
-function setLabel(L, html) { if (L.html !== html) { L.html = html; L.el.innerHTML = html; } }
+function setLabel(L, html) { if (L.html !== html) { L.html = html; L.el.innerHTML = html; L.w = 0; } }
 function dropLabel(L) { L.el.remove(); const i = labels.indexOf(L); if (i >= 0) labels.splice(i, 1); }
+// clearer labels: zone names sit on a soft plate, far-away zones shrink, and labels that would cover
+// each other are nudged upwards (the one nearer the bottom of the screen keeps its place)
+const LBL2 = params.has('lbl2'); // preview: farm/?lbl2
+if (LBL2) document.body.classList.add('lbl2');
+const shown = [];
 function placeLabels() {
   const w = innerWidth, h = innerHeight, pp = player.p.root.position;
+  shown.length = 0;
   for (const L of labels) {
     if (!L.show) { L.el.style.display = 'none'; continue; }
     L.getPos(tmpV);
-    if (L.near && Math.hypot(tmpV.x - pp.x, tmpV.z - pp.z) > L.near) { L.el.style.display = 'none'; continue; }
+    const dist = Math.hypot(tmpV.x - pp.x, tmpV.z - pp.z);
+    if (L.near && dist > L.near) { L.el.style.display = 'none'; continue; }
     tmpV.project(camera);
     if (tmpV.z > 1 || tmpV.x < -1.3 || tmpV.x > 1.3 || tmpV.y < -1.3 || tmpV.y > 1.3) { L.el.style.display = 'none'; continue; }
     L.el.style.display = '';
-    L.el.style.transform = 'translate(' + ((tmpV.x + 1) / 2 * w).toFixed(1) + 'px,' + ((1 - tmpV.y) / 2 * h).toFixed(1) + 'px) translate(-50%,-100%)';
+    L.sx = (tmpV.x + 1) / 2 * w; L.sy = (1 - tmpV.y) / 2 * h;
+    if (LBL2) {
+      const far = L.el.classList.contains('zone') && dist > 8;
+      if (far !== !!L.far) { L.far = far; L.el.classList.toggle('far', far); L.w = 0; }
+      shown.push(L);
+    } else L.el.style.transform = 'translate(' + L.sx.toFixed(1) + 'px,' + L.sy.toFixed(1) + 'px) translate(-50%,-100%)';
+  }
+  if (!LBL2) return;
+  shown.sort((a, b) => b.sy - a.sy);
+  const boxes = [];
+  for (const L of shown) {
+    if (!L.w) { L.w = L.el.offsetWidth; L.h = L.el.offsetHeight; }
+    let y = L.sy;
+    const x0 = L.sx - L.w / 2, x1 = L.sx + L.w / 2;
+    // up to a few nudges, never more than ~70px from where it belongs
+    for (let k = 0; k < 4; k++) {
+      let hit = null;
+      for (const b of boxes) if (x0 < b.x1 && x1 > b.x0 && y - L.h < b.y1 && y > b.y0) { hit = b; break; }
+      if (!hit || L.sy - (hit.y0 - 2) > 70) break;
+      y = hit.y0 - 2;
+    }
+    boxes.push({ x0, x1, y0: y - L.h, y1: y });
+    L.el.style.transform = 'translate(' + L.sx.toFixed(1) + 'px,' + y.toFixed(1) + 'px) translate(-50%,-100%)';
   }
 }
 // 「MAX」 above a full stack, so nobody walks back for more
@@ -658,6 +689,43 @@ const COUNTERS = [
   { x: -16.5, z: -9.9, serve: { x: -16.5, z: -11.3 }, pile: { x: -14.4, z: -10.2, value: 0 }, on: false },
 ];
 const VIP = { x: 10.6, z: -7.6 };
+// extra registers on every counter (收銀台升級)
+function register() {
+  const reg = new THREE.Group();
+  K.add(reg, K.mesh(G.rbox(0.55, 0.3, 0.45, 0.06), '#5b6474'), 0, 0.15, 0);
+  K.add(reg, K.mesh(G.rbox(0.5, 0.32, 0.06, 0.04), '#3d4452'), 0, 0.42, -0.12).rotation.x = -0.35;
+  K.add(reg, K.mesh(G.rbox(0.42, 0.24, 0.02, 0.02), '#9fe4ff'), 0, 0.43, -0.085).rotation.x = -0.35;
+  return reg;
+}
+function applyLanes(anim) {
+  const n = upVal('lanes');
+  for (const c of COUNTERS) {
+    if (!c.on) continue;
+    if (c.lanesG) { scene.remove(c.lanesG); c.lanesG = null; }
+    if (n < 2) continue;
+    const g = K.add(scene, new THREE.Group(), c.x, 0.12 + 1.05, c.z);
+    K.add(g, register(), 0.15, 0, 0);
+    if (n >= 3) { K.add(g, register(), 0.95, 0, 0); K.add(g, K.mesh(G.rbox(2.6, 0.04, 0.32, 0.02, 1), '#3d4452'), 0, 0.01, 0.33); for (let x = -1.2; x <= 1.21; x += 0.3) K.add(g, K.mesh(G.rbox(0.03, 0.045, 0.3, 0.01, 1), '#6b7384', false), x, 0.02, 0.33); }
+    K.bakeStatic(g); c.lanesG = g;
+    if (anim) popIn(g);
+  }
+}
+// 購物籃架 by the door: red baskets stacked on a little stand
+let basketG = null;
+function applyBasket(anim) {
+  if (basketG) { scene.remove(basketG); basketG = null; }
+  const lv = state.up.basket || 0; if (!lv) return;
+  const g = K.add(scene, new THREE.Group(), 7.25, 0.12, -8.55);
+  g.add(K.blob(0.45));
+  K.add(g, K.mesh(G.rbox(0.62, 0.08, 0.46, 0.03), '#8f969f'), 0, 0.04, 0);
+  const stacks = lv >= 2 ? [-0.15, 0.17] : [0];
+  for (const z of stacks) for (let k = 0; k < (lv >= 2 ? 4 : 3); k++) {
+    K.add(g, K.mesh(G.rbox(0.5, 0.16, 0.3, 0.05), '#ff5a4e'), 0, 0.16 + k * 0.11, z);
+    K.add(g, K.mesh(G.rbox(0.42, 0.02, 0.22, 0.01), '#c9322a', false), 0, 0.245 + k * 0.11, z);
+  }
+  K.bakeStatic(g); basketG = g;
+  if (anim) popIn(g);
+}
 function buildCounter(i, instant) {
   const c = COUNTERS[i]; c.on = true;
   const g = P.counter(); g.position.set(c.x, 0.12, c.z); scene.add(g); K.bakeStatic(g);
@@ -672,6 +740,7 @@ function buildCounter(i, instant) {
   }
   c.pile.label = label('badge money', '', (o) => o.set(c.pile.x, 1.2, c.pile.z));
   c.pile.value = state.piles[i] || 0; setPile(c);
+  if (upVal('lanes') > 1) applyLanes(false);
   if (!instant) popIn(g);
 }
 function setPile(c) {
@@ -1309,11 +1378,12 @@ function updateCustomers(dt) {
   for (let i = customers.length - 1; i >= 0; i--) {
     const c = customers[i];
     c.moving = 0;
-    if (c.st === 'in') { if (stepPath(c, dt, 2.6)) { c.st = 'shop'; c.face = Math.PI; c.t = 0.4; c.patience = 32 + MGR_PAT[mShop()]; } }
+    const cs = 2.6 * upVal('basket');
+    if (c.st === 'in') { if (stepPath(c, dt, cs)) { c.st = 'shop'; c.face = Math.PI; c.t = 0.4; c.patience = 32 + MGR_PAT[mShop()]; } }
     else if (c.st === 'shop') {
       c.t -= dt; c.patience -= dt;
       if (c.t <= 0 && c.shelf.n > 0 && c.got < c.need) {
-        c.t = 0.35; c.shelf.n--; c.got++;
+        c.t = 0.35 / upVal('basket'); c.shelf.n--; c.got++;
         fly(c.item, V3(c.shelf.def.pos[0], 0.8, c.shelf.def.pos[1]), (o) => { o.copy(c.p.root.position); o.y = 1.2; }, 0.25, null);
       }
       if (c.patience <= 0 && c.got < c.need) {
@@ -1327,18 +1397,18 @@ function updateCustomers(dt) {
         c.path = c.shelf.def.pos[1] < -12 ? [[c.p.root.position.x, -12.1], [side, -12.1], [side, -8.5]] : [[side, pz], [side, -8.5]];
       }
     } else if (c.st === 'toQueue' || c.st === 'queue') {
-      if (stepPath(c, dt, 2.6)) {
+      if (stepPath(c, dt, cs)) {
         const [qx, qz] = queueAt(c.ci, c.qi);
         const pos = c.p.root.position, dx = qx - pos.x, dz = qz - pos.z, d = Math.hypot(dx, dz);
-        if (d > 0.08) { const s = Math.min(d, 2.6 * dt); pos.x += dx / d * s; pos.z += dz / d * s; c.face = Math.atan2(dx, dz); c.moving = 1; }
+        if (d > 0.08) { const s = Math.min(d, cs * dt); pos.x += dx / d * s; pos.z += dz / d * s; c.face = Math.atan2(dx, dz); c.moving = 1; }
         else { c.st = 'queue'; c.face = Math.PI; }
       }
-      if (c.st === 'queue' && c.qi === 0) {
+      if (c.st === 'queue' && c.qi < upVal('lanes')) {
         c.t = (c.t > 0 ? c.t : 0) + (served[c.ci] ? dt : 0);
         if (c.t > MGR_PAY[mShop()]) pay(c);
       }
     } else if (c.st === 'leave') {
-      if (stepPath(c, dt, 2.8)) { scene.remove(c.p.root); dropLabel(c.label); customers.splice(i, 1); if (c.car) c.car.waiting = false; continue; }
+      if (stepPath(c, dt, cs * 1.08)) { scene.remove(c.p.root); dropLabel(c.label); customers.splice(i, 1); if (c.car) c.car.waiting = false; continue; }
     }
     turn(c.p, c.face, dt); c.p.anim(dt, c.moving);
     if (c.st === 'shop' || c.st === 'in') setLabel(c.label, badge(c.item, c.got, c.need));
@@ -1394,9 +1464,18 @@ const pets = {};
 function updatePets(dt, t) {
   if (pets.dog) {
     const d = pets.dog, pp = player.p.root.position, back = V3(pp.x - Math.sin(pFace) * 1.2 + 0.6, 0, pp.z - Math.cos(pFace) * 1.2);
-    const dx = back.x - d.g.position.x, dz = back.z - d.g.position.z, dd = Math.hypot(dx, dz);
-    const mv = dd > 0.3 ? Math.min(dd, (dd > 3 ? 10 : 6) * dt) : 0;
-    if (mv) { d.g.position.x += dx / dd * mv; d.g.position.z += dz / dd * mv; d.g.rotation.y = Math.atan2(dx, dz); }
+    // stay behind the player, but never inside a wall: fall back to the player's own spot, then walk the path grid
+    if (!nav.free(back.x, back.z)) back.set(pp.x, 0, pp.z);
+    const dd = Math.hypot(back.x - d.g.position.x, back.z - d.g.position.z);
+    let mv = 0;
+    if (dd > 0.3) {
+      const w = d.walker || (d.walker = { p: { root: d.g }, face: 0, moving: 0 });
+      const sx = Math.round(back.x * 2) / 2, sz = Math.round(back.z * 2) / 2;
+      const before = d.g.position.clone();
+      go(w, sx, sz, dt, dd > 3 ? 10 : 6);
+      mv = before.distanceTo(d.g.position);
+      if (mv > 0.001) d.g.rotation.y = w.face;
+    }
     d.ph += dt * (mv ? 14 : 4);
     d.b.position.y = mv ? Math.abs(Math.sin(d.ph)) * 0.08 : 0;
     d.tail.rotation.z = Math.sin(t * 12) * 0.5;
@@ -1664,7 +1743,7 @@ function openPanel(kind) {
         b.innerHTML = max ? '已滿級' : ICON.money + fmtMoney(u.cost[lvl]);
         b.onclick = () => {
           if (max || state.money < u.cost[lvl]) { sfx('drop'); b.classList.add('shake'); setTimeout(() => b.classList.remove('shake'), 300); return; }
-          state.money -= u.cost[lvl]; state.up[k]++; if ((k === 'mgrShop' || k === 'mgrFarm') && state.up[k] === 1) spawnManager(k); if (k === 'look') { applyShopLook(true); applyAd(false); } if (k === 'floor') applyFloor(true); if (k === 'ad') applyAd(true); sfx('buy'); updateMoney(); save(); show(ti);
+          state.money -= u.cost[lvl]; state.up[k]++; if (k === 'lanes') applyLanes(true); if (k === 'basket') applyBasket(true); if ((k === 'mgrShop' || k === 'mgrFarm') && state.up[k] === 1) spawnManager(k); if (k === 'look') { applyShopLook(true); applyAd(false); } if (k === 'floor') applyFloor(true); if (k === 'ad') applyAd(true); sfx('buy'); updateMoney(); save(); show(ti);
         };
         row.appendChild(b); body.appendChild(row);
       }
@@ -1933,7 +2012,7 @@ buildTrees();
 if (state.built.length && !state.built.includes('counter')) state.built.splice(1, 0, 'counter');
 if (state.built.length > 3) state.questSeen = true;
 for (const def of DEFS) if (isBuilt(def.id)) build(def, true);
-applyShopLook(false); applyFloor(false); applyAd(false);
+applyShopLook(false); applyFloor(false); applyAd(false); applyLanes(false); applyBasket(false);
 for (const role in EXTRA) for (let i = 0; i < (state.extra[role] || 0); i++) makeWorker(role, EXTRA[role].at, 0, false);
 for (const k of ['mgrShop', 'mgrFarm']) if (state.up[k]) spawnManager(k, true);
 if (linesMoved) setTimeout(() => toast('專屬工人已合併成飼養員、農夫和理貨員'), 1500);
@@ -2006,7 +2085,7 @@ addEventListener('pagehide', save);
 
 // test hooks
 window.__farm = {
-  state, stations, player, zones, customers, workers, truck, heli, vip, park, events, DEFS, COUNTERS, colliders, tufts,
+  state, stations, player, zones, customers, workers, truck, heli, vip, park, events, DEFS, COUNTERS, colliders, tufts, pets,
   give(type, n) { for (let i = 0; i < n && room(player) > 0; i++) stackAdd(player, type); },
   giveTo(w, type, n) { for (let i = 0; i < n; i++) stackAdd(w, type); },
   cash(n) { state.money += n; updateMoney(); },

@@ -185,3 +185,11 @@ html, body {
 .lbl.mtag span .ii, .lbl.zone .how .ii { width: 1.7em; height: 1.7em; vertical-align: -0.45em; }
 .lbl.zone .how { font-size: 15px; margin-bottom: 2px; }
 .lbl.zone .desc { font-size: 12px; font-weight: 800; color: #fff; background: rgba(60, 90, 40, 0.55); border-radius: 8px; padding: 2px 7px; margin: 1px auto 3px; display: inline-block; text-shadow: none; }
+/* clearer labels (preview ?lbl2): soft plates behind zone text, far zones smaller */
+.lbl2 .lbl.zone { background: rgba(48, 78, 34, 0.6); border-radius: 14px; padding: 4px 10px 5px; text-shadow: none; }
+.lbl2 .lbl.zone .cost { font-size: 18px; }
+.lbl2 .lbl.zone .desc { background: none; padding: 0; margin: 0 0 2px; color: #e9f7d8; }
+.lbl2 .lbl.zone.far { transform-origin: 50% 100%; opacity: 0.85; }
+.lbl2 .lbl.zone.far .zn { font-size: 12px; margin: 0; }
+.lbl2 .lbl.zone.far .cost { font-size: 13px; }
+.lbl2 .lbl.zone.far .desc, .lbl2 .lbl.zone.far .how { display: none; }
