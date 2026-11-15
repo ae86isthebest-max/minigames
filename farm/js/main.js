@@ -103,7 +103,12 @@ const MGR_PAY = [0.5, 0.3, 0.25, 0.2], MGR_TIP = [1, 1.1, 1.2, 1.3], MGR_PAT = [
 const FARM_SP = [1, 1.15, 1.25, 1.35], FARM_CAP = [0, 0, 3, 5];
 const mShop = () => state.up.mgrShop || 0, mFarm = () => state.up.mgrFarm || 0;
 const isFarmRole = (r) => r === 'keeper' || r === 'farmer';
-const extraCost = (role) => Math.round(EXTRA[role].base * Math.pow(1.8, state.extra[role] || 0) / 10) * 10;
+// one price list for hiring, whether from the map or from the 員工 tab:
+// the next 飼養員 / 農夫 / 理貨員 costs base × 1.8 for every one already working
+const HIRE_BASE = { keeper: 90, farmer: 120, shelver: 250 };
+const hireCost = (role) => Math.round(HIRE_BASE[role] * Math.pow(1.8, workers.filter((w) => w.role === role).length) / 10) * 10;
+const extraCost = (role) => hireCost(role);
+const zoneDef = (def) => (def.kind === 'hire' && HIRE_BASE[def.role] ? { ...def, cost: { money: hireCost(def.role) } } : def);
 
 // small repeatable unlocks next to a building: one more chicken / cow / plant / patch of grass
 const GROW = {
@@ -899,7 +904,10 @@ function refreshZones() {
     // the two starting choices: picking one hides the other until the first cashier is hired
     if (def.alt && isBuilt(def.alt) && !isBuilt('cashier')) open = false;
     if (!open && zones[def.id]) { killZone(def.id); continue; }
-    if (open && !zones[def.id]) makeZone(def);
+    if (!open) continue;
+    const zd = zoneDef(def);
+    if (zones[def.id] && zones[def.id].def.cost.money !== zd.cost.money) killZone(def.id); // price moved after a hire
+    if (!zones[def.id]) makeZone(zd);
   }
   for (const def of growDefs()) {
     const z = zones[def.id];
@@ -1627,7 +1635,7 @@ function openPanel(kind) {
           btn.innerHTML = max ? '已滿' : ICON.money + fmtMoney(cost);
           btn.onclick = () => {
             if (max || state.money < cost) { sfx('drop'); btn.classList.add('shake'); setTimeout(() => btn.classList.remove('shake'), 300); return; }
-            state.money -= cost; state.extra[role] = have + 1; makeWorker(role, ex.at, 0, true); sfx('buy'); updateMoney(); save(); show(ti);
+            state.money -= cost; state.extra[role] = have + 1; makeWorker(role, ex.at, 0, true); refreshZones(); sfx('buy'); updateMoney(); save(); show(ti);
           };
           row.appendChild(btn); body.appendChild(row);
         }
