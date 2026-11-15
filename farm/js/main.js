@@ -78,6 +78,7 @@ const UPS = {
   cust: { tab: 3, name: '客人數量', ic: 'run', need: 'cashier', vals: [1, 1.2, 1.4, 1.6, 1.8, 2], cost: [300, 700, 1400, 2600, 4500], fmt: (v) => '×' + v },
   mach: { tab: 3, name: '機器速度', ic: 'juice', need: 'juicer', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [400, 900, 1800, 3200, 5500], fmt: (v) => '×' + v },
   keeper: { tab: 1, name: '飼養員工作', ic: 'egg', need: 'keeper', vals: [0, 1, 2, 3], cost: [150, 400, 900], fmt: (v) => ['餵雞', '餵雞＋撿蛋上架', '再照顧牛（餵牛、牛奶上架）', '貨架滿了就放進倉庫'][v] },
+  look: { tab: 3, name: '商店外觀', ic: 'shop', need: 'counter', vals: [0, 1, 2, 3], cost: [800, 3000, 9000], fmt: (v) => LOOKS[v].name + ['', '・雨棚花台', '・燈串路燈', '・紅地毯旗幟'][v] + (v ? '，客人更多、賣更貴' : '') },
   autoCash: { tab: 3, name: '自動收款', ic: 'money', need: 'cashier2', vals: [0, 1], cost: [6000], fmt: (v) => v ? '錢自動入袋' : '要自己收錢' },
 };
 const upVal = (k) => UPS[k].vals[state.up[k] || 0];
@@ -88,6 +89,28 @@ const EXTRA = {
   shelver: { name: '理貨員', base: 400, need: 'shelver', at: [1.6, -5] },
 };
 const EXTRA_MAX = 6;
+// 專屬工人: one per product line, does only that line (harvest or feed → shelf / machine)
+const LINES = {
+  tomato: { name: '番茄工人', need: 'tomato', items: ['tomato'], col: '#ff5a4e' },
+  egg: { name: '雞蛋工人', need: 'coop', items: ['egg'], feed: 'egg', col: '#fff3dd' },
+  corn: { name: '玉米工人', need: 'corn', items: ['corn'], col: '#ffd34a' },
+  milk: { name: '牛奶工人', need: 'barn', items: ['milk'], feed: 'milk', col: '#ffffff' },
+  juice: { name: '果汁工人', need: 'juicer', items: ['juice'], col: '#ff9f43' },
+  soy: { name: '黃豆工人', need: 'soy', items: ['soybean'], col: '#e6c283' },
+  soymilk: { name: '豆漿工人', need: 'soyMachine', items: ['soymilk'], col: '#f6efd8' },
+  wheat: { name: '小麥工人', need: 'wheat', items: ['wheat'], col: '#f1c95a' },
+  bread: { name: '麵包工人', need: 'oven', items: ['bread'], col: '#d9935a' },
+  cheese: { name: '起司工人', need: 'cheese', items: ['cheese'], col: '#ffe066' },
+  apple: { name: '蘋果工人', need: 'orchard', items: ['apple'], col: '#ff7a7a' },
+};
+const LINE_MAX = 3;
+const lineCost = (k) => { const d = DEF[LINES[k].need]; return Math.round(Math.max(150, (d.cost.money || 0) * 0.6) * Math.pow(1.8, state.lines[k] || 0) / 10) * 10; };
+function hireLine(k, pop) {
+  const L = LINES[k], d = DEF[L.need], at = d.pos || d.zone;
+  const w = makeWorker('line', [at[0] + 1.2, at[1] + 2.2], 0, pop, L.col);
+  Object.assign(w, { line: k, only: L.items, feed: L.feed || null, home: [at[0], at[1] + 2.4] });
+  return w;
+}
 const extraCost = (role) => Math.round(EXTRA[role].base * Math.pow(1.8, state.extra[role] || 0) / 10) * 10;
 
 // small repeatable unlocks next to a building: one more chicken / cow / plant / patch of grass
@@ -111,6 +134,7 @@ try { Object.assign(state, JSON.parse(localStorage.getItem(SAVE) || '{}')); } ca
 if (params.has('fresh')) Object.assign(state, { money: 50, built: [], paid: {}, up: {}, stock: {}, store: {}, lvl: {}, piles: [0, 0], earned: 0 });
 state.store = state.store || {};
 state.extra = state.extra || {};
+state.lines = state.lines || {};
 // older saves already had full fields and three chickens: keep them that way
 if (!state.lvl) { state.lvl = {}; if (state.built.length) { for (const k in GROW) state.lvl[k] = GROW[k].max; state.lvl.field = 25; } }
 for (const k in UPS) state.up[k] = state.up[k] || 0;
@@ -119,6 +143,29 @@ const MAPS_KEY = 'farm_maps_v1';
 function mapsGet() { try { return JSON.parse(localStorage.getItem(MAPS_KEY) || '{}'); } catch (e) { return {}; } }
 function mapsSet(id) { const m = mapsGet(); m[id] = true; try { localStorage.setItem(MAPS_KEY, JSON.stringify(m)); } catch (e) { /* storage off */ } showMapBtn(); }
 function showMapBtn() { const b = document.getElementById('bMap'); if (b) b.classList.toggle('hidden', !Object.keys(mapsGet()).length); }
+// backup code: every map's save in one base64 string, so progress survives a cleared browser or a new phone
+const SAVE_KEYS = ['farm_save_v2', 'harbor_save_v1', 'forest_save_v1', 'cafe_save_v1', MAPS_KEY];
+function exportSave() {
+  const o = { v: 1 };
+  for (const k of SAVE_KEYS) { const s = localStorage.getItem(k); if (s) o[k] = s; }
+  return 'FARM1:' + btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+}
+function importSave(txt) {
+  try {
+    const t = String(txt).replace(/\s+/g, '');
+    if (!t.startsWith('FARM1:')) return false;
+    const o = JSON.parse(decodeURIComponent(escape(atob(t.slice(6)))));
+    if (!o || o.v !== 1 || !o.farm_save_v2) return false;
+    for (const k of SAVE_KEYS) { if (o[k]) JSON.parse(o[k]); } // every part must be valid before touching storage
+    for (const k of SAVE_KEYS) { if (o[k]) localStorage.setItem(k, o[k]); else localStorage.removeItem(k); }
+    return true;
+  } catch (e) { return false; }
+}
+function copyText(ta) {
+  const ok = () => toast('存檔碼已複製，請貼到記事本或傳給自己保存');
+  const fallback = () => { ta.focus(); ta.select(); try { document.execCommand('copy'); ok(); } catch (e) { toast('請長按文字框，全選後複製'); } };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(ok, fallback); else fallback();
+}
 // set while restarting, so the page's own unload save can't write the old game back
 let resetting = false;
 function save() {
@@ -199,6 +246,81 @@ makeIcons();
 
 // ---------- static world ----------
 const standWall = { g: null, b: null };
+const standSign = { g: null, board: null };
+// 商店外觀 levels: name on the sign, its colour, and the awning stripes
+const LOOKS = [
+  { name: '農場小舖', col: '#59c25b' },
+  { name: '農場超市', col: '#59c25b', aw: ['#59c25b', '#fff3dd'] },
+  { name: '精品超市', col: '#ff8a6b', aw: ['#ff8a6b', '#fff3dd'] },
+  { name: '旗艦超市', col: '#e9a400', aw: ['#8f7bff', '#ffd34a'] },
+];
+let lookG = null, lookBoxes = [];
+function applyShopLook(anim) {
+  const lv = state.up.look || 0, L = LOOKS[lv];
+  // sign: a wider board each level
+  if (standSign.board) standSign.g.remove(standSign.board);
+  standSign.board = P2.signBoard(L.name, 1.6 + lv * 0.25, L.col); standSign.board.position.set(0, 1.75, 0); standSign.g.add(standSign.board);
+  if (lv === 3) { const st = K.mesh(G.sphere(0.2, 10, 8), '#ffd34a'); st.scale.set(1, 1, 0.4); K.add(standSign.board, st, 0, 0.72, 0); }
+  if (lookG) { scene.remove(lookG); lookG = null; }
+  for (const b of lookBoxes) unbox(b);
+  lookBoxes = [];
+  if (!lv) return;
+  const g = K.add(scene, new THREE.Group());
+  const x0 = isBuilt('market') ? -20.8 : -6.8, x1 = 7.95, Z = -7.3;
+  // striped awning along the whole front, scalloped edge
+  const sw = 0.62, n = Math.round((x1 - x0) / sw), w = (x1 - x0) / n;
+  for (let i = 0; i < n; i++) {
+    const x = x0 + (i + 0.5) * w, col = L.aw[i % 2];
+    const s = K.add(g, K.mesh(G.rbox(w + 0.01, 0.07, 1.05, 0.03, 1), col), x, 1.72, Z + 0.42);
+    s.rotation.x = 0.38;
+    K.add(g, K.mesh(G.sphere(w * 0.5, 8, 5), col, false), x, 1.52, Z + 0.92).scale.set(1, 0.55, 0.3);
+  }
+  K.add(g, K.mesh(G.rbox(x1 - x0 + 0.1, 0.12, 0.16, 0.05), lv === 3 ? '#ffd34a' : C.white), (x0 + x1) / 2, 1.9, Z - 0.02);
+  // flower planters against the wall (not in front of the door)
+  const fl = ['#ff7eb6', '#ffd34a', '#a98bff', '#ffffff', '#ff8a6b'];
+  let k = 0;
+  for (let x = x0 + 1.4; x < 4.6; x += 3.2) {
+    const pl = K.add(g, new THREE.Group(), x, 0, Z + 0.42);
+    K.add(pl, K.mesh(G.rbox(1.5, 0.42, 0.5, 0.08), lv === 3 ? '#fbfaf5' : C.woodLight), 0, 0.21, 0);
+    K.add(pl, K.mesh(G.rbox(1.38, 0.06, 0.4, 0.03, 1), '#8b5a3c', false), 0, 0.43, 0);
+    for (let j = 0; j < 5; j++) { const f = P.flower(fl[(k + j) % 5]); f.position.set(-0.56 + j * 0.28, 0.42, (j % 2) * 0.1 - 0.05); f.scale.setScalar(1.3); pl.add(f); }
+    k++;
+    lookBoxes.push(box(x - 0.8, Z + 0.15, x + 0.8, Z + 0.7));
+  }
+  if (lv >= 2) {
+    // colourful string lights hanging from the awning, and a lantern post each side of the door
+    g.add(bulbs(x0, x1, Z + 0.95));
+    for (const x of [4.95, 8.35]) {
+      const p = K.add(g, new THREE.Group(), x, 0, Z + 0.62);
+      K.add(p, K.mesh(G.rbox(0.36, 0.18, 0.36, 0.05), '#6a7382'), 0, 0.09, 0);
+      K.add(p, K.mesh(G.cyl(0.06, 0.07, 1.5, 8), '#6a7382'), 0, 0.85, 0);
+      K.add(p, K.mesh(G.rbox(0.3, 0.36, 0.3, 0.06), '#fff2b8'), 0, 1.75, 0);
+      K.add(p, K.mesh(G.cone(0.26, 0.2, 4), '#6a7382'), 0, 2.02, 0).rotation.y = Math.PI / 4;
+      lookBoxes.push(box(x - 0.2, Z + 0.42, x + 0.2, Z + 0.82));
+    }
+  }
+  if (lv >= 3) {
+    // red carpet from the door down to the path, and two flags
+    K.add(g, K.mesh(G.rbox(1.5, 0.03, 1.9, 0.02, 1), '#e8494d', false, true), 6.5, 0.045, -5.95);
+    K.add(g, K.mesh(G.rbox(1.62, 0.025, 2.0, 0.02, 1), '#ffd34a', false, true), 6.5, 0.035, -5.95);
+    for (const [x, c] of [[4.95, '#8f7bff'], [8.35, '#ff7eb6']]) {
+      K.add(g, K.mesh(G.cyl(0.04, 0.04, 1.1, 6), '#ffd34a'), x, 2.6, Z + 0.62);
+      K.add(g, K.mesh(G.rbox(0.62, 0.4, 0.04, 0.02, 1), c), x + 0.33, 2.9, Z + 0.62);
+    }
+  }
+  K.bakeStatic(g);
+  lookG = g;
+  if (anim) { popIn(g); popIn(standSign.board); }
+}
+function bulbs(x0, x1, z) {
+  const g = new THREE.Group(), cols = ['#ffd34a', '#ff8a6b', '#9fd86b', '#5aa9ff'];
+  const n = Math.round((x1 - x0) / 0.8);
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, m = new THREE.Mesh(G.sphere(0.07, 6, 5), new THREE.MeshBasicMaterial({ color: cols[i % 4] }));
+    m.position.set(x0 + (x1 - x0) * t, 1.42 - Math.abs(Math.sin(t * n * Math.PI / 2)) * 0.12, z); g.add(m);
+  }
+  return g;
+}
 let shopArea = null;
 const shopDoor = { d: null, k: 0 };
 const areas = [];
@@ -248,9 +370,9 @@ function buildWorld() {
   K.add(D, K.mesh(G.rbox(0.4, 1.5, 10.4, 0.08), C.wall), 7.95, 0.75, -12.4);
   K.add(D, K.mesh(G.rbox(0.46, 0.2, 10.5, 0.05), C.wallTrim), 7.95, 1.5, -12.4);
   box(7.75, -17.6, 8.15, -7.2);
-  const sign = K.add(D, new THREE.Group(), 3.6, 0, -6.2);
-  K.add(sign, K.mesh(G.rbox(0.14, 1.6, 0.14, 0.04), C.woodDark), 0, 0.8, 0);
-  const sb = P2.signBoard('農場小舖', 1.6, '#59c25b'); sb.position.set(0, 1.75, 0); sign.add(sb);
+  // the shop's name sign stays outside the baked scenery so the 商店外觀 upgrade can repaint it
+  standSign.g = K.add(scene, new THREE.Group(), 3.6, 0, -6.2);
+  K.add(standSign.g, K.mesh(G.rbox(0.14, 1.6, 0.14, 0.04), C.woodDark), 0, 0.8, 0);
   for (const [x, z] of [[-6.1, -16.8], [7.0, -16.8]]) {
     const pot = K.add(D, new THREE.Group(), x, 0.12, z);
     K.add(pot, K.mesh(G.cyl(0.32, 0.24, 0.45, 10), C.roof), 0, 0.22, 0);
@@ -274,6 +396,39 @@ function buildWorld() {
   const lamps = [];
   for (const x of [-4.5, 0.5, 5.5]) { const l = P2.wallLamp(); l.g.position.set(x, 1.35, -17.3); scene.add(l.g); lamps.push(l); }
   shopArea = makeArea(-6.8, -17.4, 7.9, -7.3, lamps, 0.5, -12);
+  buildBin();
+}
+// trash bin by the shop: stand on the red circle to throw away whatever you are carrying
+const bin = { x: 9.1, z: -6.5, px: 9.1, pz: -5.45, lid: null, open: 0, t: 0 };
+function buildBin() {
+  const g = K.add(scene, new THREE.Group(), bin.x, 0, bin.z);
+  g.add(K.blob(0.5));
+  K.add(g, K.mesh(G.cyl(0.34, 0.28, 0.78, 14), '#6cc0b2'), 0, 0.39, 0);
+  K.add(g, K.mesh(G.cyl(0.37, 0.37, 0.1, 14), '#4fa597'), 0, 0.8, 0);
+  K.add(g, K.mesh(G.rbox(0.36, 0.12, 0.05, 0.02, 1), '#ffffff', false), 0, 0.45, 0.31);
+  const hinge = K.add(g, new THREE.Group(), 0, 0.86, -0.34);
+  hinge.userData.dyn = true;
+  K.add(hinge, K.mesh(G.cyl(0.38, 0.38, 0.08, 14), '#ff8a6b'), 0, 0.04, 0.34);
+  K.add(hinge, K.mesh(G.rbox(0.22, 0.08, 0.1, 0.03, 1), '#e8694d'), 0, 0.12, 0.34);
+  bin.lid = hinge;
+  K.bakeStatic(g);
+  box(bin.x - 0.4, bin.z - 0.4, bin.x + 0.4, bin.z + 0.4);
+  const pd = P2.pad('#ff6b6b'); pd.position.set(bin.px, 0, bin.pz); scene.add(pd);
+  label('zone', '<div class="zn">🗑️ 丟掉手上的東西</div>', (o) => o.set(bin.px, 0.4, bin.pz + 0.2));
+}
+function updateBin(dt) {
+  const pp = player.p.root.position;
+  const on = dist2(pp, bin.px, bin.pz) < 0.75 && player.carry.length > 0;
+  bin.t -= dt;
+  if (on && bin.t <= 0) {
+    bin.t = 0.07;
+    const it = player.carry.pop(), from = new THREE.Vector3(); it.m.getWorldPosition(from);
+    player.p.back.remove(it.m); restack(player); sfx('pop');
+    fly(it.type, from, (o) => o.set(bin.x, 0.95, bin.z), 0.25, () => {});
+    if (!player.carry.length) toast('手上的東西丟掉了');
+  }
+  bin.open += ((on || bin.t > -0.4 ? 1 : 0) - bin.open) * Math.min(1, dt * 10);
+  bin.lid.rotation.x = -bin.open * 1.6;
 }
 
 // ---------- labels (DOM, projected) ----------
@@ -612,6 +767,7 @@ function buildMarket(instant) {
   K.add(g, K.mesh(G.circle(0.85, 24), '#ffd1e0', false, true), VIP.x, 0.025, VIP.z);
   shopArea.x0 = -20.8; shopArea.light.position.x = -6.5; shopArea.light.distance = 26;
   if (standWall.g) { scene.remove(standWall.g); standWall.g = null; unbox(standWall.b); }
+  if (state.up.look) applyShopLook(false);
   K.bakeStatic(g);
   if (!instant) popIn(g);
 }
@@ -736,8 +892,8 @@ function payZones(dt) {
 
 // ---------- workers ----------
 const workers = [];
-function makeWorker(role, at, counter, pop) {
-  const look = role === 'cashier' ? { body: '#b48cff', hat: 'bun', hatColor: '#7a4fd6', apron: C.white }
+function makeWorker(role, at, counter, pop, tint) {
+  const look = role === 'line' ? { body: '#5aa9ff', hat: 'cap', hatColor: tint, apron: tint } : role === 'cashier' ? { body: '#b48cff', hat: 'bun', hatColor: '#7a4fd6', apron: C.white }
     : role === 'farmer' ? { body: '#7fcf6a', hat: 'straw' } : role === 'keeper' ? { body: '#ffb347', hat: 'cap', hatColor: '#ff7f6e', apron: '#fff3dd' } : { body: '#5aa9ff', hat: 'cap', hatColor: '#ffd34a', apron: '#ffd34a' };
   const p = K.person(look);
   p.root.position.set(at[0], 0, at[1]); scene.add(p.root); if (pop) popIn(p.root);
@@ -796,7 +952,9 @@ function pickJob(w) {
   const want = (it) => customers.filter((c) => c.st === 'shop' && c.item === it).length;
   let best = null;
   const cap = upVal('shelfCap');
+  const only = w.only;
   for (const s of listOf('shelf')) {
+    if (only && !only.includes(s.item)) continue;
     const space = cap - s.n - (s.pend || 0); if (space < 2) continue;
     const src = sourceFor(s.item, w); if (!src) continue;
     const taken = workers.some((o) => o !== w && o.job && o.job.dst === s);
@@ -804,6 +962,7 @@ function pickJob(w) {
     if (!best || k > best.k) best = { k, dst: s, src, item: s.item };
   }
   for (const m of listOf('machine')) {
+    if (only && !only.includes(m.def.out) && !only.includes(m.def.in)) continue;
     const space = m.inMax - m.inN - (m.pend || 0); if (space < 3) continue;
     const src = sourceFor(m.def.in, w); if (!src) continue;
     const taken = workers.some((o) => o !== w && o.job && o.job.dst === m);
@@ -848,6 +1007,13 @@ function updateWorker(w, dt) {
       if (!w.job || typeof w.job !== 'object') { feedAnimals(w, dt, sp, (st) => st.def.out === 'egg' || (L >= 2 && st.def.out === 'milk')); return; }
     }
   }
+  if (w.role === 'line' && w.feed) {
+    // egg / milk line: feed its own animals, carry their output to the shelf
+    if (!w.job || typeof w.job !== 'object') {
+      if (room(w) >= 2 && !w.incoming && w.job !== 'deliver') { const kj = lineFeedJob(w); if (kj) w.job = kj; }
+      if (!w.job || typeof w.job !== 'object') { feedAnimals(w, dt, sp, (st) => st.def.out === w.feed); return; }
+    }
+  }
   // shelver: fetch a full load from a source, then deliver it to a shelf or a machine
   if (!w.job) {
     if (w.carry.length && !w.incoming) {
@@ -856,7 +1022,7 @@ function updateWorker(w, dt) {
       if (dst) w.job = { dst, item: type, phase: 'put' };
       else { w.carry.splice(0).forEach((it) => w.p.back.remove(it.m)); return; }
     } else if (!w.incoming) w.job = pickJob(w);
-    if (!w.job) { idleWander(w, dt, -1, -4); return; }
+    if (!w.job) { idleWander(w, dt, w.home ? w.home[0] : -1, w.home ? w.home[1] : -4); return; }
   }
   const j = w.job;
   if (j.phase === 'get') {
@@ -908,6 +1074,15 @@ function feedAnimals(w, dt, sp, ok) {
     if (t && go(w, t.x, t.z + 0.3, dt, sp)) { cutTuft(t, w); w.target = null; }
     if (!t && hay > 0) w.job = 'deliver';
   } else idleWander(w, dt, -1.5, 4.5);
+}
+function lineFeedJob(w) {
+  for (const s of listOf('producer')) {
+    if (s.def.out !== w.feed || s.outN < 3) continue;
+    const dst = listOf('shelf').find((q) => q.item === w.feed && upVal('shelfCap') - q.n - (q.pend || 0) >= 2)
+      || listOf('machine').find((m) => m.def.in === w.feed && m.inMax - m.inN - (m.pend || 0) >= 3);
+    if (dst) return { dst, src: s, item: w.feed, phase: 'get' };
+  }
+  return null;
 }
 function keeperJob(w, L) {
   for (const s of listOf('producer')) {
@@ -973,7 +1148,7 @@ function queueLen(ci) { return customers.filter((c) => c.ci === ci && (c.st === 
 function updateCustomers(dt) {
   const shelfN = COUNTERS[0].on ? listOf('shelf').length : 0;
   if (shelfN) {
-    spawnT -= dt * upVal('cust') * (events.market > 0 ? 2 : 1) * (park.ready ? 1.5 : 1);
+    spawnT -= dt * upVal('cust') * (1 + 0.12 * (state.up.look || 0)) * (events.market > 0 ? 2 : 1) * (park.ready ? 1.5 : 1);
     const maxC = 3 + Math.round(shelfN * 1.5) + (park.ready ? 4 : 0);
     if (spawnT <= 0 && customers.length < maxC) {
       if (park.ready && Math.random() < 0.5) parkCar(); else spawnCustomer();
@@ -1029,7 +1204,7 @@ function leaveShop(c) {
   if (c.home) c.path.push([14.2, -10], [c.home[0], -10], c.home); else c.path.push([ENTRY[0], ENTRY[1] + 14]);
 }
 function pay(c) {
-  const v = Math.round(c.got * ITEMS[c.item].price * upVal('price')) + (pets.cat ? 1 : 0);
+  const v = Math.round(c.got * ITEMS[c.item].price * upVal('price') * (1 + 0.05 * (state.up.look || 0))) + (pets.cat ? 1 : 0);
   const k = COUNTERS[c.ci];
   k.pile.value += v; setPile(k); sfx('coin');
   floatText('+' + v, V3(k.pile.x, 1.6, k.pile.z), 'money');
@@ -1089,7 +1264,7 @@ function makeOrder(types, lo, hi) {
   for (let i = 0; i < types && items.length; i++) { const it = pick(items); order[it] = (order[it] || 0) + Math.round(rand(lo, hi)); }
   return order;
 }
-function orderValue(order, mult) { let v = 0; for (const k in order) v += order[k] * ITEMS[k].price; return Math.round(v * upVal('price') * mult); }
+function orderValue(order, mult) { let v = 0; for (const k in order) v += order[k] * ITEMS[k].price; return Math.round(v * upVal('price') * (1 + 0.05 * (state.up.look || 0)) * mult); }
 function orderRows(order) { let r = ''; for (const k in order) if (order[k] > 0) r += costRow(k, order[k]); return r; }
 function orderDone(order) { for (const k in order) if (order[k] > 0) return false; return true; }
 function feedOrder(order, dropFn, dt, st) {
@@ -1316,7 +1491,7 @@ function openPanel(kind) {
       if (ti === 1 && !workers.length) { body.innerHTML = '<div class="empty">解鎖第一位員工後開放</div>'; return; }
       if (ti === 1) {
         const n = (r) => workers.filter((w) => w.role === r).length;
-        body.insertAdjacentHTML('beforeend', '<div class="chips staff"><span class="chip">收銀員 ×' + n('cashier') + '</span><span class="chip">飼養員 ×' + n('keeper') + '</span><span class="chip">農夫 ×' + n('farmer') + '</span><span class="chip">理貨員 ×' + n('shelver') + '</span></div>');
+        body.insertAdjacentHTML('beforeend', '<div class="chips staff"><span class="chip">收銀員 ×' + n('cashier') + '</span><span class="chip">飼養員 ×' + n('keeper') + '</span><span class="chip">農夫 ×' + n('farmer') + '</span><span class="chip">理貨員 ×' + n('shelver') + '</span><span class="chip">專屬工人 ×' + n('line') + '</span></div>');
         for (const role in EXTRA) {
           const ex = EXTRA[role]; if (!isBuilt(ex.need)) continue;
           const have = state.extra[role] || 0, max = have >= EXTRA_MAX, cost = extraCost(role);
@@ -1330,18 +1505,32 @@ function openPanel(kind) {
           };
           row.appendChild(btn); body.appendChild(row);
         }
+        const open = Object.keys(LINES).filter((k) => isBuilt(LINES[k].need));
+        if (open.length) body.insertAdjacentHTML('beforeend', '<div class="sec">專屬工人：只做一種貨，從收成到上架</div>');
+        for (const k of open) {
+          const L = LINES[k], have = state.lines[k] || 0, max = have >= LINE_MAX, cost = lineCost(k), it = L.items[0];
+          const row = document.createElement('div'); row.className = 'row';
+          row.innerHTML = '<span class="ricon">' + (ICON[it] || '🧑‍🌾') + '</span><div class="rmid"><b>請一位' + L.name + '</b><small>' + (L.feed ? '餵' + (L.feed === 'egg' ? '雞' : '牛') + '、收' + ITEMS[it].name + '、上架' : '收' + ITEMS[it].name + '、送到貨架或機器') + ' · 現在 ' + have + ' 位' + (max ? '（已滿）' : '') + '</small></div>';
+          const btn = document.createElement('button'); btn.className = 'buy' + (max ? ' max' : (state.money < cost ? ' poor' : ''));
+          btn.innerHTML = max ? '已滿' : ICON.money + fmtMoney(cost);
+          btn.onclick = () => {
+            if (max || state.money < cost) { sfx('drop'); btn.classList.add('shake'); setTimeout(() => btn.classList.remove('shake'), 300); return; }
+            state.money -= cost; state.lines[k] = have + 1; hireLine(k, true); sfx('buy'); updateMoney(); save(); show(ti);
+          };
+          row.appendChild(btn); body.appendChild(row);
+        }
       }
       for (const k in UPS) {
         const u = UPS[k]; if (u.tab !== ti) continue;
-        if (u.need && !isBuilt(u.need)) { body.insertAdjacentHTML('beforeend', '<div class="row locked"><span class="ricon">' + ICON[u.ic] + '</span><div class="rmid"><b>？？？</b><small>解鎖' + DEF[u.need].name + '後開放</small></div></div>'); continue; }
+        if (u.need && !isBuilt(u.need)) { body.insertAdjacentHTML('beforeend', '<div class="row locked"><span class="ricon">' + (ICON[u.ic] || '<span class="ic">🏪</span>') + '</span><div class="rmid"><b>？？？</b><small>解鎖' + DEF[u.need].name + '後開放</small></div></div>'); continue; }
         const lvl = state.up[k], max = lvl >= u.cost.length;
         const row = document.createElement('div'); row.className = 'row';
-        row.innerHTML = '<span class="ricon">' + ICON[u.ic] + '</span><div class="rmid"><b>' + u.name + '</b><small>等級 ' + (lvl + 1) + ' · ' + u.fmt(u.vals[lvl]) + (max ? '' : ' → ' + u.fmt(u.vals[lvl + 1])) + '</small><div class="pips">' + u.vals.map((_, i) => '<i class="' + (i <= lvl ? 'on' : '') + '"></i>').join('') + '</div></div>';
+        row.innerHTML = '<span class="ricon">' + (ICON[u.ic] || '<span class="ic">🏪</span>') + '</span><div class="rmid"><b>' + u.name + '</b><small>等級 ' + (lvl + 1) + ' · ' + u.fmt(u.vals[lvl]) + (max ? '' : ' → ' + u.fmt(u.vals[lvl + 1])) + '</small><div class="pips">' + u.vals.map((_, i) => '<i class="' + (i <= lvl ? 'on' : '') + '"></i>').join('') + '</div></div>';
         const b = document.createElement('button'); b.className = 'buy' + (max ? ' max' : (state.money < u.cost[lvl] ? ' poor' : ''));
         b.innerHTML = max ? '已滿級' : ICON.money + fmtMoney(u.cost[lvl]);
         b.onclick = () => {
           if (max || state.money < u.cost[lvl]) { sfx('drop'); b.classList.add('shake'); setTimeout(() => b.classList.remove('shake'), 300); return; }
-          state.money -= u.cost[lvl]; state.up[k]++; sfx('buy'); updateMoney(); save(); show(ti);
+          state.money -= u.cost[lvl]; state.up[k]++; if (k === 'look') applyShopLook(true); sfx('buy'); updateMoney(); save(); show(ti);
         };
         row.appendChild(b); body.appendChild(row);
       }
@@ -1378,8 +1567,27 @@ function openPanel(kind) {
   } else if (kind === 'set') {
     $('pTitle').textContent = '設定';
     body.innerHTML = '<div class="row"><span class="ricon">🔊</span><div class="rmid"><b>聲音</b></div><button class="buy" id="sSnd">' + (state.sound ? '開' : '關') + '</button></div>' +
+      '<div class="row"><span class="ricon">💾</span><div class="rmid"><b>立即儲存</b><small>遊戲每 4 秒也會自動儲存</small></div><button class="buy" id="sSave">儲存</button></div>' +
+      '<div class="row"><span class="ricon">📋</span><div class="rmid"><b>備份存檔</b><small>複製一段存檔碼，換手機或清除瀏覽器也能救回</small></div><button class="buy" id="sExp">複製</button></div>' +
+      '<div class="row"><span class="ricon">📥</span><div class="rmid"><b>還原存檔</b><small>貼上存檔碼，回到備份時的進度</small></div><button class="buy" id="sImp">貼上</button></div>' +
+      '<div id="sBox" class="savebox hidden"><textarea id="sCode" rows="4" spellcheck="false"></textarea><button class="buy" id="sGo"></button></div>' +
       '<div class="row"><span class="ricon">🔄</span><div class="rmid"><b>重新開始</b><small>清除所有進度</small></div><button class="buy poor" id="sReset">重新開始</button></div>';
     $('sSnd').onclick = () => { state.sound = !state.sound; save(); openPanel('set'); };
+    $('sSave').onclick = () => { save(); toast('已儲存 ✔'); };
+    const box = $('sBox'), code = $('sCode'), go = $('sGo');
+    $('sExp').onclick = () => {
+      save();
+      code.value = exportSave(); code.readOnly = true; go.textContent = '複製存檔碼'; box.classList.remove('hidden');
+      go.onclick = () => copyText(code);
+      copyText(code);
+    };
+    $('sImp').onclick = () => {
+      code.value = ''; code.readOnly = false; code.placeholder = '把存檔碼貼在這裡'; go.textContent = '還原'; box.classList.remove('hidden'); code.focus();
+      go.onclick = () => {
+        if (!importSave(code.value)) { toast('存檔碼不正確，請整段重新複製'); return; }
+        resetting = true; toast('已還原，重新載入中…'); setTimeout(() => location.replace(location.pathname), 600);
+      };
+    };
     let armed = false;
     $('sReset').onclick = (e) => {
       if (!armed) { armed = true; e.target.textContent = '確定？'; return; }
@@ -1418,6 +1626,7 @@ function playerInteract(dt) {
   axe.visible = chopping;
   axe.rotation.x = chopping ? -1.2 + Math.sin(performance.now() / 70) * 0.9 : 0;
   player.xfer2 = (player.xfer2 || 0) - dt;
+  updateBin(dt);
   for (const s of Object.values(stations)) {
     if (s.kind === 'producer' || s.kind === 'machine') {
       if (dist2(pp, s.inPt.x, s.inPt.z) < 1.5 && count(player, s.def.in) > 0) depositTo(player, s, s.def.in, dt);
@@ -1590,7 +1799,9 @@ buildTrees();
 if (state.built.length && !state.built.includes('counter')) state.built.splice(1, 0, 'counter');
 if (state.built.length > 3) state.questSeen = true;
 for (const def of DEFS) if (isBuilt(def.id)) build(def, true);
+applyShopLook(false);
 for (const role in EXTRA) for (let i = 0; i < (state.extra[role] || 0); i++) makeWorker(role, EXTRA[role].at, 0, false);
+for (const k in LINES) if (isBuilt(LINES[k].need)) for (let i = 0; i < (state.lines[k] || 0); i++) hireLine(k, false);
 refreshZones();
 resize(); updateCamera(0, true); updateMoney();
 
@@ -1665,7 +1876,9 @@ window.__farm = {
   sim(sec) { for (let i = 0; i < sec * 30; i++) step(1 / 30); },
   // run the game and count frames where a worker stands inside something solid
   probe(sec) { let n = 0; for (let i = 0; i < sec * 30; i++) { step(1 / 30); for (const w of workers) { const p = w.p.root.position; for (const c of colliders) if (p.x > c.x0 + 0.05 && p.x < c.x1 - 0.05 && p.z > c.z0 + 0.05 && p.z < c.z1 - 0.05) { n++; break; } } } return n; },
-  guide, guideTarget,
+  guide, guideTarget, exportSave, importSave,
+  look(n) { state.up.look = n; applyShopLook(false); },
+  hireLine(k) { state.lines[k] = (state.lines[k] || 0) + 1; return hireLine(k, false); },
   calls: () => renderer.info.render.calls,
   lineup(x, z) { Object.keys(ITEMS).forEach((t, i) => { const m = P.itemMesh(t); m.scale.setScalar(2); m.position.set(x + (i % 5) * 1.1, 0, z + Math.floor(i / 5) * 1.2); scene.add(m); }); },
 };

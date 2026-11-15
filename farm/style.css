@@ -173,3 +173,7 @@ html, body {
 #quest .q.ok { opacity: 0.85; text-decoration: line-through; }
 #quest .q.ok span { background: #5fcf6a; color: #fff; }
 #quest .qdone { margin-top: 6px; font-weight: 900; color: #3fae4c; }
+.savebox { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; padding: 10px 12px; border-radius: 18px; background: #fff; box-shadow: 0 2px 0 #eadcc4; }
+.savebox.hidden { display: none; }
+.savebox textarea { width: 100%; box-sizing: border-box; border: 2px solid #eadcc4; border-radius: 12px; padding: 8px; font: 12px/1.35 monospace; color: #4a3b2e; background: #fffaf0; resize: none; word-break: break-all; user-select: text; -webkit-user-select: text; touch-action: auto; }
+.savebox .buy { align-self: flex-end; }
