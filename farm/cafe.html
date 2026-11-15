@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#cfe8d6">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:,">
+<title>山城咖啡館</title>
+<style>
+  html, body { background: #cfe8d6; }
+  #money { box-shadow: 0 3px 0 rgba(60, 110, 30, 0.25); }
+  .sbtn.map { background: #4fb6a8; }
+  .lbl.zone { text-shadow: 0 2px 0 rgba(40, 70, 25, 0.6); }
+  .lbl.badge.dirty { background: rgba(120, 90, 60, 0.75); }
+  .lbl.bubble.order .ii { width: 1.5em; height: 1.5em; }
+  .lbl.bubble.order { font-size: 14px; padding: 2px 7px; }
+  .lbl.bubble.order.late { background: #ffe0d6; }
+  .lbl.bubble.order.late::after { border-top-color: #ffe0d6; }
+  .sbtn { position: relative; }
+  .sbtn.log { background: #ff8fb1; }
+  .sbtn .dot { position: absolute; top: -3px; right: -3px; width: 14px; height: 14px; border-radius: 50%; background: #ff4d4d; border: 2px solid #fff; }
+  .lbl.badge.grp { display: flex; gap: 6px; align-items: center; }
+  .lbl.badge.grp span { white-space: nowrap; }
+  .lbl.badge.grp .tot { opacity: 0.75; font-size: 0.85em; }
+  .logs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+  .lcard { background: #fff; border-radius: 16px; padding: 8px 6px 10px; text-align: center; box-shadow: 0 2px 0 #eadcc4; }
+  .lcard img { width: 72px; height: 72px; display: block; margin: 0 auto; }
+  .lcard img.sil { opacity: 0.55; }
+  .lcard .big { font-size: 46px; display: block; height: 72px; line-height: 72px; }
+  .lcard b { display: block; font-size: 15px; color: #4a3b2e; margin-top: 2px; }
+  .lcard.unk b { color: #b3a28b; }
+  .lcard small { display: block; font-size: 12px; color: #9b8570; margin-top: 2px; }
+  .rar { display: inline-block; font-size: 11px; font-weight: 800; padding: 1px 8px; border-radius: 999px; color: #fff; margin-top: 3px; }
+  .rar.r0 { background: #aab4bf; } .rar.r1 { background: #59c25b; } .rar.r2 { background: #5aa9ff; } .rar.r3 { background: #a98bff; } .rar.r4 { background: #ffb347; }
+  .preward { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding: 10px 14px; border-radius: 16px; background: #fff3c9; color: #7a5a1e; font-weight: 800; font-size: 14px; }
+  .preward.done { background: #dff5d8; color: #3a7a2a; }
+  #pTabs button { white-space: nowrap; font-size: 13px; }
+  .lbl.roast { background: rgba(58, 42, 34, 0.86); padding: 5px 8px 4px; border-radius: 10px; width: 132px; }
+  .lbl.roast .rbar { position: relative; display: flex; height: 10px; border-radius: 6px; overflow: hidden; }
+  .lbl.roast .rbar i { display: block; height: 100%; }
+  .lbl.roast .rbar .l { background: #e8c48a; } .lbl.roast .rbar .m { background: #59c25b; } .lbl.roast .rbar .d { flex: 1; background: #7a4a2c; }
+  .lbl.roast .rbar b { position: absolute; top: -2px; width: 4px; height: 14px; margin-left: -2px; background: #fff; border-radius: 2px; box-shadow: 0 0 3px rgba(0, 0, 0, 0.6); }
+  .lbl.roast .rtx { color: #f6e7c8; font-size: 11px; font-weight: 800; text-align: center; margin-top: 2px; white-space: nowrap; }
+  .lbl.roast .rtx span { color: #8ff08f; }
+  .reg { color: #ffb400; font-weight: 900; margin-right: 1px; }
+  #quest { top: auto; bottom: calc(18px + env(safe-area-inset-bottom)); }   /* bottom-left: under the buttons it covered the left starting zone and the player */
+  .lbl.guide { background: #ffd23f; color: #6b4a00; padding: 3px 12px; border-radius: 999px; font-weight: 900; font-size: 15px; box-shadow: 0 3px 0 rgba(150, 100, 0, 0.35); }
+  .lbl.event { background: rgba(30, 110, 150, 0.7); color: #fff; padding: 4px 12px; border-radius: 999px; font-weight: 900; font-size: 14px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js", "rbox": "./vendor/RoundedBoxGeometry.js", "bgu": "./vendor/BufferGeometryUtils.js" } }
+</script>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="labels"></div>
+<div id="ui">
+  <div id="money"><span class="bill"></span><span id="moneyN">0</span></div>
+  <div id="side">
+    <a class="sbtn back" href="../" aria-label="返回小遊戲合集">‹</a>
+    <button class="sbtn up" id="bUp" aria-label="升級"><span>⬆</span></button>
+    <button class="sbtn inv" id="bInv" aria-label="倉庫"><span>📦</span></button>
+    <button class="sbtn log" id="bLog" aria-label="咖啡圖鑑"><span>📖</span><i class="dot hidden"></i></button>
+    <button class="sbtn map" id="bMap" aria-label="地圖"><span>🗺</span></button>
+    <button class="sbtn set" id="bSet" aria-label="設定"><span>⚙</span></button>
+  </div>
+  <div id="toast"></div>
+  <div id="quest" class="hidden"></div>
+</div>
+<div id="panel" class="hidden">
+  <div class="pcard">
+    <div class="phead"><b id="pTitle"></b><button id="pClose" aria-label="關閉">×</button></div>
+    <div id="pTabs"></div>
+    <div id="pBody"></div>
+  </div>
+</div>
+<script type="module" src="js/cafe.js"></script>
+</body>
+</html>

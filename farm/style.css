@@ -157,3 +157,43 @@ html, body {
 .mapcard small { display: block; font-size: 12px; color: #9b8570; margin-top: 2px; }
 .mapcard.here { outline: 3px solid #8f7bff; }
 .mapcard.locked { opacity: 0.55; }
+.lbl.choice { background: #ffd23f; color: #5a3b00; font-weight: 900; font-size: 16px; padding: 5px 14px; border-radius: 999px; box-shadow: 0 3px 0 rgba(0,0,0,0.15); }
+
+/* beginner checklist (bottom-left, clear of the starting zones) */
+#quest {
+  position: absolute; left: calc(12px + env(safe-area-inset-left)); bottom: calc(18px + env(safe-area-inset-bottom));
+  width: 178px; padding: 10px 12px; border-radius: 16px; background: rgba(255, 250, 240, 0.95);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.12); color: #4a3b2e; font-size: 13px; pointer-events: none;
+}
+#quest b { display: block; font-size: 14px; margin-bottom: 6px; color: #e8875a; }
+#quest .q { display: flex; align-items: center; gap: 7px; padding: 4px 0; opacity: 0.6; }
+#quest .q span { width: 20px; height: 20px; flex: none; border-radius: 50%; display: grid; place-items: center; background: #efe3cf; font-weight: 900; font-size: 12px; }
+#quest .q.now { opacity: 1; font-weight: 800; }
+#quest .q.now span { background: #ffd23f; color: #5a3b00; }
+#quest .q.ok { opacity: 0.85; text-decoration: line-through; }
+#quest .q.ok span { background: #5fcf6a; color: #fff; }
+#quest .qdone { margin-top: 6px; font-weight: 900; color: #3fae4c; }
+.savebox { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; padding: 10px 12px; border-radius: 18px; background: #fff; box-shadow: 0 2px 0 #eadcc4; }
+.savebox.hidden { display: none; }
+.savebox textarea { width: 100%; box-sizing: border-box; border: 2px solid #eadcc4; border-radius: 12px; padding: 8px; font: 12px/1.35 monospace; color: #4a3b2e; background: #fffaf0; resize: none; word-break: break-all; user-select: text; -webkit-user-select: text; touch-action: auto; }
+.savebox .buy { align-self: flex-end; }
+.lbl.maxtag { background: #ff5a4e; color: #fff; font-weight: 900; font-size: 12px; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 9px; border: 2px solid #fff; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.18); }
+#newVer { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 74px); transform: translateX(-50%); z-index: 60; border: 0; border-radius: 16px; padding: 10px 16px; font: inherit; font-weight: 900; font-size: 14px; color: #fff; background: #8f7bff; box-shadow: 0 4px 0 #6c58e0, 0 6px 16px rgba(0, 0, 0, 0.18); white-space: nowrap; cursor: pointer; animation: newVerIn 0.35s ease-out; }
+@keyframes newVerIn { from { transform: translate(-50%, -16px); opacity: 0; } }
+.lbl.mtag { text-align: center; background: rgba(255, 255, 255, 0.92); color: #4a3b2e; border-radius: 12px; padding: 3px 9px; font-size: 12px; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12); }
+.lbl.mtag b { display: block; font-size: 13px; }
+.lbl.mtag span .ii, .lbl.zone .how .ii { width: 1.7em; height: 1.7em; vertical-align: -0.45em; }
+.lbl.zone .how { font-size: 15px; margin-bottom: 2px; }
+.lbl.zone .desc { font-size: 12px; font-weight: 800; color: #fff; background: rgba(60, 90, 40, 0.55); border-radius: 8px; padding: 2px 7px; margin: 1px auto 3px; display: inline-block; text-shadow: none; }
+/* clearer labels (default; ?lbl1 = old look): soft plates behind zone text, far zones smaller */
+.lbl2 .lbl.zone { background: rgba(48, 78, 34, 0.6); border-radius: 14px; padding: 4px 10px 5px; text-shadow: none; }
+.lbl2 .lbl.zone .cost { font-size: 18px; }
+.lbl2 .lbl.zone .desc { background: none; padding: 0; margin: 0 0 2px; color: #e9f7d8; }
+.lbl2 .lbl.zone.far { transform-origin: 50% 100%; opacity: 0.85; }
+.lbl2 .lbl.zone.far .zn { font-size: 12px; margin: 0; }
+.lbl2 .lbl.zone.far .cost { font-size: 13px; }
+.lbl2 .lbl.zone.far .desc, .lbl2 .lbl.zone.far .how { display: none; }
+.lbl.bubble .rest { margin-left: 4px; padding-left: 4px; border-left: 1px solid #eadcc4; opacity: 0.8; }
+.lbl.bubble .rest .ii { width: 1em; height: 1em; }
+.lbl.bubble .rest { margin-left: 4px; padding-left: 4px; border-left: 1px solid #eadcc4; opacity: 0.85; }
+.lbl.bubble .rest .ii { width: 1em; height: 1em; }

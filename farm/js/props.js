@@ -1,6 +1,6 @@
 // Props for the farm game, all built from the shared style kit.
 import * as THREE from 'three';
-import { C, G, mesh, add, blob, bakeStatic } from './kit.js';
+import { C, G, mesh, add, blob, bakeStatic, itemEdge } from './kit.js';
 
 export const ITEMS = {
   hay: { name: '禾草', icon: '🌿', h: 0.3, price: 0 },
@@ -16,10 +16,21 @@ export const ITEMS = {
   soymilk: { name: '豆漿', icon: '🥤', h: 0.38, price: 20 },
   bread: { name: '麵包', icon: '🍞', h: 0.26, price: 26 },
   cheese: { name: '起司', icon: '🧀', h: 0.24, price: 34 },
+  // 大擴充 (south farmland): new crops, the sheep line and the bee line
+  carrot: { name: '紅蘿蔔', icon: '🥕', h: 0.2, price: 12 },
+  strawberry: { name: '草莓', icon: '🍓', h: 0.26, price: 15 },
+  pumpkin: { name: '南瓜', icon: '🎃', h: 0.3, price: 22 },
+  flower: { name: '花', icon: '💐', h: 0.3, price: 0 },
+  wool: { name: '羊毛', icon: '☁️', h: 0.26, price: 0 },
+  honey: { name: '蜂蜜', icon: '🍯', h: 0.32, price: 40 },
+  jam: { name: '草莓果醬', icon: '🫙', h: 0.3, price: 45 },
+  pie: { name: '南瓜派', icon: '🥧', h: 0.15, price: 60 },
+  yarn: { name: '毛線球', icon: '🧶', h: 0.28, price: 75 },
   money: { name: '錢', icon: '💵', h: 0.07, price: 0 },
 };
 
-export function itemMesh(type) {
+export const itemMesh = (type) => itemEdge(itemMeshRaw(type));
+function itemMeshRaw(type) {
   const g = new THREE.Group();
   if (type === 'hay') {
     add(g, mesh(G.rbox(0.5, 0.28, 0.36, 0.07), '#f4d466'), 0, 0.14, 0);
@@ -71,7 +82,60 @@ export function itemMesh(type) {
   } else if (type === 'money') {
     add(g, mesh(G.rbox(0.42, 0.06, 0.24, 0.02), C.money), 0, 0.03, 0);
     add(g, mesh(G.rbox(0.1, 0.065, 0.245, 0.01), '#d8f7c8'), 0, 0.03, 0);
+  } else if (type === 'carrot') {
+    // lying carrot: orange cone with a green leafy top
+    const root = add(g, mesh(G.cone(0.085, 0.38, 10), '#ff8a2a'), 0.02, 0.09, 0); root.rotation.z = Math.PI / 2;
+    for (const z of [0.15, 0.4, 0.65]) add(g, mesh(G.rbox(0.035, 0.012, 0.01, 0.004), '#e06c12', false), -0.02 + z * 0.2, 0.17 - z * 0.06, 0);
+    for (const [a, l] of [[-0.5, 0.17], [0, 0.2], [0.5, 0.16]]) { const lf = add(g, mesh(G.rbox(0.16, 0.035, 0.07, 0.015), '#4fb547'), 0.27 + l * 0.35, 0.1, Math.sin(a) * 0.06); lf.rotation.y = a; lf.rotation.z = 0.25; }
+  } else if (type === 'strawberry') {
+    const b = add(g, mesh(G.cone(0.13, 0.22, 10), '#ff3b55'), 0, 0.12, 0); b.rotation.x = Math.PI;
+    add(g, mesh(G.sphere(0.13, 12, 8), '#ff3b55'), 0, 0.21, 0).scale.set(1, 0.45, 1);
+    for (let i = 0; i < 6; i++) { const a = i * 1.047, y = 0.13 + (i % 2) * 0.05; add(g, mesh(G.sphere(0.017, 5, 4), '#ffe36a', false), Math.cos(a) * (0.075 + (i % 2) * 0.02), y, Math.sin(a) * (0.075 + (i % 2) * 0.02)); }
+    for (let i = 0; i < 5; i++) { const lf = add(g, mesh(G.rbox(0.1, 0.02, 0.04, 0.01), '#3fa64a'), Math.cos(i * 1.257) * 0.05, 0.26, Math.sin(i * 1.257) * 0.05); lf.rotation.y = -i * 1.257; }
+    add(g, mesh(G.cyl(0.012, 0.016, 0.05, 5), '#3f8a3a'), 0, 0.29, 0);
+  } else if (type === 'pumpkin') {
+    for (let i = 0; i < 6; i++) { const a = i * 1.047; add(g, mesh(G.sphere(0.1, 10, 8), i % 2 ? '#ff9a2e' : '#ff8a1f'), Math.cos(a) * 0.08, 0.14, Math.sin(a) * 0.08).scale.set(1, 1.15, 1); }
+    add(g, mesh(G.sphere(0.13, 12, 10), '#ff9330'), 0, 0.14, 0).scale.set(1, 1.05, 1);
+    add(g, mesh(G.cyl(0.025, 0.035, 0.09, 6), '#6b8a2e'), 0, 0.29, 0).rotation.z = 0.25;
+    const lf = add(g, mesh(G.sphere(0.05, 8, 6), '#4fae4f'), 0.06, 0.29, 0.02); lf.scale.set(1.4, 0.3, 0.9);
+  } else if (type === 'flower') {
+    // bouquet: paper cone and three blooms
+    const w = add(g, mesh(G.cone(0.1, 0.2, 8), '#fff3dd'), 0, 0.1, 0); w.rotation.x = Math.PI;
+    add(g, mesh(G.cyl(0.1, 0.1, 0.03, 8), '#ff7eb6'), 0, 0.19, 0);
+    for (const [x, z, c] of [[-0.06, 0.02, '#ff6fa8'], [0.06, 0.03, '#ffd34a'], [0, -0.05, '#a98bff']]) {
+      add(g, mesh(G.sphere(0.065, 8, 6), c), x, 0.25, z).scale.set(1, 0.7, 1);
+      add(g, mesh(G.sphere(0.025, 6, 4), '#fff6c9', false), x, 0.29, z);
+    }
+  } else if (type === 'wool') {
+    // fluffy fleece: a cluster of cream puffs
+    for (const [x, y, z, r] of [[0, 0.12, 0, 0.12], [-0.1, 0.09, 0.04, 0.09], [0.1, 0.09, -0.03, 0.095], [0.02, 0.1, 0.1, 0.085], [-0.02, 0.1, -0.1, 0.085], [0.01, 0.2, 0.01, 0.08]]) add(g, mesh(G.sphere(r, 9, 7), '#fbf7ec'), x, y, z);
+  } else if (type === 'honey') {
+    add(g, mesh(G.cyl(0.12, 0.13, 0.22, 12), '#ffb21e'), 0, 0.11, 0);
+    add(g, mesh(G.cyl(0.125, 0.135, 0.07, 12), '#fff3dd'), 0, 0.11, 0);
+    add(g, mesh(G.cyl(0.13, 0.13, 0.05, 12), '#ffde59'), 0, 0.245, 0);
+    add(g, mesh(G.sphere(0.06, 8, 6), '#ffb21e'), 0.06, 0.255, 0.03).scale.set(1.3, 0.35, 1);
+    add(g, mesh(G.cyl(0.015, 0.015, 0.16, 5), C.woodDark), -0.04, 0.32, 0).rotation.z = 0.35;
+    add(g, mesh(G.sphere(0.035, 7, 5), C.woodLight), -0.07, 0.39, 0);
+  } else if (type === 'jam') {
+    add(g, mesh(G.cyl(0.11, 0.11, 0.22, 12), '#d81f4a'), 0, 0.11, 0);
+    add(g, mesh(G.cyl(0.115, 0.115, 0.08, 12), '#fff3dd'), 0, 0.1, 0);
+    add(g, mesh(G.sphere(0.03, 6, 5), '#ff3b55', false), 0, 0.1, 0.115).scale.set(1, 1, 0.3);
+    add(g, mesh(G.cyl(0.125, 0.125, 0.05, 12), '#ffffff'), 0, 0.245, 0);
+    for (let i = 0; i < 4; i++) add(g, mesh(G.rbox(0.05, 0.052, 0.05, 0.01), '#ff5a7a', false), Math.cos(i * 1.571) * 0.07, 0.247, Math.sin(i * 1.571) * 0.07);
+    add(g, mesh(G.sphere(0.035, 6, 5), '#ff5a7a'), 0, 0.28, 0).scale.set(1, 0.5, 1);
+  } else if (type === 'pie') {
+    add(g, mesh(G.cyl(0.21, 0.17, 0.08, 14), '#e0a35a'), 0, 0.04, 0);
+    add(g, mesh(G.cyl(0.18, 0.18, 0.025, 14), '#ff9a3c', false), 0, 0.085, 0);
+    for (let i = 0; i < 8; i++) add(g, mesh(G.sphere(0.035, 6, 4), '#f2c27a', false), Math.cos(i * 0.785) * 0.19, 0.085, Math.sin(i * 0.785) * 0.19);
+    add(g, mesh(G.sphere(0.05, 8, 6), '#fffaf0'), 0, 0.11, 0).scale.set(1, 0.7, 1);
+  } else if (type === 'yarn') {
+    add(g, mesh(G.sphere(0.135, 12, 10), '#ff7eb6'), 0, 0.14, 0);
+    for (const [rx, rz] of [[0.3, 0], [1.2, 0.4], [-0.7, 1.1]]) { const t = add(g, mesh(new THREE.TorusGeometry(0.135, 0.016, 5, 18), '#e85a9a'), 0, 0.14, 0); t.rotation.set(rx, 0, rz); }
+    const tail = add(g, mesh(G.capsule(0.015, 0.14, 4), '#e85a9a'), 0.15, 0.04, 0.05); tail.rotation.z = 1.2;
+    const nd = add(g, mesh(G.cyl(0.012, 0.012, 0.36, 5), '#ffd34a'), 0, 0.2, 0); nd.rotation.z = 0.9;
   }
+  // thick dark item edge first, then merge (merged meshes no longer carry the outline tag)
+  itemEdge(g);
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   bakeStatic(g);
   return g;
@@ -117,6 +181,23 @@ function pen(w, d) {
   return g;
 }
 
+// the bigger yard (5–8 chickens): white picket fence with coral caps, straw floor, water bowl
+function bigPen(w, d) {
+  const g = new THREE.Group();
+  add(g, mesh(G.rbox(w - 0.1, 0.03, d - 0.1, 0.02, 1), '#f3dc8c', false, true), 0, 0.015, 0);
+  const post = (x, z) => { add(g, mesh(G.rbox(0.18, 0.78, 0.18, 0.05), C.white), x, 0.39, z); add(g, mesh(G.cone(0.14, 0.18, 4), '#ff8a6b'), x, 0.87, z).rotation.y = Math.PI / 4; };
+  const side = (x0, z0, x1, z1) => {
+    const len = Math.hypot(x1 - x0, z1 - z0), n = Math.max(2, Math.round(len / 0.24)), rot = -Math.atan2(z1 - z0, x1 - x0);
+    for (const y of [0.22, 0.5]) { const r = add(g, mesh(G.rbox(len, 0.08, 0.06, 0.03), C.white), (x0 + x1) / 2, y, (z0 + z1) / 2); r.rotation.y = rot; }
+    for (let i = 1; i < n; i++) { const t = i / n; add(g, mesh(G.rbox(0.09, 0.6, 0.05, 0.03), C.white), x0 + (x1 - x0) * t, 0.32, z0 + (z1 - z0) * t).rotation.y = rot; }
+  };
+  for (const [x, z] of [[-w / 2, -d / 2], [w / 2, -d / 2], [-w / 2, d / 2], [w / 2, d / 2]]) post(x, z);
+  side(-w / 2, d / 2, w / 2, d / 2); side(-w / 2, -d / 2, -w / 2, d / 2); side(w / 2, -d / 2, w / 2, d / 2);
+  add(g, mesh(G.cyl(0.2, 0.16, 0.1, 12), '#8fd1c4'), w / 2 - 0.35, 0.05, d / 2 - 0.3);
+  add(g, mesh(G.cyl(0.15, 0.15, 0.02, 12), '#7fd3ff', false), w / 2 - 0.35, 0.1, d / 2 - 0.3);
+  return g;
+}
+
 export function chicken() {
   const g = new THREE.Group();
   g.add(blob(0.3));
@@ -144,8 +225,9 @@ export function coop() {
   const nest = add(g, new THREE.Group(), 1.6, 0, 0.75);
   add(nest, mesh(G.rbox(1.0, 0.22, 0.8, 0.06), C.woodLight), 0, 0.11, 0);
   add(nest, mesh(G.rbox(0.86, 0.04, 0.66, 0.02), '#f6dd8a'), 0, 0.22, 0);
-  const yard = add(g, pen(2.4, 1.4), 0, 0, 0.6);
-  return { g, trough, nest, yard };
+  const yard = add(g, pen(2.4, 1.4), 0, 0, 0.6); yard.userData.dyn = true;
+  const yard2 = add(g, bigPen(2.4, 2.1), 0, 0, 0.95); yard2.userData.dyn = true; yard2.visible = false;
+  return { g, trough, nest, yard, yard2 };
 }
 
 export function cow() {
@@ -177,6 +259,43 @@ export function barn() {
   const nest = add(g, new THREE.Group(), 2.05, 0, 0.65);
   add(nest, mesh(G.rbox(1.0, 0.22, 0.8, 0.06), C.woodLight), 0, 0.11, 0);
   add(nest, mesh(G.rbox(0.86, 0.04, 0.66, 0.02), '#cfe9ff'), 0, 0.22, 0);
+  add(g, pen(3.0, 1.8), 0, 0, 0.9);
+  return { g, trough, nest };
+}
+
+// fluffy sheep: a cloud of cream puffs, dark face and legs
+export function sheep() {
+  const g = new THREE.Group();
+  g.add(blob(0.55));
+  const b = add(g, new THREE.Group());
+  for (const [x, y, z, r] of [[0, 0.52, 0, 0.3], [0.17, 0.5, 0.18, 0.21], [-0.17, 0.5, 0.18, 0.21], [0.17, 0.5, -0.2, 0.21], [-0.17, 0.5, -0.2, 0.21], [0, 0.72, 0.02, 0.2]]) add(b, mesh(G.sphere(r, 10, 8), '#fbf7ec'), x, y, z);
+  add(b, mesh(G.sphere(0.16, 10, 8), '#4a3f3a'), 0, 0.58, 0.38).scale.set(0.9, 1, 1.05);
+  add(b, mesh(G.sphere(0.1, 8, 6), '#fbf7ec'), 0, 0.73, 0.33);
+  for (const s of [-1, 1]) {
+    add(b, mesh(G.rbox(0.13, 0.06, 0.07, 0.02), '#4a3f3a'), s * 0.17, 0.62, 0.36).rotation.z = s * 0.4;
+    for (const z of [-0.18, 0.18]) add(b, mesh(G.capsule(0.05, 0.2, 6), '#4a3f3a'), s * 0.13, 0.17, z);
+  }
+  return { g, b };
+}
+
+// sheep shed: same footprint as the barn (feed trough left, wool bin right, fenced yard in front)
+export function fold() {
+  const g = new THREE.Group();
+  g.add(blob(2.8));
+  add(g, mesh(G.rbox(2.8, 1.6, 2.0, 0.14), '#ffe6a6'), 0, 0.8, -0.9);
+  for (let i = 0; i < 5; i++) add(g, mesh(G.rbox(0.05, 1.5, 2.02, 0.02), '#f3cf7a'), -1.1 + i * 0.55, 0.8, -0.9);
+  add(g, mesh(G.prism(3.1, 0.95, 2.35), '#5aa9ff'), 0, 1.58, -0.9);
+  add(g, mesh(G.rbox(1.1, 1.15, 0.08, 0.05), '#5aa9ff'), 0, 0.58, 0.12);
+  add(g, mesh(G.rbox(1.0, 0.08, 0.1, 0.03), C.white), 0, 0.58, 0.15).rotation.z = 0.6;
+  add(g, mesh(G.rbox(1.0, 0.08, 0.1, 0.03), C.white), 0, 0.58, 0.15).rotation.z = -0.6;
+  // a little cloud sign over the door
+  for (const [x, r] of [[-0.18, 0.16], [0, 0.2], [0.18, 0.16]]) add(g, mesh(G.sphere(r, 9, 7), C.white), x, 1.42, 0.14).scale.set(1, 0.8, 0.4);
+  const trough = add(g, new THREE.Group(), -2.05, 0, 0.6);
+  add(trough, mesh(G.rbox(1.1, 0.32, 0.6, 0.06), C.wood), 0, 0.16, 0);
+  add(trough, mesh(G.rbox(0.95, 0.05, 0.46, 0.02), C.woodDark), 0, 0.3, 0);
+  const nest = add(g, new THREE.Group(), 2.05, 0, 0.65);
+  add(nest, mesh(G.rbox(1.0, 0.22, 0.8, 0.06), '#a98bff'), 0, 0.11, 0);
+  add(nest, mesh(G.rbox(0.86, 0.04, 0.66, 0.02), '#efe6ff'), 0, 0.22, 0);
   add(g, pen(3.0, 1.8), 0, 0, 0.9);
   return { g, trough, nest };
 }
