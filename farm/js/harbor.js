@@ -489,18 +489,47 @@ function label(cls, html, getPos) {
   labels.push(L);
   return L;
 }
-function setLabel(L, html) { if (L.html !== html) { L.html = html; L.el.innerHTML = html; } }
+function setLabel(L, html) { if (L.html !== html) { L.html = html; L.el.innerHTML = html; L.w = 0; } }
 function dropLabel(L) { L.el.remove(); const i = labels.indexOf(L); if (i >= 0) labels.splice(i, 1); }
+// clearer labels: zone names sit on a soft plate, far-away zones shrink, and labels that would cover
+// each other are nudged upwards (the one nearer the bottom of the screen keeps its place)
+const LBL2 = !params.has('lbl1'); // clearer labels are the default (?lbl1 shows the old look)
+if (LBL2) document.body.classList.add('lbl2');
+const shown = [];
 function placeLabels() {
   const w = innerWidth, h = innerHeight, pp = player.p.root.position;
+  shown.length = 0;
   for (const L of labels) {
     if (!L.show) { L.el.style.display = 'none'; continue; }
     L.getPos(tmpV);
-    if (L.near && Math.hypot(tmpV.x - pp.x, tmpV.z - pp.z) > L.near) { L.el.style.display = 'none'; continue; }
+    const dist = Math.hypot(tmpV.x - pp.x, tmpV.z - pp.z);
+    if (L.near && dist > L.near) { L.el.style.display = 'none'; continue; }
     tmpV.project(camera);
     if (tmpV.z > 1 || tmpV.x < -1.3 || tmpV.x > 1.3 || tmpV.y < -1.3 || tmpV.y > 1.3) { L.el.style.display = 'none'; continue; }
     L.el.style.display = '';
-    L.el.style.transform = 'translate(' + ((tmpV.x + 1) / 2 * w).toFixed(1) + 'px,' + ((1 - tmpV.y) / 2 * h).toFixed(1) + 'px) translate(-50%,-100%)';
+    L.sx = (tmpV.x + 1) / 2 * w; L.sy = (1 - tmpV.y) / 2 * h;
+    if (LBL2) {
+      const far = L.el.classList.contains('zone') && dist > 8;
+      if (far !== !!L.far) { L.far = far; L.el.classList.toggle('far', far); L.w = 0; }
+      shown.push(L);
+    } else L.el.style.transform = 'translate(' + L.sx.toFixed(1) + 'px,' + L.sy.toFixed(1) + 'px) translate(-50%,-100%)';
+  }
+  if (!LBL2) return;
+  shown.sort((a, b) => b.sy - a.sy);
+  const boxes = [];
+  for (const L of shown) {
+    if (!L.w) { L.w = L.el.offsetWidth; L.h = L.el.offsetHeight; }
+    let y = L.sy;
+    const x0 = L.sx - L.w / 2, x1 = L.sx + L.w / 2;
+    // up to a few nudges, never more than ~70px from where it belongs
+    for (let k = 0; k < 4; k++) {
+      let hit = null;
+      for (const b of boxes) if (x0 < b.x1 && x1 > b.x0 && y - L.h < b.y1 && y > b.y0) { hit = b; break; }
+      if (!hit || L.sy - (hit.y0 - 2) > 70) break;
+      y = hit.y0 - 2;
+    }
+    boxes.push({ x0, x1, y0: y - L.h, y1: y });
+    L.el.style.transform = 'translate(' + L.sx.toFixed(1) + 'px,' + y.toFixed(1) + 'px) translate(-50%,-100%)';
   }
 }
 const badge = (type, n, max) => ICON[type] + n + '/' + max;
