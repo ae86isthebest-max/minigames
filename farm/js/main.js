@@ -38,11 +38,11 @@ const DEFS = [
   { id: 'shelfMilk', name: '牛奶冷藏櫃', kind: 'shelf', fridge: true, item: 'milk', pos: [4.4, SH_Z], cost: { money: 300 } },
   { id: 'market', name: '超級市場', kind: 'market', zone: [-12, -10], cost: { money: 1500, wood: 40 } },
   { id: 'harbor', name: '開分店：海邊漁港', kind: 'mapgate', zone: [11.2, 0.4], cost: { money: 15000 }, req: ['market'], earned: 40000 },
-  { id: 'juicer', name: '果汁機', kind: 'machine', mk: 'juicer', in: 'tomato', out: 'juice', iv: 3, pos: [5.5, -2.7], cost: { money: 700, wood: 20 }, req: ['market'] },
+  { id: 'juicer', name: '果汁機', kind: 'machine', mk: 'juicer', in: 'tomato', out: 'juice', iv: 3, pos: [5.5, -2.7], upAt: [2.6, -2.4], cost: { money: 700, wood: 20 }, req: ['market'] },
   { id: 'shelfJuice', name: '果汁冷藏櫃', kind: 'shelf', fridge: true, item: 'juice', pos: [-8.6, SH_Z], cost: { money: 500 } },
   { id: 'shelver2', name: '理貨員', kind: 'hire', role: 'shelver', zone: [-4.4, -5], cost: { money: 800 } },
   { id: 'soy', name: '黃豆田', kind: 'crop', out: 'soybean', plant: 'soy', grow: 9, pos: [-9.5, 18.5], cost: { money: 900, wood: 25 } },
-  { id: 'soyMachine', name: '磨豆漿機', kind: 'machine', mk: 'soy', in: 'soybean', out: 'soymilk', iv: 3.5, pos: [-3, 18.6], cost: { money: 1100 } },
+  { id: 'soyMachine', name: '磨豆漿機', kind: 'machine', mk: 'soy', in: 'soybean', out: 'soymilk', iv: 3.5, pos: [-3, 18.6], upAt: [-3, 21.3], cost: { money: 1100 } },
   { id: 'shelfSoy', name: '豆漿冷藏櫃', kind: 'shelf', fridge: true, item: 'soymilk', pos: [-11.6, SH_Z], cost: { money: 800 } },
   { id: 'dock', name: '貨運站', kind: 'dock', pos: [12.2, 6], zone: [12, 6], cost: { money: 1200, wood: 30 } },
   { id: 'counter2', name: '第二收銀台', kind: 'counter2', zone: [-16.5, -9.6], cost: { money: 1000 } },
@@ -50,11 +50,11 @@ const DEFS = [
   { id: 'cat', name: '小貓', kind: 'pet', zone: [2.6, -11.6], cost: { money: 1000 } },
   { id: 'parking', name: '停車場', kind: 'parking', zone: [21, -10], cost: { money: 2600, wood: 60 } },
   { id: 'wheat', name: '小麥田', kind: 'crop', out: 'wheat', plant: 'wheat', grow: 10, pos: [-9.5, 24.5], cost: { money: 2200 } },
-  { id: 'oven', name: '麵包窯', kind: 'machine', mk: 'oven', in: 'wheat', out: 'bread', iv: 4, pos: [-3, 24.6], cost: { money: 3000, wood: 50 } },
+  { id: 'oven', name: '麵包窯', kind: 'machine', mk: 'oven', in: 'wheat', out: 'bread', iv: 4, pos: [-3, 24.6], upAt: [-3, 27.4], cost: { money: 3000, wood: 50 } },
   { id: 'shelfBread', name: '麵包架', kind: 'shelf', item: 'bread', pos: [-14.6, SH_Z], cost: { money: 2200 } },
   { id: 'farmer2', name: '農夫', kind: 'hire', role: 'farmer', zone: [-2, 14.6], cost: { money: 2400 } },
   { id: 'coop2', name: '第二雞舍', kind: 'producer', in: 'hay', out: 'egg', pos: [2, 7.4], cost: { money: 2600, wood: 40 } },
-  { id: 'cheese', name: '起司坊', kind: 'machine', mk: 'cheese', in: 'milk', out: 'cheese', iv: 4.5, pos: [3.4, 12.8], cost: { money: 3800 } },
+  { id: 'cheese', name: '起司坊', kind: 'machine', mk: 'cheese', in: 'milk', out: 'cheese', iv: 4.5, pos: [3.4, 12.8], upAt: [3.4, 15.5], cost: { money: 3800 } },
   { id: 'shelfCheese', name: '起司冷藏櫃', kind: 'shelf', fridge: true, item: 'cheese', pos: [-17.6, SH_Z], cost: { money: 2800 } },
   { id: 'shelver3', name: '理貨員', kind: 'hire', role: 'shelver', zone: [-8.6, -5], cost: { money: 3500 } },
   { id: 'orchard', name: '蘋果園', kind: 'crop', out: 'apple', plant: 'apple', grow: 12, pos: [8.5, 23.5], cost: { money: 4500, wood: 70 } },
@@ -79,7 +79,7 @@ const UPS = {
   price: { tab: 3, name: '商品售價', ic: 'money', need: 'cashier', vals: [1, 1.1, 1.2, 1.3, 1.4, 1.55, 1.7, 1.85, 2, 2.2, 2.4], cost: lv(10, 200, 1.6), fmt: (v) => '×' + v },
   shelfCap: { tab: 3, name: '貨架容量', ic: 'egg', need: 'cashier', vals: [8, 12, 16, 20, 24], cost: [150, 400, 900, 1800], fmt: (v) => v + ' 個' },
   cust: { tab: 3, name: '客人數量', ic: 'run', need: 'cashier', vals: [1, 1.2, 1.4, 1.6, 1.8, 2], cost: [300, 700, 1400, 2600, 4500], fmt: (v) => '×' + v },
-  mach: { tab: 3, name: '機器速度', ic: 'juice', need: 'juicer', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [400, 900, 1800, 3200, 5500], fmt: (v) => '×' + v },
+  mach: { tab: 2, name: '所有機器一起加速', ic: 'juice', need: 'juicer', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [400, 900, 1800, 3200, 5500], fmt: (v) => '×' + v },
   mgrShop: { tab: 1, name: '店長', noLv: true, ic: 'mgr', emo: '👔', need: 'cashier', vals: [0, 1, 2, 3], cost: [1200, 4000, 12000], fmt: (v) => ['還沒請店長', '店長：結帳更快、客人給小費', '資深店長：小費更多、客人更有耐心', '金牌店長：小費最多、錢自動入袋'][v] },
   mgrFarm: { tab: 1, name: '農場主管', noLv: true, ic: 'mgr', emo: '🧢', need: 'keeper', vals: [0, 1, 2, 3], cost: [1000, 3500, 10000], fmt: (v) => ['還沒請農場主管', '主管：飼養員和農夫走更快', '資深主管：一次拿更多', '金牌主管：又快又能拿'][v] },
   floor: { tab: 3, name: '地板翻新', ic: 'shop', need: 'counter', vals: [0, 1, 2, 3], cost: [600, 2400, 7000], fmt: (v) => ['原本的地板', '溫暖木地板', '奶油格子磚', '大理石＋金邊'][v] + (v ? '，客人更多' : '') },
@@ -114,6 +114,10 @@ const GROW = {
   barn: { start: 1, max: 3, cost: [500, 1200], what: '＋1 頭牛' },
   tomato: { start: 2, max: 4, cost: [25, 60], what: '＋1 棵番茄' },
   tomato2: { start: 2, max: 4, cost: [80, 150], what: '＋1 棵番茄' },
+  juicer: { start: 1, max: 4, cost: [500, 1100, 2200], what: '果汁機做更快' },
+  soyMachine: { start: 1, max: 4, cost: [900, 1800, 3500], what: '磨豆漿機做更快' },
+  oven: { start: 1, max: 4, cost: [1200, 2400, 4500], what: '麵包窯做更快' },
+  cheese: { start: 1, max: 4, cost: [1500, 3000, 5500], what: '起司坊做更快' },
   corn: { start: 3, max: 6, cost: [120, 200, 320], what: '＋1 棵玉米' },
   soy: { start: 3, max: 6, cost: [700, 1000, 1500], what: '＋1 棵黃豆' },
   wheat: { start: 4, max: 8, cost: [900, 1200, 1600, 2000], what: '＋1 叢小麥' },
@@ -121,6 +125,8 @@ const GROW = {
   field: { start: 6, max: 25, steps: [6, 10, 15, 20, 25], cost: [15, 45, 100, 200], what: '擴大草地' },
 };
 const lvlOf = (id) => state.lvl[id] || GROW[id].start;
+// machine level 1–4: each level makes that one machine 40% faster
+const machK = (id) => (GROW[id] ? 1 + 0.4 * (lvlOf(id) - 1) : 1);
 
 // ---------- save ----------
 const SAVE = 'farm_save_v2';
@@ -718,6 +724,8 @@ function build(def, instant) {
     s.inLabel = label('badge', '', (o) => o.copy(tw).setY(0.95)); s.inLabel.near = 0;
     s.outLabel = label('badge', '', (o) => o.copy(nw).setY(0.95)); s.outLabel.near = 0;
     if (!instant) popIn(m.g);
+    s.tag = label('mtag', '', (o) => o.set(pos[0], 2.35, pos[1] - 0.2)); s.tag.near = 9;
+    machTag(s);
   } else if (def.kind === 'crop') {
     const L = CROP_LAYOUT[def.plant];
     const g = new THREE.Group(); g.position.set(pos[0], 0, pos[1]); scene.add(g);
@@ -811,6 +819,10 @@ function applyGrow(s) {
     pl.active = on;
   });
 }
+function machTag(s) {
+  const lv = GROW[s.id] ? lvlOf(s.id) : 1;
+  setLabel(s.tag, '<b>' + s.def.name + (lv > 1 ? ' Lv' + lv : '') + '</b><span>' + ICON[s.def.in] + ' → ' + ICON[s.def.out] + '</span>');
+}
 function applyField() {
   const n = lvlOf('field');
   tufts.forEach((t, i) => {
@@ -887,6 +899,7 @@ function refreshZones() {
 function frontOf(def) {
   if (def.kind === 'producer') return [def.pos[0], def.pos[1] + (def.out === 'milk' ? 3.9 : 3.4)];
   if (def.kind === 'crop') return [def.pos[0], def.pos[1] + CROP_LAYOUT[def.plant].d / 2 + 1.5];
+  if (def.kind === 'machine') return def.upAt || [def.pos[0], def.pos[1] + 2.6];
   return def.pos;
 }
 function zoneSpot(def) {
@@ -912,6 +925,7 @@ function grow(def) {
   const g = GROW[def.target], n = lvlOf(def.target);
   state.lvl[def.target] = def.target === 'field' ? g.steps[Math.min(g.steps.length - 1, g.steps.indexOf(n) + 1)] : n + 1;
   if (def.target === 'field') applyField(); else applyGrow(stations[def.target]);
+  if (stations[def.target] && stations[def.target].tag) machTag(stations[def.target]);
   confetti(def.zone[0], def.zone[1]); sfx('unlock'); toast('🎉 ' + def.name + '！');
   refreshZones(); save();
 }
@@ -934,7 +948,9 @@ function left(z, k) { return z.def.cost[k] - (z.paid[k] || 0); }
 function updateZoneLabel(z) {
   let rows = '';
   for (const k in z.def.cost) { const l = left(z, k); if (l > 0) rows += costRow(k, fmtMoney(l)); }
-  setLabel(z.label, '<div class="zn">' + z.def.name + '</div>' + rows);
+  const d = z.def, how = d.kind === 'machine' ? '<div class="how">' + ICON[d.in] + ' → ' + ICON[d.out] + '</div>'
+    : d.kind === 'grow' && GROW[d.target] && DEF[d.target] && DEF[d.target].kind === 'machine' ? '<div class="how">Lv' + d.lv + ' → Lv' + (d.lv + 1) + '</div>' : '';
+  setLabel(z.label, '<div class="zn">' + d.name + '</div>' + how + rows);
   let paidSum = 0; for (const k in z.def.cost) paidSum += Math.min(z.def.cost[k], z.paid[k] || 0);
   z.fill.scale.set(1, 1, Math.max(0.001, paidSum / z.total));
   z.fill.position.z = 0.95 * (1 - paidSum / z.total);
@@ -1762,7 +1778,7 @@ function updateWorld(dt, t) {
   const cap = upVal('shelfCap');
   for (const s of Object.values(stations)) {
     if (s.kind === 'producer' || s.kind === 'machine') {
-      const iv = s.kind === 'machine' ? s.def.iv / upVal('mach') : s.def.out === 'milk' ? upVal('barn') * 1.6 / lvlOf(s.id) : upVal('coop') * 2 / lvlOf(s.id);
+      const iv = s.kind === 'machine' ? s.def.iv / upVal('mach') / machK(s.id) : s.def.out === 'milk' ? upVal('barn') * 1.6 / lvlOf(s.id) : upVal('coop') * 2 / lvlOf(s.id);
       const busy = s.inN > 0 && s.outN < s.outMax;
       if (busy) {
         s.timer += dt;

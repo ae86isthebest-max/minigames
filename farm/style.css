@@ -180,3 +180,7 @@ html, body {
 .lbl.maxtag { background: #ff5a4e; color: #fff; font-weight: 900; font-size: 12px; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 9px; border: 2px solid #fff; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.18); }
 #newVer { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 74px); transform: translateX(-50%); z-index: 60; border: 0; border-radius: 16px; padding: 10px 16px; font: inherit; font-weight: 900; font-size: 14px; color: #fff; background: #8f7bff; box-shadow: 0 4px 0 #6c58e0, 0 6px 16px rgba(0, 0, 0, 0.18); white-space: nowrap; cursor: pointer; animation: newVerIn 0.35s ease-out; }
 @keyframes newVerIn { from { transform: translate(-50%, -16px); opacity: 0; } }
+.lbl.mtag { text-align: center; background: rgba(255, 255, 255, 0.92); color: #4a3b2e; border-radius: 12px; padding: 3px 9px; font-size: 12px; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12); }
+.lbl.mtag b { display: block; font-size: 13px; }
+.lbl.mtag span .ii, .lbl.zone .how .ii { width: 1.7em; height: 1.7em; vertical-align: -0.45em; }
+.lbl.zone .how { font-size: 15px; margin-bottom: 2px; }
