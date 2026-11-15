@@ -1421,9 +1421,6 @@ function spawnCustomer(from) {
   if (west) { path.push(OUT_W, DOOR2, DOOR2_IN); if (sh.front.z < -12) path.push([DOOR2_IN[0], -12.2]); } else path.push(DOOR, DOOR_IN, HALL);
   if (sh.front.z < -18) { const ax = aisleFor(sh.front.x); path.push([ax, -12.2], [ax, -18.6]); }
   path.push([sh.front.x + rand(-0.75, 0.75), sh.front.z + rand(0.2, 1.1)]);
-  // 購物籃架: a basket in hand (Lv1) or a cart in front (Lv2)
-  const bl = state.up.basket || 0;
-  if (bl) p.front.add(bl >= 2 ? shopCart() : shopBasket());
   const c = { p, list, li: 0, shelf: sh, item: sh.item, need: list[0].need, got: 0, st: 'in', path, t: 0, face: 0, moving: 0, ci: 0, qi: 99 };
   c.label = label('bubble', '', (o) => { o.copy(c.p.root.position); o.y = 2.05; });
   customers.push(c);
@@ -1487,7 +1484,11 @@ function updateCustomers(dt) {
   for (let i = customers.length - 1; i >= 0; i--) {
     const c = customers[i];
     c.moving = 0;
-    const cs = 2.6 * upVal('basket');
+    // 購物籃架: customers take a basket (Lv1) or a cart (Lv2) once inside the door and leave it there on the way out
+    const cz = c.p.root.position.z;
+    if (state.up.basket && !c.cart && c.st !== 'leave' && cz < -8.0) { c.cart = state.up.basket >= 2 ? shopCart() : shopBasket(); c.p.front.add(c.cart); }
+    if (c.cart && c.st === 'leave' && cz > -8.3) { c.p.front.remove(c.cart); c.cart = null; }
+    const cs = 2.6 * (c.cart ? upVal('basket') : 1);
     if (c.st === 'in') { if (stepPath(c, dt, cs)) { c.st = 'shop'; c.face = Math.PI; c.t = 0.4; c.patience = 32 + MGR_PAT[mShop()]; } }
     else if (c.st === 'shop') {
       c.t -= dt; c.patience -= dt;
