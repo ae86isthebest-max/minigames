@@ -158,3 +158,18 @@ html, body {
 .mapcard.here { outline: 3px solid #8f7bff; }
 .mapcard.locked { opacity: 0.55; }
 .lbl.choice { background: #ffd23f; color: #5a3b00; font-weight: 900; font-size: 16px; padding: 5px 14px; border-radius: 999px; box-shadow: 0 3px 0 rgba(0,0,0,0.15); }
+
+/* beginner checklist (left side, under the buttons) */
+#quest {
+  position: absolute; left: calc(12px + env(safe-area-inset-left)); top: calc(300px + env(safe-area-inset-top));
+  width: 178px; padding: 10px 12px; border-radius: 16px; background: rgba(255, 250, 240, 0.95);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.12); color: #4a3b2e; font-size: 13px; pointer-events: none;
+}
+#quest b { display: block; font-size: 14px; margin-bottom: 6px; color: #e8875a; }
+#quest .q { display: flex; align-items: center; gap: 7px; padding: 4px 0; opacity: 0.6; }
+#quest .q span { width: 20px; height: 20px; flex: none; border-radius: 50%; display: grid; place-items: center; background: #efe3cf; font-weight: 900; font-size: 12px; }
+#quest .q.now { opacity: 1; font-weight: 800; }
+#quest .q.now span { background: #ffd23f; color: #5a3b00; }
+#quest .q.ok { opacity: 0.85; text-decoration: line-through; }
+#quest .q.ok span { background: #5fcf6a; color: #fff; }
+#quest .qdone { margin-top: 6px; font-weight: 900; color: #3fae4c; }

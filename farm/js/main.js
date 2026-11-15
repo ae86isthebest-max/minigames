@@ -21,10 +21,10 @@ const SH_Z = -14.6;
 const DEFS = [
   { id: 'tomato', name: '番茄田', kind: 'crop', out: 'tomato', plant: 'tomato', grow: 6, pos: [7.3, 1.2], cost: { money: 30 }, req: [], alt: 'coop' },
   { id: 'coop', name: '雞舍', kind: 'producer', in: 'hay', out: 'egg', pos: [2.7, 1], cost: { money: 40 }, req: [], alt: 'tomato' },
-  { id: 'shelfTomato', name: '番茄架', kind: 'shelf', item: 'tomato', pos: [-1.6, SH_Z], cost: { money: 20 }, req: ['tomato'] },
-  { id: 'shelfEgg', name: '雞蛋架', kind: 'shelf', item: 'egg', pos: [-4.6, SH_Z], cost: { money: 10 }, req: ['coop'] },
-  { id: 'counter', name: '收銀台', kind: 'counter1', zone: [4.6, -8.0], cost: { money: 0 }, any: ['shelfTomato', 'shelfEgg'] },
-  { id: 'cashier', name: '收銀員', kind: 'hire', role: 'cashier', counter: 0, zone: [6.6, -12.6], cost: { money: 80 }, req: ['counter'] },
+  { id: 'shelfTomato', name: '番茄架', kind: 'shelf', item: 'tomato', pos: [-1.6, SH_Z], cost: { money: 20 }, req: ['tomato', 'counter'] },
+  { id: 'shelfEgg', name: '雞蛋架', kind: 'shelf', item: 'egg', pos: [-4.6, SH_Z], cost: { money: 10 }, req: ['coop', 'counter'] },
+  { id: 'counter', name: '收銀台', kind: 'counter1', zone: [4.6, -8.0], cost: { money: 0 }, any: ['tomato', 'coop'] },
+  { id: 'cashier', name: '收銀員', kind: 'hire', role: 'cashier', counter: 0, zone: [6.6, -12.6], cost: { money: 80 }, req: ['counter'], any: ['shelfTomato', 'shelfEgg'] },
   { id: 'keeper', name: '飼養員', kind: 'hire', role: 'keeper', zone: [-1.4, 5.4], cost: { money: 90 }, req: ['coop', 'shelfEgg'] },
   { id: 'corn', name: '玉米田', kind: 'crop', out: 'corn', plant: 'corn', grow: 8, pos: [9, 6.8], cost: { money: 160, wood: 10 }, req: ['cashier'] },
   { id: 'shelfCorn', name: '玉米架', kind: 'shelf', item: 'corn', pos: [1.4, SH_Z], cost: { money: 130 }, req: ['corn'] },
@@ -634,7 +634,7 @@ function refreshZones() {
   for (let i = 0; i < DEFS.length; i++) {
     const def = DEFS[i];
     if (isBuilt(def.id)) { if (zones[def.id]) killZone(def.id); continue; }
-    let open = def.req ? def.req.every(isBuilt) : def.any ? def.any.some(isBuilt) : isBuilt(DEFS[i - 1].id);
+    let open = (def.req || def.any) ? (!def.req || def.req.every(isBuilt)) && (!def.any || def.any.some(isBuilt)) : isBuilt(DEFS[i - 1].id);
     if (def.earned && state.earned < def.earned) open = false;
     // the two starting choices: picking one hides the other until the first cashier is hired
     if (def.alt && isBuilt(def.alt) && !isBuilt('cashier')) open = false;
@@ -1228,6 +1228,45 @@ function makeGuide() {
   return g;
 }
 const guides = [makeGuide(), makeGuide()];
+// beginner route: a line of glowing dots on the ground from the player to the next thing to build
+const dotGeo = G.circle(0.17, 14);
+const dotMat = new THREE.MeshBasicMaterial({ color: '#ffd23f', transparent: true, opacity: 0.95, depthWrite: false });
+const dots = [];
+for (let i = 0; i < 80; i++) { const m = new THREE.Mesh(dotGeo, dotMat); m.renderOrder = 3; m.visible = false; scene.add(m); dots.push(m); }
+let trailT = 0, trailPts = [];
+function updateTrail(gts, dt) {
+  trailT -= dt;
+  if (trailT <= 0) {
+    trailT = 0.25; trailPts = [];
+    const pp = player.p.root.position;
+    for (const t of gts) {
+      const path = [[pp.x, pp.z]].concat(nav.path(pp.x, pp.z, t[0], t[1]));
+      let d = 0.9;
+      for (let k = 1; k < path.length; k++) {
+        const [ax, az] = path[k - 1], [bx, bz] = path[k], seg = Math.hypot(bx - ax, bz - az);
+        while (d < seg) { const x = ax + (bx - ax) * d / seg, z = az + (bz - az) * d / seg; if (Math.hypot(x - t[0], z - t[1]) > 1.1) trailPts.push([x, z]); d += 0.7; }
+        d -= seg;
+      }
+    }
+  }
+  dots.forEach((m, i) => {
+    const p = trailPts[i]; m.visible = !!p;
+    if (p) { m.position.set(p[0], 0.07, p[1]); m.scale.setScalar(1 + 0.4 * Math.max(0, Math.sin(T * 7 - i * 0.55))); }
+  });
+}
+// beginner checklist on the left
+let questHtml = '', questDoneT = -1;
+function updateQuest(dt) {
+  const el = $('quest'); if (!el) return;
+  const steps = questSteps(), all = steps.every((q) => q.ok);
+  if (all && questDoneT < 0) { questDoneT = state.questSeen ? 0 : 4; state.questSeen = true; }
+  if (all) { questDoneT -= dt; if (questDoneT <= 0) { el.classList.add('hidden'); return; } }
+  el.classList.remove('hidden');
+  const cur = steps.findIndex((q) => !q.ok);
+  const html = '<b>新手任務</b>' + steps.map((q, i) => '<div class="q' + (q.ok ? ' ok' : '') + (i === cur ? ' now' : '') + '"><span>' + (q.ok ? '✓' : i + 1) + '</span>' + q.t + '</div>').join('') +
+    (all ? '<div class="qdone">完成！可以自由活動了</div>' : '');
+  if (html !== questHtml) { questHtml = html; el.innerHTML = html; }
+}
 const guide = guides[0];
 const pickLabel = label('choice', '二選一', (o) => o.copy(guides[0].position).lerp(guides[1].position, 0.5).setY(1.2));
 pickLabel.show = false;
@@ -1244,11 +1283,19 @@ function affordable(z) {
 }
 function guideTargets() {
   const zp = (id) => zones[id] ? [zones[id].x, zones[id].z] : null;
-  if (!isBuilt('tomato') && !isBuilt('coop')) return [zp('tomato'), zp('coop')].filter(Boolean);
-  if (isBuilt('tomato') && !isBuilt('shelfTomato') && !isBuilt('coop')) return [zp('shelfTomato')].filter(Boolean);
-  if (isBuilt('coop') && !isBuilt('shelfEgg') && !isBuilt('tomato')) return [zp('shelfEgg')].filter(Boolean);
+  const picked = isBuilt('tomato') || isBuilt('coop');
+  if (!picked) return [zp('tomato'), zp('coop')].filter(Boolean);
   if (!isBuilt('counter')) return [zp('counter')].filter(Boolean);
+  if (!isBuilt('shelfTomato') && !isBuilt('shelfEgg')) return [zp(isBuilt('tomato') ? 'shelfTomato' : 'shelfEgg')].filter(Boolean);
   return [];
+}
+// the three beginner steps shown in the checklist on the left
+function questSteps() {
+  return [
+    { t: '二選一：番茄田或雞舍', ok: isBuilt('tomato') || isBuilt('coop') },
+    { t: '蓋收銀台', ok: isBuilt('counter') },
+    { t: '蓋貨架', ok: isBuilt('shelfTomato') || isBuilt('shelfEgg') },
+  ];
 }
 function guideTarget() { return guideTargets()[0] || null; }
 
@@ -1541,6 +1588,7 @@ buildWorld();
 buildField();
 buildTrees();
 if (state.built.length && !state.built.includes('counter')) state.built.splice(1, 0, 'counter');
+if (state.built.length > 3) state.questSeen = true;
 for (const def of DEFS) if (isBuilt(def.id)) build(def, true);
 for (const role in EXTRA) for (let i = 0; i < (state.extra[role] || 0); i++) makeWorker(role, EXTRA[role].at, 0, false);
 refreshZones();
@@ -1595,13 +1643,11 @@ function step(dt) {
   dashMat.opacity = 0.75 + Math.sin(T * 4) * 0.25;
   updateDoorsAndLights(dt);
   const gts = guideTargets(), gt = gts[0] || null, pp = player.p.root.position;
-  guides.forEach((g, i) => {
-    const t = gts[i];
-    g.visible = !!t && dist2(pp, t[0], t[1]) > 1.2;
-    if (t) { g.position.set(t[0], 2.4 + Math.abs(Math.sin(T * 4 + i)) * 0.45, t[1]); g.rotation.y += dt * 2; }
-  });
+  guides.forEach((g, i) => { const t = gts[i]; g.visible = false; if (t) g.position.set(t[0], 1.2, t[1]); });
+  updateTrail(gts, dt);
+  updateQuest(dt);
   pickLabel.show = gts.length === 2;
-  pointerG.visible = !!gt && gts.length === 1 && dist2(pp, gt[0], gt[1]) > 3;
+  pointerG.visible = false;
   if (gt) { pointerG.position.set(pp.x, 0.05, pp.z); pointerG.rotation.y = Math.atan2(gt[0] - pp.x, gt[1] - pp.z); }
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').classList.remove('on'); }
 }
