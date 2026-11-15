@@ -159,7 +159,7 @@ const DEFS = [
   { id: 'traps', name: '蟹籠', kind: 'traps', zone: [10.4, TRAP_Z], cost: { money: 2800 }, req: ['shelver2'] },
   { id: 'crabCannery', name: '蟹肉罐頭廠', kind: 'machine', mk: 'crabcan', in: 'crab', out: 'crabcan', iv: 4, pos: [-4.4, 12.8], cost: { money: 3200, crab: 8 }, req: ['traps'] },
   { id: 'table4', name: '第 4 張餐桌', kind: 'table', ti: 3, cost: { money: 3200 }, req: ['crabCannery'] },
-  { id: 'waiter2', name: '服務生', kind: 'hire', role: 'waiter', zone: [-22.8, -10.4], cost: { money: 3600 }, req: ['table4'] },
+  { id: 'waiter2', name: '服務生', kind: 'hire', role: 'waiter', zone: [-22.5, -10.4], cost: { money: 3600 }, req: ['table4'] },
   { id: 'cruise', name: '郵輪碼頭', kind: 'cruise', zone: [CRUISE.x, CRUISE.z], cost: { money: 6500 }, req: ['waiter2'] },
   { id: 'fisher2', name: '漁夫', kind: 'hire', role: 'fisher', zone: [7.6, 11.8], cost: { money: 4500 }, req: ['cruise'] },
   { id: 'restWing', name: '餐廳擴建', kind: 'wing', zone: [-30, -4.2], cost: { money: 7000 }, req: ['fisher2'] },
@@ -174,7 +174,7 @@ const DEFS = [
   { id: 'aqua', name: '養殖場', kind: 'aqua', zone: [10.0, AQUA_Z], cost: { money: 12000 }, req: ['table6'] },
   { id: 'waiter3', name: '服務生', kind: 'hire', role: 'waiter', zone: [-26.0, -10.4], cost: { money: 9000 }, req: ['aqua'] },
   { id: 'table8', name: '第 8 張餐桌', kind: 'table', ti: 7, cost: { money: 10000 }, req: ['waiter3'] },
-  { id: 'lobsterTraps', name: '龍蝦籠', kind: 'lobtraps', zone: [10.5, -6.9], cost: { money: 15000 }, req: ['table8'] },
+  { id: 'lobsterTraps', name: '龍蝦籠', kind: 'lobtraps', zone: [12.0, -6.9], cost: { money: 15000 }, req: ['table8'] },
   { id: 'lobsterPot', name: '龍蝦鍋', kind: 'machine', mk: 'lobster', in: 'lobster', out: 'lobstermeal', iv: 6, pos: kz(-37.9), cost: { money: 18000, lobster: 4 }, req: ['lobsterTraps'] },
   { id: 'table9', name: '第 9 張餐桌', kind: 'table', ti: 8, cost: { money: 12000 }, req: ['lobsterPot'] },
   { id: 'shelver3', name: '理貨員', kind: 'hire', role: 'shelver', zone: [-6.4, -5.8], cost: { money: 12000 }, req: ['table9'] },
@@ -382,6 +382,7 @@ function buildWorld() {
   const plank = (x, z, w, d, i) => K.add(D, K.mesh(G.rbox(w, 0.06, d, 0.03, 1), i % 2 ? '#e3ad74' : '#d9a066', false, true), x, 0.03, z);
   for (let x = -12.6, i = 0; x < 11.0; x += 0.62, i++) plank(x, -4.9, 0.56, 1.5, i);
   for (let z = -4.0, i = 0; z < 14; z += 0.62, i++) plank(-12.4, z, 1.3, 0.56, i);
+  for (let z = -7.0, i = 0; z < -5.5; z += 0.62, i++) plank(6.5, z, 2.0, 0.56, i);   // up to the market door
   for (let z = -5.6, i = 0; z < 34.6; z += 0.62, i++) plank(11.6, z, 1.5, 0.56, i);
   // fish market shell
   const cx = (SHOP.x0 + SHOP.x1) / 2, w = SHOP.x1 - SHOP.x0 + 0.4;
@@ -414,8 +415,8 @@ function buildWorld() {
   for (let i = 0; i < 17; i++) palmAt(-41 + i * 3.4 + rnd(), -20.5 - rnd() * 2.5, 0.9 + rnd() * 0.3, false);
   for (let i = 0; i < 16; i++) palmAt(-42.5 - rnd() * 3, -18 + i * 3.5 + rnd(), 0.9 + rnd() * 0.3, false);
   for (let i = 0; i < 16; i++) palmAt(-40 + i * 3.6 + rnd(), 37 + rnd() * 2, 0.9 + rnd() * 0.3, false);
-  for (const [x, z] of [[-8, -2.2], [8.9, -2.3], [-20.5, -3.2], [-9.5, 14], [7.5, 14.5], [-19.5, 9], [-21.5, 20], [8.5, 22], [-13.5, 27.5], [3, 30], [-30, -2.4], [-36, 3], [-27.5, 9], [-33.5, 16], [-28, 24], [-37, 28]]) palmAt(x, z, 1, true);
-  for (const [x, z, s] of [[-20.5, 13.5, 0.55], [-12, 12, 0.4], [9.8, 18.5, 0.45], [-22, 27, 0.6], [4.6, -2.6, 0.35], [14.4, -16, 0.8], [14.6, 33.6, 0.7], [-38, 10, 0.6], [-31, 31, 0.5]]) {
+  for (const [x, z] of [[-6.6, -1.4], [2.8, -2.0], [-20.5, -3.2], [-9.5, 14], [6.0, 18.2], [-19.5, 9], [-21.5, 20], [5.4, 23.4], [-13.5, 27.5], [3, 30], [-30, -2.4], [-36, 3], [-27.5, 9], [-33.5, 16], [-28, 24], [-37, 28]]) palmAt(x, z, 1, true);
+  for (const [x, z, s] of [[-20.5, 13.5, 0.55], [-12, 12, 0.4], [7.0, 20.8, 0.45], [-22, 27, 0.6], [4.6, -2.6, 0.35], [14.4, -16, 0.8], [14.6, 33.6, 0.7], [-38, 10, 0.6], [-31, 31, 0.5]]) {
     const r = P.rock(s); r.position.set(x, 0, z); D.add(r);
     if (x < 12.9) box(x - s * 0.8, z - s * 0.7, x + s * 0.8, z + s * 0.7);
   }
@@ -429,9 +430,9 @@ function buildWorld() {
   K.add(D, P3.beachBall(), -1.5, 0, 24.5);
   K.add(D, P3.beachBall(), 6.8, 0, 27.5);
   for (const [x, z, c] of [[17, 1.0, '#ff5a4e'], [26, 6, '#ffd34a'], [17.5, 14, '#ff5a4e'], [27, 19.5, '#ffd34a'], [27, -2, '#ff5a4e'], [28, 12, '#ffd34a']]) K.add(D, P3.buoy(c), x, 0, z);
-  for (const [x, z] of [[9.4, -3.9], [10.0, 14.6], [12.6, 7.4]]) { K.add(D, P3.barrel(), x, 0, z); box(x - 0.32, z - 0.32, x + 0.32, z + 0.32); }
+  for (const [x, z] of [[9.0, -3.2], [10.0, 14.6], [12.6, 7.4]]) { K.add(D, P3.barrel(), x, 0, z); box(x - 0.32, z - 0.32, x + 0.32, z + 0.32); }
   for (const z of [-0.6, 6, 14, 19.4, 26, 33.4]) { K.add(D, P.lamp(), 12.6, 0, z); box(12.5, z - 0.1, 12.7, z + 0.1); }
-  K.add(D, P.lamp(), -11.0, 0, -4.0);
+  K.add(D, P.lamp(), -11.0, 0, -3.6); box(-11.1, -3.7, -10.9, -3.5);
   for (const [x, z, r] of [[-10.0, 12.6, 0], [-8.4, 4.4, 1.57]]) { const n = P3.netRack(); n.position.set(x, 0, z); n.rotation.y = r; D.add(n); box(x - (r ? 0.3 : 1.3), z - (r ? 1.3 : 0.3), x + (r ? 0.3 : 1.3), z + (r ? 1.3 : 0.3)); }
   for (const [x, z] of [[5.6, 15.8], [-7.6, 11.6], [-9.0, -3.2]]) { K.add(D, P3.crateStack(), x, 0, z); box(x - 0.75, z - 0.55, x + 0.75, z + 0.55); }
   for (const [x, z] of [[-10.4, 6.8], [4.6, 4.6]]) { K.add(D, P3.lifeRingStand(), x, 0, z); box(x - 0.15, z - 0.15, x + 0.15, z + 0.15); }
@@ -558,7 +559,7 @@ function takeInto(c, type, from) {
 // ---------- player ----------
 const player = carrier(K.person({ body: '#ff7f6e', hat: 'straw' }));
 player.cap = () => upVal('cap');
-player.p.root.position.set(9.4, 0, 4.2);
+player.p.root.position.set(8.1, 0, 4.2);
 scene.add(player.p.root);
 const pVel = new THREE.Vector3();
 let pFace = 0;
@@ -1009,7 +1010,7 @@ function refreshZones() {
 function frontOf(def) {
   if (def.kind === 'pier') return [9.6, def.pz + 2.6];
   if (def.kind === 'angler') return [9.8, -0.4];
-  if (def.kind === 'traps') return [11.1, -10.4];
+  if (def.kind === 'traps') return [10.2, -5.0];
   if (def.kind === 'aqua') return [8.8, 24.8];
   if (def.kind === 'crop') return [def.pos[0], def.pos[1] + CROP_LAYOUT[def.plant].d / 2 + 1.5];
   if (def.kind === 'machine' || def.kind === 'shelf' || def.kind === 'table') return [def.pos[0], def.pos[1] + 1.7];
@@ -1832,7 +1833,9 @@ function openPanel(kind) {
     body.innerHTML = '<a class="mapcard" href="./index.html"><span class="mi" style="background:#c9f0a8">🌾</span><div><b>開心農場</b><small>回到農場</small></div></a>' +
       '<div class="mapcard here"><span class="mi" style="background:#bfe9ff">⚓</span><div><b>海邊漁港</b><small>你現在在這裡</small></div></div>' +
       (m.forest ? '<a class="mapcard" href="./forest.html"><span class="mi" style="background:#cdeec0">🌲</span><div><b>森林小鎮</b><small>伐木、家具、蓋小鎮</small></div></a>'
-        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">🌲</span><div><b>森林小鎮</b><small>點亮燈塔、漁港總收入 $150,000 後開放</small></div></div>');
+        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">🌲</span><div><b>森林小鎮</b><small>點亮燈塔、漁港總收入 $150,000 後開放</small></div></div>') +
+      (m.cafe ? '<a class="mapcard" href="./cafe.html"><span class="mi" style="background:#f3dcc0">☕</span><div><b>山城咖啡館</b><small>咖啡園、烘豆、咖啡館</small></div></a>'
+        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">☕</span><div><b>山城咖啡館</b><small>在森林小鎮開分店後開放</small></div></div>');
     body.querySelectorAll('a.mapcard').forEach((a) => a.addEventListener('click', () => save()));
   } else if (kind === 'set') {
     $('pTitle').textContent = '設定';

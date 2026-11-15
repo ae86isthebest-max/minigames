@@ -159,6 +159,7 @@ const DEFS = [
   { id: 'planter2', name: '植樹員', kind: 'hire', role: 'planter', zone: [-5.6, -1.8], cost: { money: 14000 }, req: ['trainStation'] },
   { id: 'forestExpand', name: '擴大林場', kind: 'expand', note: '可以再種 8 棵樹', zone: [-5.0, 16.4], cost: { money: 20000 }, req: ['planter2'] },
   { id: 'clockTower', name: '鐘樓', kind: 'town', lot: 'G', bld: 'clock', note: '小鎮慶典！所有商品售價 ×1.2', need: { refined: 80, bookcase: 4, rocker: 4, notebook: 20 }, cost: { money: 40000 }, req: ['forestExpand'], reqDone: ['trainStation'] },
+  { id: 'cafeGate', name: '開分店：山城咖啡館', kind: 'mapgate', zone: [9.8, -8.4], cost: { money: 300000 }, req: [] },
 ];
 for (const d of DEFS) if (d.kind === 'town') d.zone = LOTS[d.lot].pad;
 const DEF = Object.fromEntries(DEFS.map((d) => [d.id, d]));
@@ -361,14 +362,17 @@ function buildWorld() {
   // river with banks, and the two bridges
   K.add(D, K.mesh(G.plane(RIVER.x1 - RIVER.x0 + 1.2, 140), '#c9b07a', false, true), (RIVER.x0 + RIVER.x1) / 2, 0.004, 6);
   K.add(D, K.mesh(G.plane(RIVER.x1 - RIVER.x0, 140), '#6fc9e8', false, true), (RIVER.x0 + RIVER.x1) / 2, 0.008, 6);
-  for (let z = -60; z < 75; z += 1.4) for (const x of [RIVER.x0 - 0.15, RIVER.x1 + 0.15]) { const r = K.mesh(new THREE.DodecahedronGeometry(0.22 + rnd() * 0.14, 0), '#a3aeb0'); r.position.set(x + (rnd() - 0.5) * 0.3, 0.06, z + rnd()); r.scale.set(1, 0.55, 1); D.add(r); }
+  for (let z = -60; z < 75; z += 1.4) for (const x of [RIVER.x0 - 0.15, RIVER.x1 + 0.15]) { if (x < RIVER.x0 && z > -17.2 && z < -12.0) continue; const r = K.mesh(new THREE.DodecahedronGeometry(0.22 + rnd() * 0.14, 0), '#a3aeb0'); r.position.set(x + (rnd() - 0.5) * 0.3, 0.06, z + rnd()); r.scale.set(1, 0.55, 1); D.add(r); }
   let zz = -40;
   for (const bz of BRIDGES) { box(RIVER.x0, zz, RIVER.x1, bz - 1.2); zz = bz + 1.2; const br = P5.bridge(RIVER.x1 - RIVER.x0 + 1.4, 2.6); br.position.set((RIVER.x0 + RIVER.x1) / 2, 0, bz); D.add(br); }
   box(RIVER.x0, zz, RIVER.x1, 60);
   // paths: in front of the shops, to the bridge and through the town; diners of the furniture showroom come the same way
   const path = (x, z, w, d, col = '#e6cf98') => K.add(D, K.mesh(G.rbox(w, 0.05, d, 0.2, 1), col, false, true), x, 0.025, z);
-  path(1, -4.9, 26, 1.8); path(-19.2, -4.9, 14, 1.8); path(22, -4.9, 16, 1.8, '#d9c7a0'); path(22.5, 6, 1.8, 44, '#d9c7a0');
-  path(-0.4, 5.2, 1.6, 18); path(0.5, 17.6, 22, 1.6); path(-3.5, 1.0, 1.4, 9);
+  path(1, -4.9, 26, 1.8); path(-19.1, -4.9, 14.4, 1.8); path(22, -4.9, 16, 1.8, '#d9c7a0'); path(22.5, 6, 1.8, 44, '#d9c7a0');
+  path(-0.4, 5.2, 1.6, 18); path(-3.5, 17.6, 30, 1.6); path(-3.5, 1.0, 1.4, 9);
+  path(6.5, -6.5, 2.2, 1.8);   // up to the market door
+  path(18.5, 18.0, 6.4, 1.6, '#d9c7a0');   // from the south bridge into town
+  path(-18.6, -2.7, 3.6, 1.6);   // the delivery truck's lay-by
   // the town: lot outlines and street lamps, railway in the south
   for (const k in LOTS) { const o = P5.lotOutline(); o.position.set(LOTS[k].x, 0, LOTS[k].z); D.add(o); }
   const rl = P5.rails(60); rl.position.set(15.6, 0, TRAIN.z); D.add(rl);
@@ -381,14 +385,14 @@ function buildWorld() {
   for (let i = 0; i < 26; i++) tree(-26 + i * 2.3 + rnd(), 32.5 + rnd() * 3, rnd() < 0.6 ? 'pine' : 'maple', 0.9 + rnd() * 0.4, false);
   for (let i = 0; i < 20; i++) tree(32 + rnd() * 4, -17 + i * 2.5 + rnd(), rnd() < 0.6 ? 'pine' : 'oak', 0.9 + rnd() * 0.4, false);
   for (const [x, z, k] of [[-24.4, -3.6, 'pine'], [-24.6, 0.6, 'oak'], [-24.2, 12.6, 'pine'], [-24.4, 27.6, 'maple'], [-12, 27.8, 'pine'], [-3.6, 28.4, 'oak'], [7.4, 28.2, 'pine'], [10.4, -2.4, 'oak'], [6.4, -2.2, 'oak'], [-3.4, -2.4, 'pine'], [29.6, -14.6, 'pine'], [29.6, 4.2, 'maple'], [29.4, 13.6, 'pine'], [16.8, 12.6, 'oak'], [16.6, 0.8, 'pine'], [28.8, 24.6, 'oak']]) tree(x, z, k, 1, true);
-  for (const [x, z, s] of [[-23.6, 16.4, 0.5], [-8.4, -2.6, 0.35], [11.0, 15.4, 0.45], [16.4, -15.6, 0.6], [29.0, -6.8, 0.5], [-14.8, 28.6, 0.5]]) {
+  for (const [x, z, s] of [[-25.2, 19.4, 0.5], [-8.4, -2.6, 0.35], [11.0, 15.4, 0.45], [16.4, -15.6, 0.6], [29.0, -6.8, 0.5], [-14.8, 28.6, 0.5]]) {
     const r = P.rock(s); r.position.set(x, 0, z); D.add(r); box(x - s * 0.8, z - s * 0.7, x + s * 0.8, z + s * 0.7);
   }
   for (const [x, z, r] of [[-0.6, -2.4, 0.5], [17.4, 9.0, 0.45], [28.6, 0.0, 0.5], [-24.0, 8.0, 0.55]]) K.add(D, P.bush(r), x, 0, z);
   const fl = ['#ff7eb6', '#ffffff', '#ffd34a', '#a98bff', '#ff8a6b'];
   for (let i = 0; i < 70; i++) K.add(D, P.flower(fl[i % 5]), -24 + rnd() * 6, 0, 1 + rnd() * 13);
   for (let i = 0; i < 40; i++) K.add(D, P.flower(fl[i % 5]), 16 + rnd() * 14, 0, -16 + rnd() * 44);
-  K.add(D, P.lamp(), -11.0, 0, -4.0);
+  K.add(D, P.lamp(), -11.0, 0, -3.5); box(-11.1, -3.6, -10.9, -3.4);
   const shopArea = shopShell(D, SHOP, '森林市集', '#59a14f', 6.5);
   K.bake(D, scene);
   // river ripples drift downstream
@@ -672,11 +676,20 @@ function build(def, instant) {
   } else if (def.kind === 'town') {
     buildSite(def, instant);
   } else if (def.kind === 'courier') {
-    const tr = P.truck(); tr.g.position.set(-18.6, 0, -3.2); tr.g.rotation.y = -Math.PI / 2; tr.g.scale.setScalar(0.8); scene.add(tr.g); K.bakeStatic(tr.g);
+    const tr = P.truck(); tr.g.position.set(-18.6, 0, -2.7); box(-19.9, -3.2, -17.3, -2.2); tr.g.rotation.y = -Math.PI / 2; tr.g.scale.setScalar(0.8); scene.add(tr.g); K.bakeStatic(tr.g);
     Object.assign(courierTruck, { on: true, g: tr.g, bed: tr.bed, st: 'park', t: 0, load: 0 });
     if (!instant) popIn(tr.g);
   } else if (def.kind === 'expand') {
     applyGrow(stations.logging);
+  } else if (def.kind === 'mapgate') {
+    mapsSet('cafe');
+    // a signpost beside the (now gone) zone, never on top of where the player stood
+    const sx = 11.3, sz = -8.9, g = new THREE.Group(); g.position.set(sx, 0, sz); scene.add(g);
+    K.add(g, K.mesh(G.rbox(0.16, 1.7, 0.16, 0.04), C.woodDark), 0, 0.85, 0);
+    const sb = P2.signBoard('往山城咖啡館', 2.8, '#8b5a3c'); sb.scale.setScalar(0.6); sb.position.set(0, 1.75, 0); g.add(sb);
+    box(sx - 0.15, sz - 0.15, sx + 0.15, sz + 0.15);
+    s.g = g;
+    if (!instant) { popIn(g); later.push({ t: 1.0, fn: () => openPanel('map') }); }
   }
   if (s.g && s.g.isObject3D && def.kind !== 'logging') K.bakeStatic(s.g);
   if (!instant) { confetti(pos[0], pos[1]); sfx('unlock'); toast('🎉 ' + def.name + (def.kind === 'town' ? ' 開工了！' : ' 完成！') + (def.kind === 'town' ? '' : (def.note || ''))); }
@@ -779,6 +792,9 @@ const tipK = () => (siteDone('park') ? 1 : 0) + (pets.squirrel ? 1 : 0);
 // ---------- maps unlocked across the whole game ----------
 const MAPS_KEY = 'farm_maps_v1';
 function mapsGet() { try { return JSON.parse(localStorage.getItem(MAPS_KEY) || '{}'); } catch (e) { return {}; } }
+function mapsSet(id) { const m = mapsGet(); m[id] = true; try { localStorage.setItem(MAPS_KEY, JSON.stringify(m)); } catch (e) { /* storage off */ } }
+const CAFE_EARNED = 400000;
+const cafeGateOpen = () => siteDone('clockTower') || state.earned >= CAFE_EARNED;
 
 // ---------- opening tutorial ----------
 const guide = { arrows: [], labels: [] };
@@ -819,6 +835,7 @@ function refreshZones() {
     if (isBuilt(def.id)) { if (zones[def.id]) killZone(def.id); continue; }
     let open = def.req ? def.req.every(isBuilt) : def.any.some(isBuilt);
     if (def.reqDone && !def.reqDone.every(siteDone)) open = false;
+    if (def.kind === 'mapgate' && !cafeGateOpen()) open = false;
     if (def.start && DEFS.some((d) => d.start && d !== def && isBuilt(d.id)) && !isBuilt('cashier')) open = false;
     if (!open && def.start && zones[def.id]) killZone(def.id);
     if (open && !zones[def.id]) makeZone(def);
@@ -831,7 +848,7 @@ function refreshZones() {
   }
 }
 function frontOf(def) {
-  if (def.kind === 'logging') return [-4.8, 6.0];
+  if (def.kind === 'logging') return [-4.0, 5.6];
   if (def.kind === 'apiary') return [-22.6, 15.8];
   if (def.kind === 'crop') return [def.pos[0], def.pos[1] + CROP_LAYOUT[def.plant].d / 2 + 1.5];
   if (def.kind === 'machine' || def.kind === 'shelf') return [def.pos[0], def.pos[1] + 1.7];
@@ -1505,7 +1522,9 @@ function openPanel(kind) {
     body.innerHTML = '<a class="mapcard" href="./index.html"><span class="mi" style="background:#c9f0a8">🌾</span><div><b>開心農場</b><small>回到農場</small></div></a>' +
       (m.harbor ? '<a class="mapcard" href="./harbor.html"><span class="mi" style="background:#bfe9ff">⚓</span><div><b>海邊漁港</b><small>捕魚、魚市場、海鮮餐廳</small></div></a>'
         : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">⚓</span><div><b>海邊漁港</b><small>在農場開分店後開放</small></div></div>') +
-      '<div class="mapcard here"><span class="mi" style="background:#cdeec0">🌲</span><div><b>森林小鎮</b><small>你現在在這裡</small></div></div>';
+      '<div class="mapcard here"><span class="mi" style="background:#cdeec0">🌲</span><div><b>森林小鎮</b><small>你現在在這裡</small></div></div>' +
+      (m.cafe ? '<a class="mapcard" href="./cafe.html"><span class="mi" style="background:#f3dcc0">☕</span><div><b>山城咖啡館</b><small>咖啡園、烘豆、咖啡館</small></div></a>'
+        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">☕</span><div><b>山城咖啡館</b><small>蓋好鐘樓或森林總收入 $400,000 後開放</small></div></div>');
     body.querySelectorAll('a.mapcard').forEach((a) => a.addEventListener('click', () => save()));
   } else if (kind === 'set') {
     $('pTitle').textContent = '設定';
@@ -1703,6 +1722,7 @@ function updateWorld(dt, T) {
     if (tr.st === 'park' && tr.load >= 4) { tr.st = 'go'; tr.load = 0; }
     if (tr.st === 'go') { tr.g.position.x -= 9 * dt; if (tr.g.position.x < -34) { tr.st = 'back'; tr.t = 4; } }
     if (tr.st === 'back') { tr.t -= dt; if (tr.t <= 0) { tr.g.position.x = Math.min(-18.6, tr.g.position.x + 9 * dt); if (tr.g.position.x >= -18.6) tr.st = 'park'; } }
+    tr.g.position.z = -2.7 - Math.min(1, Math.max(0, (-18.6 - tr.g.position.x) / 3)) * 2.2;   // pull out of the lay-by onto the road
   }
 }
 function updateScenery(dt, T) {
@@ -1794,7 +1814,7 @@ for (const role in state.extra) if (HIRE[role] && roleOpen(role)) for (let i = 0
 refreshZones();
 resize(); updateCamera(0, true); updateMoney(); showLogDot();
 
-let last = performance.now(), saveT = 0, T = 0;
+let last = performance.now(), saveT = 0, T = 0, gateT = 0;
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now;
@@ -1837,6 +1857,7 @@ function step(dt) {
     if (p.t >= 1) { p.obj.scale.setScalar(1); pops.splice(i, 1); }
   }
   dashMat.opacity = 0.75 + Math.sin(T * 4) * 0.25;
+  gateT -= dt; if (gateT <= 0) { gateT = 2; if (!zones.cafeGate && !isBuilt('cafeGate') && cafeGateOpen()) refreshZones(); }
   updateGuide(T);
   updateDoorsAndLights(dt);
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').classList.remove('on'); }
