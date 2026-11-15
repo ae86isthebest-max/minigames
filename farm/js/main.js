@@ -4,6 +4,7 @@ import * as K from './kit.js';
 import * as P from './props.js';
 import * as P2 from './props2.js';
 import { Joystick } from './input.js';
+import { createNav } from './nav.js';
 
 const { C, G } = K;
 const ITEMS = P.ITEMS;
@@ -32,15 +33,15 @@ const DEFS = [
   { id: 'warehouse', name: '倉庫', kind: 'store', pos: [10.6, -14.2], zone: [10.6, -10.8], cost: { money: 350, wood: 20 }, req: ['shelver'] },
   { id: 'sprinkler', name: '自動灑水器', kind: 'sprinkler', zone: [11.6, 4], cost: { money: 320, wood: 15 } },
   { id: 'barn', name: '牛棚', kind: 'producer', in: 'hay', out: 'milk', pos: [-4.5, 10.2], cost: { money: 420, hay: 20, wood: 18 } },
-  { id: 'shelfMilk', name: '牛奶雪櫃', kind: 'shelf', fridge: true, item: 'milk', pos: [4.4, SH_Z], cost: { money: 300 } },
+  { id: 'shelfMilk', name: '牛奶冷藏櫃', kind: 'shelf', fridge: true, item: 'milk', pos: [4.4, SH_Z], cost: { money: 300 } },
   { id: 'market', name: '超級市場', kind: 'market', zone: [-12, -10], cost: { money: 1500, wood: 40 } },
   { id: 'harbor', name: '開分店：海邊漁港', kind: 'mapgate', zone: [11.2, 0.4], cost: { money: 15000 }, req: ['market'], earned: 40000 },
   { id: 'juicer', name: '果汁機', kind: 'machine', mk: 'juicer', in: 'tomato', out: 'juice', iv: 3, pos: [5.5, -2.7], cost: { money: 700, wood: 20 }, req: ['market'] },
-  { id: 'shelfJuice', name: '果汁雪櫃', kind: 'shelf', fridge: true, item: 'juice', pos: [-8.6, SH_Z], cost: { money: 500 } },
+  { id: 'shelfJuice', name: '果汁冷藏櫃', kind: 'shelf', fridge: true, item: 'juice', pos: [-8.6, SH_Z], cost: { money: 500 } },
   { id: 'shelver2', name: '理貨員', kind: 'hire', role: 'shelver', zone: [-4.4, -5], cost: { money: 800 } },
   { id: 'soy', name: '黃豆田', kind: 'crop', out: 'soybean', plant: 'soy', grow: 9, pos: [-9.5, 18.5], cost: { money: 900, wood: 25 } },
   { id: 'soyMachine', name: '磨豆漿機', kind: 'machine', mk: 'soy', in: 'soybean', out: 'soymilk', iv: 3.5, pos: [-3, 18.6], cost: { money: 1100 } },
-  { id: 'shelfSoy', name: '豆漿雪櫃', kind: 'shelf', fridge: true, item: 'soymilk', pos: [-11.6, SH_Z], cost: { money: 800 } },
+  { id: 'shelfSoy', name: '豆漿冷藏櫃', kind: 'shelf', fridge: true, item: 'soymilk', pos: [-11.6, SH_Z], cost: { money: 800 } },
   { id: 'dock', name: '貨運站', kind: 'dock', pos: [12.2, 6], zone: [12, 6], cost: { money: 1200, wood: 30 } },
   { id: 'counter2', name: '第二收銀台', kind: 'counter2', zone: [-16.5, -9.6], cost: { money: 1000 } },
   { id: 'cashier2', name: '收銀員', kind: 'hire', role: 'cashier', counter: 1, zone: [-18.4, -12.8], cost: { money: 1300 } },
@@ -52,7 +53,7 @@ const DEFS = [
   { id: 'farmer2', name: '農夫', kind: 'hire', role: 'farmer', zone: [-2, 14.6], cost: { money: 2400 } },
   { id: 'coop2', name: '第二雞舍', kind: 'producer', in: 'hay', out: 'egg', pos: [2, 7.4], cost: { money: 2600, wood: 40 } },
   { id: 'cheese', name: '起司坊', kind: 'machine', mk: 'cheese', in: 'milk', out: 'cheese', iv: 4.5, pos: [3.4, 12.8], cost: { money: 3800 } },
-  { id: 'shelfCheese', name: '起司雪櫃', kind: 'shelf', fridge: true, item: 'cheese', pos: [-17.6, SH_Z], cost: { money: 2800 } },
+  { id: 'shelfCheese', name: '起司冷藏櫃', kind: 'shelf', fridge: true, item: 'cheese', pos: [-17.6, SH_Z], cost: { money: 2800 } },
   { id: 'shelver3', name: '理貨員', kind: 'hire', role: 'shelver', zone: [-8.6, -5], cost: { money: 3500 } },
   { id: 'orchard', name: '蘋果園', kind: 'crop', out: 'apple', plant: 'apple', grow: 12, pos: [8.5, 23.5], cost: { money: 4500, wood: 70 } },
   { id: 'shelfApple', name: '蘋果架', kind: 'shelf', item: 'apple', pos: [-11.6, -10.6], cost: { money: 3200 } },
@@ -75,10 +76,18 @@ const UPS = {
   shelfCap: { tab: 3, name: '貨架容量', ic: 'egg', need: 'cashier', vals: [8, 12, 16, 20, 24], cost: [150, 400, 900, 1800], fmt: (v) => v + ' 個' },
   cust: { tab: 3, name: '客人數量', ic: 'run', need: 'cashier', vals: [1, 1.2, 1.4, 1.6, 1.8, 2], cost: [300, 700, 1400, 2600, 4500], fmt: (v) => '×' + v },
   mach: { tab: 3, name: '機器速度', ic: 'juice', need: 'juicer', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [400, 900, 1800, 3200, 5500], fmt: (v) => '×' + v },
-  keeper: { tab: 1, name: '飼養員工作', ic: 'egg', need: 'keeper', vals: [0, 1, 2, 3], cost: [150, 400, 900], fmt: (v) => ['餵雞', '餵雞＋執蛋上架', '再照顧牛（餵牛、牛奶上架）', '貨架滿就放入倉庫'][v] },
+  keeper: { tab: 1, name: '飼養員工作', ic: 'egg', need: 'keeper', vals: [0, 1, 2, 3], cost: [150, 400, 900], fmt: (v) => ['餵雞', '餵雞＋撿蛋上架', '再照顧牛（餵牛、牛奶上架）', '貨架滿了就放進倉庫'][v] },
   autoCash: { tab: 3, name: '自動收款', ic: 'money', need: 'cashier2', vals: [0, 1], cost: [6000], fmt: (v) => v ? '錢自動入袋' : '要自己收錢' },
 };
 const upVal = (k) => UPS[k].vals[state.up[k] || 0];
+// extra staff bought from the 員工 tab (on top of the ones unlocked on the map)
+const EXTRA = {
+  keeper: { name: '飼養員', base: 200, need: 'keeper', at: [-1.4, 5.4] },
+  farmer: { name: '農夫', base: 300, need: 'farmer', at: [-2, 1.6] },
+  shelver: { name: '理貨員', base: 400, need: 'shelver', at: [1.6, -5] },
+};
+const EXTRA_MAX = 6;
+const extraCost = (role) => Math.round(EXTRA[role].base * Math.pow(1.8, state.extra[role] || 0) / 10) * 10;
 
 // small repeatable unlocks next to a building: one more chicken / cow / plant / patch of grass
 const GROW = {
@@ -100,6 +109,7 @@ const state = { money: 50, built: [], paid: {}, up: {}, stock: {}, store: {}, lv
 try { Object.assign(state, JSON.parse(localStorage.getItem(SAVE) || '{}')); } catch (e) { /* fresh start */ }
 if (params.has('fresh')) Object.assign(state, { money: 50, built: [], paid: {}, up: {}, stock: {}, store: {}, lvl: {}, piles: [0, 0], earned: 0 });
 state.store = state.store || {};
+state.extra = state.extra || {};
 // older saves already had full fields and three chickens: keep them that way
 if (!state.lvl) { state.lvl = {}; if (state.built.length) { for (const k in GROW) state.lvl[k] = GROW[k].max; state.lvl.field = 25; } }
 for (const k in UPS) state.up[k] = state.up[k] || 0;
@@ -155,8 +165,10 @@ const joy = new Joystick(canvas, $('ui'));
 joy.onStart = () => { if (actx && actx.state === 'suspended') actx.resume(); };
 
 const colliders = [];
-const box = (x0, z0, x1, z1) => { const b = { x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1) }; colliders.push(b); return b; };
-function unbox(b) { const i = colliders.indexOf(b); if (i >= 0) colliders.splice(i, 1); }
+// workers find their way around everything solid (walls, fences, buildings) with a path grid
+const nav = createNav(colliders, { x0: -22, x1: 30, z0: -19, z1: 33 });
+const box = (x0, z0, x1, z1) => { const b = { x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1) }; colliders.push(b); nav.dirty(); return b; };
+function unbox(b) { const i = colliders.indexOf(b); if (i >= 0) colliders.splice(i, 1); nav.dirty(); }
 function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
 // ---------- item icons: each item's 3D model rendered once to a small picture ----------
@@ -726,15 +738,10 @@ function makeWorker(role, at, counter, pop) {
 }
 function go(w, x, z, dt, speed) {
   const key = x.toFixed(2) + ',' + z.toFixed(2);
-  if (w.routeKey !== key) {
-    w.routeKey = key;
-    const p = w.p.root.position, a = inShop(p.x, p.z), b = inShop(x, z);
-    w.route = a && !b ? [HALL, DOOR_IN, DOOR] : !a && b ? [DOOR, DOOR_IN, HALL] : [];
-    w.route.push([x, z]);
-  }
+  if (w.routeKey !== key || !w.route || !w.route.length) { w.routeKey = key; const p = w.p.root.position; w.route = nav.path(p.x, p.z, x, z); }
   while (w.route.length > 1 && walkTo(w, w.route[0][0], w.route[0][1], dt, speed)) w.route.shift();
   if (w.route.length > 1) return false;
-  return walkTo(w, x, z, dt, speed);
+  return walkTo(w, w.route[0][0], w.route[0][1], dt, speed);
 }
 function walkTo(w, x, z, dt, speed) {
   const pos = w.p.root.position, dx = x - pos.x, dz = z - pos.z, d = Math.hypot(dx, dz);
@@ -818,7 +825,7 @@ function updateWorker(w, dt) {
   w.moving = 0;
   if (w.role === 'cashier') {
     const c = COUNTERS[w.counter];
-    if (walkTo(w, c.serve.x, c.serve.z, dt, sp)) w.face = 0;
+    if (go(w, c.serve.x, c.serve.z, dt, sp)) w.face = 0;
     return;
   }
   if (w.role === 'farmer') { feedAnimals(w, dt, sp, () => true); return; }
@@ -877,7 +884,7 @@ function feedAnimals(w, dt, sp, ok) {
     w.job = 'deliver';
     const s = prods.sort((a, b) => a.inN - b.inN)[0];
     if (!s) { w.job = null; idleWander(w, dt, -4.5, 3.6); return; }
-    if (walkTo(w, s.inPt.x - 0.6, s.inPt.z + 0.9, dt, sp) || dist2(w.p.root.position, s.inPt.x, s.inPt.z) < 1.3) depositTo(w, s, 'hay', dt);
+    if (go(w, s.inPt.x - 0.6, s.inPt.z + 0.9, dt, sp) || dist2(w.p.root.position, s.inPt.x, s.inPt.z) < 1.3) depositTo(w, s, 'hay', dt);
     if (count(w, 'hay') === 0 && !w.incoming) w.job = null;
   } else if (prods.length && room(w) > 0) {
     if (!w.target || !w.target.grown || w.target.res !== w) {
@@ -887,7 +894,7 @@ function feedAnimals(w, dt, sp, ok) {
       w.target = best; if (best) best.res = w;
     }
     const t = w.target;
-    if (t && walkTo(w, t.x, t.z + 0.3, dt, sp)) { cutTuft(t, w); w.target = null; }
+    if (t && go(w, t.x, t.z + 0.3, dt, sp)) { cutTuft(t, w); w.target = null; }
     if (!t && hay > 0) w.job = 'deliver';
   } else idleWander(w, dt, -1.5, 4.5);
 }
@@ -1236,7 +1243,20 @@ function openPanel(kind) {
       if (ti === 1 && !workers.length) { body.innerHTML = '<div class="empty">解鎖第一位員工後開放</div>'; return; }
       if (ti === 1) {
         const n = (r) => workers.filter((w) => w.role === r).length;
-        body.insertAdjacentHTML('beforeend', '<div class="chips staff"><span class="chip">收銀員 ×' + n('cashier') + '</span><span class="chip">農夫 ×' + n('farmer') + '</span><span class="chip">理貨員 ×' + n('shelver') + '</span></div>');
+        body.insertAdjacentHTML('beforeend', '<div class="chips staff"><span class="chip">收銀員 ×' + n('cashier') + '</span><span class="chip">飼養員 ×' + n('keeper') + '</span><span class="chip">農夫 ×' + n('farmer') + '</span><span class="chip">理貨員 ×' + n('shelver') + '</span></div>');
+        for (const role in EXTRA) {
+          const ex = EXTRA[role]; if (!isBuilt(ex.need)) continue;
+          const have = state.extra[role] || 0, max = have >= EXTRA_MAX, cost = extraCost(role);
+          const row = document.createElement('div'); row.className = 'row';
+          row.innerHTML = '<span class="ricon"><span class="ic">🧑‍🌾</span></span><div class="rmid"><b>多請一位' + ex.name + '</b><small>現在 ' + n(role) + ' 位' + (max ? '（已達上限）' : '') + '</small></div>';
+          const btn = document.createElement('button'); btn.className = 'buy' + (max ? ' max' : (state.money < cost ? ' poor' : ''));
+          btn.innerHTML = max ? '已滿' : ICON.money + fmtMoney(cost);
+          btn.onclick = () => {
+            if (max || state.money < cost) { sfx('drop'); btn.classList.add('shake'); setTimeout(() => btn.classList.remove('shake'), 300); return; }
+            state.money -= cost; state.extra[role] = have + 1; makeWorker(role, ex.at, 0, true); sfx('buy'); updateMoney(); save(); show(ti);
+          };
+          row.appendChild(btn); body.appendChild(row);
+        }
       }
       for (const k in UPS) {
         const u = UPS[k]; if (u.tab !== ti) continue;
@@ -1275,14 +1295,14 @@ function openPanel(kind) {
   } else if (kind === 'map') {
     $('pTitle').textContent = '地圖';
     const m = mapsGet();
-    body.innerHTML = '<div class="mapcard here"><span class="mi" style="background:#c9f0a8">🌾</span><div><b>開心農場</b><small>你而家喺度</small></div></div>' +
+    body.innerHTML = '<div class="mapcard here"><span class="mi" style="background:#c9f0a8">🌾</span><div><b>開心農場</b><small>你目前在這裡</small></div></div>' +
       (m.harbor ? '<a class="mapcard" href="harbor.html"><span class="mi" style="background:#bfe9ff">⚓</span><div><b>海邊漁港</b><small>捕魚、壽司、海鮮餐廳</small></div></a>'
-        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">⚓</span><div><b>海邊漁港</b><small>起好超級市場、總收入 $40,000 後開放</small></div></div>') +
-      '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">🌲</span><div><b>森林伐木場</b><small>之後推出</small></div></div>';
+        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">⚓</span><div><b>海邊漁港</b><small>蓋好超級市場、總收入達 $40,000 後開放</small></div></div>') +
+      '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">🌲</span><div><b>森林伐木場</b><small>即將推出</small></div></div>';
   } else if (kind === 'set') {
     $('pTitle').textContent = '設定';
     body.innerHTML = '<div class="row"><span class="ricon">🔊</span><div class="rmid"><b>聲音</b></div><button class="buy" id="sSnd">' + (state.sound ? '開' : '關') + '</button></div>' +
-      '<div class="row"><span class="ricon">🔄</span><div class="rmid"><b>重新開始</b><small>清除所有進度</small></div><button class="buy poor" id="sReset">重來</button></div>';
+      '<div class="row"><span class="ricon">🔄</span><div class="rmid"><b>重新開始</b><small>清除所有進度</small></div><button class="buy poor" id="sReset">重新開始</button></div>';
     $('sSnd').onclick = () => { state.sound = !state.sound; save(); openPanel('set'); };
     let armed = false;
     $('sReset').onclick = (e) => {
@@ -1493,6 +1513,7 @@ buildField();
 buildTrees();
 buildCounter(0, true);
 for (const def of DEFS) if (isBuilt(def.id)) build(def, true);
+for (const role in EXTRA) for (let i = 0; i < (state.extra[role] || 0); i++) makeWorker(role, EXTRA[role].at, 0, false);
 refreshZones();
 resize(); updateCamera(0, true); updateMoney();
 
@@ -1563,6 +1584,8 @@ window.__farm = {
   tp(x, z) { player.p.root.position.set(x, 0, z); updateCamera(0, true); },
   build(id) { if (zones[id]) killZone(id); build(DEF[id]); },
   sim(sec) { for (let i = 0; i < sec * 30; i++) step(1 / 30); },
+  // run the game and count frames where a worker stands inside something solid
+  probe(sec) { let n = 0; for (let i = 0; i < sec * 30; i++) { step(1 / 30); for (const w of workers) { const p = w.p.root.position; for (const c of colliders) if (p.x > c.x0 + 0.05 && p.x < c.x1 - 0.05 && p.z > c.z0 + 0.05 && p.z < c.z1 - 0.05) { n++; break; } } } return n; },
   guide, guideTarget,
   calls: () => renderer.info.render.calls,
   lineup(x, z) { Object.keys(ITEMS).forEach((t, i) => { const m = P.itemMesh(t); m.scale.setScalar(2); m.position.set(x + (i % 5) * 1.1, 0, z + Math.floor(i / 5) * 1.2); scene.add(m); }); },

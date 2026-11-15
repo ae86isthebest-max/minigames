@@ -1,4 +1,4 @@
-// 巴士逃脫 — Bus Escape: tap buses out of the jammed lot to the station bays; passengers board by colour.
+// 公車逃脫 — Bus Escape: tap buses out of the jammed lot to the station bays; passengers board by colour.
 (function () {
   'use strict';
   const DX = [1, 0, -1, 0], DY = [0, 1, 0, -1];
@@ -187,7 +187,7 @@
   }
 
   MG.register({
-    id: 'bus', name: '巴士逃脫', icon: '🚌', color: '#ff8f3d',
+    id: 'bus', name: '公車逃脫', icon: '🚌', color: '#ff8f3d',
     gen, exitOrder, cellsOf, probe, buildGrid,
     create(api) {
       const U = api.util;
@@ -213,7 +213,7 @@
       const tmp = [0, 0], tmp2 = [0, 0];
 
       function setInfo() {
-        if (api.level === 1 && !api.diff && delivered === 0 && rankN === 0) api.info('點巴士開到車站，同色乘客會自動上車');
+        if (api.level === 1 && !api.diff && delivered === 0 && rankN === 0) api.info('點公車開到車站，同色乘客會自動上車');
         else api.info('乘客 ' + delivered + ' / ' + total + (timeLimit ? '　⏱ ' + Math.ceil(timeLeft) + ' 秒' : ''));
       }
 
@@ -558,7 +558,7 @@
           api.sfx('bad');
           b.shake = 1; fullFlash = 1;
           for (const bb of bays) bb.flash = 1;
-          api.info('車站滿了！等巴士載滿開走');
+          api.info('車站滿了！等公車載滿開走');
           return;
         }
         api.sfx('pop');
@@ -705,7 +705,7 @@
             if (!busy && allFull && !candidateFor(queue[0])) {
               endT = 0.6; endWin = false;
               for (const bb of bays) bb.flash = 1;
-              api.info('車站塞滿了，沒有對應顏色的巴士');
+              api.info('車站塞滿了，沒有對應顏色的公車');
             }
           }
         }

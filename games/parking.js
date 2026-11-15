@@ -1,4 +1,4 @@
-// 泊車逃脫 — Car Parking Jam: tap a car, it drives in its arrow direction; clear the lot.
+// 停車場逃脫 — Car Parking Jam: tap a car, it drives in its arrow direction; clear the lot.
 (function () {
   'use strict';
   const DX = [1, 0, -1, 0], DY = [0, 1, 0, -1];
@@ -151,7 +151,7 @@
   }
 
   MG.register({
-    id: 'parking', name: '泊車逃脫', icon: '🚗', color: '#4c9bff',
+    id: 'parking', name: '停車場逃脫', icon: '🚗', color: '#4c9bff',
     gen, solve, cellsOf, probe, buildGrid,
     create(api) {
       const U = api.util;
