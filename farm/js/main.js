@@ -1402,23 +1402,42 @@ function customerLook(isVip) {
 function spawnCustomer(from) {
   const shelves = listOf('shelf');
   if (!shelves.length) return null;
-  const sh = pick(shelves);
+  const kinds = [...new Set(shelves.map((q) => q.item))];
+  const r = Math.random(), nK = Math.min(kinds.length, r < 0.45 ? 1 : r < 0.82 ? 2 : 3);
+  const items = kinds.sort(() => Math.random() - 0.5).slice(0, nK);
+  const list = items.map((it) => ({ item: it, shelf: pick(shelves.filter((q) => q.item === it)), need: 1 + Math.floor(Math.random() * 3) + (park.ready && Math.random() < 0.4 ? 1 : 0), got: 0 }));
+  // visit the shelves in a sensible order: front row first, back row last
+  list.sort((a, b) => b.shelf.front.z - a.shelf.front.z || a.shelf.front.x - b.shelf.front.x);
+  const sh = list[0].shelf;
   const p = K.person(customerLook(false));
   const start = from || [ENTRY[0], ENTRY[1] + 4];
   p.root.position.set(start[0], 0, start[1]); scene.add(p.root);
-  const need = 1 + Math.floor(Math.random() * Math.min(4, 1 + shelves.length)) + (park.ready ? Math.floor(Math.random() * 3) : 0);
   const west = !!shopDoor2.d && sh.front.x < -3;
   const path = from ? [[from[0], -10], [14.2, -10], ENTRY] : [ENTRY];
   if (west) { path.push(OUT_W, DOOR2, DOOR2_IN); if (sh.front.z < -12) path.push([DOOR2_IN[0], -12.2]); } else path.push(DOOR, DOOR_IN, HALL);
   if (sh.front.z < -18) { const ax = aisleFor(sh.front.x); path.push([ax, -12.2], [ax, -18.6]); }
   path.push([sh.front.x + rand(-0.75, 0.75), sh.front.z + rand(0.2, 1.1)]);
-  const c = { p, shelf: sh, item: sh.item, need, got: 0, st: 'in', path, t: 0, face: 0, moving: 0, ci: 0, qi: 99 };
+  const c = { p, list, li: 0, shelf: sh, item: sh.item, need: list[0].need, got: 0, st: 'in', path, t: 0, face: 0, moving: 0, ci: 0, qi: 99 };
   c.label = label('bubble', '', (o) => { o.copy(c.p.root.position); o.y = 2.05; });
   customers.push(c);
   return c;
 }
 // walkways between the shelf rows (east wall, the wide gap in the middle, west wall)
 function aisleFor(x) { let best = 6.6; for (const a of [6.6, -6.6, -19.6]) if (Math.abs(a - x) < Math.abs(best - x)) best = a; return best; }
+const band = (z) => (z > -12 ? 'mid' : z > -18 ? 'row1' : 'row2');
+function routeToShelf(fx, fz, from, to) {
+  const tgt = [to.front.x + rand(-0.75, 0.75), to.front.z + rand(0.2, 1.1)];
+  const a = band(from.front.z), b = band(to.front.z);
+  if (a === b && a !== 'mid') return [tgt];
+  const out = [];
+  if (a === 'row2') { const ax = aisleFor(fx); out.push([fx, -18.6], [ax, -18.6], [ax, -12.2]); }
+  else if (a === 'mid') { const ex = from.def.pos[0] + 1.7; out.push([ex, fz], [ex, -12.2]); }
+  else out.push([fx, -12.2]);
+  if (b === 'row2') { const ax = aisleFor(tgt[0]); out.push([ax, -12.2], [ax, -18.6]); }
+  else if (b === 'mid') { const ex = to.def.pos[0] + 1.7; out.push([ex, -12.2], [ex, -9.0]); }
+  out.push(tgt);
+  return out;
+}
 function stepPath(c, dt, speed) {
   if (!c.path.length) return true;
   const [tx, tz] = c.path[0];
@@ -1454,10 +1473,19 @@ function updateCustomers(dt) {
         fly(c.item, V3(c.shelf.def.pos[0], 0.8, c.shelf.def.pos[1]), (o) => { o.copy(c.p.root.position); o.y = 1.2; }, 0.25, null);
       }
       if (c.patience <= 0 && c.got < c.need) {
-        if (c.got > 0) c.need = c.got;
+        const any = c.got > 0 || c.list.some((e, i) => i < c.li && e.got > 0);
+        if (c.got > 0 || c.li < c.list.length - 1 || any) c.need = c.got;
         else { leaveShop(c); floatText('😞', V3(c.p.root.position.x, 2.2, c.p.root.position.z)); }
       }
+      if (c.st === 'shop' && c.got >= c.need && c.li < c.list.length - 1) {
+        // next item on the list
+        const e = c.list[c.li]; e.got = c.got; e.need = c.need;
+        const prev = c.shelf, n = c.list[++c.li], pos = c.p.root.position;
+        Object.assign(c, { shelf: n.shelf, item: n.item, need: n.need, got: 0, st: 'in' });
+        c.path = routeToShelf(pos.x, pos.z, prev, n.shelf);
+      }
       if (c.st === 'shop' && c.got >= c.need) {
+        const e = c.list[c.li]; e.got = c.got; e.need = c.need;
         c.ci = COUNTERS[1].on ? (queueLen(1) < queueLen(0) ? 1 : 0) : 0;
         const side = c.ci ? -14.4 : 2.4, pz = c.p.root.position.z;
         c.st = 'toQueue'; c.qi = 99;
@@ -1479,7 +1507,7 @@ function updateCustomers(dt) {
       if (stepPath(c, dt, cs * 1.08)) { scene.remove(c.p.root); dropLabel(c.label); customers.splice(i, 1); if (c.car) c.car.waiting = false; continue; }
     }
     turn(c.p, c.face, dt); c.p.anim(dt, c.moving);
-    if (c.st === 'shop' || c.st === 'in') setLabel(c.label, badge(c.item, c.got, c.need));
+    if (c.st === 'shop' || c.st === 'in') setLabel(c.label, badge(c.item, c.got, c.need) + (c.list && c.li < c.list.length - 1 ? '<span class="rest">' + c.list.slice(c.li + 1).map((e) => ICON[e.item]).join('') + '</span>' : ''));
     else if (c.st !== 'leave') setLabel(c.label, ICON.money);
   }
 }
@@ -1492,7 +1520,8 @@ function leaveShop(c) {
   if (c.home) c.path.push([14.2, -10], [c.home[0], -10], c.home); else c.path.push([ENTRY[0], ENTRY[1] + 14]);
 }
 function pay(c) {
-  const v = Math.round(c.got * ITEMS[c.item].price * upVal('price') * (1 + 0.05 * (state.up.look || 0)) * MGR_TIP[mShop()]) + (pets.cat ? 1 : 0);
+  const goods = c.list ? c.list.reduce((a, e) => a + e.got * ITEMS[e.item].price, 0) : c.got * ITEMS[c.item].price;
+  const v = Math.round(goods * upVal('price') * (1 + 0.05 * (state.up.look || 0)) * MGR_TIP[mShop()]) + (pets.cat ? 1 : 0);
   const k = COUNTERS[c.ci];
   k.pile.value += v; setPile(k); sfx('coin');
   floatText('+' + v, V3(k.pile.x, 1.6, k.pile.z), 'money');

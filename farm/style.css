@@ -193,3 +193,7 @@ html, body {
 .lbl2 .lbl.zone.far .zn { font-size: 12px; margin: 0; }
 .lbl2 .lbl.zone.far .cost { font-size: 13px; }
 .lbl2 .lbl.zone.far .desc, .lbl2 .lbl.zone.far .how { display: none; }
+.lbl.bubble .rest { margin-left: 4px; padding-left: 4px; border-left: 1px solid #eadcc4; opacity: 0.8; }
+.lbl.bubble .rest .ii { width: 1em; height: 1em; }
+.lbl.bubble .rest { margin-left: 4px; padding-left: 4px; border-left: 1px solid #eadcc4; opacity: 0.85; }
+.lbl.bubble .rest .ii { width: 1em; height: 1em; }
