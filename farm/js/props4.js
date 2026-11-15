@@ -19,7 +19,7 @@ export const ITEMS4 = {
   octopus: { name: '章魚', icon: '🐙', h: 0.24, price: 20 },
   lobster: { name: '龍蝦', icon: '🦞', h: 0.2, price: 60, ss: 0.85 },
   crabcan: { name: '蟹肉罐頭', icon: '🥫', h: 0.21, price: 38 },
-  sashimi: { name: '鮭魚刺身', icon: '🍣', h: 0.12, price: 40 },
+  sashimi: { name: '鮭魚生魚片', icon: '🍣', h: 0.12, price: 40 },
   otoro: { name: '鮪魚壽司', icon: '🍣', h: 0.22, price: 75 },
   tempura: { name: '炸蝦', icon: '🍤', h: 0.16, price: 24 },
   squidgrill: { name: '烤魷魚', icon: '🦑', h: 0.14, price: 26 },

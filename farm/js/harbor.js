@@ -8,12 +8,20 @@ import * as P2 from './props2.js';
 import * as P3 from './props3.js';
 import * as P4 from './props4.js';
 import { Joystick } from './input.js';
+import { createNav } from './nav.js';
 
 const { C, G } = K;
 const ITEMS = { ...P3.ITEMS, ...P4.ITEMS4 };
 const itemMesh = P4.itemMesh;
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
+// The harbour is a branch of the farm, not a separate game: it only opens after 開分店 is bought on the farm
+// (the farm writes {harbor: true} to 'farm_maps_v1'). ?test / ?fresh skip this for testing.
+{
+  let open = false;
+  try { open = JSON.parse(localStorage.getItem('farm_maps_v1') || '{}').harbor === true; } catch (e) { /* storage off */ }
+  if (!open && !params.has('test') && !params.has('fresh')) { location.replace('index.html'); throw new Error('harbour not unlocked yet: back to the farm'); }
+}
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
 const dist2 = (a, x, z) => Math.hypot(a.x - x, a.z - z);
 const easeBack = (t) => { const c = 1.7; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
@@ -78,12 +86,8 @@ const SH_Z = -14.6, MID_Z = -11.2;
 const SHOP = { x0: -9.4, x1: 7.95, z0: -17.4, z1: -7.3 };
 const R0 = -23.6, WING_X0 = -40;
 const REST = { x0: R0, x1: -11.2, z0: -18, z1: -6 };
-const R_OUT = [-12.4, -4.9], R_IN = [-12.4, -7.2];
-const LANES_MAIN = [-22.8, -19.6, -16.4, -13.2], LANES_WING = [-38.8, -35.6, -32.4, -29.2, -26.0];
-const AISLES = [-14.05, -10.4, -7.2];
 const T_POS = [[-14.8, -8.7], [-18.0, -8.7], [-21.2, -8.7], [-14.8, -12.1], [-18.0, -12.1], [-21.2, -12.1], [-24.4, -8.7], [-27.6, -8.7], [-24.4, -12.1], [-27.6, -12.1]];
 const SINK = { x: -12.4, z: -15.8 };
-const ENTRY = [11.2, -4.9], DOOR = [6.5, -6.0], DOOR_IN = [6.5, -8.4], HALL = [6.9, -12.2];
 const SPAWN = [11.2, -1.8];   // shoppers arrive along the shore boardwalk, right by the market
 const D_SPAWN = [-12.4, 12.5];   // diners walk up the plank path from the west beach
 const CRUISE = { x: 9.2, z: 32.5, dockX: 16.3 };
@@ -125,31 +129,31 @@ const kz = (x) => [x, KITCHEN_Z];
 const DEFS = [
   { id: 'pier1', name: '釣魚碼頭', kind: 'pier', boat: 'boat', pz: 2, zone: [10.0, 2], cost: { money: 40 }, req: [] },
   { id: 'seaweed', name: '海帶田', kind: 'crop', out: 'seaweed', plant: 'seaweed', grow: 6, pos: [6.6, 1.8], cost: { money: 30 }, req: [] },
-  { id: 'shelfFish', name: '鮮魚冰櫃', kind: 'shelf', fridge: true, items: ['fish', 'sardine', 'mackerel', 'squid'], pos: [4.4, SH_Z], cost: { money: 10 }, req: ['pier1'] },
+  { id: 'shelfFish', name: '鮮魚冷藏櫃', kind: 'shelf', fridge: true, items: ['fish', 'sardine', 'mackerel', 'squid'], pos: [4.4, SH_Z], cost: { money: 10 }, req: ['pier1'] },
   { id: 'shelfSeaweed', name: '海帶架', kind: 'shelf', items: ['seaweed'], pos: [1.4, SH_Z], cost: { money: 15 }, req: ['seaweed'] },
   { id: 'cashier', name: '收銀員', kind: 'hire', role: 'cashier', zone: [6.6, -12.6], cost: { money: 80 }, any: ['shelfFish', 'shelfSeaweed'] },
   { id: 'iceMaker', name: '製冰機', kind: 'machine', mk: 'ice', in: 'fish', out: 'iced', iv: 3, pos: [8.2, 7.6], cost: { money: 200, fish: 6 }, req: ['cashier', 'pier1'] },
-  { id: 'shelfIced', name: '冰鮮魚冰櫃', kind: 'shelf', fridge: true, items: ['iced'], pos: [-1.6, SH_Z], cost: { money: 160 }, req: ['iceMaker'] },
+  { id: 'shelfIced', name: '冷藏鮮魚櫃', kind: 'shelf', fridge: true, items: ['iced'], pos: [-1.6, SH_Z], cost: { money: 160 }, req: ['iceMaker'] },
   { id: 'fisher', name: '漁夫', kind: 'hire', role: 'fisher', zone: [10.0, -1.0], cost: { money: 180 }, req: ['shelfIced'] },
   { id: 'cat', name: '小貓', kind: 'pet', zone: [2.6, -11.6], cost: { money: 260, fish: 10 }, req: ['fisher'] },
   { id: 'anglerPier', name: '釣魚棧橋', kind: 'angler', zone: [10.0, -2.0], cost: { money: 450 }, req: ['cat'] },
   { id: 'shelver', name: '理貨員', kind: 'hire', role: 'shelver', zone: [1.6, -5.8], cost: { money: 320 }, req: ['anglerPier'] },
   { id: 'warehouse', name: '倉庫', kind: 'store', pos: [11.2, -14.4], zone: [11.2, -10.6], cost: { money: 450 }, req: ['shelver'] },
-  { id: 'shelfPremium', name: '高級魚冰櫃', kind: 'shelf', fridge: true, items: ['salmon', 'tuna', 'swordfish', 'puffer', 'golden'], pos: [-1.6, MID_Z], cost: { money: 550 }, req: ['warehouse'] },
+  { id: 'shelfPremium', name: '高級魚冷藏櫃', kind: 'shelf', fridge: true, items: ['salmon', 'tuna', 'swordfish', 'puffer', 'golden'], pos: [-1.6, MID_Z], cost: { money: 550 }, req: ['warehouse'] },
   { id: 'cannery', name: '罐頭工廠', kind: 'machine', mk: 'can', in: 'fish', out: 'can', iv: 4, pos: [2.0, 7.6], cost: { money: 650, fish: 15 }, req: ['shelfPremium'] },
   { id: 'shelfCan', name: '罐頭架', kind: 'shelf', items: ['can', 'crabcan'], pos: [-4.6, SH_Z], cost: { money: 480 }, req: ['cannery'] },
   { id: 'restaurant', name: '海鮮餐廳', kind: 'restaurant', zone: [-12.4, -4.0], cost: { money: 1200, seaweed: 15 }, req: ['shelfCan'] },
   { id: 'grill', name: '烤魚爐', kind: 'machine', mk: 'grill', in: 'fish', out: 'grilled', iv: 3.5, pos: kz(-20.8), cost: { money: 700, fish: 12 }, req: ['restaurant'] },
   { id: 'waiter', name: '服務生', kind: 'hire', role: 'waiter', zone: [-13.2, -10.4], cost: { money: 850 }, req: ['grill'] },
   { id: 'table2', name: '第 2 張餐桌', kind: 'table', ti: 1, cost: { money: 600 }, req: ['waiter'] },
-  { id: 'pier2', name: '撈網船碼頭', kind: 'pier', boat: 'trawl', pz: 10, zone: [10.0, 10], cost: { money: 1600 }, req: ['table2'] },
-  { id: 'shelfShell', name: '蝦蟹冰櫃', kind: 'shelf', fridge: true, items: ['shrimp', 'crab', 'octopus', 'lobster'], pos: [-4.6, MID_Z], cost: { money: 900 }, req: ['pier2'] },
+  { id: 'pier2', name: '拖網漁船碼頭', kind: 'pier', boat: 'trawl', pz: 10, zone: [10.0, 10], cost: { money: 1600 }, req: ['table2'] },
+  { id: 'shelfShell', name: '蝦蟹冷藏櫃', kind: 'shelf', fridge: true, items: ['shrimp', 'crab', 'octopus', 'lobster'], pos: [-4.6, MID_Z], cost: { money: 900 }, req: ['pier2'] },
   { id: 'dryRack', name: '曬魚架', kind: 'machine', mk: 'dry', in: 'sardine', out: 'dried', iv: 4, pos: [-4.4, 7.6], cost: { money: 1400, sardine: 15 }, req: ['shelfShell'] },
   { id: 'shelfDried', name: '魚乾架', kind: 'shelf', items: ['dried'], pos: [-7.6, SH_Z], cost: { money: 1100 }, req: ['dryRack'] },
   { id: 'paddy', name: '稻田', kind: 'crop', out: 'rice', plant: 'rice', grow: 7, pos: [-15.4, 1.8], cost: { money: 1300 }, req: ['shelfDried'] },
   { id: 'sushiBar', name: '壽司吧', kind: 'machine', mk: 'sushi', in: 'fish', in2: 'rice', out: 'sushi', iv: 3.5, pos: kz(-15.2), cost: { money: 2200, seaweed: 20 }, req: ['paddy'] },
   { id: 'table3', name: '第 3 張餐桌', kind: 'table', ti: 2, cost: { money: 1500 }, req: ['sushiBar'] },
-  { id: 'washer', name: '洗碗員', kind: 'hire', role: 'washer', zone: [-13.2, -13.0], cost: { money: 1900 }, req: ['table3'] },
+  { id: 'washer', name: '洗碗工', kind: 'hire', role: 'washer', zone: [-13.2, -13.0], cost: { money: 1900 }, req: ['table3'] },
   { id: 'shelver2', name: '理貨員', kind: 'hire', role: 'shelver', zone: [-2.4, -5.8], cost: { money: 2400 }, req: ['washer'] },
   { id: 'traps', name: '蟹籠', kind: 'traps', zone: [10.4, TRAP_Z], cost: { money: 2800 }, req: ['shelver2'] },
   { id: 'crabCannery', name: '蟹肉罐頭廠', kind: 'machine', mk: 'crabcan', in: 'crab', out: 'crabcan', iv: 4, pos: [-4.4, 12.8], cost: { money: 3200, crab: 8 }, req: ['traps'] },
@@ -163,8 +167,8 @@ const DEFS = [
   { id: 'squidGrill', name: '烤魷魚架', kind: 'machine', mk: 'squid', in: 'squid', out: 'squidgrill', iv: 3.5, pos: kz(-33.8), cost: { money: 5200, squid: 10 }, req: ['table5'] },
   { id: 'pier3', name: '深海漁船碼頭', kind: 'pier', boat: 'deep', pz: 17, zone: [10.0, 17], cost: { money: 9000 }, req: ['squidGrill'] },
   { id: 'tunaBar', name: '鮪魚壽司台', kind: 'machine', mk: 'tuna', in: 'tuna', out: 'otoro', iv: 4, pos: kz(-25.6), cost: { money: 9500 }, req: ['pier3'] },
-  { id: 'sashimiBar', name: '刺身台', kind: 'machine', mk: 'sashimi', in: 'salmon', out: 'sashimi', iv: 3.5, pos: [2.0, 12.8], cost: { money: 8000, salmon: 10 }, req: ['tunaBar'] },
-  { id: 'shelfSashimi', name: '刺身冰櫃', kind: 'shelf', fridge: true, items: ['sashimi'], pos: [-7.6, MID_Z], cost: { money: 6000 }, req: ['sashimiBar'] },
+  { id: 'sashimiBar', name: '生魚片台', kind: 'machine', mk: 'sashimi', in: 'salmon', out: 'sashimi', iv: 3.5, pos: [2.0, 12.8], cost: { money: 8000, salmon: 10 }, req: ['tunaBar'] },
+  { id: 'shelfSashimi', name: '生魚片冷藏櫃', kind: 'shelf', fridge: true, items: ['sashimi'], pos: [-7.6, MID_Z], cost: { money: 6000 }, req: ['sashimiBar'] },
   { id: 'table6', name: '第 6 張餐桌', kind: 'table', ti: 5, cost: { money: 8500 }, req: ['shelfSashimi'] },
   { id: 'aqua', name: '養殖場', kind: 'aqua', zone: [10.0, AQUA_Z], cost: { money: 12000 }, req: ['table6'] },
   { id: 'waiter3', name: '服務生', kind: 'hire', role: 'waiter', zone: [-26.0, -10.4], cost: { money: 9000 }, req: ['aqua'] },
@@ -175,7 +179,7 @@ const DEFS = [
   { id: 'shelver3', name: '理貨員', kind: 'hire', role: 'shelver', zone: [-6.4, -5.8], cost: { money: 12000 }, req: ['table9'] },
   { id: 'fisher3', name: '漁夫', kind: 'hire', role: 'fisher', zone: [9.6, 16.0], cost: { money: 14000 }, req: ['shelver3'] },
   { id: 'table10', name: '第 10 張餐桌', kind: 'table', ti: 9, cost: { money: 16000 }, req: ['fisher3'] },
-  { id: 'washer2', name: '洗碗員', kind: 'hire', role: 'washer', zone: [-13.2, -13.0], cost: { money: 15000 }, req: ['table10'] },
+  { id: 'washer2', name: '洗碗工', kind: 'hire', role: 'washer', zone: [-13.2, -13.0], cost: { money: 15000 }, req: ['table10'] },
   { id: 'lighthouse', name: '點亮燈塔', kind: 'lighthouse', note: '所有漁船出海更快了', zone: [8.9, -8.2], cost: { money: 25000 }, req: ['washer2'] },
   { id: 'aquarium', name: '水族館', kind: 'aquarium', note: '遊客變多了', pos: [-4, 20.5], zone: [-4, 16.6], cost: { money: 60000 }, req: ['lighthouse'] },
 ];
@@ -185,15 +189,15 @@ const DEF = Object.fromEntries(DEFS.map((d) => [d.id, d]));
 const lv = (n, base, k) => Array.from({ length: n }, (_, i) => Math.round(base * Math.pow(k, i) / 10) * 10);
 const UPS = {
   cap: { tab: 0, name: '背包容量', ic: 'fish', vals: [6, 10, 14, 18, 24, 30, 36, 44, 52], cost: [30, 80, 150, 260, 420, 700, 1100, 1700], fmt: (v) => v + ' 個' },
-  speed: { tab: 0, name: '移動速度', ic: 'run', vals: [4.4, 5, 5.5, 6, 6.5, 7, 7.5], cost: [40, 100, 200, 380, 650, 1000], fmt: (v) => v.toFixed(1) },
+  speed: { tab: 0, name: '移動速度', ic: 'run', vals: [5.8, 6.4, 7, 7.6, 8.2, 8.8, 9.4], cost: [40, 100, 200, 380, 650, 1000], fmt: (v) => v.toFixed(1) },
   wcap: { tab: 1, name: '員工一次拿多少', ic: 'can', vals: [4, 6, 8, 11, 15, 20, 26], cost: [100, 220, 450, 800, 1400, 2400], fmt: (v) => v + ' 個' },
-  wspeed: { tab: 1, name: '員工速度', ic: 'run', vals: [3.4, 3.9, 4.4, 5, 5.6, 6.2, 6.8], cost: [100, 220, 450, 800, 1400, 2400], fmt: (v) => v.toFixed(1) },
+  wspeed: { tab: 1, name: '員工速度', ic: 'run', vals: [4, 4.6, 5.2, 5.8, 6.4, 7, 7.6], cost: [100, 220, 450, 800, 1400, 2400], fmt: (v) => v.toFixed(1) },
   boat: { tab: 2, name: '漁船出海時間', ic: 'boat', need: 'pier1', vals: [12, 10.5, 9, 7.5, 6.5, 5.5], cost: [80, 220, 500, 1000, 1900], fmt: (v) => v + ' 秒' },
-  catch: { tab: 2, name: '每趟漁獲', ic: 'fish', need: 'pier1', vals: [3, 4, 5, 6, 7, 8], cost: [120, 320, 750, 1500, 2800], fmt: (v) => v + ' 條' },
-  angler: { tab: 2, name: '釣魚員速度', ic: 'mackerel', need: 'anglerPier', vals: [9, 7.5, 6.2, 5, 4, 3.2], cost: [300, 700, 1400, 2600, 4500], fmt: (v) => v + ' 秒一條' },
+  catch: { tab: 2, name: '每趟漁獲', ic: 'fish', need: 'pier1', vals: [3, 4, 5, 6, 7, 8], cost: [120, 320, 750, 1500, 2800], fmt: (v) => v + ' 份' },
+  angler: { tab: 2, name: '釣魚員速度', ic: 'mackerel', need: 'anglerPier', vals: [9, 7.5, 6.2, 5, 4, 3.2], cost: [300, 700, 1400, 2600, 4500], fmt: (v) => v + ' 秒釣一次' },
   luck: { tab: 2, name: '幸運魚餌', ic: 'golden', need: 'anglerPier', vals: [1, 1.3, 1.7, 2.2, 3], cost: [500, 1200, 2500, 5000], fmt: (v) => '稀有魚 ×' + v },
   trap: { tab: 2, name: '收籠時間', ic: 'crab', need: 'traps', vals: [16, 13, 10.5, 8.5, 7], cost: [600, 1400, 2800, 5000], fmt: (v) => v + ' 秒' },
-  aquaT: { tab: 2, name: '養殖速度', ic: 'salmon', need: 'aqua', vals: [12, 10, 8.5, 7, 6], cost: [2000, 4000, 7000, 11000], fmt: (v) => v + ' 秒一條' },
+  aquaT: { tab: 2, name: '養殖速度', ic: 'salmon', need: 'aqua', vals: [12, 10, 8.5, 7, 6], cost: [2000, 4000, 7000, 11000], fmt: (v) => v + ' 秒收成一次' },
   grow: { tab: 2, name: '海帶／稻子生長', ic: 'seaweed', need: 'seaweed', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [100, 280, 600, 1200, 2200], fmt: (v) => '×' + v },
   mach: { tab: 2, name: '機器速度', ic: 'iced', need: 'iceMaker', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [400, 900, 1800, 3200, 5500], fmt: (v) => '×' + v },
   price: { tab: 3, name: '商品售價', ic: 'money', need: 'cashier', vals: [1, 1.1, 1.2, 1.3, 1.4, 1.55, 1.7, 1.85, 2, 2.2, 2.4], cost: lv(10, 200, 1.6), fmt: (v) => '×' + v },
@@ -208,11 +212,11 @@ const upVal = (k) => UPS[k].vals[state.up[k] || 0];
 // small repeatable unlocks next to a building
 const GROW = {
   pier1: { start: 1, max: 3, cost: [120, 450], what: '＋1 艘漁船' },
-  pier2: { start: 1, max: 3, cost: [1800, 3500], what: '＋1 艘撈網船' },
+  pier2: { start: 1, max: 3, cost: [1800, 3500], what: '＋1 艘拖網漁船' },
   pier3: { start: 1, max: 3, cost: [9000, 15000], what: '＋1 艘深海漁船' },
   anglerPier: { start: 1, max: 5, cost: [250, 700, 1500, 3000], what: '＋1 位釣魚員' },
   traps: { start: 2, max: 5, cost: [2000, 3500, 6000], what: '＋1 個蟹籠' },
-  aqua: { start: 2, max: 4, cost: [6000, 10000], what: '＋1 座網箱' },
+  aqua: { start: 2, max: 4, cost: [6000, 10000], what: '＋1 座箱網' },
   seaweed: { start: 3, max: 6, cost: [25, 60, 120], what: '＋1 株海帶' },
   paddy: { start: 4, max: 8, cost: [700, 1000, 1400, 1900], what: '＋1 叢稻子' },
 };
@@ -221,11 +225,11 @@ const lvlOf = (id) => state.lvl[id] || GROW[id].start;
 // ---------- save ----------
 const SAVE = 'harbor_save_v1';
 let resetting = false;
-const blank = () => ({ money: 50, built: [], paid: {}, up: {}, stock: {}, store: {}, lvl: {}, piles: [0], tpiles: {}, earned: 0, log: {}, logPaid: {}, logNew: false });
+const blank = () => ({ money: 50, built: [], paid: {}, up: {}, stock: {}, store: {}, lvl: {}, piles: [0], tpiles: {}, earned: 0, log: {}, logPaid: {}, logNew: false, extra: {} });
 const state = Object.assign(blank(), { sound: true });
 try { Object.assign(state, JSON.parse(localStorage.getItem(SAVE) || '{}')); } catch (e) { /* fresh start */ }
 if (params.has('fresh')) Object.assign(state, blank());
-for (const k of ['store', 'lvl', 'tpiles', 'stock', 'paid', 'up', 'log', 'logPaid']) state[k] = state[k] || {};
+for (const k of ['store', 'lvl', 'tpiles', 'stock', 'paid', 'up', 'log', 'logPaid', 'extra']) state[k] = state[k] || {};
 for (const k in UPS) state.up[k] = state.up[k] || 0;
 const isBuilt = (id) => state.built.includes(id);
 function save() {
@@ -282,8 +286,32 @@ const joy = new Joystick(canvas, $('ui'));
 joy.onStart = () => { if (actx && actx.state === 'suspended') actx.resume(); };
 
 const colliders = [];
-const box = (x0, z0, x1, z1) => { const b = { x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1) }; colliders.push(b); return b; };
-function unbox(b) { const i = colliders.indexOf(b); if (i >= 0) colliders.splice(i, 1); }
+// grid path-finding over the same boxes the player collides with; the sea edge (x 13.2) is the east border
+const nav = createNav(colliders, { x0: -41, x1: 13.2, z0: -18.6, z1: 35 }, 0.5, 0.35);
+let navV = 0;   // bumps whenever a box is added or removed, so everyone re-plans their walk
+const box = (x0, z0, x1, z1) => { const b = { x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1) }; colliders.push(b); nav.dirty(); navV++; return b; };
+function unbox(b) { const i = colliders.indexOf(b); if (i >= 0) { colliders.splice(i, 1); nav.dirty(); navV++; } }
+const insideBox = (x, z) => colliders.find((b) => x > b.x0 + 0.01 && x < b.x1 - 0.01 && z > b.z0 + 0.01 && z < b.z1 - 0.01);
+// path to a target; exact = also take the last short step onto a spot that sits in the padded area (a chair by a table)
+function navPath(sx, sz, tx, tz, exact) {
+  const r = nav.path(sx, sz, tx, tz);
+  const l = r[r.length - 1];
+  if (exact && (!l || Math.hypot(l[0] - tx, l[1] - tz) > 0.05)) r.push([tx, tz]);
+  return r;
+}
+function setGoal(c, x, z, exact) { c.goal = [x, z, exact]; c.navV = navV; const p = c.p.root.position; c.path = navPath(p.x, p.z, x, z, exact); }
+// something new was built on top of someone: step them out to the nearest side
+function evict() {
+  const all = [...workers, ...customers, ...diners.filter((d) => d.st !== 'sit')];
+  for (const a of all) {
+    const pos = a.p.root.position, b = insideBox(pos.x, pos.z);
+    if (!b) continue;
+    const opts = [[b.x0 - 0.45, pos.z], [b.x1 + 0.45, pos.z], [pos.x, b.z0 - 0.45], [pos.x, b.z1 + 0.45]];
+    opts.sort((u, v) => Math.hypot(u[0] - pos.x, u[1] - pos.z) - Math.hypot(v[0] - pos.x, v[1] - pos.z));
+    const ok = opts.find((o) => !insideBox(o[0], o[1])) || opts[0];
+    pos.x = ok[0]; pos.z = ok[1];
+  }
+}
 function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
 // ---------- item icons: each item's 3D model rendered once (plus a dark silhouette for the catch log) ----------
@@ -780,6 +808,7 @@ function build(def, instant) {
   if (s.g && s.g.isObject3D) K.bakeStatic(s.g);
   const fx = def.kind === 'lighthouse' ? [LIGHT.x, LIGHT.z] : def.kind === 'lobtraps' ? [19, -8] : pos;
   if (!instant) { confetti(fx[0], fx[1]); sfx('unlock'); toast('🎉 ' + def.name + ' 完成！' + (def.note || '')); }
+  evict();
   refreshZones();
   save();
 }
@@ -1008,27 +1037,6 @@ function payZones(dt) {
 // ---------- routing: market door, restaurant gate and aisles ----------
 const inShop = (x, z) => z < SHOP.z1 && z > SHOP.z0 - 0.4 && x > SHOP.x0 && x < SHOP.x1;
 const inRest = (x, z) => rest.ready && z < REST.z1 && z > REST.z0 && x > REST.x0 && x < REST.x1;
-const areaOf = (x, z) => (inShop(x, z) ? 'shop' : inRest(x, z) ? 'rest' : 'out');
-function nearestOf(list, v) { let b = list[0]; for (const l of list) if (Math.abs(l - v) < Math.abs(b - v)) b = l; return b; }
-const lanes = () => (rest.wing ? LANES_WING.concat(LANES_MAIN) : LANES_MAIN);
-// inside the restaurant: walk along clear lanes between the tables
-function rPath(fx, fz, tx, tz) {
-  const L = lanes(), a0 = nearestOf(L, fx), a1 = nearestOf(L, tx), pts = [[a0, fz]];
-  if (a0 !== a1) { const az = nearestOf(AISLES, (fz + tz) / 2); pts.push([a0, az], [a1, az]); }
-  pts.push([a1, tz], [tx, tz]);
-  return pts;
-}
-function routeFor(fx, fz, tx, tz) {
-  const a = areaOf(fx, fz), b = areaOf(tx, tz), r = [];
-  if (a === b) { if (a === 'rest') r.push(...rPath(fx, fz, tx, tz)); else r.push([tx, tz]); return r; }
-  if (a === 'shop') r.push(HALL, DOOR_IN, DOOR);
-  else if (a === 'rest') r.push(...rPath(fx, fz, R_IN[0], R_IN[1]), R_OUT);
-  if (b === 'shop') r.push(DOOR, DOOR_IN, HALL, [tx, tz]);
-  else if (b === 'rest') r.push(R_OUT, R_IN, ...rPath(R_IN[0], R_IN[1], tx, tz));
-  else r.push([tx, tz]);
-  return r;
-}
-
 // ---------- workers ----------
 const workers = [];
 const LOOKS = {
@@ -1038,6 +1046,31 @@ const LOOKS = {
   waiter: { body: '#fbfaf5', hat: 'bun', hatColor: '#5b3a2c', apron: '#4a4f5a', legs: '#4a4f5a' },
   washer: { body: '#7fd6c9', hat: 'cap', hatColor: '#ffffff', apron: '#5aa9ff' },
 };
+// 「多請一位」: extra staff bought from the 員工 tab (cashiers stay one per counter)
+const HIRE = {
+  fisher: { name: '漁夫', ic: 'fish', base: 600, home: [10.0, 4.8] },
+  shelver: { name: '理貨員', ic: 'can', base: 700, home: [0, -4.4] },
+  waiter: { name: '服務生', ic: 'sushi', base: 900, home: [-12.6, -11.0] },
+  washer: { name: '洗碗工', ic: 'plate', base: 800, home: [-12.6, -13.4] },
+  angler: { name: '釣魚員', ic: 'mackerel' },
+};
+const HIRE_MAX = 6;
+const roleOpen = (role) => (role === 'angler' ? isBuilt('anglerPier') : DEFS.some((d) => d.kind === 'hire' && d.role === role && isBuilt(d.id)));
+const roleCount = (role) => (role === 'angler' ? lvlOf('anglerPier') : workers.filter((w) => w.role === role).length);
+function hireCost(role) {
+  if (role === 'angler') { const g = GROW.anglerPier, n = lvlOf('anglerPier'); return n >= g.max ? null : g.cost[Math.min(n - g.start, g.cost.length - 1)]; }
+  const n = state.extra[role] || 0;
+  return n >= HIRE_MAX ? null : Math.round(HIRE[role].base * Math.pow(1.8, n) / 10) * 10;
+}
+function hireExtra(role) {
+  const cost = hireCost(role);
+  if (cost === null || state.money < cost || !roleOpen(role)) return false;
+  state.money -= cost; updateMoney();
+  if (role === 'angler') { state.lvl.anglerPier = lvlOf('anglerPier') + 1; applyGrow(stations.anglerPier); refreshZones(); }
+  else { state.extra[role] = (state.extra[role] || 0) + 1; const w = makeWorker(role, HIRE[role].home, true); const p = w.p.root.position; puff(p.x, 1, p.z, '#ffffff', 8, 0.8); }
+  sfx('unlock'); toast('🎉 多請了一位' + HIRE[role].name + '！'); save();
+  return true;
+}
 function makeWorker(role, at, pop) {
   const p = K.person(LOOKS[role]);
   p.root.position.set(at[0], 0, at[1]); scene.add(p.root); if (pop) popIn(p.root);
@@ -1047,12 +1080,13 @@ function makeWorker(role, at, pop) {
   workers.push(w);
   return w;
 }
+// walk along a nav path; arrives at the last waypoint (the target, or the nearest free spot when it is blocked)
 function go(w, x, z, dt, speed) {
   const key = x.toFixed(2) + ',' + z.toFixed(2);
-  if (w.routeKey !== key) { w.routeKey = key; const p = w.p.root.position; w.route = routeFor(p.x, p.z, x, z); }
+  if (w.routeKey !== key || w.navV !== navV) { w.routeKey = key; w.navV = navV; const p = w.p.root.position; w.route = nav.path(p.x, p.z, x, z); if (!w.route.length) w.route = [[x, z]]; }
   while (w.route.length > 1 && walkTo(w, w.route[0][0], w.route[0][1], dt, speed)) w.route.shift();
   if (w.route.length > 1) return false;
-  return walkTo(w, x, z, dt, speed);
+  return walkTo(w, w.route[0][0], w.route[0][1], dt, speed);
 }
 function walkTo(w, x, z, dt, speed) {
   const pos = w.p.root.position, dx = x - pos.x, dz = z - pos.z, d = Math.hypot(dx, dz);
@@ -1185,7 +1219,7 @@ function dstFor(type) {
 function updateWorker(w, dt) {
   const sp = upVal('wspeed');
   w.moving = 0;
-  if (w.role === 'cashier') { const c = COUNTERS[0]; if (walkTo(w, c.serve.x, c.serve.z, dt, sp)) w.face = 0; return; }
+  if (w.role === 'cashier') { const c = COUNTERS[0]; if (go(w, c.serve.x, c.serve.z, dt, sp)) w.face = 0; return; }
   if (w.role === 'waiter') { updateWaiter(w, dt, sp); return; }
   if (w.role === 'washer') { updateWasher(w, dt, sp); return; }
   // fisher (seafood only) and shelver: fetch a full load from a source, then deliver it to a shelf, machine or the warehouse
@@ -1281,7 +1315,7 @@ function updateWaiter(w, dt, sp) {
     }
     w.hold = 0;
     const [ax, az] = laneSpot(tg.t);
-    if (go(w, ax, az, dt, sp) || (dist2(w.p.root.position, tg.t.x, tg.t.z) < 1.75 && areaOf(w.p.root.position.x, w.p.root.position.z) === 'rest')) {
+    if (go(w, ax, az, dt, sp) || (dist2(w.p.root.position, tg.t.x, tg.t.z) < 1.75 && inRest(w.p.root.position.x, w.p.root.position.z))) {
       w.xfer -= dt;
       if (w.xfer <= 0) { w.xfer = 0.15; giveDish(w, tg.t, tg.s); w.tg = null; }
     }
@@ -1382,13 +1416,14 @@ function spawnCustomer() {
   p.root.position.set(SPAWN[0], 0, SPAWN[1]); scene.add(p.root);
   const big = ITEMS[item].price >= 40;
   const need = big ? 1 : 1 + Math.floor(Math.random() * Math.min(4, 1 + shelves.length));
-  const path = [ENTRY, DOOR, DOOR_IN, HALL, [sh.front.x + rand(-0.75, 0.75), sh.front.z + rand(0.2, 1.1)]];
-  const c = { p, shelf: sh, item, need, got: 0, st: 'in', path, t: 0, face: 0, moving: 0, qi: 99 };
+  const c = { p, shelf: sh, item, need, got: 0, st: 'in', path: [], t: 0, face: 0, moving: 0, qi: 99 };
+  setGoal(c, sh.front.x + rand(-0.75, 0.75), sh.front.z + rand(0.2, 1.1));
   c.label = label('bubble', '', (o) => { o.copy(c.p.root.position); o.y = 2.05; });
   customers.push(c);
   return c;
 }
 function stepPath(c, dt, speed) {
+  if (c.goal && c.navV !== navV) setGoal(c, ...c.goal);
   if (!c.path.length) return true;
   const [tx, tz] = c.path[0];
   const dx = tx - c.p.root.position.x, dz = tz - c.p.root.position.z, d = Math.hypot(dx, dz);
@@ -1422,8 +1457,7 @@ function updateCustomers(dt) {
       }
       if (c.st === 'shop' && c.got >= c.need) {
         c.st = 'toQueue'; c.qi = 99;
-        const pz = c.p.root.position.z;
-        c.path = c.shelf.def.pos[1] < -12 ? [[c.p.root.position.x, -12.1], [2.4, -12.1], [2.4, -8.5]] : [[2.4, pz], [2.4, -8.5]];
+        setGoal(c, 2.4, -8.5);
       }
     } else if (c.st === 'toQueue' || c.st === 'queue') {
       if (stepPath(c, dt, 2.6)) {
@@ -1447,7 +1481,7 @@ function updateCustomers(dt) {
 }
 function leaveShop(c) {
   c.st = 'leave'; c.label.show = false;
-  c.path = [[c.p.root.position.x, -8.6], DOOR_IN, DOOR, ENTRY, [SPAWN[0], SPAWN[1] + 1]];
+  setGoal(c, SPAWN[0], SPAWN[1] + 1);
 }
 function pay(c) {
   const unit = Math.round(ITEMS[c.item].price * upVal('price'));
@@ -1474,7 +1508,8 @@ function spawnGroup(t) {
     const look = customerLook(), p = K.person(look);
     p.root.position.set(D_SPAWN[0] - 0.4 + Math.random() * 0.8, 0, D_SPAWN[1] + Math.random() * 1.5);
     scene.add(p.root);
-    const d = { p, look, legs: legsOf(p), t, s, st: 'in', face: 0, moving: 0, path: [[D_SPAWN[0], 0], R_OUT, R_IN, ...rPath(R_IN[0], R_IN[1], s.wx, s.wz)] };
+    const d = { p, look, legs: legsOf(p), t, s, st: 'in', face: 0, moving: 0, path: [] };
+    setGoal(d, s.wx, s.wz, true);
     s.diner = d; s.dish = pickDish(mn); s.got = false; s.claim = null;
     diners.push(d);
   }
@@ -1483,8 +1518,7 @@ function leaveTable(d) {
   const at = d.p.root.position.clone(), ry = d.p.root.rotation.y;
   scene.remove(d.p.root); d.p = K.person(d.look); d.p.root.position.set(at.x, 0.12, at.z); d.p.root.rotation.y = ry; scene.add(d.p.root);
   d.st = 'leave';
-  const pos = d.p.root.position;
-  d.path = [...rPath(pos.x, pos.z, R_IN[0], R_IN[1]), R_OUT, [D_SPAWN[0], D_SPAWN[1] + 1.5]];
+  setGoal(d, D_SPAWN[0], D_SPAWN[1] + 1.5);
   d.s.diner = null;
 }
 function updateDiners(dt, T) {
@@ -1659,7 +1693,7 @@ function logCard(t) {
   const L = state.log[t];
   const r = '<span class="rar r' + RARITY[t] + '">' + RAR_NAME[RARITY[t]] + '</span>';
   if (!L || !L.n) return '<div class="lcard unk">' + ICON_SIL[t] + '<b>？？？</b>' + r + '<small>尚未捕獲</small></div>';
-  return '<div class="lcard">' + ICON_BIG[t] + '<b>' + ITEMS[t].name + '</b>' + r + '<small>捕獲 ' + L.n + ' 條</small><small>最高售價 ' + (L.b ? '$' + fmtMoney(L.b) : '—') + '</small></div>';
+  return '<div class="lcard">' + ICON_BIG[t] + '<b>' + ITEMS[t].name + '</b>' + r + '<small>捕獲 ' + L.n + (['shrimp', 'crab', 'squid', 'octopus', 'lobster'].includes(t) ? ' 隻' : ' 條') + '</small><small>最高售價 ' + (L.b ? '$' + fmtMoney(L.b) : '—') + '</small></div>';
 }
 function openPanel(kind) {
   const P0 = $('panel'), body = $('pBody');
@@ -1675,7 +1709,19 @@ function openPanel(kind) {
       if (ti === 1 && !workers.length) { body.innerHTML = '<div class="empty">解鎖第一位員工後開放</div>'; return; }
       if (ti === 1) {
         const n = (r) => workers.filter((w) => w.role === r).length;
-        body.insertAdjacentHTML('beforeend', '<div class="chips staff">' + [['cashier', '收銀員'], ['fisher', '漁夫'], ['shelver', '理貨員'], ['waiter', '服務生'], ['washer', '洗碗員']].map(([r, nm]) => '<span class="chip">' + nm + ' ×' + n(r) + '</span>').join('') + (stations.anglerPier ? '<span class="chip">釣魚員 ×' + lvlOf('anglerPier') + '</span>' : '') + '</div>');
+        body.insertAdjacentHTML('beforeend', '<div class="chips staff">' + [['cashier', '收銀員'], ['fisher', '漁夫'], ['shelver', '理貨員'], ['waiter', '服務生'], ['washer', '洗碗工']].map(([r, nm]) => '<span class="chip">' + nm + ' ×' + n(r) + '</span>').join('') + (stations.anglerPier ? '<span class="chip">釣魚員 ×' + lvlOf('anglerPier') + '</span>' : '') + '</div>');
+        for (const role in HIRE) {
+          if (!roleOpen(role)) continue;
+          const h = HIRE[role], cost = hireCost(role), max = cost === null;
+          const extra = role === 'angler' ? '最多 ' + GROW.anglerPier.max + ' 位' : '已多請 ' + (state.extra[role] || 0) + '/' + HIRE_MAX + ' 位';
+          const row = document.createElement('div'); row.className = 'row';
+          row.innerHTML = '<span class="ricon">' + ICON[h.ic] + '</span><div class="rmid"><b>多請一位' + h.name + '</b><small>目前 ' + roleCount(role) + ' 位 · ' + extra + '</small></div>';
+          const b = document.createElement('button'); b.className = 'buy' + (max ? ' max' : (state.money < cost ? ' poor' : ''));
+          b.innerHTML = max ? '已滿' : ICON.money + fmtMoney(cost);
+          b.onclick = () => { if (!hireExtra(role)) { sfx('drop'); b.classList.add('shake'); setTimeout(() => b.classList.remove('shake'), 300); return; } show(ti); };
+          row.appendChild(b); body.appendChild(row);
+        }
+        body.insertAdjacentHTML('beforeend', '<div class="sec">員工升級</div>');
       }
       for (const k in UPS) {
         const u = UPS[k]; if (u.tab !== ti) continue;
@@ -1734,11 +1780,11 @@ function openPanel(kind) {
   } else if (kind === 'set') {
     $('pTitle').textContent = '設定';
     body.innerHTML = '<div class="row"><span class="ricon">🔊</span><div class="rmid"><b>聲音</b></div><button class="buy" id="sSnd">' + (state.sound ? '開' : '關') + '</button></div>' +
-      '<div class="row"><span class="ricon">🔄</span><div class="rmid"><b>重新開始</b><small>清除漁港的所有進度</small></div><button class="buy poor" id="sReset">重來</button></div>';
+      '<div class="row"><span class="ricon">🔄</span><div class="rmid"><b>重新開始</b><small>清除漁港的所有進度</small></div><button class="buy poor" id="sReset">重新開始</button></div>';
     $('sSnd').onclick = () => { state.sound = !state.sound; save(); openPanel('set'); };
     let armed = false;
     $('sReset').onclick = (e) => {
-      if (!armed) { armed = true; e.target.textContent = '確定？'; return; }
+      if (!armed) { armed = true; e.target.textContent = '確定嗎？'; return; }
       // stop every auto-save first, otherwise pagehide would write the old game straight back
       resetting = true; localStorage.removeItem(SAVE); location.replace(location.pathname);
     };
@@ -2079,6 +2125,7 @@ function updateCamera(dt, snap) {
 buildWorld();
 buildCounter(0);
 for (const def of DEFS) if (isBuilt(def.id)) build(def, true);
+for (const role in state.extra) if (HIRE[role] && HIRE[role].home && roleOpen(role)) for (let i = 0; i < Math.min(HIRE_MAX, state.extra[role]); i++) makeWorker(role, HIRE[role].home, false);
 refreshZones();
 resize(); updateCamera(0, true); updateMoney(); showLogDot();
 
@@ -2140,6 +2187,20 @@ window.__harbor = {
   tp(x, z) { player.p.root.position.set(x, 0, z); updateCamera(0, true); },
   build(id) { if (zones[id]) killZone(id); if (!stations[id]) build(DEF[id]); },
   sim(sec, quiet = true) { simming = quiet; try { for (let i = 0; i < sec * 30; i++) step(1 / 30); } finally { simming = false; } },
+  // like sim, but after every frame checks that no worker / shopper / walking diner stands inside a collider box
+  simCheck(sec) {
+    const r = { frames: 0, samples: 0, intrusions: 0, examples: [] };
+    simming = true;
+    try {
+      for (let i = 0; i < sec * 30; i++) {
+        step(1 / 30); r.frames++;
+        const who = [...workers.map((w) => ['worker:' + w.role, w.p.root.position]), ...customers.map((c) => ['customer', c.p.root.position]), ...diners.map((d) => ['diner', d.p.root.position])];
+        for (const [k, pos] of who) { r.samples++; const b = insideBox(pos.x, pos.z); if (b) { r.intrusions++; if (r.examples.length < 8) r.examples.push(k + ' ' + pos.x.toFixed(2) + ',' + pos.z.toFixed(2) + ' in [' + [b.x0, b.z0, b.x1, b.z1].map((v) => v.toFixed(2)).join(',') + ']'); } }
+      }
+    } finally { simming = false; }
+    return r;
+  },
+  hire: (role) => hireExtra(role),
   calls: () => renderer.info.render.calls,
   open: (k) => openPanel(k),
   lineup(x, z, list) { (list || Object.keys(ITEMS)).forEach((t, i) => { const m = itemMesh(t); m.scale.setScalar(2.2); m.position.set(x + (i % 5) * 1.3, 0, z + Math.floor(i / 5) * 1.4); scene.add(m); }); },

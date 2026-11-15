@@ -15,14 +15,36 @@
   before the next guest sits (workers: 侍應, 洗碗員).
 - Special: cruise ship tourists (big VIP group), fishing contest event.
 
-## Map 3 — 森林伐木場 + 小鎮建設 (forest lumber + building the town)
-- Ground: pine forest, river with a water wheel, dirt roads, half-built town on one side.
-- Loop: chop trees → sawmill → planks → furniture workshop (chairs, tables, beds) → furniture showroom.
-- Replanting: saplings grow back over time; a 植樹員 worker replants automatically.
-- New mechanic: town building orders — deliver planks + furniture to build houses, school, park;
-  every finished building adds townspeople = more customers and a permanent income bonus.
-- Special: forest fire event (water the trees fast), log river transport.
+## Map 3 — 森林小鎮（forest lumber + building the town）— full design 11-15, waiting for the user's go
+**Unlock:** inside the same game, from the harbour: light the lighthouse + total harbour earnings $150,000 → 「開分店：森林小鎮」 zone ($120,000). The 地圖 panel then lists 開心農場 / 海邊漁港 / 森林小鎮.
 
+**Scene:** pine and maple forest, a river with a water wheel and a log flume, wooden bridges, mossy rocks, deer and squirrels, a half-built town on the east side (empty lots with dashed outlines that fill in as you build).
+
+**Start:** $50, choose 伐木區 (chop trees → logs) or 蘑菇林 (forage mushrooms).
+
+**Resources and industries (each unlocks with zones, gets workers and "+1" growth):**
+| Industry | Input → output | Workers |
+|---|---|---|
+| 伐木區 (pine, oak, maple; maple and oak rarer) | trees → 原木 (3 kinds) | 伐木工, 植樹員 (replants saplings) |
+| 鋸木廠 (water wheel) | 原木 → 木板 | 搬運工 |
+| 刨木機 | 木板 → 精製木材 | — |
+| 木工坊 | 精製木材 → 椅子 / 桌子 / 床 / 書櫃 / 搖椅 | 木匠 |
+| 造紙廠 | 木屑 (from the sawmill) → 紙 / 筆記本 | — |
+| 楓糖屋 | 楓樹汁 → 楓糖漿 | 採汁員 |
+| 蜂場 | flowers → 蜂蜜 / 蜂蠟蠟燭 | 養蜂人 |
+| 蘑菇林 / 菇寮 | → 香菇 / 松露 (rare) | 採菇員 |
+| 河道運木 | logs float down the flume to the sawmill automatically | — |
+
+**Shops:** 家具展示館 (furniture with sizes on display, customers walk around and pick a piece, delivered by a 送貨員 truck) and 森林市集 (honey, syrup, mushrooms, notebooks, candles).
+
+**New mechanic — build the town:** each empty lot is a construction site that asks for materials (木板, 精製木材, furniture, paper). Finished buildings bring residents and a lasting bonus:
+房屋 (more customers) → 麵包店 (sells your syrup and honey) → 學校 (workers faster) → 公園 (customers happier) → 消防局 (fire events smaller) → 火車站 (big orders by train, like the helicopter) → 鐘樓 (final goal: the town festival).
+
+**Specials:** 森林大火 (water the trees fast or lose them), 伐木大賽 (double logs for 40 s), 雪季 (winter: trees grow slowly, furniture sells higher), 火車大訂單.
+
+**Collection:** 家具圖鑑 — every furniture piece and colour you have made; finishing a set pays a reward.
+
+**Length:** about 55 unlock steps plus town buildings, like the harbour.
 ## More growth ideas for all maps
 1. 商店升級: shop size levels, self-checkout machines, bigger fridges.
 2. 自動化: conveyor belts (coop → shelf), robot restockers, harvester tractor.

@@ -7,7 +7,7 @@ export const ITEMS = {
   fish: { name: '鯛魚', icon: '🐟', h: 0.22, price: 6 },
   seaweed: { name: '海帶', icon: '🌿', h: 0.16, price: 4 },
   rice: { name: '米', icon: '🍚', h: 0.3, price: 0 },
-  iced: { name: '冰鮮魚', icon: '🧊', h: 0.25, price: 12 },
+  iced: { name: '冷藏鮮魚', icon: '🧊', h: 0.25, price: 12 },
   can: { name: '魚罐頭', icon: '🥫', h: 0.21, price: 18 },
   dried: { name: '魚乾', icon: '🐠', h: 0.12, price: 22 },
   grilled: { name: '烤魚', icon: '🍢', h: 0.17, price: 16 },
