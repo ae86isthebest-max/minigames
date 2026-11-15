@@ -1081,7 +1081,7 @@ function grow(def) {
 }
 function makeZone(def) {
   const [x, z] = zoneSpot(def);
-  const g = new THREE.Group(); g.position.set(x, 0.03, z); scene.add(g);
+  const g = new THREE.Group(); g.position.set(x, inShop(x, z) ? 0.15 : 0.03, z); scene.add(g);
   const ring = new THREE.Mesh(G.plane(2.4, 2.4), dashMat); ring.renderOrder = 2; g.add(ring);
   const fill = new THREE.Mesh(G.plane(1.9, 1.9), fillMat); fill.renderOrder = 2; fill.position.y = 0.005; fill.scale.set(1, 1, 0.001); g.add(fill);
   if (def.kind === 'hire') g.add(P2.ghostPerson());
@@ -1850,6 +1850,26 @@ function openPanel(kind) {
           };
           row.appendChild(btn); body.appendChild(row);
         }
+        // a counter without a cashier: hire one here too (same price as its zone on the map)
+        const CASH_IDS = ['cashier', 'cashier2', 'cashier3', 'cashier4'], CNAMES = ['收銀台', '第二收銀台', '第三收銀台', '第四收銀台'];
+        const ci = COUNTERS.findIndex((k, i) => k.on && !isBuilt(CASH_IDS[i]));
+        const crow = document.createElement('div'); crow.className = 'row';
+        if (ci < 0) {
+          crow.classList.add('locked');
+          crow.innerHTML = '<span class="ricon"><span class="ic">🧾</span></span><div class="rmid"><b>多請一位收銀員</b><small>每個收銀台都有收銀員了，多開一個收銀台就能再請</small></div>';
+        } else {
+          const d = DEF[CASH_IDS[ci]], paid = (state.paid[d.id] && state.paid[d.id].money) || 0, cost = Math.max(0, d.cost.money - paid);
+          crow.innerHTML = '<span class="ricon"><span class="ic">🧾</span></span><div class="rmid"><b>多請一位收銀員</b><small>「' + CNAMES[ci] + '」還沒有收銀員</small></div>';
+          const btn = document.createElement('button'); btn.className = 'buy' + (state.money < cost ? ' poor' : '');
+          btn.innerHTML = ICON.money + fmtMoney(cost);
+          btn.onclick = () => {
+            if (state.money < cost) { sfx('drop'); btn.classList.add('shake'); setTimeout(() => btn.classList.remove('shake'), 300); return; }
+            state.money -= cost; delete state.paid[d.id]; if (zones[d.id]) killZone(d.id);
+            build(d); refreshZones(); sfx('buy'); updateMoney(); save(); show(ti);
+          };
+          crow.appendChild(btn);
+        }
+        body.appendChild(crow);
       }
       for (const k in UPS) {
         const u = UPS[k]; if (u.tab !== ti) continue;
