@@ -157,3 +157,4 @@ html, body {
 .mapcard small { display: block; font-size: 12px; color: #9b8570; margin-top: 2px; }
 .mapcard.here { outline: 3px solid #8f7bff; }
 .mapcard.locked { opacity: 0.55; }
+.lbl.choice { background: #ffd23f; color: #5a3b00; font-weight: 900; font-size: 16px; padding: 5px 14px; border-radius: 999px; box-shadow: 0 3px 0 rgba(0,0,0,0.15); }

@@ -19,11 +19,12 @@ const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 // ---------- the long unlock chain (each opens after the previous one) ----------
 const SH_Z = -14.6;
 const DEFS = [
-  { id: 'tomato', name: '番茄田', kind: 'crop', out: 'tomato', plant: 'tomato', grow: 6, pos: [8.2, 1.2], cost: { money: 30 }, req: [] },
-  { id: 'coop', name: '雞舍', kind: 'producer', in: 'hay', out: 'egg', pos: [2, 1], cost: { money: 40 }, req: [] },
+  { id: 'tomato', name: '番茄田', kind: 'crop', out: 'tomato', plant: 'tomato', grow: 6, pos: [8.2, 1.2], cost: { money: 30 }, req: [], alt: 'coop' },
+  { id: 'coop', name: '雞舍', kind: 'producer', in: 'hay', out: 'egg', pos: [2, 1], cost: { money: 40 }, req: [], alt: 'tomato' },
   { id: 'shelfTomato', name: '番茄架', kind: 'shelf', item: 'tomato', pos: [-1.6, SH_Z], cost: { money: 20 }, req: ['tomato'] },
   { id: 'shelfEgg', name: '雞蛋架', kind: 'shelf', item: 'egg', pos: [-4.6, SH_Z], cost: { money: 10 }, req: ['coop'] },
-  { id: 'cashier', name: '收銀員', kind: 'hire', role: 'cashier', counter: 0, zone: [6.6, -12.6], cost: { money: 80 }, any: ['shelfTomato', 'shelfEgg'] },
+  { id: 'counter', name: '收銀台', kind: 'counter1', zone: [4.6, -8.0], cost: { money: 0 }, any: ['shelfTomato', 'shelfEgg'] },
+  { id: 'cashier', name: '收銀員', kind: 'hire', role: 'cashier', counter: 0, zone: [6.6, -12.6], cost: { money: 80 }, req: ['counter'] },
   { id: 'keeper', name: '飼養員', kind: 'hire', role: 'keeper', zone: [-1.4, 5.4], cost: { money: 90 }, req: ['coop', 'shelfEgg'] },
   { id: 'corn', name: '玉米田', kind: 'crop', out: 'corn', plant: 'corn', grow: 8, pos: [9, 6.8], cost: { money: 160, wood: 10 }, req: ['cashier'] },
   { id: 'shelfCorn', name: '玉米架', kind: 'shelf', item: 'corn', pos: [1.4, SH_Z], cost: { money: 130 }, req: ['corn'] },
@@ -512,6 +513,8 @@ function build(def, instant) {
     for (const st of Object.values(stations)) if (st.kind === 'crop') addSprinkler(st);
   } else if (def.kind === 'market') {
     buildMarket(instant);
+  } else if (def.kind === 'counter1') {
+    buildCounter(0, instant);
   } else if (def.kind === 'counter2') {
     buildCounter(1, instant);
   } else if (def.kind === 'dock') {
@@ -629,6 +632,9 @@ function refreshZones() {
     if (isBuilt(def.id)) { if (zones[def.id]) killZone(def.id); continue; }
     let open = def.req ? def.req.every(isBuilt) : def.any ? def.any.some(isBuilt) : isBuilt(DEFS[i - 1].id);
     if (def.earned && state.earned < def.earned) open = false;
+    // the two starting choices: picking one hides the other until the first cashier is hired
+    if (def.alt && isBuilt(def.alt) && !isBuilt('cashier')) open = false;
+    if (!open && zones[def.id]) { killZone(def.id); continue; }
     if (open && !zones[def.id]) makeZone(def);
   }
   for (const def of growDefs()) {
@@ -715,6 +721,7 @@ function payZones(dt) {
         giveFrom(player, k, (o) => o.set(z.x, 0.3, z.z), null);
       }
     }
+    if (!moved && z.total === 0) moved = true;
     if (moved) {
       state.paid[id] = z.paid; sfx('drop'); updateZoneLabel(z); updateMoney();
       let done = true; for (const k in z.def.cost) if (left(z, k) > 0) done = false;
@@ -960,7 +967,7 @@ function stepPath(c, dt, speed) {
 }
 function queueLen(ci) { return customers.filter((c) => c.ci === ci && (c.st === 'queue' || c.st === 'toQueue')).length; }
 function updateCustomers(dt) {
-  const shelfN = listOf('shelf').length;
+  const shelfN = COUNTERS[0].on ? listOf('shelf').length : 0;
   if (shelfN) {
     spawnT -= dt * upVal('cust') * (events.market > 0 ? 2 : 1) * (park.ready ? 1.5 : 1);
     const maxC = 3 + Math.round(shelfN * 1.5) + (park.ready ? 4 : 0);
@@ -1209,12 +1216,19 @@ let toastT = 0;
 function toast(msg) { const el = $('toast'); el.textContent = msg; el.classList.add('on'); toastT = 2.6; }
 
 // ---------- guide arrow ----------
-const guide = new THREE.Group();
-K.add(guide, K.mesh(G.cone(0.48, 0.75, 12), '#ffd23f'), 0, 0, 0).rotation.x = Math.PI;
-K.add(guide, K.mesh(G.cyl(0.2, 0.2, 0.6, 10), '#ffd23f'), 0, 0.62, 0);
-scene.add(guide);
-const pointer = new THREE.Mesh(G.cone(0.28, 0.6, 3), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.85 }));
-pointer.rotation.x = -Math.PI / 2; const pointerG = new THREE.Group(); pointerG.add(pointer); pointer.position.z = 1.5; scene.add(pointerG);
+function makeGuide() {
+  const g = new THREE.Group();
+  K.add(g, K.mesh(G.cone(0.48, 0.75, 12), '#ffd23f'), 0, 0, 0).rotation.x = Math.PI;
+  K.add(g, K.mesh(G.cyl(0.2, 0.2, 0.6, 10), '#ffd23f'), 0, 0.62, 0);
+  scene.add(g); g.visible = false;
+  return g;
+}
+const guides = [makeGuide(), makeGuide()];
+const guide = guides[0];
+const pickLabel = label('choice', '二選一', (o) => o.copy(guides[0].position).lerp(guides[1].position, 0.5).setY(1.2));
+pickLabel.show = false;
+const pointer = new THREE.Mesh(G.cone(0.42, 0.9, 3), new THREE.MeshBasicMaterial({ color: '#ffd23f', transparent: true, opacity: 0.95 }));
+pointer.rotation.x = -Math.PI / 2; const pointerG = new THREE.Group(); pointerG.add(pointer); pointer.position.set(0, 0.1, 1.7); scene.add(pointerG);
 function nearest(list) {
   const pp = player.p.root.position; let best = null, bd = 1e9;
   for (const q of list) { const d = dist2(pp, q.x, q.z); if (d < bd) { bd = d; best = q; } }
@@ -1224,7 +1238,15 @@ function affordable(z) {
   for (const k in z.def.cost) { const l = left(z, k); if (l <= 0) continue; if (k === 'money' ? state.money < l : count(player, k) < l) return false; }
   return true;
 }
-function guideTarget() { return null; }
+function guideTargets() {
+  const zp = (id) => zones[id] ? [zones[id].x, zones[id].z] : null;
+  if (!isBuilt('tomato') && !isBuilt('coop')) return [zp('tomato'), zp('coop')].filter(Boolean);
+  if (isBuilt('tomato') && !isBuilt('shelfTomato') && !isBuilt('coop')) return [zp('shelfTomato')].filter(Boolean);
+  if (isBuilt('coop') && !isBuilt('shelfEgg') && !isBuilt('tomato')) return [zp('shelfEgg')].filter(Boolean);
+  if (!isBuilt('counter')) return [zp('counter')].filter(Boolean);
+  return [];
+}
+function guideTarget() { return guideTargets()[0] || null; }
 
 // ---------- UI ----------
 let shownMoney = -1;
@@ -1298,7 +1320,8 @@ function openPanel(kind) {
     body.innerHTML = '<div class="mapcard here"><span class="mi" style="background:#c9f0a8">🌾</span><div><b>開心農場</b><small>你目前在這裡</small></div></div>' +
       (m.harbor ? '<a class="mapcard" href="harbor.html"><span class="mi" style="background:#bfe9ff">⚓</span><div><b>海邊漁港</b><small>捕魚、壽司、海鮮餐廳</small></div></a>'
         : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">⚓</span><div><b>海邊漁港</b><small>蓋好超級市場、總收入達 $40,000 後開放</small></div></div>') +
-      '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">🌲</span><div><b>森林伐木場</b><small>即將推出</small></div></div>';
+      (m.forest ? '<a class="mapcard" href="forest.html"><span class="mi" style="background:#cdeec0">🌲</span><div><b>森林小鎮</b><small>伐木、家具、幫小鎮蓋房子</small></div></a>'
+        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">🌲</span><div><b>森林小鎮</b><small>在海邊漁港點亮燈塔後開放</small></div></div>');
   } else if (kind === 'set') {
     $('pTitle').textContent = '設定';
     body.innerHTML = '<div class="row"><span class="ricon">🔊</span><div class="rmid"><b>聲音</b></div><button class="buy" id="sSnd">' + (state.sound ? '開' : '關') + '</button></div>' +
@@ -1511,7 +1534,7 @@ function updateCamera(dt, snap) {
 buildWorld();
 buildField();
 buildTrees();
-buildCounter(0, true);
+if (state.built.length && !state.built.includes('counter')) state.built.splice(1, 0, 'counter');
 for (const def of DEFS) if (isBuilt(def.id)) build(def, true);
 for (const role in EXTRA) for (let i = 0; i < (state.extra[role] || 0); i++) makeWorker(role, EXTRA[role].at, 0, false);
 refreshZones();
@@ -1565,10 +1588,14 @@ function step(dt) {
   }
   dashMat.opacity = 0.75 + Math.sin(T * 4) * 0.25;
   updateDoorsAndLights(dt);
-  const gt = guideTarget(), pp = player.p.root.position;
-  guide.visible = !!gt && dist2(pp, gt[0], gt[1]) > 1.2;
-  if (gt) { guide.position.set(gt[0], 2.4 + Math.abs(Math.sin(T * 4)) * 0.45, gt[1]); guide.rotation.y += dt * 2; }
-  pointerG.visible = !!gt && dist2(pp, gt[0], gt[1]) > 5;
+  const gts = guideTargets(), gt = gts[0] || null, pp = player.p.root.position;
+  guides.forEach((g, i) => {
+    const t = gts[i];
+    g.visible = !!t && dist2(pp, t[0], t[1]) > 1.2;
+    if (t) { g.position.set(t[0], 2.4 + Math.abs(Math.sin(T * 4 + i)) * 0.45, t[1]); g.rotation.y += dt * 2; }
+  });
+  pickLabel.show = gts.length === 2;
+  pointerG.visible = !!gt && gts.length === 1 && dist2(pp, gt[0], gt[1]) > 3;
   if (gt) { pointerG.position.set(pp.x, 0.05, pp.z); pointerG.rotation.y = Math.atan2(gt[0] - pp.x, gt[1] - pp.z); }
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').classList.remove('on'); }
 }
