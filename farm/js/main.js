@@ -37,7 +37,7 @@ const DEFS = [
   { id: 'barn', name: '牛棚', kind: 'producer', in: 'hay', out: 'milk', pos: [-4.5, 10.2], cost: { money: 340, hay: 16, wood: 14 } },
   { id: 'shelfMilk', name: '牛奶冷藏櫃', kind: 'shelf', fridge: true, item: 'milk', pos: [4.4, SH_Z], cost: { money: 240 } },
   { id: 'market', name: '超級市場', desc: '店面加大一倍，可以擺更多貨架', kind: 'market', zone: [-12, -10], cost: { money: 1200, wood: 32 } },
-  { id: 'harbor', name: '開分店：海邊漁港', kind: 'mapgate', zone: [11.2, -1.9], cost: { money: 15000 }, req: ['market'], earned: 40000 },
+  { id: 'gateCafe', name: '開分店：山城咖啡館', kind: 'mapgate', map: 'cafe', zone: [11.2, -1.9], cost: { money: 15000 }, req: ['market'], earned: 40000 },
   { id: 'juicer', name: '果汁機', kind: 'machine', mk: 'juicer', in: 'tomato', out: 'juice', iv: 3, pos: [5.5, -2.7], upAt: [2.6, -2.4], cost: { money: 560, wood: 16 }, req: ['market'] },
   { id: 'shelfJuice', name: '果汁冷藏櫃', kind: 'shelf', fridge: true, item: 'juice', pos: [-8.6, SH_Z], cost: { money: 400 } },
   { id: 'shelver2', name: '理貨員', desc: '負責商店：機器做好的貨和倉庫的貨補上貨架，材料送進機器', kind: 'hire', role: 'shelver', zone: [-4.4, -5], cost: { money: 800 } },
@@ -94,7 +94,7 @@ const UPS = {
   ad: { tab: 3, name: '路邊廣告牌', ic: 'shop', need: 'cashier', vals: [0, 1, 2, 3], cost: [500, 2000, 6500], fmt: (v) => ['沒有廣告', '木頭立牌', '大型看板', '發光看板'][v] + (v ? '，路過的人更多' : '') },
   look: { tab: 3, name: '商店外觀', ic: 'shop', need: 'counter', vals: [0, 1, 2, 3], cost: [800, 3000, 9000], fmt: (v) => LOOKS[v].name + ['', '・雨棚花台', '・燈串路燈', '・紅地毯旗幟'][v] + (v ? '，客人更多、賣更貴' : '') },
   lanes: { tab: 3, name: '收銀台升級', ic: 'reg', emo: '🧾', need: 'cashier', noLv: true, vals: [1, 2, 3], cost: [1500, 5000], fmt: (v) => ['一台收銀機，一次結 1 位', '兩台收銀機，同時結 2 位', '三台收銀機＋輸送帶，同時結 3 位'][v - 1] },
-  basket: { tab: 3, name: '購物籃架', ic: 'bk', emo: '🧺', need: 'cashier', noLv: true, vals: [1, 1.2, 1.4], cost: [800, 2500], fmt: (v) => ['還沒有購物籃', '門口放購物籃：客人走更快、拿更快', '更多購物籃：客人又快又順'][Math.round((v - 1) * 5)] },
+  basket: { tab: 3, name: '購物籃架', ic: 'bk', emo: '🧺', need: 'cashier', noLv: true, vals: [1, 1.35, 1.7], cost: [800, 2500], fmt: (v) => ['還沒有購物籃', '購物籃：客人提著籃子，走更快、拿更快', '購物車：客人推著車，又快又順'][v === 1 ? 0 : v < 1.5 ? 1 : 2] },
   autoCash: { tab: 3, name: '自動收款', ic: 'money', need: 'cashier2', vals: [0, 1], cost: [6000], fmt: (v) => v ? '錢自動入袋' : '要自己收錢' },
 };
 const upVal = (k) => UPS[k].vals[Math.min(state.up[k] || 0, UPS[k].vals.length - 1)];
@@ -152,6 +152,8 @@ state.extra = state.extra || {};
 // the 飼養員工作 upgrade was removed (the keeper now does everything): give back what was paid for it
 let keeperRefund = 0;
 if (state.up.keeper) { keeperRefund = [0, 150, 550, 1450][Math.min(3, state.up.keeper)]; state.money += keeperRefund; delete state.up.keeper; }
+state.built = state.built.filter((id) => id !== 'harbor');
+if (mapsGet().cafe && !state.built.includes('gateCafe')) state.built.push('gateCafe');
 let tomatoMerged = false;
 if (state.built.includes('tomato2')) {
   state.built = state.built.filter((id) => id !== 'tomato2');
@@ -889,7 +891,7 @@ function build(def, instant) {
     makeArea(pos[0] - 2.6, pos[1] - 2, pos[0] + 2.6, pos[1] + 4, [lamp], pos[0], pos[1] + 2.6);
     if (!instant) popIn(wh.g);
   } else if (def.kind === 'mapgate') {
-    mapsSet('harbor');
+    mapsSet(def.map || 'cafe');
     if (!instant) setTimeout(() => openPanel('map'), 900);
   } else if (def.kind === 'parking') {
     buildParking(instant);
@@ -1047,7 +1049,9 @@ function refreshZones() {
     if (zones[def.id] && zones[def.id].def.cost.money !== zd.cost.money) killZone(def.id); // price moved after a hire
     if (!zones[def.id]) makeZone(zd);
   }
-  for (const def of growDefs()) {
+  const gd = growDefs(), live = new Set(gd.map((d) => d.id));
+  for (const id of Object.keys(zones)) if (id.startsWith('g_') && !live.has(id)) killZone(id);
+  for (const def of gd) {
     const z = zones[def.id];
     if (z && z.def.lv !== def.lv) killZone(def.id);
     if (!zones[def.id]) makeZone(def);
@@ -1417,6 +1421,9 @@ function spawnCustomer(from) {
   if (west) { path.push(OUT_W, DOOR2, DOOR2_IN); if (sh.front.z < -12) path.push([DOOR2_IN[0], -12.2]); } else path.push(DOOR, DOOR_IN, HALL);
   if (sh.front.z < -18) { const ax = aisleFor(sh.front.x); path.push([ax, -12.2], [ax, -18.6]); }
   path.push([sh.front.x + rand(-0.75, 0.75), sh.front.z + rand(0.2, 1.1)]);
+  // 購物籃架: a basket in hand (Lv1) or a cart in front (Lv2)
+  const bl = state.up.basket || 0;
+  if (bl) p.front.add(bl >= 2 ? shopCart() : shopBasket());
   const c = { p, list, li: 0, shelf: sh, item: sh.item, need: list[0].need, got: 0, st: 'in', path, t: 0, face: 0, moving: 0, ci: 0, qi: 99 };
   c.label = label('bubble', '', (o) => { o.copy(c.p.root.position); o.y = 2.05; });
   customers.push(c);
@@ -1437,6 +1444,22 @@ function routeToShelf(fx, fz, from, to) {
   else if (b === 'mid') { const ex = to.def.pos[0] + 1.7; out.push([ex, -12.2], [ex, -9.0]); }
   out.push(tgt);
   return out;
+}
+function shopBasket() {
+  const g = new THREE.Group(); g.position.set(0.2, -0.25, 0.05);
+  K.add(g, K.mesh(G.rbox(0.36, 0.2, 0.26, 0.05), '#ff5a4e'), 0, 0, 0);
+  K.add(g, K.mesh(G.rbox(0.3, 0.02, 0.2, 0.01), '#c9322a', false), 0, 0.1, 0);
+  const h = K.add(g, K.mesh(G.rbox(0.04, 0.2, 0.04, 0.02), '#d94136'), 0, 0.17, 0); h.rotation.z = 0.2;
+  return g;
+}
+function shopCart() {
+  const g = new THREE.Group(); g.position.set(0, -0.62, 0.42);
+  K.add(g, K.mesh(G.rbox(0.5, 0.32, 0.6, 0.05), '#cfd6de'), 0, 0.42, 0.12);
+  K.add(g, K.mesh(G.rbox(0.42, 0.03, 0.52, 0.02), '#ff5a4e', false), 0, 0.59, 0.12);
+  K.add(g, K.mesh(G.rbox(0.52, 0.05, 0.06, 0.02), '#ff5a4e'), 0, 0.72, -0.2);
+  for (const x of [-0.2, 0.2]) { K.add(g, K.mesh(G.rbox(0.04, 0.32, 0.04, 0.02), '#9aa3ad'), x, 0.56, -0.2); for (const z of [-0.12, 0.36]) K.add(g, K.mesh(G.cyl(0.07, 0.07, 0.05, 10), '#4a4f58'), x, 0.08, z).rotation.z = Math.PI / 2; }
+  K.add(g, K.mesh(G.rbox(0.44, 0.04, 0.5, 0.02), '#9aa3ad'), 0, 0.2, 0.12);
+  return g;
 }
 function stepPath(c, dt, speed) {
   if (!c.path.length) return true;
@@ -1871,12 +1894,12 @@ function openPanel(kind) {
     $('pTitle').textContent = '地圖';
     const m = mapsGet();
     body.innerHTML = '<div class="mapcard here"><span class="mi" style="background:#c9f0a8">🌾</span><div><b>開心農場</b><small>你目前在這裡</small></div></div>' +
-      (m.harbor ? '<a class="mapcard" href="harbor.html"><span class="mi" style="background:#bfe9ff">⚓</span><div><b>海邊漁港</b><small>捕魚、壽司、海鮮餐廳</small></div></a>'
-        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">⚓</span><div><b>海邊漁港</b><small>蓋好超級市場、總收入達 $40,000 後開放</small></div></div>') +
-      (m.forest ? '<a class="mapcard" href="forest.html"><span class="mi" style="background:#cdeec0">🌲</span><div><b>森林小鎮</b><small>伐木、家具、幫小鎮蓋房子</small></div></a>'
-        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">🌲</span><div><b>森林小鎮</b><small>在海邊漁港點亮燈塔後開放</small></div></div>') +
       (m.cafe ? '<a class="mapcard" href="cafe.html"><span class="mi" style="background:#f3dcc4">☕</span><div><b>山城咖啡館</b><small>種咖啡豆、烘豆、做各種咖啡</small></div></a>'
-        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">☕</span><div><b>山城咖啡館</b><small>在森林小鎮蓋好鐘樓後開放</small></div></div>');
+        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">☕</span><div><b>山城咖啡館</b><small>蓋好超級市場、總收入達 $40,000 後，在農場開分店</small></div></div>') +
+      (m.harbor ? '<a class="mapcard" href="harbor.html"><span class="mi" style="background:#bfe9ff">⚓</span><div><b>海邊漁港</b><small>捕魚、壽司、海鮮餐廳</small></div></a>'
+        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">⚓</span><div><b>海邊漁港</b><small>在山城咖啡館開分店後開放</small></div></div>') +
+      (m.forest ? '<a class="mapcard" href="forest.html"><span class="mi" style="background:#cdeec0">🌲</span><div><b>森林小鎮</b><small>伐木、家具、幫小鎮蓋房子</small></div></a>'
+        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">🌲</span><div><b>森林小鎮</b><small>在海邊漁港開分店後開放</small></div></div>');
   } else if (kind === 'set') {
     $('pTitle').textContent = '設定';
     body.innerHTML = '<div class="row"><span class="ricon">🔊</span><div class="rmid"><b>聲音</b></div><button class="buy" id="sSnd">' + (state.sound ? '開' : '關') + '</button></div>' +
@@ -2135,7 +2158,7 @@ function frame(now) {
 let gateT = 0;
 function step(dt) {
   T += dt;
-  gateT += dt; if (gateT > 3) { gateT = 0; if (!zones.harbor && !isBuilt('harbor') && isBuilt('market') && state.earned >= 40000) refreshZones(); }
+  gateT += dt; if (gateT > 3) { gateT = 0; if (!zones.gateCafe && !isBuilt('gateCafe') && isBuilt('market') && state.earned >= 40000) refreshZones(); }
   for (let i = later.length - 1; i >= 0; i--) { later[i].t -= dt; if (later[i].t <= 0) { const f = later[i].fn; later.splice(i, 1); f(); } }
   movePlayer(dt);
   playerInteract(dt);
