@@ -977,8 +977,10 @@ function updateZoneLabel(z) {
 function payZones(dt) {
   for (const id in zones) {
     const z = zones[id];
-    if (dist2(player.p.root.position, z.x, z.z) > 1.35) { z.tick = 0; z.armed = true; continue; }
+    if (dist2(player.p.root.position, z.x, z.z) > 1.35) { z.tick = 0; z.armed = true; z.stay = 0; continue; }
     if (!z.armed) continue;
+    // only start paying after standing on the zone for half a second (walking across it costs nothing)
+    z.stay = (z.stay || 0) + dt; if (z.stay < 0.5) continue;
     z.tick -= dt; if (z.tick > 0) continue;
     z.tick = 0.06;
     let moved = false;
