@@ -45,6 +45,30 @@
 **Collection:** 家具圖鑑 — every furniture piece and colour you have made; finishing a set pays a reward.
 
 **Length:** about 55 unlock steps plus town buildings, like the harbour.
+## Map 4 — 山城咖啡館（coffee estate + café）— designed 11-15, build when the user asks
+**Unlock:** inside the same game, from the forest town: finish the 鐘樓 (or total forest earnings $400,000) → 「開分店：山城咖啡館」 zone ($300,000).
+
+**Scene:** green hillside terraces with coffee shrubs, a stone path up to a cosy café with a big window, outdoor tables with parasols, a small dairy shed with goats/cows, a roastery chimney, morning mist, string lights at dusk.
+
+**Start:** $50, choose 阿拉比卡咖啡園 or 乳牛棚 (milk). Opening tutorial like every map: arrows on both → the first shelf → the 收銀台, then free.
+
+**Beans (each a crop with rarity and price):** 阿拉比卡 (common), 羅布斯塔 (common, strong), 藝伎 Geisha (rare), 藍山 (rare), 麝香貓 (legendary, tiny chance). Ripe red cherries are picked, then processed.
+
+**Processing chain:** 咖啡櫻桃 → 日曬場 / 水洗槽 (two methods, change flavour) → 生豆 → 烘豆機 (浅焙 / 中焙 / 深焙, a timing mini step: take beans out when the bar is in the green part for a bonus) → 熟豆 → 磨豆機 → 咖啡粉.
+Other ingredients: 牛奶 (乳牛) → 奶泡機; 燕麥奶 (燕麥田 → 燕麥奶機); 可可 (可可樹 → 可可粉); 糖漿 (香草 / 焦糖 / 榛果 from a 糖漿鍋); 冰塊 (製冰機); 蛋糕 / 可頌 (烘焙坊: 麵粉 + 奶油 + 蛋).
+
+**Drink menu (made at the 咖啡吧 by the player or a 咖啡師; each needs a recipe):** 美式, 濃縮, 拿鐵, 卡布奇諾, 摩卡, 焦糖瑪奇朵, 燕麥拿鐵, 冰滴咖啡, 手沖單品 (uses the rare beans, very expensive), 季節限定 (rotates). Desserts: 可頌, 起司蛋糕, 提拉米蘇.
+
+**Café service (new mechanic):** customers order at the counter, the order appears as a ticket; drinks are assembled step by step at the espresso machine (beans → shot → milk → syrup), served to the table or as takeaway; latte-art upgrade adds tips; seats must be wiped. Regulars come back daily and unlock their favourite drink.
+
+**Workers:** 採豆工, 烘豆師, 咖啡師 (makes drinks automatically), 外場, 洗杯工, 烘焙師; 「多請一位」 like the other maps.
+
+**Specials:** 咖啡比賽 (judge order: make 3 perfect drinks), 外送大單 (office order of 20 cups), 雨天 (more hot drinks), 網紅來訪 (photo spot raises customers for a day).
+
+**Collections:** 咖啡豆圖鑑 and 飲品配方本 (each new drink recipe discovered is recorded; full book pays a reward).
+
+**Length:** about 55 steps plus the recipe book, like the other maps.
+
 ## More growth ideas for all maps
 1. 商店升級: shop size levels, self-checkout machines, bigger fridges.
 2. 自動化: conveyor belts (coop → shelf), robot restockers, harvester tractor.

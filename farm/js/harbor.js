@@ -127,11 +127,12 @@ const DISH_W = { grilled: 3, sushi: 3, otoro: 1.4, tempura: 3, squidgrill: 3, lo
 // ---------- the unlock chain ----------
 const kz = (x) => [x, KITCHEN_Z];
 const DEFS = [
-  { id: 'pier1', name: '釣魚碼頭', kind: 'pier', boat: 'boat', pz: 2, zone: [10.0, 2], cost: { money: 40 }, req: [] },
-  { id: 'seaweed', name: '海帶田', kind: 'crop', out: 'seaweed', plant: 'seaweed', grow: 6, pos: [6.6, 1.8], cost: { money: 30 }, req: [] },
+  { id: 'pier1', name: '釣魚碼頭', kind: 'pier', boat: 'boat', pz: 2, zone: [10.0, 2], cost: { money: 40 }, req: [], start: true },
+  { id: 'seaweed', name: '海帶田', kind: 'crop', out: 'seaweed', plant: 'seaweed', grow: 6, pos: [6.6, 1.8], cost: { money: 30 }, req: [], start: true },
   { id: 'shelfFish', name: '鮮魚冷藏櫃', kind: 'shelf', fridge: true, items: ['fish', 'sardine', 'mackerel', 'squid'], pos: [4.4, SH_Z], cost: { money: 10 }, req: ['pier1'] },
   { id: 'shelfSeaweed', name: '海帶架', kind: 'shelf', items: ['seaweed'], pos: [1.4, SH_Z], cost: { money: 15 }, req: ['seaweed'] },
-  { id: 'cashier', name: '收銀員', kind: 'hire', role: 'cashier', zone: [6.6, -12.6], cost: { money: 80 }, any: ['shelfFish', 'shelfSeaweed'] },
+  { id: 'counter', name: '收銀台', kind: 'counter', zone: [4.6, -8.7], cost: { money: 0 }, any: ['shelfFish', 'shelfSeaweed'] },
+  { id: 'cashier', name: '收銀員', kind: 'hire', role: 'cashier', zone: [6.6, -12.6], cost: { money: 80 }, req: ['counter'] },
   { id: 'iceMaker', name: '製冰機', kind: 'machine', mk: 'ice', in: 'fish', out: 'iced', iv: 3, pos: [8.2, 7.6], cost: { money: 200, fish: 6 }, req: ['cashier', 'pier1'] },
   { id: 'shelfIced', name: '冷藏鮮魚櫃', kind: 'shelf', fridge: true, items: ['iced'], pos: [-1.6, SH_Z], cost: { money: 160 }, req: ['iceMaker'] },
   { id: 'fisher', name: '漁夫', kind: 'hire', role: 'fisher', zone: [10.0, -1.0], cost: { money: 180 }, req: ['shelfIced'] },
@@ -182,6 +183,7 @@ const DEFS = [
   { id: 'washer2', name: '洗碗工', kind: 'hire', role: 'washer', zone: [-13.2, -13.0], cost: { money: 15000 }, req: ['table10'] },
   { id: 'lighthouse', name: '點亮燈塔', kind: 'lighthouse', note: '所有漁船出海更快了', zone: [8.9, -8.2], cost: { money: 25000 }, req: ['washer2'] },
   { id: 'aquarium', name: '水族館', kind: 'aquarium', note: '遊客變多了', pos: [-4, 20.5], zone: [-4, 16.6], cost: { money: 60000 }, req: ['lighthouse'] },
+  { id: 'forestGate', name: '開分店：森林小鎮', kind: 'mapgate', zone: [8.9, -8.2], cost: { money: 120000 }, req: ['lighthouse'], earned: 150000 },
 ];
 for (const d of DEFS) if (d.kind === 'table') d.pos = T_POS[d.ti];
 const DEF = Object.fromEntries(DEFS.map((d) => [d.id, d]));
@@ -231,6 +233,7 @@ try { Object.assign(state, JSON.parse(localStorage.getItem(SAVE) || '{}')); } ca
 if (params.has('fresh')) Object.assign(state, blank());
 for (const k of ['store', 'lvl', 'tpiles', 'stock', 'paid', 'up', 'log', 'logPaid', 'extra']) state[k] = state[k] || {};
 for (const k in UPS) state.up[k] = state.up[k] || 0;
+if (state.built.length && !state.built.includes('counter')) state.built.splice(Math.min(4, state.built.length), 0, 'counter');
 const isBuilt = (id) => state.built.includes(id);
 function save() {
   if (resetting) return;
@@ -369,7 +372,7 @@ function buildWorld() {
   K.add(D, K.mesh(G.plane(100, 160), '#f6e2b0', false, true), -36.4, 0, 8);
   for (let i = 0; i < 60; i++) {
     const r = 1.2 + rnd() * 3, p = K.mesh(G.circle(r, 20), rnd() < 0.5 ? '#f1d8a0' : '#fbecc8', false, true);
-    p.position.set(-42 + rnd() * 54, 0.003, -26 + rnd() * 64); p.scale.set(1, 1, 0.6 + rnd() * 0.6); p.rotation.y = rnd() * 3; D.add(p);
+    p.position.set(-42 + rnd() * 54, 0.003 + i * 0.0011, -26 + rnd() * 64); p.scale.set(1, 1, 0.6 + rnd() * 0.6); p.rotation.y = rnd() * 3; D.add(p);
   }
   K.add(D, K.mesh(G.plane(1.8, 160), '#ead095', false, true), 12.9, 0.004, 8);
   K.add(D, K.mesh(G.plane(2.4, 160), '#86e0dc', false, true), 14.6, 0.008, 8);
@@ -800,6 +803,18 @@ function build(def, instant) {
   } else if (def.kind === 'lighthouse') {
     lightObj.lamp.material = new THREE.MeshBasicMaterial({ color: '#fff3a6' });
     lightObj.beam.visible = true;
+  } else if (def.kind === 'counter') {
+    buildCounter(0);
+    if (!instant) popIn(COUNTERS[0].pile.grp);
+  } else if (def.kind === 'mapgate') {
+    mapsSet('forest');
+    // a signpost beside the (now gone) zone, never on top of where the player stood
+    const sx = 10.4, sz = -7.2, g = new THREE.Group(); g.position.set(sx, 0, sz); scene.add(g);
+    K.add(g, K.mesh(G.rbox(0.16, 1.7, 0.16, 0.04), C.woodDark), 0, 0.85, 0);
+    const sb = P2.signBoard('往森林小鎮', 2.6, '#59c25b'); sb.scale.setScalar(0.6); sb.position.set(0, 1.75, 0); g.add(sb);
+    box(sx - 0.15, sz - 0.15, sx + 0.15, sz + 0.15);
+    s.g = g;
+    if (!instant) { popIn(g); later.push({ t: 1.0, fn: () => openPanel('map') }); }
   } else if (def.kind === 'aquarium') {
     const g = P3.aquarium(); g.position.set(pos[0], 0, pos[1]); scene.add(g); s.g = g;
     box(pos[0] - 3.2, pos[1] - 2.1, pos[0] + 3.2, pos[1] + 2.1);
@@ -936,6 +951,40 @@ function buildCruise(instant) {
   if (!instant) popIn(g);
 }
 
+// ---------- maps unlocked across the whole game (shared with the farm) ----------
+const MAPS_KEY = 'farm_maps_v1';
+function mapsGet() { try { return JSON.parse(localStorage.getItem(MAPS_KEY) || '{}'); } catch (e) { return {}; } }
+function mapsSet(id) { const m = mapsGet(); m[id] = true; try { localStorage.setItem(MAPS_KEY, JSON.stringify(m)); } catch (e) { /* storage off */ } }
+
+// ---------- opening tutorial: arrows over the two starting choices, then the shelf, then the cash counter ----------
+const guide = { arrows: [], labels: [] };
+function makeArrow() {
+  const g = new THREE.Group();
+  K.add(g, K.mesh(G.cone(0.42, 0.7, 12), '#ffd23f'), 0, 0, 0).rotation.x = Math.PI;
+  K.add(g, K.mesh(G.cyl(0.17, 0.17, 0.6, 10), '#ffd23f'), 0, 0.62, 0);
+  g.visible = false; scene.add(g);
+  return g;
+}
+function guideTargets() {
+  if (isBuilt('counter')) return { ids: [], two: false };
+  const starts = DEFS.filter((d) => d.start);
+  if (!starts.some((d) => isBuilt(d.id))) return { ids: starts.map((d) => d.id), two: true };
+  const shelves = DEFS.filter((d) => d.kind === 'shelf' && d.req && d.req.some((r) => starts.some((st) => st.id === r)));
+  if (!shelves.some((d) => isBuilt(d.id))) return { ids: shelves.filter((d) => zones[d.id]).map((d) => d.id), two: false };
+  return { ids: ['counter'], two: false };
+}
+function updateGuide(T) {
+  const g = guideTargets();
+  while (guide.arrows.length < 2) { guide.arrows.push(makeArrow()); const L = label('guide', '二選一', (o) => o.set(0, 0, 0)); L.show = false; guide.labels.push(L); }
+  for (let i = 0; i < 2; i++) {
+    const z = zones[g.ids[i]], a = guide.arrows[i], L = guide.labels[i];
+    a.visible = !!z; L.show = !!z && g.two;
+    if (!z) continue;
+    a.position.set(z.x, 3.0 + Math.abs(Math.sin(T * 4)) * 0.45, z.z); a.rotation.y += 0.03;
+    L.getPos = (o) => o.set(z.x, 4.3, z.z);
+  }
+}
+
 // ---------- zones ----------
 const zones = {};
 const dashTex = K.dashTexture();
@@ -944,7 +993,10 @@ const fillMat = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: tru
 function refreshZones() {
   for (const def of DEFS) {
     if (isBuilt(def.id)) { if (zones[def.id]) killZone(def.id); continue; }
-    const open = def.req ? def.req.every(isBuilt) : def.any.some(isBuilt);
+    let open = def.req ? def.req.every(isBuilt) : def.any.some(isBuilt);
+    if (def.start && DEFS.some((d) => d.start && d !== def && isBuilt(d.id)) && !isBuilt('cashier')) open = false;
+    if (def.earned && state.earned < def.earned) open = false;
+    if (!open && def.start && zones[def.id]) killZone(def.id);   // the other starting choice steps aside for now
     if (open && !zones[def.id]) makeZone(def);
   }
   for (const key in GROW) if (zones['g_' + key] && lvlOf(key) >= GROW[key].max) killZone('g_' + key);
@@ -998,10 +1050,12 @@ function left(z, k) { return z.def.cost[k] - (z.paid[k] || 0); }
 function updateZoneLabel(z) {
   let rows = '';
   for (const k in z.def.cost) { const l = left(z, k); if (l > 0) rows += costRow(k, fmtMoney(l)); }
+  if (!z.total) rows = '<div class="cost">免費</div>';
   setLabel(z.label, '<div class="zn">' + z.def.name + '</div>' + rows);
   let paidSum = 0; for (const k in z.def.cost) paidSum += Math.min(z.def.cost[k], z.paid[k] || 0);
-  z.fill.scale.set(1, 1, Math.max(0.001, paidSum / z.total));
-  z.fill.position.z = 0.95 * (1 - paidSum / z.total);
+  const k01 = z.total ? paidSum / z.total : 0;
+  z.fill.scale.set(1, 1, Math.max(0.001, k01));
+  z.fill.position.z = 0.95 * (1 - k01);
 }
 function payZones(dt) {
   for (const id in zones) {
@@ -1010,6 +1064,7 @@ function payZones(dt) {
     if (!z.armed) continue;
     // only start paying after standing on the zone for half a second (walking across it costs nothing)
     z.stay = (z.stay || 0) + dt; if (z.stay < 0.5) continue;
+    if (!z.total) { const d = z.def; later.push({ t: 0.2, fn: () => build(d) }); killZone(id); sfx('drop'); continue; }   // free zone
     z.tick -= dt; if (z.tick > 0) continue;
     z.tick = 0.06;
     let moved = false;
@@ -1433,7 +1488,7 @@ function stepPath(c, dt, speed) {
 }
 function updateCustomers(dt) {
   const shelfN = listOf('shelf').length;
-  if (shelfN) {
+  if (shelfN && COUNTERS[0].on) {
     spawnT -= dt * crowd();
     const maxC = Math.min(12, 3 + Math.round(shelfN * 1.5));
     if (spawnT <= 0 && customers.length < maxC) { spawnCustomer(); spawnT = Math.max(1.4, 7 - shelfN * 0.7) * (0.7 + Math.random() * 0.6); }
@@ -1773,10 +1828,12 @@ function openPanel(kind) {
     body.innerHTML = h;
   } else if (kind === 'map') {
     $('pTitle').textContent = '地圖';
+    const m = mapsGet();
     body.innerHTML = '<a class="mapcard" href="./index.html"><span class="mi" style="background:#c9f0a8">🌾</span><div><b>開心農場</b><small>回到農場</small></div></a>' +
       '<div class="mapcard here"><span class="mi" style="background:#bfe9ff">⚓</span><div><b>海邊漁港</b><small>你現在在這裡</small></div></div>' +
-      '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">🌲</span><div><b>森林伐木場</b><small>之後推出</small></div></div>';
-    body.querySelector('a.mapcard').addEventListener('click', () => save());
+      (m.forest ? '<a class="mapcard" href="./forest.html"><span class="mi" style="background:#cdeec0">🌲</span><div><b>森林小鎮</b><small>伐木、家具、蓋小鎮</small></div></a>'
+        : '<div class="mapcard locked"><span class="mi" style="background:#e8e2d6">🌲</span><div><b>森林小鎮</b><small>點亮燈塔、漁港總收入 $150,000 後開放</small></div></div>');
+    body.querySelectorAll('a.mapcard').forEach((a) => a.addEventListener('click', () => save()));
   } else if (kind === 'set') {
     $('pTitle').textContent = '設定';
     body.innerHTML = '<div class="row"><span class="ricon">🔊</span><div class="rmid"><b>聲音</b></div><button class="buy" id="sSnd">' + (state.sound ? '開' : '關') + '</button></div>' +
@@ -2123,13 +2180,12 @@ function updateCamera(dt, snap) {
 
 // ---------- boot ----------
 buildWorld();
-buildCounter(0);
 for (const def of DEFS) if (isBuilt(def.id)) build(def, true);
 for (const role in state.extra) if (HIRE[role] && HIRE[role].home && roleOpen(role)) for (let i = 0; i < Math.min(HIRE_MAX, state.extra[role]); i++) makeWorker(role, HIRE[role].home, false);
 refreshZones();
 resize(); updateCamera(0, true); updateMoney(); showLogDot();
 
-let last = performance.now(), saveT = 0, T = 0;
+let last = performance.now(), saveT = 0, T = 0, gateT = 0;
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now;
@@ -2172,6 +2228,9 @@ function step(dt) {
     if (p.t >= 1) { p.obj.scale.setScalar(1); pops.splice(i, 1); }
   }
   dashMat.opacity = 0.75 + Math.sin(T * 4) * 0.25;
+  updateGuide(T);
+  // the 森林小鎮 branch zone shows up once earnings are high enough (earnings grow without builds)
+  gateT -= dt; if (gateT <= 0) { gateT = 2; if (!zones.forestGate && !isBuilt('forestGate') && isBuilt('lighthouse') && state.earned >= DEF.forestGate.earned) refreshZones(); }
   updateDoorsAndLights(dt);
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').classList.remove('on'); }
 }
@@ -2201,6 +2260,9 @@ window.__harbor = {
     return r;
   },
   hire: (role) => hireExtra(role),
+  guideIds: () => guideTargets().ids,
+  guideInfo: () => { const g = guideTargets(); return g.ids.join('+') + (g.two ? ' (二選一)' : ''); },
+  firstSource: () => { const s = Object.values(stations).find((x) => x.bin && x.kind === 'pier') || stations.seaweed; return s.outPt ? [s.outPt.x - 1.2, s.outPt.z] : [s.plants[0].x, s.plants[0].z + 0.3]; },
   calls: () => renderer.info.render.calls,
   open: (k) => openPanel(k),
   lineup(x, z, list) { (list || Object.keys(ITEMS)).forEach((t, i) => { const m = itemMesh(t); m.scale.setScalar(2.2); m.position.set(x + (i % 5) * 1.3, 0, z + Math.floor(i / 5) * 1.4); scene.add(m); }); },
