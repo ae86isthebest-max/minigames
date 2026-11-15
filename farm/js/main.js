@@ -20,7 +20,7 @@ const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 // ---------- the long unlock chain (each opens after the previous one) ----------
 const SH_Z = -14.6;
 const DEFS = [
-  { id: 'tomato', name: '番茄田', kind: 'crop', out: 'tomato', plant: 'tomato', grow: 6, pos: [7.3, 1.2], cost: { money: 30 }, req: [], alt: 'coop' },
+  { id: 'tomato', name: '番茄田', kind: 'crop', out: 'tomato', plant: 'tomato', grow: 6, pos: [8.9, 1.2], cost: { money: 30 }, req: [], alt: 'coop' },
   { id: 'coop', name: '雞舍', kind: 'producer', in: 'hay', out: 'egg', pos: [2.7, 1], cost: { money: 40 }, req: [], alt: 'tomato' },
   { id: 'shelfTomato', name: '番茄架', kind: 'shelf', item: 'tomato', pos: [-1.6, SH_Z], cost: { money: 20 }, req: ['tomato', 'counter'] },
   { id: 'shelfEgg', name: '雞蛋架', kind: 'shelf', item: 'egg', pos: [-4.6, SH_Z], cost: { money: 10 }, req: ['coop', 'counter'] },
@@ -37,7 +37,7 @@ const DEFS = [
   { id: 'barn', name: '牛棚', kind: 'producer', in: 'hay', out: 'milk', pos: [-4.5, 10.2], cost: { money: 420, hay: 20, wood: 18 } },
   { id: 'shelfMilk', name: '牛奶冷藏櫃', kind: 'shelf', fridge: true, item: 'milk', pos: [4.4, SH_Z], cost: { money: 300 } },
   { id: 'market', name: '超級市場', kind: 'market', zone: [-12, -10], cost: { money: 1500, wood: 40 } },
-  { id: 'harbor', name: '開分店：海邊漁港', kind: 'mapgate', zone: [11.2, 0.4], cost: { money: 15000 }, req: ['market'], earned: 40000 },
+  { id: 'harbor', name: '開分店：海邊漁港', kind: 'mapgate', zone: [11.2, -1.9], cost: { money: 15000 }, req: ['market'], earned: 40000 },
   { id: 'juicer', name: '果汁機', kind: 'machine', mk: 'juicer', in: 'tomato', out: 'juice', iv: 3, pos: [5.5, -2.7], upAt: [2.6, -2.4], cost: { money: 700, wood: 20 }, req: ['market'] },
   { id: 'shelfJuice', name: '果汁冷藏櫃', kind: 'shelf', fridge: true, item: 'juice', pos: [-8.6, SH_Z], cost: { money: 500 } },
   { id: 'shelver2', name: '理貨員', kind: 'hire', role: 'shelver', zone: [-4.4, -5], cost: { money: 800 } },
@@ -61,8 +61,6 @@ const DEFS = [
   { id: 'shelfApple', name: '蘋果架', kind: 'shelf', item: 'apple', pos: [-11.6, -10.6], cost: { money: 3200 } },
   { id: 'helipad', name: '停機坪', kind: 'helipad', zone: [23.5, 6], cost: { money: 9000, wood: 120 } },
   { id: 'shelver4', name: '理貨員', kind: 'hire', role: 'shelver', zone: [-12.6, -5], cost: { money: 7000 } },
-  // second tomato field (south of the corn): 4 more plants, 8 tomatoes in all
-  { id: 'tomato2', name: '第二番茄田', kind: 'crop', out: 'tomato', plant: 'tomato', grow: 6, pos: [7.5, 13], cost: { money: 300, wood: 10 }, req: ['tomato', 'corn'] },
 ];
 const DEF = Object.fromEntries(DEFS.map((d) => [d.id, d]));
 
@@ -96,7 +94,7 @@ const EXTRA = {
 };
 const EXTRA_MAX = 6;
 // 農夫 harvests every field (and feeds the animals when there is nothing to pick)
-const FARM_CROPS_SRC = ['tomato', 'tomato2', 'corn', 'soy', 'wheat', 'orchard'];
+const FARM_CROPS_SRC = ['tomato', 'corn', 'soy', 'wheat', 'orchard'];
 const FARM_CROPS = ['tomato', 'corn', 'soybean', 'wheat', 'apple'];
 // old saves: the per-product 專屬工人 (removed 11-15) become 飼養員 / 農夫 / 理貨員
 const LINE_TO_ROLE = { egg: 'keeper', milk: 'keeper', tomato: 'farmer', corn: 'farmer', soy: 'farmer', wheat: 'farmer', apple: 'farmer', juice: 'shelver', soymilk: 'shelver', bread: 'shelver', cheese: 'shelver' };
@@ -112,8 +110,7 @@ const GROW = {
   coop: { start: 1, max: 4, cost: [30, 80, 180], what: '＋1 隻雞' },
   coop2: { start: 1, max: 4, cost: [300, 600, 1200], what: '＋1 隻雞' },
   barn: { start: 1, max: 3, cost: [500, 1200], what: '＋1 頭牛' },
-  tomato: { start: 2, max: 4, cost: [25, 60], what: '＋1 棵番茄' },
-  tomato2: { start: 2, max: 4, cost: [80, 150], what: '＋1 棵番茄' },
+  tomato: { start: 2, max: 8, cost: [25, 60, 150, 250, 400, 600], what: '＋1 棵番茄' },
   juicer: { start: 1, max: 4, cost: [500, 1100, 2200], what: '果汁機做更快' },
   soyMachine: { start: 1, max: 4, cost: [900, 1800, 3500], what: '磨豆漿機做更快' },
   oven: { start: 1, max: 4, cost: [1200, 2400, 4500], what: '麵包窯做更快' },
@@ -138,6 +135,15 @@ state.extra = state.extra || {};
 // the 飼養員工作 upgrade was removed (the keeper now does everything): give back what was paid for it
 let keeperRefund = 0;
 if (state.up.keeper) { keeperRefund = [0, 150, 550, 1450][Math.min(3, state.up.keeper)]; state.money += keeperRefund; delete state.up.keeper; }
+let tomatoMerged = false;
+if (state.built.includes('tomato2')) {
+  state.built = state.built.filter((id) => id !== 'tomato2');
+  state.lvl.tomato = Math.min(8, (state.lvl.tomato || 2) + (state.lvl.tomato2 || 2));
+  tomatoMerged = true;
+}
+if (state.paid && state.paid.tomato2) { state.money += state.paid.tomato2.money || 0; delete state.paid.tomato2; }
+if (state.paid) delete state.paid.g_tomato2;
+if (state.lvl) delete state.lvl.tomato2;
 let linesMoved = 0;
 if (state.lines) {
   for (const k in state.lines) { const r = LINE_TO_ROLE[k] || 'shelver', n = state.lines[k] || 0; if (!n) continue; state.extra[r] = Math.min(6, (state.extra[r] || 0) + n); linesMoved += n; }
@@ -464,10 +470,10 @@ function buildWorld() {
   for (let i = 0; i < 16; i++) { const t = P.tree(); t.g.position.set(-20 + i * 3.1 + rnd(), 0, 35 + rnd() * 3); t.g.scale.setScalar(0.85 + rnd() * 0.4); D.add(t.g); }
   for (let i = 0; i < 12; i++) { const t = P.tree(); t.g.position.set(-22 + i * 3.4 + rnd(), 0, -21.5 - rnd() * 3); D.add(t.g); }
   for (let i = 0; i < 12; i++) { const t = P.tree(); t.g.position.set(31 + rnd() * 3, 0, -24 + i * 5 + rnd() * 2); D.add(t.g); }
-  for (const [x, z, r] of [[11.5, -16, 0.6], [12, -2.5, 0.45], [-11.5, -5.2, 0.5], [6, 30.5, 0.55], [-9, 30.6, 0.5], [12, 15.5, 0.6], [-19.5, 12, 0.6], [-19.5, 2, 0.5]]) K.add(D, P.bush(r), x, 0, z);
+  for (const [x, z, r] of [[11.5, -16, 0.6], [-11.5, -5.2, 0.5], [6, 30.5, 0.55], [-9, 30.6, 0.5], [12, 15.5, 0.6], [-19.5, 12, 0.6], [-19.5, 2, 0.5]]) K.add(D, P.bush(r), x, 0, z);
   const fl = ['#ff7eb6', '#ffffff', '#ffd34a', '#a98bff', '#ff8a6b'];
   for (let i = 0; i < 70; i++) K.add(D, P.flower(fl[i % 5]), -20 + rnd() * 32, 0, -3.5 + rnd() * 35);
-  for (const [x, z, s] of [[-19, 28, 0.45], [10.8, -1.5, 0.35], [-15, 14, 0.3], [11.5, 13, 0.4], [10, 30, 0.5]]) K.add(D, P.rock(s), x, 0, z);
+  for (const [x, z, s] of [[-19, 28, 0.45], [-15, 14, 0.3], [11.5, 13, 0.4], [10, 30, 0.5]]) K.add(D, P.rock(s), x, 0, z);
   for (const z of [-14, -2, 10, 22]) K.add(D, P.lamp(), 13, 0, z);
   K.bake(D, scene);
   shopDoor.d = P2.slidingDoor(2.1); shopDoor.d.g.position.set(6.5, 0.1, -7.3); scene.add(shopDoor.d.g);
@@ -679,7 +685,8 @@ function popIn(obj) { obj.scale.setScalar(0.01); pops.push({ obj, t: 0 }); }
 const sprinklers = [];
 const PLANTS = { tomato: P.tomatoPlant, corn: P.cornPlant, soy: P2.soyPlant, wheat: P2.wheatPlant, apple: P2.appleTree };
 const CROP_LAYOUT = {
-  tomato: { w: 3.2, d: 2.4, spots: [[-0.8, -0.55], [0.8, -0.55], [-0.8, 0.55], [0.8, 0.55]] },
+  // left half first (the original 2 x 2 bed), the right half appears from the 5th plant
+  tomato: { w: 6.4, d: 2.4, half: true, spots: [[-2.4, -0.55], [-0.8, -0.55], [-2.4, 0.55], [-0.8, 0.55], [0.8, -0.55], [2.4, -0.55], [0.8, 0.55], [2.4, 0.55]] },
   corn: { w: 3.2, d: 2.8, spots: [[-1, -0.7], [0, -0.7], [1, -0.7], [-1, 0.7], [0, 0.7], [1, 0.7]] },
   soy: { w: 3.4, d: 2.6, spots: [[-1.1, -0.6], [0, -0.6], [1.1, -0.6], [-1.1, 0.6], [0, 0.6], [1.1, 0.6]] },
   wheat: { w: 3.4, d: 2.6, spots: [[-1.1, -0.6], [-0.37, -0.6], [0.37, -0.6], [1.1, -0.6], [-1.1, 0.6], [-0.37, 0.6], [0.37, 0.6], [1.1, 0.6]] },
@@ -730,7 +737,10 @@ function build(def, instant) {
     const L = CROP_LAYOUT[def.plant];
     const g = new THREE.Group(); g.position.set(pos[0], 0, pos[1]); scene.add(g);
     if (def.plant === 'apple') K.add(g, K.mesh(G.rbox(L.w, 0.08, L.d, 0.2), '#9fd25a', false, true), 0, 0.04, 0);
-    else g.add(P.plot(L.w, L.d));
+    else if (L.half) {
+      const a = P.plot(L.w / 2, L.d); a.position.x = -L.w / 4; g.add(a);
+      const b = P.plot(L.w / 2, L.d); b.position.x = L.w / 4; b.userData.dyn = true; b.visible = false; g.add(b); s.plot2 = b;
+    } else g.add(P.plot(L.w, L.d));
     s.plants = [];
     for (const [x, z] of L.spots) {
       const pl = PLANTS[def.plant](); pl.g.position.set(x, def.plant === 'apple' ? 0 : 0.2, z); pl.g.userData.dyn = true; pl.fruit.userData.dyn = true; g.add(pl.g); K.bakeStatic(pl.g); K.bakeStatic(pl.fruit);
@@ -811,6 +821,7 @@ function applyGrow(s) {
   const n = lvlOf(id);
   if (s.animals) s.animals.forEach((a, i) => { const on = i < n; if (on && !a.g.visible) popIn(a.g); a.g.visible = on; });
   const fresh = s.plants && !s.plants.some((q) => q.active);
+  if (s.plot2) { const on = n > 4; if (on && !s.plot2.visible && s.plants.some((q) => q.active)) popIn(s.plot2); s.plot2.visible = on; }
   if (s.plants) s.plants.forEach((pl, i) => {
     const on = i < n;
     // a brand-new field starts ripe; plants added later grow from seed
@@ -898,7 +909,7 @@ function refreshZones() {
 }
 function frontOf(def) {
   if (def.kind === 'producer') return [def.pos[0], def.pos[1] + (def.out === 'milk' ? 3.9 : 3.4)];
-  if (def.kind === 'crop') return [def.pos[0], def.pos[1] + CROP_LAYOUT[def.plant].d / 2 + 1.5];
+  if (def.kind === 'crop') { const L = CROP_LAYOUT[def.plant]; return [def.pos[0] - (L.half ? L.w / 4 : 0), def.pos[1] + L.d / 2 + 1.5]; }
   if (def.kind === 'machine') return def.upAt || [def.pos[0], def.pos[1] + 2.6];
   return def.pos;
 }
@@ -1905,6 +1916,7 @@ applyShopLook(false); applyFloor(false); applyAd(false);
 for (const role in EXTRA) for (let i = 0; i < (state.extra[role] || 0); i++) makeWorker(role, EXTRA[role].at, 0, false);
 for (const k of ['mgrShop', 'mgrFarm']) if (state.up[k]) spawnManager(k, true);
 if (linesMoved) setTimeout(() => toast('專屬工人已合併成飼養員、農夫和理貨員'), 1500);
+if (tomatoMerged) setTimeout(() => toast('第二番茄田已併入原本的番茄田（2×4）'), 3000);
 if (keeperRefund) setTimeout(() => toast('飼養員現在自動照顧所有動物，退還升級費 $' + keeperRefund), linesMoved ? 4500 : 1500);
 refreshZones();
 resize(); updateCamera(0, true); updateMoney();
