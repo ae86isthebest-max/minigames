@@ -87,7 +87,8 @@ export function makeRenderer(canvas) {
   r.toneMapping = THREE.NoToneMapping;
   r.shadowMap.enabled = true;
   r.shadowMap.type = THREE.PCFSoftShadowMap;
-  canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); setTimeout(() => location.reload(), 400); });
+  // a lost graphics context (app switch, memory pressure) is restored by three.js itself: keep playing, never reload
+  canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); });
   return r;
 }
 

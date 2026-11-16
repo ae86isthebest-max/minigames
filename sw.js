@@ -1,7 +1,7 @@
 // Offline cache: everything is precached on first visit and served from the cache, so a running game never
 // changes under the player. A new version downloads in the background and waits; the game shows a
 // 「有新版本」 button and only switches when the player taps it (the page sends 'skip').
-const CACHE = 'mg-v64';
+const CACHE = 'mg-v65';
 const GAMES = ['bus', 'water', 'zombie', 'crowd', 'parking', 'screw', 'blocks', 'arrows', 'triple', 'pins', 'pixel', 'fruit', 'stack', 'tangle', 'bricks',
   'runner', 'hole', 'survivor', 'bubble', 'snake', 'helix', 'knife', 'bullet', 'merge', 'paper', 'flow', 'ninja', 'piano', 'g2048', 'jumper', 'multiply'];
 const FILES = ['./', 'index.html', 'style.css', 'core.js', 'manifest.json', 'icon-180.png', 'icon-192.png', 'icon-512.png']
