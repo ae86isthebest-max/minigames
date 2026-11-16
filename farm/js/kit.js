@@ -87,6 +87,7 @@ export function makeRenderer(canvas) {
   r.toneMapping = THREE.NoToneMapping;
   r.shadowMap.enabled = true;
   r.shadowMap.type = THREE.PCFSoftShadowMap;
+  canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); setTimeout(() => location.reload(), 400); });
   return r;
 }
 
@@ -134,6 +135,7 @@ export function blob(r) {
 }
 
 // Faceless capsule person. Root sits at the feet, faces +z. Call anim(dt, speed01) every frame.
+const personCache = new Map();
 export function person(opt = {}) {
   const prevOL = OUTLINE; OUTLINE = 0.038;
   const body = opt.body || C.pink, root = new THREE.Group(), rig = new THREE.Group();
@@ -150,19 +152,20 @@ export function person(opt = {}) {
     add(ap, mesh(G.sphere(0.1, 10, 8), opt.hands || body), 0, -0.2, 0);
     arms.push(ap);
   }
+  const hatG = new THREE.Group(); hatG.position.set(0, 1.28, 0);
   if (opt.hat === 'straw') {
-    add(head, mesh(G.cyl(0.46, 0.46, 0.05, 18), '#f3cf6a'), 0, 0.16, 0);
-    add(head, mesh(G.cyl(0.24, 0.29, 0.2, 16), '#f3cf6a'), 0, 0.27, 0);
-    add(head, mesh(G.cyl(0.295, 0.295, 0.06, 16), C.red), 0, 0.2, 0);
+    add(hatG, mesh(G.cyl(0.46, 0.46, 0.05, 18), '#f3cf6a'), 0, 0.16, 0);
+    add(hatG, mesh(G.cyl(0.24, 0.29, 0.2, 16), '#f3cf6a'), 0, 0.27, 0);
+    add(hatG, mesh(G.cyl(0.295, 0.295, 0.06, 16), C.red), 0, 0.2, 0);
   } else if (opt.hat === 'cap') {
-    add(head, mesh(G.sphere(0.3, 14, 8), opt.hatColor || C.blue), 0, 0.09, 0).scale.set(1.04, 0.62, 1.04);
-    add(head, mesh(G.rbox(0.36, 0.05, 0.26, 0.02), opt.hatColor || C.blue), 0, 0.08, 0.26);
+    add(hatG, mesh(G.sphere(0.3, 14, 8), opt.hatColor || C.blue), 0, 0.09, 0).scale.set(1.04, 0.62, 1.04);
+    add(hatG, mesh(G.rbox(0.36, 0.05, 0.26, 0.02), opt.hatColor || C.blue), 0, 0.08, 0.26);
   } else if (opt.hat === 'crown') {
-    add(head, mesh(G.cyl(0.2, 0.22, 0.14, 10), '#ffcf3a'), 0, 0.32, 0);
-    for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; add(head, mesh(G.cone(0.05, 0.13, 5), '#ffcf3a'), Math.cos(a) * 0.17, 0.44, Math.sin(a) * 0.17); }
-    add(head, mesh(G.sphere(0.045, 6, 5), '#ff5a8a'), 0, 0.33, 0.21);
+    add(hatG, mesh(G.cyl(0.2, 0.22, 0.14, 10), '#ffcf3a'), 0, 0.32, 0);
+    for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; add(hatG, mesh(G.cone(0.05, 0.13, 5), '#ffcf3a'), Math.cos(a) * 0.17, 0.44, Math.sin(a) * 0.17); }
+    add(hatG, mesh(G.sphere(0.045, 6, 5), '#ff5a8a'), 0, 0.33, 0.21);
   } else if (opt.hat === 'bun') {
-    add(head, mesh(G.sphere(0.14, 10, 8), opt.hatColor || C.brown), 0, 0.3, -0.08);
+    add(hatG, mesh(G.sphere(0.14, 10, 8), opt.hatColor || C.brown), 0, 0.3, -0.08);
   }
   if (opt.apron) add(torso, mesh(G.rbox(0.42, 0.42, 0.08, 0.04), opt.apron), 0, -0.05, 0.27);
   OUTLINE = prevOL;
@@ -170,9 +173,15 @@ export function person(opt = {}) {
   const statics = [];
   for (const m of [torso, head]) m.traverse((o) => { if (o.isMesh) statics.push(o); });
   rig.updateMatrixWorld(true);
-  const merged = mergeList(statics, rig.matrixWorld.clone().invert());
+  // the merged body is cached per look: hundreds of customers come and go, and a fresh merged mesh for
+  // each one was never freed (memory kept growing until the phone's browser reloaded the page)
+  const key = [body, opt.head || '', opt.apron || ''].join('|');
+  let proto = personCache.get(key);
+  if (!proto) { proto = mergeList(statics, rig.matrixWorld.clone().invert()); personCache.set(key, proto); }
+  const merged = proto.map((m) => { const n = new THREE.Mesh(m.geometry, m.material); n.castShadow = m.castShadow; n.receiveShadow = m.receiveShadow; n.renderOrder = m.renderOrder; return n; });
   rig.remove(torso); rig.remove(head);
   for (const m of merged) rig.add(m);
+  if (hatG.children.length) rig.add(hatG);
   // small limbs don't need their own sun shadow (the body casts one, and the soft blob sits under the feet)
   for (const l of legs.concat(arms)) l.traverse((o) => { if (o.isMesh) o.castShadow = false; });
   const back = add(rig, new THREE.Group(), 0, 0.5, -0.42);
