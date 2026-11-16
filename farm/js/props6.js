@@ -2,7 +2,7 @@
 // coffee shrubs and other crops, the cow shed, processing machines, espresso bars and the hillside decor.
 // Built from the shared style kit like the other maps.
 import * as THREE from 'three';
-import { C, G, mesh, add, blob, bakeStatic, itemEdge } from './kit.js';
+import { C, G, mesh, add, blob, bakeStatic, itemEdge, outlineMat, OUTLINE } from './kit.js';
 
 // h = stack height on a back, ss = scale on shelves
 export const ITEMS6 = {
@@ -519,4 +519,270 @@ export function judgeDesk() {
   add(cup, mesh(G.cyl(0.12, 0.08, 0.2, 10), '#ffd34a'), 0, 0.1, 0);
   add(cup, mesh(G.cyl(0.03, 0.03, 0.1, 6), '#ffd34a'), 0, -0.02, 0);
   return g;
+}
+
+// ---------- the café shop (山城咖啡屋): brick walls, wooden wall shelves, glass pastry cases, the coffee bar ----------
+// palette: walnut and oak browns, cream, sage green and terracotta
+export const CAFE = {
+  walnut: '#6b4a35', oak: '#b98352', honey: '#d9a066', cream: '#f4e6cf', sage: '#8fae7e', sageDark: '#6f8f61',
+  terra: '#c8693f', brick: '#b65e3f', chalk: '#2f3b33', brass: '#d4a64a', iron: '#3a3330', marble: '#efe6da',
+};
+const W_ = CAFE;
+function canvasTex(w, h, draw) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  return t;
+}
+// a mesh with its own (textured) material that still gets the cartoon outline
+function texMesh(geo, mat, cast = true) {
+  const m = new THREE.Mesh(geo, mat); m.castShadow = cast; m.receiveShadow = true;
+  if (cast && OUTLINE > 0) { const o = new THREE.Mesh(geo, outlineMat(OUTLINE)); o.userData.outline = true; m.add(o); }
+  return m;
+}
+// warm red-brown bricks with cream mortar; one material per wall size so the bricks keep their size
+let brickBase = null;
+const brickMats = new Map();
+export function brickMat(w, h) {
+  const key = w.toFixed(2) + 'x' + h.toFixed(2);
+  let m = brickMats.get(key);
+  if (m) return m;
+  if (!brickBase) {
+    brickBase = canvasTex(256, 128, (x, cw, ch) => {
+      x.fillStyle = '#ead8bf'; x.fillRect(0, 0, cw, ch);
+      const cols = ['#b65e3f', '#a9553a', '#c06a48', '#b86244', '#a85a3e'];
+      for (let r = 0; r < 4; r++) for (let i = -1; i < 4; i++) {
+        const bx = i * 64 + (r % 2 ? 32 : 0) + 3, by = r * 32 + 3;
+        x.fillStyle = cols[(r * 3 + i + 5) % cols.length]; x.fillRect(bx, by, 58, 26);
+      }
+    });
+  }
+  const t = brickBase.clone(); t.needsUpdate = true;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(Math.max(1, w / 1.3), Math.max(1, h / 0.52));
+  m = new THREE.MeshLambertMaterial({ map: t }); brickMats.set(key, m);
+  return m;
+}
+export function brickWall(w, h, d) { return texMesh(G.rbox(w, h, d, 0.05), brickMat(Math.max(w, d), h)); }
+
+// tall wooden wall shelf: a cabinet base and 3 boards (4 when it is a big display) with goods standing on them
+export function wallShelf(big) {
+  const g = new THREE.Group();
+  g.add(blob(1.2));
+  const W = 1.7, D = 0.86, nb = big ? 4 : 3, step = 0.48, H = 0.5 + nb * step;
+  add(g, mesh(G.rbox(W, 0.5, D, 0.06), W_.walnut), 0, 0.25, 0);
+  for (const x of [-0.42, 0.42]) {
+    add(g, mesh(G.rbox(0.74, 0.3, 0.04, 0.03), W_.oak), x, 0.25, D / 2);
+    add(g, mesh(G.cyl(0.03, 0.03, 0.05, 8), W_.brass), x, 0.25, D / 2 + 0.03).rotation.x = Math.PI / 2;
+  }
+  add(g, mesh(G.rbox(W, H, 0.1, 0.04), W_.oak), 0, H / 2, -D / 2 + 0.05);
+  for (const s of [-1, 1]) add(g, mesh(G.rbox(0.08, H, D, 0.03), W_.walnut), s * (W / 2 - 0.04), H / 2, 0);
+  for (let i = 1; i < nb; i++) add(g, mesh(G.rbox(W - 0.1, 0.05, D - 0.08, 0.02), W_.honey), 0, 0.5 + i * step, 0.02);
+  add(g, mesh(G.rbox(W + 0.1, 0.1, D + 0.06, 0.04), W_.walnut), 0, H + 0.05, 0);
+  // a few glass jars of beans on the crown
+  for (const [x, c] of [[-0.6, '#6b4a35'], [0.6, '#c8693f']]) {
+    add(g, mesh(G.cyl(0.1, 0.1, 0.22, 10), '#e7f3f6'), x, H + 0.21, 0);
+    add(g, mesh(G.cyl(0.085, 0.085, 0.12, 10), c, false), x, H + 0.16, 0);
+    add(g, mesh(G.cyl(0.11, 0.11, 0.04, 10), W_.walnut), x, H + 0.34, 0);
+  }
+  if (big) {
+    // the bigger display: a brass rail with little lamps along the top board
+    add(g, mesh(G.cyl(0.02, 0.02, W - 0.2, 6), W_.brass), 0, H - 0.06, D / 2 - 0.05).rotation.z = Math.PI / 2;
+    for (const x of [-0.55, 0, 0.55]) add(g, new THREE.Mesh(G.sphere(0.05, 8, 6), new THREE.MeshBasicMaterial({ color: '#fff3a6' })), x, H - 0.12, D / 2 - 0.05);
+  }
+  const slots = [];
+  for (let layer = 0; layer < 2; layer++) for (let i = 0; i < nb; i++) for (let r = 0; r < 2; r++) for (let c = 0; c < 5; c++) {
+    slots.push(new THREE.Vector3(-0.62 + c * 0.31, 0.53 + i * step + layer * 0.16, -0.18 + r * 0.32));
+  }
+  return { g, slots, top: H + 0.1 };
+}
+// glass pastry case on a wooden base (cakes, cold coffee, milk): 2 glass tiers (3 when it is a big display)
+const caseGlass = new THREE.MeshLambertMaterial({ color: '#dff4ff', transparent: true, opacity: 0.28, depthWrite: false });
+export function vitrine(big) {
+  const g = new THREE.Group();
+  g.add(blob(1.2));
+  const W = 1.7, D = 0.9, nt = big ? 3 : 2, step = 0.36, H = 0.55 + nt * step + 0.06;
+  add(g, mesh(G.rbox(W, 0.55, D, 0.06), W_.walnut), 0, 0.275, 0);
+  add(g, mesh(G.rbox(W - 0.2, 0.32, 0.04, 0.03), W_.terra), 0, 0.27, D / 2);
+  add(g, mesh(G.rbox(W, 0.06, D, 0.03), W_.cream), 0, 0.55, 0);
+  for (let i = 1; i < nt; i++) add(g, new THREE.Mesh(G.rbox(W - 0.12, 0.03, D - 0.12, 0.01), caseGlass), 0, 0.55 + i * step, 0);
+  const gh = H - 0.58;
+  for (const s of [-1, 1]) add(g, new THREE.Mesh(G.rbox(W - 0.08, gh, 0.03, 0.01), caseGlass), 0, 0.58 + gh / 2, s * (D / 2 - 0.03));
+  for (const s of [-1, 1]) add(g, new THREE.Mesh(G.rbox(0.03, gh, D - 0.08, 0.01), caseGlass), s * (W / 2 - 0.03), 0.58 + gh / 2, 0);
+  add(g, new THREE.Mesh(G.rbox(W - 0.04, 0.03, D - 0.04, 0.01), caseGlass), 0, H, 0);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(g, mesh(G.rbox(0.05, gh + 0.04, 0.05, 0.02), W_.walnut), sx * (W / 2 - 0.03), 0.58 + gh / 2, sz * (D / 2 - 0.03));
+  add(g, mesh(G.rbox(W + 0.04, 0.06, D + 0.04, 0.03), W_.walnut), 0, H + 0.02, 0);
+  const slots = [];
+  for (let layer = 0; layer < 2; layer++) for (let i = 0; i < nt; i++) for (let r = 0; r < 2; r++) for (let c = 0; c < 5; c++) {
+    slots.push(new THREE.Vector3(-0.6 + c * 0.3, 0.6 + i * step + layer * 0.14, -0.17 + r * 0.34));
+  }
+  return { g, slots, top: H + 0.05 };
+}
+// the coffee bar: walnut bar with oak slats in front, a marble top, an espresso machine, a pastry dome and the register;
+// the money tray sits at the right end (x +0.95)
+export function cafeBar() {
+  const g = new THREE.Group();
+  g.add(blob(1.8));
+  add(g, mesh(G.rbox(2.8, 0.95, 1.0, 0.08), W_.walnut), 0, 0.48, 0);
+  for (let i = 0; i < 9; i++) add(g, mesh(G.rbox(0.26, 0.78, 0.05, 0.02), i % 2 ? W_.oak : W_.honey), -1.2 + i * 0.3, 0.47, 0.51);
+  add(g, mesh(G.rbox(2.95, 0.08, 1.12, 0.04), W_.marble), 0, 1.0, 0);
+  const em = add(g, new THREE.Group(), -0.82, 1.04, -0.1);
+  add(em, mesh(G.rbox(0.66, 0.44, 0.44, 0.06), '#c9cfd6'), 0, 0.22, 0);
+  add(em, mesh(G.rbox(0.68, 0.07, 0.46, 0.03), W_.terra), 0, 0.46, 0);
+  for (const x of [-0.16, 0.16]) { add(em, mesh(G.cyl(0.05, 0.05, 0.1, 8), '#5b6474'), x, 0.1, 0.24); add(em, mesh(G.cyl(0.06, 0.05, 0.07, 10), W_.cream), x, 0.0, 0.3); }
+  for (let i = 0; i < 3; i++) add(em, mesh(G.cyl(0.05, 0.04, 0.06, 8), W_.cream), -0.2 + i * 0.2, 0.53, -0.08);
+  // glass dome with pastries
+  add(g, mesh(G.cyl(0.26, 0.26, 0.03, 16), W_.cream), 0.05, 1.06, 0.05);
+  for (const [x, z] of [[-0.06, 0], [0.12, 0.08], [0.06, -0.1]]) add(g, mesh(G.sphere(0.08, 8, 6), '#e9b25e'), 0.05 + x, 1.11, 0.05 + z).scale.set(1.4, 0.6, 0.8);
+  const dome = add(g, new THREE.Mesh(G.sphere(0.25, 14, 8), caseGlass), 0.05, 1.08, 0.05); dome.scale.set(1, 0.9, 1);
+  // register
+  const reg = add(g, new THREE.Group(), 0.5, 1.04, -0.15);
+  add(reg, mesh(G.rbox(0.36, 0.2, 0.32, 0.05), W_.iron), 0, 0.1, 0);
+  add(reg, mesh(G.rbox(0.32, 0.22, 0.05, 0.03), '#4a4f5a'), 0, 0.28, -0.08).rotation.x = -0.35;
+  // money tray
+  add(g, mesh(G.rbox(0.66, 0.03, 0.66, 0.02), W_.oak, false), 0.95, 1.055, 0.05);
+  return g;
+}
+// back bar against the wall behind the baristas: a low cabinet, open shelves of cups and two menu chalkboards
+function chalk(x, cw, ch, title, rows) {
+  x.fillStyle = W_.chalk; x.fillRect(0, 0, cw, ch);
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillStyle = '#ffe9a8'; x.font = '900 34px "PingFang TC","Microsoft JhengHei",sans-serif'; x.fillText(title, cw / 2, 30);
+  x.fillStyle = '#f4f1ea'; x.font = '700 24px "PingFang TC","Microsoft JhengHei",sans-serif';
+  rows.forEach((r, i) => x.fillText(r, cw / 2, 70 + i * 30));
+  x.strokeStyle = 'rgba(255,255,255,0.35)'; x.lineWidth = 3; x.strokeRect(8, 8, cw - 16, ch - 16);
+}
+export function menuBoard(title, rows, w = 1.5, h = 1.0) {
+  const g = new THREE.Group();
+  add(g, mesh(G.rbox(w + 0.12, h + 0.12, 0.08, 0.03), W_.walnut), 0, 0, 0);
+  const t = canvasTex(256, 64 + rows.length * 30 + 40, (x, cw, ch) => chalk(x, cw, ch, title, rows));
+  const f = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshLambertMaterial({ map: t }));
+  f.position.z = 0.045; g.add(f);
+  return g;
+}
+export function backBar(w) {
+  const g = new THREE.Group();
+  add(g, mesh(G.rbox(w, 1.0, 0.4, 0.05), W_.walnut), 0, 0.5, 0);
+  add(g, mesh(G.rbox(w + 0.04, 0.06, 0.44, 0.03), W_.marble), 0, 1.02, 0);
+  for (const s of [-1, 1]) add(g, mesh(G.rbox(0.08, 1.2, 0.3, 0.03), W_.oak), s * (w / 2 - 0.06), 1.62, -0.03);
+  for (const y of [1.45, 1.85]) add(g, mesh(G.rbox(w - 0.1, 0.05, 0.3, 0.02), W_.honey), 0, y, -0.03);
+  const cups = [W_.cream, W_.terra, W_.sage, W_.cream];
+  for (let i = 0; i < Math.floor((w - 0.4) / 0.28); i++) {
+    add(g, mesh(G.cyl(0.07, 0.055, 0.12, 8), cups[i % 4]), -w / 2 + 0.3 + i * 0.28, 1.54, 0);
+    if (i % 2 === 0) add(g, mesh(G.cyl(0.07, 0.07, 0.2, 8), '#e7f3f6'), -w / 2 + 0.3 + i * 0.28, 1.98, 0);
+  }
+  const m1 = menuBoard('咖啡 MENU', ['美式 · 拿鐵', '卡布奇諾 · 摩卡', '手沖精品豆'], 1.5, 0.9);
+  m1.position.set(-w / 4, 2.6, 0.02); g.add(m1);
+  const m2 = menuBoard('今日甜點', ['可頌 · 起司蛋糕', '提拉米蘇', '外帶咖啡豆'], 1.5, 0.9);
+  m2.position.set(w / 4, 2.6, 0.02); g.add(m2);
+  return g;
+}
+// round marble bistro table on an iron foot with two bentwood chairs (seats like the dining tables: z ±0.95)
+export function bistroTable(top = W_.marble) {
+  const g = new THREE.Group();
+  g.add(blob(1.1));
+  add(g, mesh(G.cyl(0.24, 0.3, 0.05, 14), W_.iron), 0, 0.03, 0);
+  add(g, mesh(G.cyl(0.05, 0.05, 0.72, 8), W_.iron), 0, 0.4, 0);
+  add(g, mesh(G.cyl(0.56, 0.56, 0.06, 22), top), 0, 0.78, 0);
+  add(g, mesh(G.cyl(0.565, 0.565, 0.025, 22), W_.walnut), 0, 0.745, 0);
+  const seats = [];
+  for (const s of [-1, 1]) {
+    const ch = add(g, new THREE.Group(), 0, 0, s * 0.95);
+    add(ch, mesh(G.cyl(0.23, 0.23, 0.07, 14), W_.walnut), 0, 0.44, 0);
+    add(ch, mesh(G.cyl(0.18, 0.18, 0.02, 14), W_.sage, false), 0, 0.48, 0);
+    add(ch, mesh(G.rbox(0.44, 0.34, 0.06, 0.03), W_.walnut), 0, 0.74, s * 0.21);
+    add(ch, mesh(G.rbox(0.36, 0.05, 0.07, 0.02), W_.oak), 0, 0.63, s * 0.21);
+    for (const [x, z] of [[-0.15, -0.14], [0.15, -0.14], [-0.15, 0.14], [0.15, 0.14]]) add(ch, mesh(G.cyl(0.025, 0.025, 0.42, 6), W_.walnut), x, 0.21, z);
+    seats.push({ x: 0, z: s * 0.95, face: s < 0 ? 0 : Math.PI, dish: new THREE.Vector3(0, 0.82, s * 0.28) });
+  }
+  // a little candle jar in the middle
+  add(g, mesh(G.cyl(0.05, 0.05, 0.08, 8), '#ffe9b0'), 0, 0.85, 0);
+  return { g, seats };
+}
+// pendant lamp hanging from a beam: brass cord, a terracotta shade and a warm bulb; lit(true/false)
+const bulbOn = new THREE.MeshBasicMaterial({ color: '#fff1b0' }), bulbOff = new THREE.MeshLambertMaterial({ color: '#e8dcc4' });
+export function pendantLamp(drop = 0.7, col = W_.terra) {
+  const g = new THREE.Group();
+  add(g, mesh(G.cyl(0.012, 0.012, drop, 4), W_.iron, false), 0, -drop / 2, 0);
+  add(g, mesh(G.cone(0.2, 0.2, 14), col), 0, -drop - 0.06, 0);
+  const b = new THREE.Mesh(G.sphere(0.08, 10, 8), bulbOff); b.position.y = -drop - 0.18; g.add(b);
+  return { g, lit(on) { b.material = on ? bulbOn : bulbOff; } };
+}
+// burlap coffee sacks, one open with green beans on top
+export function beanSacks() {
+  const g = new THREE.Group();
+  g.add(blob(0.8));
+  const sack = (x, z, ry, s) => {
+    const k = add(g, new THREE.Group(), x, 0, z); k.rotation.y = ry; k.scale.setScalar(s);
+    add(k, mesh(G.rbox(0.5, 0.62, 0.38, 0.16), '#c9a77a'), 0, 0.31, 0);
+    add(k, mesh(G.rbox(0.52, 0.06, 0.4, 0.03), '#9a7650'), 0, 0.5, 0);
+    add(k, mesh(G.rbox(0.26, 0.16, 0.02, 0.02), W_.terra, false), 0, 0.3, 0.2);
+    return k;
+  };
+  sack(-0.22, 0.05, 0.2, 1);
+  sack(0.28, -0.08, -0.25, 0.92);
+  const o = sack(0.05, 0.3, 0.05, 0.85);
+  add(o, mesh(G.sphere(0.2, 10, 6), '#7f9a55', false), 0, 0.62, 0).scale.set(1, 0.35, 0.8);
+  return g;
+}
+// A-frame chalkboard stand for the pavement
+export function aFrame(title, rows) {
+  const g = new THREE.Group();
+  g.add(blob(0.5));
+  const t = canvasTex(256, 320, (x, cw, ch) => chalk(x, cw, ch, title, rows));
+  const mat = new THREE.MeshLambertMaterial({ map: t });
+  for (const s of [-1, 1]) {
+    const p = add(g, new THREE.Group(), 0, 0, s * 0.2); p.rotation.x = -s * 0.22;
+    add(p, mesh(G.rbox(0.72, 1.0, 0.05, 0.03), W_.walnut), 0, 0.55, 0);
+    const f = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.85), mat); f.position.set(0, 0.57, s * 0.03); f.rotation.y = s > 0 ? 0 : Math.PI; p.add(f);
+  }
+  return g;
+}
+// potted plant: terracotta pot with a bushy fiddle-leaf plant
+export function pottedPlant(h = 1.0) {
+  const g = new THREE.Group();
+  g.add(blob(0.45));
+  add(g, mesh(G.cyl(0.26, 0.19, 0.4, 12), W_.terra), 0, 0.2, 0);
+  add(g, mesh(G.cyl(0.27, 0.27, 0.06, 12), '#b55a34'), 0, 0.4, 0);
+  add(g, mesh(G.cyl(0.03, 0.03, h * 0.6, 6), '#7a5a3a'), 0, 0.4 + h * 0.3, 0);
+  const lf = [[0, h * 0.95, 0, 0.3], [0.18, h * 0.75, 0.08, 0.24], [-0.17, h * 0.7, -0.06, 0.25], [0.05, h * 0.55, 0.18, 0.22], [-0.08, h * 0.85, 0.15, 0.2]];
+  lf.forEach(([x, y, z, r], i) => add(g, mesh(G.sphere(r, 10, 7), i % 2 ? '#5f9a52' : '#78b35f'), x, 0.4 + y * 0.6, z).scale.set(1, 0.75, 1));
+  return g;
+}
+// shop sign with a coffee cup drawn on the left of the name
+export function cafeSign(text, w = 4, col = W_.walnut) {
+  const g = new THREE.Group();
+  const t = canvasTex(512, 128, (x, cw, ch) => {
+    x.fillStyle = col; x.fillRect(0, 0, cw, ch);
+    x.strokeStyle = '#f4e6cf'; x.lineWidth = 6; x.strokeRect(8, 8, cw - 16, ch - 16);
+    // cup: body, handle, saucer and steam
+    x.fillStyle = '#f4e6cf';
+    x.beginPath(); x.moveTo(30, 46); x.lineTo(92, 46); x.quadraticCurveTo(90, 100, 61, 100); x.quadraticCurveTo(32, 100, 30, 46); x.fill();
+    x.lineWidth = 7; x.beginPath(); x.arc(94, 64, 12, -Math.PI / 2, Math.PI / 2); x.stroke();
+    x.fillRect(22, 102, 80, 7);
+    x.lineWidth = 4; for (const sx of [48, 64, 80]) { x.beginPath(); x.moveTo(sx, 40); x.quadraticCurveTo(sx - 8, 30, sx, 22); x.stroke(); }
+    x.fillStyle = '#ffffff'; x.font = '900 ' + (text.length > 5 ? 58 : 70) + 'px "PingFang TC","Microsoft JhengHei",sans-serif';
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, 300, 68);
+  });
+  add(g, mesh(G.rbox(w + 0.2, 1.1, 0.16, 0.08), W_.cream), 0, 0, 0);
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(w, 1.0), new THREE.MeshLambertMaterial({ map: t }));
+  face.position.z = 0.085; g.add(face);
+  return g;
+}
+// wooden double door with glass panes that swings inwards (-z); open(k) 0..1
+export function cafeDoor(w = 2.2) {
+  const g = new THREE.Group();
+  add(g, mesh(G.rbox(w + 0.5, 0.2, 0.32, 0.05), W_.walnut), 0, 1.62, 0);
+  for (const s of [-1, 1]) add(g, mesh(G.rbox(0.16, 1.62, 0.32, 0.04), W_.walnut), s * (w / 2 + 0.17), 0.81, 0);
+  const leaves = [];
+  for (const s of [-1, 1]) {
+    const hinge = add(g, new THREE.Group(), s * w / 2, 0, 0); hinge.userData.dyn = true;
+    const lw = w / 2 - 0.04, cx = -s * lw / 2;
+    add(hinge, mesh(G.rbox(lw, 0.36, 0.07, 0.03), W_.oak), cx, 0.24, 0);
+    add(hinge, mesh(G.rbox(lw, 0.1, 0.07, 0.03), W_.oak), cx, 1.46, 0);
+    for (const e of [-1, 1]) add(hinge, mesh(G.rbox(0.08, 1.45, 0.07, 0.03), W_.oak), cx + e * (lw / 2 - 0.04), 0.76, 0);
+    add(hinge, new THREE.Mesh(G.rbox(lw - 0.12, 1.0, 0.03, 0.01), caseGlass), cx, 0.93, 0);
+    add(hinge, mesh(G.rbox(0.05, 0.22, 0.05, 0.02), W_.brass), -s * (lw - 0.12), 0.85, 0.06);
+    leaves.push({ hinge, s });
+  }
+  return { g, open(k) { for (const L of leaves) L.hinge.rotation.y = L.s * -k * 1.35; } };
 }

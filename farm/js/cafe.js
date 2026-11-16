@@ -87,12 +87,31 @@ const crateSlots = () => { const s = []; for (let i = 0; i < 45; i++) s.push({ p
 
 // ---------- layout ----------
 const SH_Z = -14.6, MID_Z = -11.2;
-// 百貨公司: the market's back wall moves from z -17.6 to DEPT_Z and a second set of shelves (rows SH_Z2 / MID_Z2) fits behind,
-// then a row for the new goods of the 南坡新園區 (NEW_Z) and their second copies (NEW2_Z)
-const DEPT_Z = -32.4, SH_Z2 = -23.6, MID_Z2 = -20.2, NEW_Z = -27.0, NEW2_Z = -30.4;
-// 2nd sliding door on the market front once the 百貨公司 is built; shoppers for the west shelves use it
-const DOOR2_X = -6.1, DOOR2_OUT = [DOOR2_X, -6.0], DOOR2_IN = [DOOR2_X, -8.4], WEST_X = -3;
+// 咖啡屋擴建: the back wall moves from z -17.6 to DEPT_Z (the 烘豆工坊 hall). SH_Z / MID_Z / NEW_Z only name the old rows in
+// DEFS; where every display really stands is SHELF_AT below.
+const DEPT_Z = -32.4, NEW_Z = -27.0;
 const SHOP = { x0: -9.4, x1: 7.95, z0: -17.4, z1: -7.3 };
+// 山城咖啡屋: the front room is a café with the coffee bar at the back, bistro tables in the middle and the goods on
+// wooden wall shelves and glass pastry cases along the walls; the 咖啡屋擴建 adds the 烘豆工坊 hall behind it.
+// [x, z, face]: the way a display opens (S towards the road, N towards the back, E towards +x, W towards -x)
+const SHELF_AT = {
+  shelfGround: [-7.6, -16.75, 'S'], shelfBean: [-5.0, -16.75, 'S'], shelfPantry: [-8.9, -13.2, 'E'], shelfDessert: [-8.9, -10.9, 'E'],
+  shelfCherry: [7.45, -15.4, 'W'], shelfMilk: [7.45, -13.2, 'W'], shelfTake: [7.45, -11.0, 'W'], shelfRare: [0.85, -8.0, 'N'],
+  shelfCherry3: [3.2, -8.0, 'N'], shelfMilk3: [-4.05, -8.0, 'N'],
+  shelfGround2: [-7.6, -18.45, 'N'], shelfBean2: [-5.0, -18.45, 'N'],
+  shelfMatcha: [-8.4, -31.75, 'S'], shelfMatcha2: [-6.0, -31.75, 'S'], shelfBerry: [-3.6, -31.75, 'S'], shelfBerry2: [-1.2, -31.75, 'S'],
+  shelfWaffle: [1.2, -31.75, 'S'], shelfWaffle2: [3.6, -31.75, 'S'], shelfChoco: [6.0, -31.75, 'S'],
+  shelfChoco2: [-8.9, -28.6, 'E'], shelfTea: [-8.9, -26.4, 'E'], shelfTea2: [-8.9, -24.2, 'E'], shelfPantry2: [-8.9, -22.0, 'E'],
+  shelfCherry2: [7.45, -19.8, 'W'], shelfMilk2: [7.45, -22.0, 'W'], shelfTake2: [7.45, -24.2, 'W'], shelfDessert2: [7.45, -26.4, 'W'], shelfRare2: [7.45, -28.6, 'W'],
+  shelfBean3: [-4.7, -25.05, 'S'], shelfGround3: [-2.9, -25.05, 'S'], shelfPantry3: [-4.7, -26.05, 'N'], shelfDessert3: [-2.9, -26.05, 'N'],
+  shelfTake3: [3.8, -25.05, 'S'], shelfRare3: [3.8, -26.05, 'N'],
+};
+const FACE = { S: [0, 1, 0], N: [0, -1, Math.PI], E: [1, 0, Math.PI / 2], W: [-1, 0, -Math.PI / 2] };
+// the café's entrances on the front (z -7.3): the wide main door, a cheap 2nd one early and a 3rd one later
+const DOORS = [{ id: null, x: 5.9, w: 2.8 }, { id: 'door2', x: -1.4, w: 2.2 }, { id: 'door3', x: -6.7, w: 2.2 }];
+for (const D of DOORS) Object.assign(D, { in: [D.x, -8.6], out: [D.x, -6.0], d: null, k: 0 });
+const SPAWN_W = [-12.6, -4.6];   // shoppers also come down the hill road from the west
+const ROAD_Z = -4.6;   // shoppers walk along the middle of the road (2.7 from the front wall) and turn up to their door
 const R0 = -23.6, WING_X0 = -40;
 const REST = { x0: R0, x1: -11.2, z0: -20.8, z1: -6 };
 const RB = -20.6;   // the café's back wall (deep enough for a 做更快 zone in front of every espresso bar)
@@ -135,18 +154,20 @@ const DEFS = [
   { id: 'arabica', name: '阿拉比卡咖啡園', kind: 'crop', out: 'cherry', plant: 'coffee', grow: 6, pos: [10.0, 2.2], zone: [9.0, 5.0], cost: { money: 40 }, req: [], start: true },
   { id: 'cowShed', name: '乳牛棚', kind: 'producer', out: 'milk', pos: [3.4, 0.8], zone: [5.2, 4.6], cost: { money: 30 }, req: [], start: true },
   { id: 'shelfCherry', name: '咖啡櫻桃架', kind: 'shelf', items: ['cherry', 'robusta'], pos: [4.4, SH_Z], cost: { money: 10 }, req: ['arabica', 'counter'] },
-  { id: 'shelfMilk', name: '鮮奶冷藏櫃', kind: 'shelf', fridge: true, items: ['milk'], pos: [1.4, SH_Z], cost: { money: 15 }, req: ['cowShed', 'counter'] },
-  { id: 'counter', name: '收銀台', kind: 'counter', zone: [4.6, -8.7], cost: { money: 0 }, any: ['arabica', 'cowShed'] },
-  { id: 'cashier', name: '收銀員', kind: 'hire', role: 'cashier', counter: 0, zone: [6.6, -12.6], cost: { money: 80 }, req: ['counter'], any: ['shelfCherry', 'shelfMilk'] },
+  { id: 'shelfMilk', name: '鮮奶玻璃櫃', kind: 'shelf', fridge: true, items: ['milk'], pos: [1.4, SH_Z], cost: { money: 15 }, req: ['cowShed', 'counter'] },
+  { id: 'counter', name: '點餐櫃台', kind: 'counter', zone: [2.9, -13.75], cost: { money: 0 }, any: ['arabica', 'cowShed'] },
+  { id: 'cashier', name: '櫃台店員', kind: 'hire', role: 'cashier', counter: 0, zone: [2.9, -13.75], cost: { money: 80 }, req: ['counter'], any: ['shelfCherry', 'shelfMilk'] },
+  { id: 'door2', name: '第二道門', kind: 'door', di: 1, desc: '多開一道門，客人進出不擠', zone: [-1.4, -6.0], cost: { money: 150 }, req: ['cashier'] },
   { id: 'dryer', name: '日曬場', kind: 'machine', mk: 'dryer', in: 'cherry', out: 'greenbean', iv: 3, pos: [5.0, 8.0], cost: { money: 200, cherry: 6 }, req: ['cashier', 'arabica'] },
   { id: 'shelfBean', name: '咖啡豆架', kind: 'shelf', items: ['greenbean', 'roasted'], pos: [-1.6, SH_Z], cost: { money: 160 }, req: ['dryer'] },
   { id: 'picker', name: '採豆工', kind: 'hire', role: 'picker', zone: [7.6, 5.4], cost: { money: 180 }, req: ['shelfBean'] },
-  { id: 'cat', name: '店貓', kind: 'pet', zone: [2.6, -11.6], cost: { money: 260, cherry: 10 }, req: ['picker'] },
+  { id: 'cat', name: '店貓', kind: 'pet', zone: [-1.0, -11.0], cost: { money: 260, cherry: 10 }, req: ['picker'] },
   { id: 'roaster', name: '烘豆機', kind: 'machine', mk: 'roaster', in: 'greenbean', out: 'roasted', iv: 3.5, roast: true, pos: [-7.0, 8.0], cost: { money: 450 }, req: ['cat'] },
   { id: 'roasterMan', name: '烘豆師', kind: 'hire', role: 'roaster', zone: [-4.0, 5.6], cost: { money: 320 }, req: ['roaster'] },
   { id: 'warehouse', name: '倉庫', kind: 'store', pos: [11.2, -14.4], zone: [11.2, -10.6], cost: { money: 450 }, req: ['roasterMan'] },
-  { id: 'counter2', name: '第二收銀台', desc: '再開一條隊，客人分開排、結帳更快', kind: 'counterX', counter: 1, zone: [1.0, -8.0], cost: { money: 1200 }, req: ['warehouse'] },
-  { id: 'cashier2', name: '第二收銀員', kind: 'hire', role: 'cashier', counter: 1, zone: [0.4, -12.7], cost: { money: 600 }, req: ['counter2'] },
+  { id: 'counter2', name: '第二點餐櫃台', desc: '再開一條隊，客人分開排、結帳更快', kind: 'counterX', counter: 1, zone: [-1.2, -13.75], cost: { money: 1200 }, req: ['warehouse'] },
+  { id: 'cashier2', name: '第二位櫃台店員', kind: 'hire', role: 'cashier', counter: 1, zone: [-1.2, -13.75], cost: { money: 600 }, req: ['counter2'] },
+  { id: 'door3', name: '第三道門', kind: 'door', di: 2, desc: '再多一道門，進出更順', zone: [-6.7, -6.0], cost: { money: 1500 }, req: ['counter2'] },
   { id: 'grinder', name: '磨豆機', kind: 'machine', mk: 'grinder', in: 'roasted', out: 'ground', yield: 2, iv: 3, pos: [-7.0, 13.4], cost: { money: 550 }, req: ['warehouse'] },
   { id: 'shelfGround', name: '咖啡粉架', kind: 'shelf', items: ['ground'], pos: [-4.6, SH_Z], cost: { money: 480 }, req: ['grinder'] },
   { id: 'restaurant', name: '山城咖啡館', kind: 'restaurant', zone: [-12.4, -4.0], cost: { money: 1200, cherry: 15 }, req: ['shelfGround'] },
@@ -161,9 +182,10 @@ const DEFS = [
   { id: 'cupWasher', name: '洗杯工', kind: 'hire', role: 'washer', zone: [-13.2, -13.0], cost: { money: 1900 }, req: ['table3'] },
   { id: 'barista', name: '咖啡師', kind: 'hire', role: 'barista', zone: [-12.3, -7.7], cost: { money: 2400 }, req: ['cupWasher'] },
   { id: 'shelfTake', name: '外帶咖啡櫃', kind: 'shelf', fridge: true, items: ['americano', 'latte', 'colddrip'], pos: [-1.6, MID_Z], cost: { money: 2000 }, req: ['barista'] },
-  { id: 'dept', name: '百貨公司', kind: 'dept', note: '商店往後擴大、多一道門，可以擺第二排貨架', zone: [6.5, -16.2], cost: { money: 4000, cherry: 40 }, req: ['shelfTake'] },
-  { id: 'counter3', name: '第三收銀台', desc: '百貨公司後面也能結帳，隊伍更短', kind: 'counterX', counter: 2, zone: [4.6, -17.2], cost: { money: 5000 }, req: ['dept', 'counter2'] },
-  { id: 'cashier3', name: '第三收銀員', kind: 'hire', role: 'cashier', counter: 2, zone: [6.6, -21.6], cost: { money: 2000 }, req: ['counter3'] },
+  { id: 'dept', name: '咖啡屋擴建', kind: 'dept', note: '後面多了烘豆工坊，可以擺更多展示架', zone: [-1.0, -11.0], cost: { money: 4000, cherry: 40 }, req: ['shelfTake'] },
+  { id: 'counter3', name: '工坊點餐櫃台', desc: '烘豆工坊裡也能結帳，隊伍更短', kind: 'counterX', counter: 2, zone: [1.0, -22.4], cost: { money: 5000 }, req: ['dept', 'counter2'] },
+  { id: 'cashier3', name: '工坊櫃台店員', kind: 'hire', role: 'cashier', counter: 2, zone: [1.0, -21.9], cost: { money: 2000 }, req: ['counter3'] },
+  { id: 'warehouse2', name: '第二倉庫', kind: 'store', pos: [-14.5, 21.0], zone: [-14.5, 25.8], desc: '再一間倉庫，存貨更多，員工也會來拿', cost: { money: 6000 }, req: ['dept', 'warehouse'] },
   { id: 'cocoaGrove', name: '可可樹', kind: 'crop', out: 'cocoapod', plant: 'cocoa', grow: 8, pos: [10.0, 19.6], cost: { money: 2800 }, req: ['shelfTake'] },
   { id: 'cocoaMill', name: '可可研磨機', kind: 'machine', mk: 'cocoa', in: 'cocoapod', out: 'cocoa', iv: 3, pos: [-1.0, 18.8], cost: { money: 3200, cocoapod: 8 }, req: ['cocoaGrove'] },
   { id: 'mochaBar', name: '摩卡吧', kind: 'machine', mk: 'mocha', in: 'ground', in2: 'cocoa', out: 'mocha', iv: 3.5, pos: kz(-21.8), cost: { money: 3200 }, req: ['cocoaMill'] },
@@ -186,7 +208,7 @@ const DEFS = [
   { id: 'wheat', name: '小麥田', kind: 'crop', out: 'wheat', plant: 'wheat', grow: 6, pos: [-7.0, 29.6], cost: { money: 9000 }, req: ['table6'] },
   { id: 'oven', name: '烘焙坊', kind: 'machine', mk: 'oven', in: 'wheat', in2: 'milk', outs: ['croissant', 'cheesecake'], iv: 4, pos: [-7.0, 24.2], cost: { money: 11000, wheat: 10 }, req: ['wheat'] },
   { id: 'baker', name: '烘焙師', kind: 'hire', role: 'baker', zone: [-4.0, 21.6], cost: { money: 9000 }, req: ['oven'] },
-  { id: 'shelfDessert', name: '甜點冷藏櫃', kind: 'shelf', fridge: true, items: ['croissant', 'cheesecake', 'tiramisu'], pos: [-7.6, MID_Z], cost: { money: 10000 }, req: ['baker'] },
+  { id: 'shelfDessert', name: '甜點玻璃櫃', kind: 'shelf', fridge: true, items: ['croissant', 'cheesecake', 'tiramisu'], pos: [-7.6, MID_Z], cost: { money: 10000 }, req: ['baker'] },
   { id: 'tiramisuBar', name: '提拉米蘇冷藏台', kind: 'machine', mk: 'tiramisu', in: 'ground', in2: 'milk', out: 'tiramisu', iv: 4.5, pos: [-1.0, 24.2], cost: { money: 14000 }, req: ['shelfDessert'] },
   { id: 'table8', name: '第 8 張桌子', kind: 'table', ti: 7, cost: { money: 10000 }, req: ['tiramisuBar'] },
   { id: 'judge', name: '咖啡比賽台', kind: 'judge', note: '評審會來比賽', zone: [JUDGE.x, JUDGE.z + 1.5], cost: { money: 15000 }, req: ['table8'] },
@@ -218,7 +240,7 @@ const DEFS = [
   { id: 'picker4', name: '採豆工', kind: 'hire', nx: true, role: 'picker', zone: [7.6, 39.0], home: [7.6, 47.0], cost: { money: 0 }, req: ['grinder2'] },
   { id: 'berryField', name: '草莓園', kind: 'crop', nx: true, out: 'strawberry', plant: 'berry', grow: 6, pos: [10.0, 49.8], desc: '採草莓，可以直接賣或做成草莓蛋糕', cost: { money: 70000 }, req: ['picker4'] },
   { id: 'cakeBar', name: '草莓蛋糕台', kind: 'machine', nx: true, mk: 'cake', in: 'strawberry', in2: 'milk', out: 'strawcake', iv: 4, pos: [5.0, 50.8], cost: { money: 85000, strawberry: 10 }, req: ['berryField'] },
-  { id: 'shelfBerry', name: '草莓冷藏櫃', kind: 'shelf', nx: true, fridge: true, items: ['strawcake', 'strawberry'], pos: [-1.6, NEW_Z], cost: { money: 80000 }, req: ['cakeBar'] },
+  { id: 'shelfBerry', name: '草莓蛋糕櫃', kind: 'shelf', nx: true, fridge: true, items: ['strawcake', 'strawberry'], pos: [-1.6, NEW_Z], cost: { money: 80000 }, req: ['cakeBar'] },
   { id: 'steamer2', name: '第二奶泡機', kind: 'machine', nx: true, mk: 'steamer', in: 'milk', out: 'foam', iv: 2.5, pos: [-1.0, 45.4], cost: { money: 95000 }, req: ['shelfBerry'] },
   { id: 'coop', name: '雞舍', kind: 'producer', nx: true, animal: 'chicken', out: 'egg', pos: [-13.0, 47.6], zone: [-11.2, 51.4], desc: '母雞會生蛋，鬆餅機要用', cost: { money: 110000 }, req: ['steamer2'] },
   { id: 'waffleMaker', name: '鬆餅機', kind: 'machine', nx: true, mk: 'waffle', in: 'egg', in2: 'wheat', out: 'waffle', iv: 4, pos: [-1.0, 50.8], cost: { money: 130000, egg: 10 }, req: ['coop', 'wheat'] },
@@ -229,6 +251,7 @@ const DEFS = [
   { id: 'chocoMaker', name: '巧克力工坊', kind: 'machine', nx: true, mk: 'choco', in: 'cocoa', in2: 'milk', out: 'chocolate', iv: 4.5, pos: [5.0, 56.2], cost: { money: 220000, cocoa: 10 }, req: ['cocoaGrove2', 'cocoaMill'] },
   { id: 'shelfChoco', name: '巧克力櫃', kind: 'shelf', nx: true, items: ['chocolate'], pos: [-7.6, NEW_Z], cost: { money: 200000 }, req: ['chocoMaker'] },
   { id: 'picker5', name: '採豆工', kind: 'hire', nx: true, role: 'picker', zone: [7.6, 50.0], home: [7.6, 53.0], cost: { money: 0 }, req: ['shelfChoco'] },
+  { id: 'warehouse3', name: '第三倉庫', kind: 'store', nx: true, pos: [-13.2, 56.4], zone: [-13.2, 61.0], desc: '南坡也有倉庫，存貨更多', cost: { money: 60000 }, req: ['expand', 'warehouse2'] },
   { id: 'harbor', name: '開分店：海邊漁港', kind: 'mapgate', zone: [10.6, -7.8], cost: { money: 500000 }, req: ['counter'], earned: 1200000 },
 ];
 // 遊戲時間 ×5–6: everything after the 店貓 costs about 2.8× what it used to (the new content above has its own prices)
@@ -236,16 +259,18 @@ const DEFS = [
   let late = false;
   for (const d of DEFS) { if (late && !d.nx && d.kind !== 'mapgate' && d.cost.money) d.cost.money = r10(d.cost.money * 2.8); if (d.id === 'cat') late = true; }
 }
-// after the 百貨公司 every shelf can be bought a second time, in the back rows (same x; SH_Z → SH_Z2, MID_Z → MID_Z2, NEW_Z → NEW2_Z)
-const ROW2 = { [SH_Z]: SH_Z2, [MID_Z]: MID_Z2, [NEW_Z]: NEW2_Z };
+// after the 咖啡屋擴建 every display can be bought a second time, and a third time where the room allows (needs the second)
 for (const d of DEFS.filter((q) => q.kind === 'shelf')) {
-  DEFS.push({ id: d.id + '2', name: d.name + '２', kind: 'shelf', nx: d.nx, fridge: d.fridge, items: d.items, pos: [d.pos[0], ROW2[d.pos[1]]], cost: { money: Math.max(400, Math.round(d.cost.money * 1.2 / 10) * 10) }, req: d.nx ? [d.id] : ['dept', d.id] });
+  const c2 = Math.max(400, Math.round(d.cost.money * 1.2 / 10) * 10);
+  DEFS.push({ id: d.id + '2', name: d.name + '２', kind: 'shelf', nx: d.nx, fridge: d.fridge, items: d.items, pos: d.pos, cost: { money: c2 }, req: d.nx ? [d.id] : ['dept', d.id] });
+  if (SHELF_AT[d.id + '3']) DEFS.push({ id: d.id + '3', name: d.name + '３', kind: 'shelf', nx: d.nx, fridge: d.fridge, items: d.items, pos: d.pos, cost: { money: r10(c2 * 1.5) }, req: [d.id + '2'] });
 }
+for (const d of DEFS) if (d.kind === 'shelf' && SHELF_AT[d.id]) { const [x, z, f] = SHELF_AT[d.id]; d.pos = [x, z]; d.face = f; }
 for (const d of DEFS) if (d.kind === 'table') d.pos = T_POS[d.ti];
 // short notes shown on a special zone while the player stands on it
 const DESC = {
-  counter: '客人在這裡結帳', cashier: '站在收銀台幫客人結帳', picker: '採咖啡豆和各種作物，送到機器和貨架',
-  cat: '坐在收銀台，每位客人多付 $1', roasterMan: '烘豆、磨豆再送上貨架，站在烘豆機旁會完美中焙',
+  counter: '客人在這裡點餐結帳', cashier: '站在點餐櫃台幫客人結帳', picker: '採咖啡豆和各種作物，送到機器和貨架',
+  cat: '坐在點餐櫃台上，每位客人多付 $1', roasterMan: '烘豆、磨豆再送上貨架，站在烘豆機旁會完美中焙',
   warehouse: '放不下的東西存在這裡，員工也會來拿', restaurant: '客人會來喝咖啡、吃甜點',
   waiter: '把咖啡和甜點送到客人桌上', cupWasher: '擦桌子，把杯子拿去洗', barista: '把咖啡粉、奶泡等材料送進咖啡吧',
   restWing: '咖啡館往西擴大，可以多擺餐桌', baker: '小麥和牛奶送進烘焙坊，甜點上架',
@@ -255,12 +280,12 @@ for (const d of DEFS) { const k = d.id.replace(/\d+$/, ''); if (d.desc) continue
 const DEF = Object.fromEntries(DEFS.map((d) => [d.id, d]));
 
 const lv = (n, base, k) => Array.from({ length: n }, (_, i) => Math.round(base * Math.pow(k, i) / 10) * 10);
-// 商店外觀 levels of the market (山城市集): name on the door sign, its colour, and the awning stripes
+// 商店外觀 levels of the café shop (山城咖啡屋): name on the sign by the door, its colour, and the awning stripes
 const SHOP_LOOKS = [
-  { name: '山城市集', col: '#59a14f' },
-  { name: '山城超市', col: '#59a14f', aw: ['#59a14f', '#fff3dd'] },
-  { name: '山城精品超市', col: '#c9733f', aw: ['#c9733f', '#fff3dd'] },
-  { name: '山城旗艦超市', col: '#e9a400', aw: ['#8b5a3c', '#ffd34a'] },
+  { name: '山城咖啡屋', col: '#6b4a35' },
+  { name: '山城咖啡屋', col: '#6f8f61', aw: ['#8fae7e', '#f4e6cf'] },
+  { name: '山城精品咖啡', col: '#c8693f', aw: ['#c8693f', '#f4e6cf'] },
+  { name: '山城咖啡旗艦店', col: '#4a3326', aw: ['#6b4a35', '#d4a64a'] },
 ];
 // every chain is at most 6 buys (old saves are clamped to the top level below)
 const UPS = {
@@ -271,19 +296,19 @@ const UPS = {
   grow: { tab: 2, name: '作物生長', ic: 'cherry', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [100, 280, 600, 1200, 2200], fmt: (v) => '×' + v },
   cows: { tab: 2, name: '牛奶和雞蛋速度', ic: 'milk', need: 'cowShed', vals: [6, 5, 4.2, 3.5, 3, 2.5], cost: [80, 220, 500, 1000, 1900], fmt: (v) => v + ' 秒一份' },
   stock: { tab: 2, name: '存貨量', ic: 'greenbean', need: 'dryer', nx: true, vals: [12, 16, 20, 25, 30], cost: [3000, 9000, 24000, 60000], fmt: (v) => '機器盤子放 ' + v + ' 個' },
-  store: { tab: 2, name: '倉庫容量', ic: 'roasted', need: 'warehouse', nx: true, vals: [200, 300, 400, 500, 600], cost: [5000, 15000, 40000, 100000], fmt: (v) => v + ' 個' },
+  store: { tab: 2, name: '倉庫容量', ic: 'roasted', need: 'warehouse', nx: true, vals: [200, 350, 500, 650, 800, 1000], cost: [5000, 15000, 40000, 100000, 200000], fmt: (v) => '每間倉庫 ' + v + ' 個' },
   mach: { tab: 2, name: '機器速度', ic: 'greenbean', need: 'dryer', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [400, 900, 1800, 3200, 5500], fmt: (v) => '×' + v },
   roast: { tab: 2, name: '完美烘焙範圍', ic: 'roasted', need: 'roaster', vals: [0.18, 0.24, 0.3, 0.36, 0.42], cost: [500, 1200, 2500, 5000], fmt: (v) => '中焙區 ' + Math.round(v * 100) + '%' },
   luck: { tab: 2, name: '稀有咖啡豆', ic: 'geisha', need: 'shelfBean', vals: [1, 1.3, 1.7, 2.2, 3], cost: [500, 1200, 2500, 5000], fmt: (v) => '稀有豆 ×' + v },
-  mgrShop: { tab: 1, name: '店長', noLv: true, ic: 'mgr', emo: '👔', need: 'cashier', vals: [0, 1, 2, 3], cost: [1200, 4000, 12000], fmt: (v) => ['還沒請店長', '店長：市集結帳更快、客人給小費', '資深店長：小費更多、客人更有耐心', '金牌店長：小費最多、收銀台的錢自動入袋'][v] },
+  mgrShop: { tab: 1, name: '店長', noLv: true, ic: 'mgr', emo: '👔', need: 'cashier', vals: [0, 1, 2, 3], cost: [1200, 4000, 12000], fmt: (v) => ['還沒請店長', '店長：咖啡屋結帳更快、客人給小費', '資深店長：小費更多、客人更有耐心', '金牌店長：小費最多、櫃台的錢自動入袋'][v] },
   mgrFarm: { tab: 1, name: '莊園主管', noLv: true, ic: 'mgr', emo: '🧢', need: 'picker', vals: [0, 1, 2, 3], cost: [1000, 3500, 10000], fmt: (v) => ['還沒請莊園主管', '主管：採豆工、烘豆師、烘焙師走更快', '資深主管：一次拿更多', '金牌主管：又快又能拿'][v] },
   price: { tab: 4, name: '商品售價', ic: 'money', need: 'cashier', vals: [1, 1.2, 1.4, 1.6, 1.85, 2.1, 2.4], cost: [200, 500, 1100, 2400, 5000, 10000], fmt: (v) => '×' + v },
-  shelfCap: { tab: 4, name: '貨架容量', ic: 'roasted', need: 'cashier', vals: [8, 12, 16, 24, 32, 40], cost: [150, 400, 900, 1800, 3600], fmt: (v) => v + ' 個' },
+  shelfCap: { tab: 4, name: '展示架容量', ic: 'roasted', need: 'cashier', vals: [8, 16, 24, 32, 40, 50], cost: [150, 400, 900, 1800, 3600], fmt: (v) => v + ' 個' + (v > 40 ? '・展示架加高' : '') },
   cust: { tab: 4, name: '客人數量', ic: 'run', need: 'cashier', vals: [1, 1.2, 1.4, 1.6, 1.8, 2], cost: [300, 700, 1400, 2600, 4500], fmt: (v) => '×' + v },
   look: { tab: 4, name: '商店外觀', ic: 'shop', emo: '🏪', need: 'counter', vals: [0, 1, 2, 3], cost: [800, 3000, 9000], fmt: (v) => SHOP_LOOKS[v].name + ['', '・雨棚花台', '・燈串燈柱', '・紅地毯旗幟'][v] + (v ? '，客人更多、賣更貴' : '') },
-  floor: { tab: 4, name: '地板翻新', ic: 'shop', emo: '🧱', need: 'counter', vals: [0, 1, 2, 3], cost: [600, 2400, 7000], fmt: (v) => ['原本的地板', '溫暖木地板', '奶油格子磚', '大理石＋金邊'][v] + (v ? '，客人更多' : '') },
+  floor: { tab: 4, name: '地板翻新', ic: 'shop', emo: '🧱', need: 'counter', vals: [0, 1, 2, 3], cost: [600, 2400, 7000], fmt: (v) => ['原木地板', '深色人字木地板', '復古花磚', '大理石＋金邊'][v] + (v ? '，客人更多' : '') },
   ad: { tab: 4, name: '路邊廣告牌', ic: 'shop', emo: '🪧', need: 'cashier', vals: [0, 1, 2, 3], cost: [500, 2000, 6500], fmt: (v) => ['沒有廣告', '木頭立牌', '大型看板', '發光看板'][v] + (v ? '，路過的人更多' : '') },
-  basket: { tab: 4, name: '購物籃架', ic: 'bk', emo: '🧺', need: 'cashier', noLv: true, vals: [1, 1.35, 1.7], cost: [800, 2500], fmt: (v) => ['還沒有購物籃', '購物籃：客人提著籃子，走更快、拿更快', '購物車：客人推著車，又快又順'][v === 1 ? 0 : v < 1.5 ? 1 : 2] },
+  basket: { tab: 4, name: '提籃和推車', ic: 'bk', emo: '🧺', need: 'cashier', noLv: true, vals: [1, 1.35, 1.7], cost: [800, 2500], fmt: (v) => ['還沒有提籃', '提籃：客人提著籃子走更快，買很多的推推車', '更好的推車：大家又快又順'][v === 1 ? 0 : v < 1.5 ? 1 : 2] },
   eat: { tab: 3, name: '品嚐速度', ic: 'latte', need: 'restaurant', vals: [7, 6, 5, 4, 3.2, 2.5], cost: [300, 700, 1400, 2600, 4500], fmt: (v) => v + ' 秒喝完' },
   tip: { tab: 3, name: '拉花技巧（小費）', ic: 'latte', need: 'restaurant', vals: [0, 2, 4, 7, 10, 15], cost: [400, 900, 1800, 3500, 6000], fmt: (v) => '+' + v },
   autoCash: { tab: 3, name: '自動收款', ic: 'money', need: 'waiter2', vals: [0, 1], cost: [6000], fmt: (v) => v ? '錢自動入袋' : '要自己收錢' },
@@ -325,7 +350,7 @@ const machK = (id) => (GROW[id] && GROW[id].mach ? 1 + 0.4 * (lvlOf(id) - 1) : 1
 
 // ---------- save ----------
 const SAVE = 'cafe_save_v1';
-let resetting = false;
+let resetting = false, booting = true;   // no saving while the save is being rebuilt at start (piles would read 0)
 const blank = () => ({ questSeen: false, money: 50, built: [], paid: {}, up: {}, stock: {}, store: {}, lvl: {}, piles: [0], tpiles: {}, earned: 0, log: {}, logPaid: {}, logNew: false, extra: {} });
 const state = Object.assign(blank(), { sound: true });
 try { Object.assign(state, JSON.parse(localStorage.getItem(SAVE) || '{}')); } catch (e) { /* fresh start */ }
@@ -335,6 +360,7 @@ for (const k of ['store', 'lvl', 'tpiles', 'stock', 'paid', 'up', 'log', 'logPai
 if (state.up.paySpeed) { const back = [200, 500, 1100, 2200, 4000].slice(0, state.up.paySpeed).reduce((a, b) => a + b, 0); state.money += back; delete state.up.paySpeed; setTimeout(() => toast('結帳恢復原本速度，退還收銀速度升級 $' + back), 2500); }
 for (const k in UPS) state.up[k] = Math.min(state.up[k] || 0, UPS[k].vals.length - 1);
 const isBuilt = (id) => state.built.includes(id);
+if (state.built.includes('dept') && !state.built.includes('door2')) state.built.push('door2');
 // backup code: every map's save in one base64 string (same format and keys as the farm, so a code works on every map)
 const SAVE_KEYS = ['farm_save_v2', 'harbor_save_v1', 'forest_save_v1', 'cafe_save_v1', 'farm_maps_v1'];
 function exportSave() {
@@ -360,7 +386,7 @@ function copyText(ta) {
 }
 if (state.built.length > 3) state.questSeen = true;
 function save() {
-  if (resetting) return;
+  if (resetting || booting) return;
   for (const id in stations) {
     const s = stations[id];
     if (s.kind === 'machine') state.stock[id] = { a: s.inN, c: s.inN2 || 0, l: s.outBin.list, i: s.inBin ? s.inBin.list : null };
@@ -423,7 +449,13 @@ function navPath(sx, sz, tx, tz, exact) {
   if (exact && (!l || Math.hypot(l[0] - tx, l[1] - tz) > 0.05)) r.push([tx, tz]);
   return r;
 }
-function setGoal(c, x, z, exact) { c.goal = [x, z, exact]; c.navV = navV; const p = c.p.root.position; c.path = navPath(p.x, p.z, x, z, exact); }
+// phones: at most NAV_BUDGET grid searches per frame; whoever is over the budget plans a frame later (and stands still)
+const NAV_BUDGET = 4;
+let navLeft = NAV_BUDGET;
+const navStats = { calls: 0, deferred: 0, maxWait: 0 };
+function navTake() { if (navLeft <= 0) { navStats.deferred++; return false; } navLeft--; navStats.calls++; return true; }
+// the path is planned lazily (stepPath), so a crowd that all wants a new goal at once is spread over a few frames
+function setGoal(c, x, z, exact) { c.goal = [x, z, exact]; c.navV = -1; c.path = []; }
 // something new was built on top of someone: step them out to the nearest side
 function evict() {
   const all = [...workers, ...customers, ...diners.filter((d) => d.st !== 'sit')];
@@ -472,15 +504,36 @@ function makeIcons() {
 makeIcons();
 
 // ---------- static world ----------
-const shopDoor = { d: null, k: 0 };
-const shopDoor2 = { d: null, k: 0 };
 const backWall = { g: null, b: null };
 let mFront = { g: null, b: [] }, deptG = null;
+const doorOpen = (D) => !D.id || isBuilt(D.id);
+const CF = P6.CAFE;
+// honey oak plank floor: rows of planks, every other row shifted by half a plank
+function planks(g, x0, x1, z0, z1, cols = ['#c49565', '#b98a5b', '#cc9f6f'], y = 0.125) {
+  for (let z = z0, k = 0; z < z1 - 0.05; z += 0.5, k++) {
+    const d = Math.min(0.5, z1 - z) - 0.03, edges = [x0];
+    for (let e = x0 + (k % 2 ? 1.0 : 2.0); e < x1 - 0.1; e += 2.0) edges.push(e);
+    edges.push(x1);
+    for (let j = 0; j < edges.length - 1; j++) K.add(g, K.mesh(G.plane(edges[j + 1] - edges[j] - 0.03, d), cols[(k + j) % cols.length], false, true), (edges[j] + edges[j + 1]) / 2, y, z + d / 2 + 0.015);
+  }
+}
+// brick wall piece with a walnut beam on top
+function brickPiece(g, w, h, d, x, z, beam = true) {
+  K.add(g, P6.brickWall(w, h, d), x, h / 2, z);
+  if (beam) K.add(g, K.mesh(G.rbox(w + 0.06, 0.16, d + 0.08, 0.04), CF.walnut), x, h, z);
+}
+// café table out on the terrace: a bistro table with a parasol
+function terraceTable(col) {
+  const t = P6.bistroTable('#f4e6cf');
+  K.add(t.g, K.mesh(G.cyl(0.03, 0.03, 1.5, 6), CF.iron), 0, 1.5, 0);
+  K.add(t.g, K.mesh(G.cone(1.05, 0.42, 12), col), 0, 2.35, 0);
+  K.add(t.g, K.mesh(G.cyl(0.06, 0.06, 0.08, 8), CF.walnut), 0, 2.6, 0);
+  return t.g;
+}
 const standSign = { g: null, board: null };
 const south = { g: null, bar: null };
 function shopPot(x, z) {
-  const pot = new THREE.Group(); pot.position.set(x, 0.12, z);
-  K.add(pot, K.mesh(G.cyl(0.3, 0.22, 0.42, 10), C.roof), 0, 0.21, 0); K.add(pot, P.bush(0.34), 0, 0.38, 0);
+  const pot = P6.pottedPlant(1.1); pot.position.set(x, 0.12, z);
   return pot;
 }
 const areas = [];
@@ -504,39 +557,28 @@ function buildWorld() {
   // stone paths: the hill road past the market and the café, up to the market door, the guests' path, and yard lanes
   const path = (x, z, w, d, col = '#ddd3c2') => K.add(D, K.mesh(G.rbox(w, 0.05, d, 0.2, 1), col, false, true), x, 0.025, z);
   path(0, -4.9, 25.8, 1.5);
-  path(6.5, -6.3, 2.2, 1.4);   // up to the market door
   path(-12.4, 4.5, 1.3, 17.4);   // café guests' path from the south-west
   path(7.6, 12.6, 1.2, 33.2);   // lane between the machines and the terraces
   path(2.0, 15.9, 1.4, 27.2);
   path(-4.0, 15.9, 1.4, 27.2);
-  // market shell (山城市集)
+  // 山城咖啡屋 shell: honey oak floor, brick walls with walnut beams (the front is rebuilt by marketFront)
   const cx = (SHOP.x0 + SHOP.x1) / 2, w = SHOP.x1 - SHOP.x0 + 0.4;
-  K.add(D, K.mesh(G.rbox(w, 0.12, 10.4, 0.06, 2), '#f3e6d0', false, true), cx, 0.06, -12.2);
-  for (let x = SHOP.x0; x < SHOP.x1 - 0.8; x += 1.6) for (let z = -17.2; z < -8; z += 1.6) if ((Math.round(x / 1.6) + Math.round(z / 1.6)) % 2 === 0) K.add(D, K.mesh(G.plane(1.58, 1.58), '#e6d5ba', false, true), x + 0.8, 0.125, z + 0.8);
-  K.add(D, K.mesh(G.rbox(w, 0.05, 0.6, 0.03, 1), '#e6d5ba', false, true), cx, 0.125, -7.3);
-  // the back wall (with its sign, windows and the two corner pots) is its own group: the 百貨公司 removes it and builds one further back
+  K.add(D, K.mesh(G.rbox(w, 0.12, 10.4, 0.06, 2), '#a8784c', false, true), cx, 0.06, -12.2);
+  planks(D, SHOP.x0 - 0.15, SHOP.x1 + 0.15, -17.4, -7.45);
+  K.add(D, K.mesh(G.rbox(w, 0.05, 0.6, 0.03, 1), CF.walnut, false, true), cx, 0.125, -7.3);
+  // the back wall is its own group: the 咖啡屋擴建 takes it down and builds the 烘豆工坊 behind
   const BW = backWall.g = K.add(scene, new THREE.Group());
-  K.add(BW, K.mesh(G.rbox(w, 2.0, 0.4, 0.08), '#fbf3e4'), cx, 1.0, -17.6);
-  K.add(BW, K.mesh(G.rbox(w + 0.1, 0.22, 0.46, 0.05), '#59a14f'), cx, 2.0, -17.6);
-  K.add(BW, K.mesh(G.rbox(w + 0.05, 0.16, 0.44, 0.04), '#c98a55'), cx, 0.5, -17.6);
-  for (const x of [-6.5, -1, 4.5]) K.add(BW, K.mesh(G.rbox(2.4, 0.8, 0.08, 0.06), '#bfe9ff'), x, 1.25, -17.38);
-  for (const x of [SHOP.x0 - 0.2, SHOP.x1]) {
-    K.add(D, K.mesh(G.rbox(0.4, 2.0, 10.4, 0.08), '#fbf3e4'), x, 1.0, -12.4);
-    K.add(D, K.mesh(G.rbox(0.46, 0.22, 10.5, 0.05), '#59a14f'), x, 2.0, -12.4);
-  }
+  brickPiece(BW, w, 2.0, 0.4, cx, -17.6);
+  for (const x of [SHOP.x0 - 0.2, SHOP.x1]) brickPiece(D, 0.4, 2.0, 10.4, x, -12.4);
   backWall.b = box(SHOP.x0 - 0.4, -17.8, SHOP.x1 + 0.2, -17.4); box(SHOP.x0 - 0.4, -17.6, SHOP.x0, -7.2); box(SHOP.x1 - 0.2, -17.6, SHOP.x1 + 0.2, -7.2);
-  const wallPiece = (x0, x1, z) => {
-    K.add(D, K.mesh(G.rbox(x1 - x0, 0.55, 0.3, 0.08), '#fbf3e4'), (x0 + x1) / 2, 0.28, z);
-    K.add(D, K.mesh(G.rbox(x1 - x0 - 0.1, 0.62, 0.12, 0.04), '#cfeeff'), (x0 + x1) / 2, 0.85, z);
-    K.add(D, K.mesh(G.rbox(x1 - x0, 0.14, 0.32, 0.05), '#59a14f'), (x0 + x1) / 2, 1.2, z);
-    box(x0, z - 0.2, x1, z + 0.2);
-  };
-  wallPiece(7.65, SHOP.x1 + 0.2, -7.3);   // the rest of the front glass is rebuilt by marketFront (a 2nd door comes with the 百貨公司)
-  const sign = P2.signBoard('山城市集', 4, '#59a14f'); sign.position.set(cx, 2.75, -17.55); BW.add(sign);
-  for (const [x, z] of [[SHOP.x0 + 0.6, -16.8], [7.2, -16.8]]) BW.add(shopPot(x, z));
+  // terrace across the road: a wooden deck with parasol tables
+  K.add(D, K.mesh(G.rbox(4.4, 0.04, 2.5, 0.03, 1), CF.oak, false, true), 4.6, 0.02, -2.45);
+  for (let x = 2.65; x < 6.7; x += 0.5) K.add(D, K.mesh(G.plane(0.02, 2.4), CF.walnut, false, true), x, 0.042, -2.45);
+  for (const [x, c] of [[3.45, CF.terra], [5.75, CF.sage]]) { const t = terraceTable(c); t.position.set(x, 0.04, -2.45); D.add(t); box(x - 0.6, -3.65, x + 0.6, -1.25); }
+  { const pl = P6.pottedPlant(0.9); pl.position.set(2.2, 0, -3.35); D.add(pl); box(1.92, -3.63, 2.48, -3.07); }
   // decoration: trees around the estate, rocks, bushes, flowers, lamps, parasol tables on the lawn
   const tree = (x, z, kind, s, solid) => { const t = P5.decoTree(kind, s); t.position.set(x, 0, z); D.add(t); if (solid) box(x - 0.3, z - 0.3, x + 0.3, z + 0.3); };
-  // the row of trees behind the market stands further back (z -27.5 or more), out of the way of the 百貨公司's back rooms
+  // the row of trees behind the market stands further back (z -27.5 or more), out of the way of the 烘豆工坊 behind the café
   for (let i = 0; i < 24; i++) {
     const x = -42 + i * 2.4 + rnd(), z = -20.5 - rnd() * 2.5, kind = rnd() < 0.6 ? 'pine' : 'oak', s = 0.9 + rnd() * 0.4;
     tree(x, x > -12.5 && x < 10.5 ? z - 14 : x <= -12.5 ? z - 3.5 : z, kind, s, false);
@@ -573,65 +615,88 @@ function buildWorld() {
   const shopA = makeArea(SHOP.x0, SHOP.z0, SHOP.x1, SHOP.z1, [], -0.7, -12);
   K.bake(D, scene);
   K.bakeStatic(BW);
-  marketFront(isBuilt('dept'));
-  // the market's sliding door and lamps
-  shopDoor.d = P2.slidingDoor(2.1); shopDoor.d.g.position.set(6.5, 0.1, -7.3); scene.add(shopDoor.d.g);
-  for (const x of [-6.5, -1, 4.5]) { const l = P2.wallLamp(); l.g.position.set(x, 1.75, -17.3); scene.add(l.g); shopA.lamps.push(l); }
+  marketFront();
+  buildInterior();
   shopArea = shopA;
   buildBin();
   // the shop's name sign by the door stays outside the baked scenery so the 商店外觀 upgrade can repaint it
-  standSign.g = K.add(scene, new THREE.Group(), 3.3, 0, -6.25);
-  K.add(standSign.g, K.mesh(G.rbox(0.14, 1.6, 0.14, 0.04), C.woodDark), 0, 0.8, 0);
-  box(3.2, -6.35, 3.4, -6.15);
+  standSign.g = K.add(scene, new THREE.Group(), 8.75, 0, -6.5);
+  K.add(standSign.g, K.mesh(G.rbox(0.14, 1.6, 0.14, 0.04), CF.walnut), 0, 0.8, 0);
+  box(8.65, -6.6, 8.85, -6.4);
   // morning mist drifting over the hillside
   const mm = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.1, depthWrite: false });
   for (let i = 0; i < 4; i++) { const m = new THREE.Mesh(G.circle(5, 20), mm); m.scale.set(2.2, 1, 0.8); m.position.set(-40 + i * 18, 3.4 + i * 0.3, -8 + i * 11); m.renderOrder = 3; m.userData.v = 0.5 + i * 0.15; scene.add(m); mist.push(m); }
 }
-// market front wall (low glass), with a gap and a 2nd sliding door at DOOR2_X once the 百貨公司 is built
-function marketFront(withDoor) {
+// the café front (z -7.3): brick base, big windows with walnut frames, and a gap with a wooden glass door for every
+// entrance that is open (the main door, 第二道門, 第三道門)
+function marketFront() {
   if (mFront.g) scene.remove(mFront.g);
   for (const b of mFront.b) unbox(b);
   const g = K.add(scene, new THREE.Group()); mFront = { g, b: [] };
   const piece = (x0, x1) => {
-    K.add(g, K.mesh(G.rbox(x1 - x0, 0.55, 0.3, 0.08), '#fbf3e4'), (x0 + x1) / 2, 0.28, -7.3);
-    K.add(g, K.mesh(G.rbox(x1 - x0 - 0.1, 0.62, 0.12, 0.04), '#cfeeff'), (x0 + x1) / 2, 0.85, -7.3);
-    K.add(g, K.mesh(G.rbox(x1 - x0, 0.14, 0.32, 0.05), '#59a14f'), (x0 + x1) / 2, 1.2, -7.3);
+    if (x1 - x0 < 0.05) return;
+    const mx = (x0 + x1) / 2, len = x1 - x0;
+    K.add(g, P6.brickWall(len, 0.55, 0.3), mx, 0.28, -7.3);
+    K.add(g, K.mesh(G.rbox(Math.max(0.05, len - 0.1), 0.62, 0.08, 0.03), '#d6eef5'), mx, 0.86, -7.3);
+    K.add(g, K.mesh(G.rbox(len, 0.14, 0.32, 0.05), CF.walnut), mx, 1.22, -7.3);
+    const n = Math.max(1, Math.round(len / 1.2));
+    for (let i = 0; i <= n; i++) K.add(g, K.mesh(G.rbox(0.09, 0.66, 0.14, 0.02), CF.walnut), x0 + 0.05 + (len - 0.1) * i / n, 0.86, -7.3);
     mFront.b.push(box(x0, -7.5, x1, -7.1));
   };
-  if (withDoor) {
-    piece(SHOP.x0 - 0.4, DOOR2_X - 1.15); piece(DOOR2_X + 1.15, 5.35);
-    K.add(g, K.mesh(G.rbox(2.2, 0.05, 1.4, 0.2, 1), '#ddd3c2', false, true), DOOR2_X, 0.025, -6.3);   // stone step up from the road
-    const fs = P2.signBoard('百貨公司', 2.2, '#a98bff'); fs.position.set(DOOR2_X, 2.2, -7.3); g.add(fs);
-  } else piece(SHOP.x0 - 0.4, 5.35);
+  let x = SHOP.x0 - 0.4;
+  for (const D of DOORS.filter(doorOpen).sort((a, b) => a.x - b.x)) {
+    const a = D.x - D.w / 2 - 0.05, b = D.x + D.w / 2 + 0.05;
+    piece(x, a); x = b;
+    K.add(g, K.mesh(G.rbox(D.w + 0.3, 0.05, 1.3, 0.2, 1), '#d9b49a', false, true), D.x, 0.025, -6.35);   // tiled step up from the road
+    if (!D.d) { D.d = P6.cafeDoor(D.w); D.d.g.position.set(D.x, 0.1, -7.3); scene.add(D.d.g); K.bakeStatic(D.d.g); if (D.id && !simming) popIn(D.d.g); }
+  }
+  piece(x, SHOP.x1 + 0.2);
+  const sg = P6.cafeSign('山城咖啡屋', 2.6, CF.walnut); sg.position.set(DOORS[0].x, 2.35, -7.25); g.add(sg);
   K.bakeStatic(g);
-  if (withDoor && !shopDoor2.d) { shopDoor2.d = P2.slidingDoor(2.1); shopDoor2.d.g.position.set(DOOR2_X, 0.1, -7.3); scene.add(shopDoor2.d.g); }
 }
-// the 百貨公司: the back wall moves from z -17.6 to DEPT_Z, with new floor, side walls, windows, lamps and a big purple sign
+// inside the front room: the back bar with the menus, bistro tables on rugs, plants and coffee sacks
+function buildInterior() {
+  const g = K.add(scene, new THREE.Group());
+  const bb = P6.backBar(7.0); bb.position.set(0.85, 0.12, -17.25); g.add(bb);
+  box(-2.65, -17.45, 4.35, -17.05);
+  for (const [x, z] of [[-4.3, -11.9], [2.4, -11.9]]) {
+    K.add(g, K.mesh(G.circle(1.35, 28), CF.terra, false, true), x, 0.142, z).scale.set(1, 1, 0.62);
+    K.add(g, K.mesh(G.circle(1.15, 28), '#e9c9a4', false, true), x, 0.145, z).scale.set(1, 1, 0.58);
+    const t = P6.bistroTable(); t.g.position.set(x, 0.12, z); t.g.rotation.y = Math.PI / 2; g.add(t.g);
+    box(x - 1.2, z - 0.58, x + 1.2, z + 0.58);
+  }
+  for (const [x, z] of [[7.45, -16.9], [-8.85, -8.4]]) { g.add(shopPot(x, z)); box(x - 0.3, z - 0.3, x + 0.3, z + 0.3); }
+  const sk = P6.beanSacks(); sk.position.set(-8.85, 0.12, -15.1); g.add(sk); box(-9.35, -15.5, -8.35, -14.7);
+  const af = P6.aFrame('今日推薦', ['手沖精品豆', '拿鐵 $', '現烤可頌']); af.position.set(3.6, 0, -6.15); af.rotation.y = 0.15; g.add(af); box(3.3, -6.4, 3.9, -5.9);
+  K.bakeStatic(g);
+}
+// 咖啡屋擴建: the back wall comes down, the 烘豆工坊 hall opens behind it (floor, brick walls, a sign) and a brick
+// spine stays between the two rooms on the west side, with displays on both faces
 function applyDept(anim) {
   if (!isBuilt('dept') || deptG) return;
   if (backWall.g) { scene.remove(backWall.g); backWall.g = null; }
   if (backWall.b) { unbox(backWall.b); backWall.b = null; }
   const g = K.add(scene, new THREE.Group());
   const cx = (SHOP.x0 + SHOP.x1) / 2, w = SHOP.x1 - SHOP.x0 + 0.4, zf = DEPT_Z - 0.2, zMid = (-17.4 + zf) / 2, dz = -17.4 - zf;
-  K.add(g, K.mesh(G.rbox(w, 0.12, dz, 0.06, 2), '#f3e6d0', false, true), cx, 0.06, zMid);
-  for (let x = SHOP.x0; x < SHOP.x1 - 0.8; x += 1.6) for (let z = DEPT_Z + 0.4; z < -17.4; z += 1.6) if ((Math.round(x / 1.6) + Math.round(z / 1.6)) % 2 === 0) K.add(g, K.mesh(G.plane(1.58, 1.58), '#e6d5ba', false, true), x + 0.8, 0.125, z + 0.8);
-  K.add(g, K.mesh(G.rbox(w, 0.05, 0.6, 0.03, 1), '#e6d5ba', false, true), cx, 0.13, -17.45);   // a band where the old wall stood
-  K.add(g, K.mesh(G.rbox(w, 2.0, 0.4, 0.08), '#fbf3e4'), cx, 1.0, DEPT_Z);
-  K.add(g, K.mesh(G.rbox(w + 0.1, 0.22, 0.46, 0.05), '#59a14f'), cx, 2.0, DEPT_Z);
-  K.add(g, K.mesh(G.rbox(w + 0.05, 0.16, 0.44, 0.04), '#c98a55'), cx, 0.5, DEPT_Z);
-  for (const x of [-6.5, -1, 4.5]) K.add(g, K.mesh(G.rbox(2.4, 0.8, 0.08, 0.06), '#bfe9ff'), x, 1.25, DEPT_Z + 0.22);
+  K.add(g, K.mesh(G.rbox(w, 0.12, dz, 0.06, 2), '#a8784c', false, true), cx, 0.06, zMid);
+  planks(g, SHOP.x0 - 0.15, SHOP.x1 + 0.15, DEPT_Z + 0.2, -17.4);
+  K.add(g, K.mesh(G.rbox(w, 0.05, 0.5, 0.03, 1), CF.walnut, false, true), cx, 0.13, -17.45);   // a walnut band where the old wall stood
+  brickPiece(g, 5.7, 2.0, 0.4, (SHOP.x0 - 0.4 - 4.1) / 2 + 0.2, -17.6);   // the spine
+  brickPiece(g, w, 2.0, 0.4, cx, DEPT_Z);
   const sl = -17.6 - (DEPT_Z - 0.2), sz = (-17.6 + DEPT_Z - 0.2) / 2;
-  for (const x of [SHOP.x0 - 0.2, SHOP.x1]) {
-    K.add(g, K.mesh(G.rbox(0.4, 2.0, sl, 0.08), '#fbf3e4'), x, 1.0, sz);
-    K.add(g, K.mesh(G.rbox(0.46, 0.22, sl + 0.1, 0.05), '#59a14f'), x, 2.0, sz);
-  }
-  const sign = P2.signBoard('百貨公司', 5.4, '#a98bff'); sign.position.set(cx, 2.75, DEPT_Z + 0.05); g.add(sign);
-  for (const [x, z] of [[SHOP.x0 + 0.6, DEPT_Z + 0.8], [7.2, DEPT_Z + 0.8]]) { g.add(shopPot(x, z)); box(x - 0.32, z - 0.32, x + 0.32, z + 0.32); }
+  for (const x of [SHOP.x0 - 0.2, SHOP.x1]) brickPiece(g, 0.4, 2.0, sl, x, sz);
+  const sign = P6.cafeSign('烘豆工坊', 4.6, CF.sageDark); sign.position.set(cx, 3.45, DEPT_Z + 0.05); g.add(sign);
+  for (const sx of [-1.6, 1.6]) K.add(g, K.mesh(G.rbox(0.14, 0.95, 0.14, 0.03), CF.walnut), cx + sx, 2.45, DEPT_Z);
+  for (const [x, z] of [[-8.9, -20.1], [-8.95, -30.35]]) { g.add(shopPot(x, z)); box(x - 0.3, z - 0.3, x + 0.3, z + 0.3); }
+  const sk = P6.beanSacks(); sk.position.set(7.4, 0.12, -30.6); g.add(sk); box(6.9, -31.0, 7.9, -30.2);
+  // a tasting table on a rug in the front part of the hall
+  K.add(g, K.mesh(G.circle(1.35, 28), CF.sage, false, true), 2.2, 0.142, -20.0).scale.set(1, 1, 0.62);
+  K.add(g, K.mesh(G.circle(1.15, 28), '#e9c9a4', false, true), 2.2, 0.145, -20.0).scale.set(1, 1, 0.58);
+  const tt = P6.bistroTable(); tt.g.position.set(2.2, 0.12, -20.0); tt.g.rotation.y = Math.PI / 2; g.add(tt.g); box(1.0, -20.58, 3.4, -19.42);
+  box(SHOP.x0 - 0.4, -17.8, -4.1, -17.4);
   box(SHOP.x0 - 0.4, DEPT_Z - 0.2, SHOP.x1 + 0.2, DEPT_Z + 0.2); box(SHOP.x0 - 0.4, DEPT_Z, SHOP.x0, -17.4); box(SHOP.x1 - 0.2, DEPT_Z, SHOP.x1 + 0.2, -17.4);
-  for (const l of shopArea.lamps) l.g.position.z = DEPT_Z + 0.3;
   SHOP.z0 = DEPT_Z + 0.2; shopArea.z0 = SHOP.z0; shopArea.light.position.z = -20.0; shopArea.light.distance = 40;
   K.bakeStatic(g); deptG = g;
-  marketFront(true);
   if (state.up.floor) applyFloor(false);
   if (state.up.basket) applyBasket(false);
   if (anim) for (let x = SHOP.x0 + 1; x < SHOP.x1; x += 2.5) puff(x, 1.4, DEPT_Z + 0.7, '#ffffff', 6, 1);
@@ -714,8 +779,8 @@ function maxTag(c) {
   c.maxL.show = c.carry.length > 0 && c.carry.length + c.incoming >= c.cap();
 }
 
-// ---------- shop upgrades: 商店外觀, 地板翻新, 路邊廣告牌, 收銀台升級, 購物籃架 ----------
-// the front of the market: the glass wall runs from SHOP.x0 to 7.95 with the door at x 6.5 (and DOOR2_X after the 百貨公司)
+// ---------- shop upgrades: 商店外觀, 地板翻新, 路邊廣告牌, 提籃和推車 ----------
+// the front of the café: windows from SHOP.x0 to 8.15 with the doors in DOORS (main door at x 5.9)
 let lookG = null, lookBoxes = [];
 function bulbs(x0, x1, z) {
   const g = new THREE.Group(), cols = ['#ffd34a', '#ff8a6b', '#9fd86b', '#5aa9ff'];
@@ -729,7 +794,7 @@ function bulbs(x0, x1, z) {
 function applyShopLook(anim) {
   const lv = state.up.look || 0, L = SHOP_LOOKS[lv];
   if (standSign.board) standSign.g.remove(standSign.board);
-  standSign.board = P2.signBoard(L.name, 1.6 + lv * 0.4, L.col); standSign.board.position.set(0, 1.75, 0); standSign.g.add(standSign.board);
+  standSign.board = P6.cafeSign(L.name, 1.8 + lv * 0.3, L.col); standSign.board.position.set(0, 1.75, 0); standSign.g.add(standSign.board);
   if (lv === 3) { const st = K.mesh(G.sphere(0.2, 10, 8), '#ffd34a'); st.scale.set(1, 1, 0.4); K.add(standSign.board, st, 0, 0.72, 0); }
   if (lookG) { scene.remove(lookG); lookG = null; }
   for (const b of lookBoxes) unbox(b);
@@ -746,11 +811,11 @@ function applyShopLook(anim) {
     K.add(g, K.mesh(G.sphere(w * 0.5, 8, 5), col, false), x, 1.52, Z + 0.92).scale.set(1, 0.55, 0.3);
   }
   K.add(g, K.mesh(G.rbox(x1 - x0 + 0.1, 0.12, 0.16, 0.05), lv === 3 ? '#ffd34a' : C.white), (x0 + x1) / 2, 1.9, Z - 0.02);
-  // flower planters against the glass, never in front of a door (the 2nd door opens at DOOR2_X with the 百貨公司)
+  // flower planters against the windows, never in front of one of the three doors
   const fl = ['#ff7eb6', '#ffd34a', '#a98bff', '#ffffff', '#ff8a6b'];
-  [-8.5, -3.4, -0.2, 2.1].forEach((x, k) => {
+  [-8.85, -4.05, 0.8, 2.75].forEach((x, k) => {
     const pl = K.add(g, new THREE.Group(), x, 0, Z + 0.42);
-    K.add(pl, K.mesh(G.rbox(1.5, 0.42, 0.5, 0.08), lv === 3 ? '#fbfaf5' : C.woodLight), 0, 0.21, 0);
+    K.add(pl, K.mesh(G.rbox(1.5, 0.42, 0.5, 0.08), lv === 3 ? CF.cream : CF.terra), 0, 0.21, 0);
     K.add(pl, K.mesh(G.rbox(1.38, 0.06, 0.4, 0.03, 1), '#8b5a3c', false), 0, 0.43, 0);
     for (let j = 0; j < 5; j++) { const f = P.flower(fl[(k + j) % 5]); f.position.set(-0.56 + j * 0.28, 0.42, (j % 2) * 0.1 - 0.05); f.scale.setScalar(1.3); pl.add(f); }
     lookBoxes.push(box(x - 0.8, Z + 0.15, x + 0.8, Z + 0.7));
@@ -758,7 +823,7 @@ function applyShopLook(anim) {
   if (lv >= 2) {
     // colourful string lights hanging from the awning, and a lantern post each side of the door
     g.add(bulbs(x0, x1, Z + 0.95));
-    for (const x of [4.95, 8.35]) {
+    for (const x of [4.1, 7.75]) {
       const p = K.add(g, new THREE.Group(), x, 0, Z + 0.62);
       K.add(p, K.mesh(G.rbox(0.36, 0.18, 0.36, 0.05), '#6a7382'), 0, 0.09, 0);
       K.add(p, K.mesh(G.cyl(0.06, 0.07, 1.5, 8), '#6a7382'), 0, 0.85, 0);
@@ -769,9 +834,9 @@ function applyShopLook(anim) {
   }
   if (lv >= 3) {
     // red carpet from the door down to the road, and two flags
-    K.add(g, K.mesh(G.rbox(1.5, 0.03, 1.9, 0.02, 1), '#e8494d', false, true), 6.5, 0.075, -5.95);
-    K.add(g, K.mesh(G.rbox(1.62, 0.025, 2.0, 0.02, 1), '#ffd34a', false, true), 6.5, 0.062, -5.95);
-    for (const [x, c] of [[4.95, '#8b5a3c'], [8.35, '#ff7eb6']]) {
+    K.add(g, K.mesh(G.rbox(2.0, 0.03, 1.9, 0.02, 1), '#a8322e', false, true), DOORS[0].x, 0.075, -5.95);
+    K.add(g, K.mesh(G.rbox(2.12, 0.025, 2.0, 0.02, 1), CF.brass, false, true), DOORS[0].x, 0.062, -5.95);
+    for (const [x, c] of [[4.1, CF.walnut], [7.75, CF.sage]]) {
       K.add(g, K.mesh(G.cyl(0.04, 0.04, 1.1, 6), '#ffd34a'), x, 2.6, Z + 0.62);
       K.add(g, K.mesh(G.rbox(0.62, 0.4, 0.04, 0.02, 1), c), x + 0.33, 2.9, Z + 0.62);
     }
@@ -789,8 +854,8 @@ function applyFloor(anim) {
   const x0 = SHOP.x0 + 0.2, x1 = SHOP.x1 - 0.2, z0 = SHOP.z0, z1 = -7.45, y = 0.134;
   const tile = (x, z, w, d, col) => K.add(g, K.mesh(G.plane(w, d), col, false, true), x, y, z);
   if (lv === 1) {
-    // warm wooden planks, every other row shifted by half a plank
-    const cols = ['#e9b47a', '#dea468', '#f0c08a'];
+    // dark walnut planks, narrow and staggered
+    const cols = ['#8a5c3b', '#9c6a45', '#7d5234'];
     for (let z = z0, k = 0; z < z1 - 0.05; z += 0.55, k++) {
       const d = Math.min(0.55, z1 - z) - 0.03, edges = [x0];
       for (let e = x0 + (k % 2 ? 1.2 : 2.4); e < x1 - 0.1; e += 2.4) edges.push(e);
@@ -799,7 +864,7 @@ function applyFloor(anim) {
     }
   } else {
     // lv2 cream checker, lv3 marble with a gold frame
-    const sz = lv === 2 ? 1.0 : 1.6, a = lv === 2 ? '#fff4e2' : '#f6f2ea', b = lv === 2 ? '#ead9bf' : '#e3dbcd';
+    const sz = lv === 2 ? 0.8 : 1.6, a = lv === 2 ? '#efe2cb' : '#f6f2ea', b = lv === 2 ? '#d7b291' : '#e3dbcd';
     for (let z = z0, r = 0; z < z1 - 0.05; z += sz, r++) for (let x = x0, c = 0; x < x1 - 0.05; x += sz, c++) {
       const w = Math.min(sz, x1 - x) - 0.03, d = Math.min(sz, z1 - z) - 0.03;
       tile(x + w / 2 + 0.015, z + d / 2 + 0.015, w, d, (r + c) % 2 ? b : a);
@@ -862,39 +927,39 @@ function applyUpgrade(k, anim) {
   if (k === 'floor') applyFloor(anim);
   if (k === 'ad') applyAd(anim);
 }
-// 購物籃架 just inside the door (and the 2nd door of the 百貨公司): red baskets, or baskets and carts
-let basketG = null;
+// 提籃架 just inside the main door: wicker baskets (and carts at Lv2)
+let basketG = null, basketBox = null;
 function applyBasket(anim) {
   if (basketG) { scene.remove(basketG); basketG = null; }
+  if (basketBox) { unbox(basketBox); basketBox = null; }
   const lv = state.up.basket || 0; if (!lv) return;
   const g = K.add(scene, new THREE.Group());
-  const spots = [[7.3, -8.5]];
-  if (shopDoor2.d) spots.push([DOOR2_X - 1.35, -8.0]);
-  for (const [x, z] of spots) {
+  for (const [x, z] of [[7.4, -9.3]]) {
     const st = K.add(g, new THREE.Group(), x, 0.12, z);
     st.add(K.blob(0.45));
-    K.add(st, K.mesh(G.rbox(0.62, 0.08, 0.46, 0.03), '#8f969f'), 0, 0.04, 0);
+    K.add(st, K.mesh(G.rbox(0.62, 0.08, 0.46, 0.03), CF.walnut), 0, 0.04, 0);
     const stacks = lv >= 2 ? [-0.15, 0.17] : [0];
     for (const sz of stacks) for (let k = 0; k < (lv >= 2 ? 4 : 3); k++) {
-      K.add(st, K.mesh(G.rbox(0.5, 0.16, 0.3, 0.05), '#ff5a4e'), 0, 0.16 + k * 0.11, sz);
-      K.add(st, K.mesh(G.rbox(0.42, 0.02, 0.22, 0.01), '#c9322a', false), 0, 0.245 + k * 0.11, sz);
+      K.add(st, K.mesh(G.rbox(0.5, 0.16, 0.3, 0.05), CF.oak), 0, 0.16 + k * 0.11, sz);
+      K.add(st, K.mesh(G.rbox(0.42, 0.02, 0.22, 0.01), CF.walnut, false), 0, 0.245 + k * 0.11, sz);
     }
+    basketBox = box(x - 0.35, z - 0.3, x + 0.35, z + 0.3);
   }
   K.bakeStatic(g); basketG = g;
   if (anim) popIn(g);
 }
 function shopBasket() {
   const g = new THREE.Group(); g.position.set(0.2, -0.25, 0.05);
-  K.add(g, K.mesh(G.rbox(0.36, 0.2, 0.26, 0.05), '#ff5a4e'), 0, 0, 0);
-  K.add(g, K.mesh(G.rbox(0.3, 0.02, 0.2, 0.01), '#c9322a', false), 0, 0.1, 0);
-  const h = K.add(g, K.mesh(G.rbox(0.04, 0.2, 0.04, 0.02), '#d94136'), 0, 0.17, 0); h.rotation.z = 0.2;
+  K.add(g, K.mesh(G.rbox(0.36, 0.2, 0.26, 0.05), CF.oak), 0, 0, 0);
+  K.add(g, K.mesh(G.rbox(0.3, 0.02, 0.2, 0.01), CF.walnut, false), 0, 0.1, 0);
+  const h = K.add(g, K.mesh(G.rbox(0.04, 0.2, 0.04, 0.02), CF.walnut), 0, 0.17, 0); h.rotation.z = 0.2;
   return g;
 }
 function shopCart() {
   const g = new THREE.Group(); g.position.set(0, -0.62, 0.42);
-  K.add(g, K.mesh(G.rbox(0.5, 0.32, 0.6, 0.05), '#cfd6de'), 0, 0.42, 0.12);
-  K.add(g, K.mesh(G.rbox(0.42, 0.03, 0.52, 0.02), '#ff5a4e', false), 0, 0.59, 0.12);
-  K.add(g, K.mesh(G.rbox(0.52, 0.05, 0.06, 0.02), '#ff5a4e'), 0, 0.72, -0.2);
+  K.add(g, K.mesh(G.rbox(0.5, 0.32, 0.6, 0.05), CF.oak), 0, 0.42, 0.12);
+  K.add(g, K.mesh(G.rbox(0.42, 0.03, 0.52, 0.02), CF.terra, false), 0, 0.59, 0.12);
+  K.add(g, K.mesh(G.rbox(0.52, 0.05, 0.06, 0.02), CF.walnut), 0, 0.72, -0.2);
   for (const x of [-0.2, 0.2]) { K.add(g, K.mesh(G.rbox(0.04, 0.32, 0.04, 0.02), '#9aa3ad'), x, 0.56, -0.2); for (const z of [-0.12, 0.36]) K.add(g, K.mesh(G.cyl(0.07, 0.07, 0.05, 10), '#4a4f58'), x, 0.08, z).rotation.z = Math.PI / 2; }
   K.add(g, K.mesh(G.rbox(0.44, 0.04, 0.5, 0.02), '#9aa3ad'), 0, 0.2, 0.12);
   return g;
@@ -910,47 +975,49 @@ function label(cls, html, getPos) {
   labels.push(L);
   return L;
 }
-function setLabel(L, html) { if (L.html !== html) { L.html = html; L.el.innerHTML = html; L.w = 0; } }
+function setLabel(L, html) {
+  if (L.html === html) return;
+  L.html = html;
+  if (L.disp === 0) { L.dirty = true; return; }
+  L.el.innerHTML = html; L.w = 0;
+}
 function dropLabel(L) { L.el.remove(); const i = labels.indexOf(L); if (i >= 0) labels.splice(i, 1); }
 // clearer labels: zone names sit on a soft plate, far-away zones shrink, and labels that would cover
 // each other are nudged upwards (the one nearer the bottom of the screen keeps its place)
 const LBL2 = !params.has('lbl1'); // clearer labels are the default (?lbl1 shows the old look)
 if (LBL2) document.body.classList.add('lbl2');
 const shown = [];
+let lblFrame = 0, lblN = -1;
+const hideL = (L) => { if (L.disp !== 0) { L.disp = 0; L.el.style.display = 'none'; } };
+const showL = (L) => { if (L.disp !== 1) { L.disp = 1; L.el.style.display = ''; if (L.dirty) { L.dirty = false; L.el.innerHTML = L.html; L.w = 0; } } };
 function placeLabels() {
   const w = innerWidth, h = innerHeight, pp = player.p.root.position;
-  shown.length = 0;
+  shown.length = 0; lblFrame++;
+  let moved = false;
   for (const L of labels) {
-    if (!L.show) { L.el.style.display = 'none'; continue; }
+    if (!L.show) { hideL(L); continue; }
     L.getPos(tmpV);
     const dist = Math.hypot(tmpV.x - pp.x, tmpV.z - pp.z);
-    if (L.near && dist > L.near) { L.el.style.display = 'none'; continue; }
+    if (L.near && dist > L.near) { hideL(L); continue; }
     tmpV.project(camera);
-    if (tmpV.z > 1 || tmpV.x < -1.3 || tmpV.x > 1.3 || tmpV.y < -1.3 || tmpV.y > 1.3) { L.el.style.display = 'none'; continue; }
-    L.el.style.display = '';
+    if (tmpV.z > 1 || tmpV.x < -1.3 || tmpV.x > 1.3 || tmpV.y < -1.3 || tmpV.y > 1.3) { hideL(L); continue; }
+    showL(L);
     L.sx = (tmpV.x + 1) / 2 * w; L.sy = (1 - tmpV.y) / 2 * h;
+    // a label that moved less than half a pixel (and was already on screen) needs no new layout
+    const still = L.lastF === lblFrame - 1 && L.w && Math.abs(L.sx - L.px) < 0.5 && Math.abs(L.sy - L.py) < 0.5;
+    L.lastF = lblFrame;
     if (LBL2) {
       const far = L.el.classList.contains('zone') && dist > 1.6;
       if (far !== !!L.far) { L.far = far; L.el.classList.toggle('far', far); L.w = 0; }
       shown.push(L);
-    } else L.el.style.transform = 'translate(' + L.sx.toFixed(1) + 'px,' + L.sy.toFixed(1) + 'px) translate(-50%,-100%)';
+      if (!still) moved = true;
+    } else if (!still) { L.px = L.sx; L.py = L.sy; L.w = 1; L.el.style.transform = 'translate(' + L.sx.toFixed(1) + 'px,' + L.sy.toFixed(1) + 'px) translate(-50%,-100%)'; }
   }
   if (!LBL2) return;
-  shown.sort((a, b) => b.sy - a.sy);
-  const boxes = [];
-  for (const L of shown) {
-    if (!L.w) { L.w = L.el.offsetWidth; L.h = L.el.offsetHeight; }
-    let y = L.sy;
-    const x0 = L.sx - L.w / 2, x1 = L.sx + L.w / 2;
-    // up to a few nudges, never more than ~70px from where it belongs
-    for (let k = 0; k < 4; k++) {
-      let hit = null;
-      for (const b of boxes) if (x0 < b.x1 && x1 > b.x0 && y - L.h < b.y1 && y > b.y0) { hit = b; break; }
-      if (!hit || L.sy - (hit.y0 - 2) > 70) break;
-      y = hit.y0 - 2;
-    }
-    boxes.push({ x0, x1, y0: y - L.h, y1: y });
-    L.el.style.transform = 'translate(' + L.sx.toFixed(1) + 'px,' + y.toFixed(1) + 'px) translate(-50%,-100%)';
+  if (moved || shown.length !== lblN) {
+    K.layoutLabels(shown);
+    for (const L of shown) { L.px = L.sx; L.py = L.sy; }
+    lblN = shown.length;
   }
 }
 const badge = (type, n, max) => ICON[type] + n + '/' + max;
@@ -1038,28 +1105,32 @@ let pFace = 0;
 const legsOf = (p) => p.rig.children.filter((o) => o.isGroup && Math.abs(o.position.y - 0.36) < 1e-3);
 function sitPose(p) { for (const l of legsOf(p)) l.rotation.x = -1.35; }
 
-// ---------- cash counter ----------
-// the market's checkouts: the first by the door, a 2nd one further west in the front aisle (its cash pile sits behind the
-// counters, between the two cashiers) and a 3rd one in the 百貨公司's back hall. dir: the way the line grows along the
-// counter's front, qmax: spots in the first row before a second row forms (so lines never run into shelves or doors)
+// ---------- the coffee bars (點餐櫃台) ----------
+// two bars side by side at the back of the front room (the baristas stand behind them, in front of the back bar) and a
+// third in the middle of the 烘豆工坊. Lines form in front of a bar (dir: the way a line grows, qmax: spots in the first
+// row), far from every door. The money tray sits on the bar's right end.
 const COUNTERS = [
-  { x: 4.6, z: -9.9, serve: { x: 4.6, z: -11.3 }, pile: { x: 7.0, z: -10.2, value: 0 }, on: false, dir: -1, qmax: 2 },
-  { x: 1.0, z: -9.9, serve: { x: 1.0, z: -11.3 }, pile: { x: 2.75, z: -11.55, value: 0 }, on: false, dir: -1, qmax: 2 },
-  { x: 4.6, z: -19.0, serve: { x: 4.6, z: -20.4 }, pile: { x: 7.0, z: -19.3, value: 0 }, on: false, dir: -1, qmax: 3 },
+  { x: 2.9, z: -15.4, serve: { x: 2.9, z: -16.65 }, pile: { x: 3.85, z: -15.35, value: 0 }, on: false, dir: -1, qmax: 3 },
+  { x: -1.2, z: -15.4, serve: { x: -1.2, z: -16.65 }, pile: { x: -0.25, z: -15.35, value: 0 }, on: false, dir: -1, qmax: 3 },
+  { x: 1.0, z: -25.2, serve: { x: 1.0, z: -26.45 }, pile: { x: 1.95, z: -25.15, value: 0 }, on: false, dir: -1, qmax: 3 },
 ];
 function buildCounter(i) {
   const c = COUNTERS[i]; c.on = true;
-  const g = P.counter(); g.position.set(c.x, 0.12, c.z); scene.add(g); K.bakeStatic(g);
+  const g = P6.cafeBar(); g.position.set(c.x, 0.12, c.z); scene.add(g);
+  // a walnut gantry on the bar with two pendant lamps
+  for (const sx of [-1.36, 1.36]) K.add(g, K.mesh(G.rbox(0.09, 1.3, 0.09, 0.03), CF.walnut), sx, 1.7, -0.42);
+  K.add(g, K.mesh(G.rbox(2.9, 0.12, 0.12, 0.04), CF.walnut), 0, 2.36, -0.42);
+  K.bakeStatic(g);
+  for (const sx of [-0.7, 0.7]) { const l = P6.pendantLamp(0.5); l.g.position.set(c.x + sx, 2.42, c.z - 0.42); scene.add(l.g); shopArea.lamps.push(l); l.lit(!!shopArea.lit); }
   box(c.x - 1.45, c.z - 0.55, c.x + 1.45, c.z + 0.55);
-  K.add(scene, K.mesh(G.rbox(1.3, 0.04, 1.3, 0.1), '#c9f0c2', false, true), c.pile.x, 0.14, c.pile.z);
-  c.pile.grp = K.add(scene, new THREE.Group(), c.pile.x, 0.16, c.pile.z);
+  c.pile.grp = K.add(scene, new THREE.Group(), c.pile.x, 1.2, c.pile.z);
   const slots = [];
   for (let k = 0; k < 40; k++) {
     const col = k % 4, row = Math.floor(k / 4) % 2, lay = Math.floor(k / 8);
-    slots.push({ p: V3(-0.3 + (col % 2) * 0.48, lay * 0.07, -0.32 + row * 0.34 + Math.floor(col / 2) * 0.32 - 0.15), ry: (k * 0.37) % 0.3 });
+    slots.push({ p: V3(-0.22 + (col % 2) * 0.22, lay * 0.06, -0.24 + row * 0.24 + Math.floor(col / 2) * 0.22 - 0.1), ry: (k * 0.37) % 0.3, s: 0.62 });
   }
   c.pile.stack = itemStack('money', c.pile.grp, slots);
-  c.pile.label = label('badge money', '', (o) => o.set(c.pile.x, 1.2, c.pile.z));
+  c.pile.label = label('badge money', '', (o) => o.set(c.pile.x, 1.9, c.pile.z));
   c.pile.value = state.piles[i] || 0; setPile(c);
 }
 function setPile(c) {
@@ -1131,7 +1202,7 @@ function build(def, instant) {
   const id = def.id;
   if (!state.built.includes(id)) state.built.push(id);
   const s = { id, def, kind: def.kind };
-  stations[id] = s;
+  stations[id] = s; kindCache = null;
   const pos = def.pos || def.zone;
   if (def.kind === 'producer') {
     // 乳牛棚: a barn with a paddock; each cow fills a milk crate beside it (雞舍: a hen house, each hen lays eggs)
@@ -1196,23 +1267,19 @@ function build(def, instant) {
     applyGrow(s);
     if (!instant) popIn(g);
   } else if (def.kind === 'shelf') {
-    const sh = def.fridge ? P2.fridge() : P.shelf(); sh.g.position.set(pos[0], 0.12, pos[1]); scene.add(sh.g);
-    Object.assign(s, { g: sh.g, items: def.items, front: V3(pos[0], 0, pos[1] + 1.25), door: sh.door || null, dk: 0 });
-    const slots = [];
-    // up to 40 goods: 8 spots, stacked 5 high
-    for (let i = 0; i < 40; i++) slots.push({ p: sh.slots[i % 8].clone().setY(sh.slots[i % 8].y + Math.floor(i / 8) * (def.fridge ? 0.17 : 0.2)), ry: Math.PI / 2 + (i % 3) * 0.2 - 0.2, s: def.fridge ? 0.9 : 1 });
-    s.bin = makeBin(sh.g, slots, 40);
-    if (!def.fridge) { const ic = itemMesh(def.items[0]); ic.scale.setScalar(0.9); ic.position.set(0, 1.12, -0.38); ic.rotation.x = 0.5; sh.g.add(ic); }
+    const [fx, fz, ry] = FACE[def.face || 'S'];
+    Object.assign(s, { items: def.items, fv: [fx, fz], ry, front: V3(pos[0] + fx * 1.25, 0, pos[1] + fz * 1.25), door: null, dk: 0 });
+    shelfModel(s, upVal('shelfCap') > 40);
     loadBin(s);
-    s.label = label('badge big grp', '', (o) => o.set(pos[0], def.fridge ? 1.75 : 2.2, pos[1]));
-    box(pos[0] - 0.85, pos[1] - 0.5, pos[0] + 0.85, pos[1] + 0.5);
-    if (!instant) popIn(sh.g);
+    s.label = label('badge big grp', '', (o) => o.set(pos[0], s.top + 0.35, pos[1]));
+    box(pos[0] - (fx ? 0.5 : 0.85), pos[1] - (fx ? 0.85 : 0.5), pos[0] + (fx ? 0.5 : 0.85), pos[1] + (fx ? 0.85 : 0.5));
+    if (!instant) popIn(s.g);
   } else if (def.kind === 'hire') {
     s.worker = makeWorker(def.role, def.zone, !instant);
     s.worker.counter = def.counter || 0;
     if (def.home) s.worker.home = def.home;
   } else if (def.kind === 'pet') {
-    const c = P.cat(); c.g.position.set(5.6, 1.12, -10.1); c.g.rotation.y = -0.6; scene.add(c.g); pets.cat = { ...c, ph: 0 }; if (!instant) popIn(c.g);
+    const c = P.cat(); c.g.position.set(COUNTERS[0].x + 0.35, 1.2, COUNTERS[0].z + 0.15); c.g.rotation.y = 0.4; scene.add(c.g); pets.cat = { ...c, ph: 0 }; if (!instant) popIn(c.g);
   } else if (def.kind === 'store') {
     const wh = P2.warehouse(); wh.g.position.set(pos[0], 0, pos[1]); scene.add(wh.g);
     box(pos[0] - 2.15, pos[1] - 1.85, pos[0] + 2.15, pos[1] + 1.85);
@@ -1259,6 +1326,9 @@ function build(def, instant) {
     box(PHOTO.x - 1.2, PHOTO.z - 0.25, PHOTO.x + 1.2, PHOTO.z + 0.25);
     box(PHOTO.x + 0.25, PHOTO.z + 1.05, PHOTO.x + 0.55, PHOTO.z + 1.35);
     if (!instant) popIn(g);
+  } else if (def.kind === 'door') {
+    marketFront();
+    if (!instant) confetti(DOORS[def.di].x, -6.0);
   } else if (def.kind === 'dept') {
     applyDept(!instant);
   } else if (def.kind === 'expand') {
@@ -1279,6 +1349,22 @@ function build(def, instant) {
   evict();
   refreshZones();
   save();
+}
+// (re)build a display's model: a wooden wall shelf, or a glass pastry case for chilled goods; past 40 goods it grows a
+// board (or a glass tier) taller. The goods are instanced meshes inside it, so a full display costs no extra draw calls.
+function shelfModel(s, big) {
+  const list = s.bin ? s.bin.list.slice() : [];
+  if (s.g) scene.remove(s.g);
+  const def = s.def, pos = def.pos;
+  const glass = def.fridge || (def.face === 'N' && pos[1] > -10);   // the window displays at the front are glass cases too
+  const sh = glass ? P6.vitrine(big) : P6.wallShelf(big);
+  sh.g.position.set(pos[0], 0.12, pos[1]); sh.g.rotation.y = s.ry; scene.add(sh.g);
+  if (!glass) { const ic = itemMesh(def.items[0]); ic.scale.setScalar(0.85); ic.position.set(0, sh.top + 0.18, 0.1); sh.g.add(ic); }
+  const slots = sh.slots.slice(0, 50).map((p, i) => ({ p, ry: Math.PI / 2 + (i % 3) * 0.2 - 0.2, s: glass ? 0.85 : 0.9 }));
+  s.g = sh.g; s.top = sh.top; s.big = big;
+  s.bin = makeBin(sh.g, slots, 50);
+  for (const t of list) binAdd(s.bin, t);
+  K.bakeStatic(sh.g);
 }
 // a wooden chute carries roasted beans from the roaster straight into the grinder
 let chute = null;
@@ -1327,18 +1413,28 @@ function applyGrow(s) {
 
 // ---------- restaurant ----------
 let restArea = null;
+// terracotta and cream checker tiles in the kitchen strip along the back wall
+function restKitchen(g, x0, x1) {
+  K.add(g, K.mesh(G.rbox(x1 - x0, 0.03, 2.6, 0.02, 1), '#f4e6cf', false, true), (x0 + x1) / 2, 0.135, RB + 1.45);
+  for (let x = x0, i = 0; x < x1 - 0.3; x += 0.65, i++) for (let r = 0; r < 4; r++) if ((i + r) % 2 === 0) K.add(g, K.mesh(G.plane(0.62, 0.62), '#d98a5f', false, true), x + 0.33, 0.152, RB + 0.48 + r * 0.65);
+}
+// brick back wall with a walnut beam and arched-looking windows with walnut frames
+function restWall(g, cx, w) {
+  brickPiece(g, w, 2.2, 0.4, cx, RB);
+  for (const x of [cx - w / 3, cx, cx + w / 3]) {
+    K.add(g, K.mesh(G.rbox(2.3, 1.1, 0.06, 0.05), CF.walnut), x, 1.3, RB + 0.2);
+    K.add(g, K.mesh(G.rbox(2.1, 0.92, 0.06, 0.05), '#cfe9f2'), x, 1.3, RB + 0.23);
+    K.add(g, K.mesh(G.rbox(0.07, 0.92, 0.08, 0.02), CF.walnut), x, 1.3, RB + 0.25);
+  }
+}
 function buildRestaurant(instant) {
   const g = K.add(scene, new THREE.Group());
   const cx = (R0 + REST.x1) / 2, w = REST.x1 - R0, d = REST.z1 - REST.z0;
-  K.add(g, K.mesh(G.rbox(w, 0.12, d, 0.06, 2), '#e8b67c', false, true), cx, 0.06, (REST.z0 + REST.z1) / 2);
-  for (let x = R0 + 0.3; x < REST.x1 - 0.1; x += 0.6) K.add(g, K.mesh(G.rbox(0.03, 0.02, d - 0.3, 0.01), '#cf9a62', false, true), x, 0.125, (REST.z0 + REST.z1) / 2);
-  K.add(g, K.mesh(G.rbox(w - 0.4, 0.03, 2.6, 0.02, 1), '#e3f1f6', false, true), cx, 0.135, RB + 1.45);
-  for (let x = R0 + 0.4; x < REST.x1 - 0.6; x += 0.8) K.add(g, K.mesh(G.plane(0.38, 2.5), '#cbe5ef', false, true), x + 0.2, 0.152, RB + 1.45);
-  K.add(g, K.mesh(G.rbox(w, 2.2, 0.4, 0.08), '#fbf3e4'), cx, 1.1, RB);
-  K.add(g, K.mesh(G.rbox(w + 0.06, 0.3, 0.44, 0.04), '#c98a55'), cx, 0.75, RB);
-  K.add(g, K.mesh(G.rbox(w + 0.1, 0.22, 0.46, 0.05), '#59a14f'), cx, 2.2, RB);
-  for (const x of [cx - w / 3, cx, cx + w / 3]) K.add(g, K.mesh(G.rbox(2.2, 1.0, 0.08, 0.06), '#bfe9ff'), x, 1.3, RB + 0.22);
-  const sign = P2.signBoard('山城咖啡館', 4, '#8b5a3c'); sign.position.set(cx, 2.9, RB + 0.1); g.add(sign);
+  K.add(g, K.mesh(G.rbox(w, 0.12, d, 0.06, 2), '#a8754a', false, true), cx, 0.06, (REST.z0 + REST.z1) / 2);
+  planks(g, R0 + 0.05, REST.x1 - 0.05, RB + 2.8, REST.z1 - 0.05, ['#a8754a', '#9a6a42', '#b5814f']);
+  restKitchen(g, R0 + 0.2, REST.x1 - 0.2);
+  restWall(g, cx, w);
+  const sign = P6.cafeSign('山城咖啡館', 4.2, CF.terra); sign.position.set(cx, 2.95, RB + 0.1); g.add(sign);
   for (const [x0, z0, x1, z1] of [[R0, REST.z1, -13.3, REST.z1], [REST.x1, REST.z1, REST.x1, RB + 0.2]]) g.add(P3.railLine(x0, z0, x1, z1));
   rest.frontBox = box(R0 - 0.15, REST.z1 - 0.15, -13.2, REST.z1 + 0.15);
   box(REST.x1 - 0.15, RB, REST.x1 + 0.15, REST.z1);
@@ -1368,18 +1464,15 @@ function buildRestaurant(instant) {
 function buildWing(instant) {
   const g = K.add(scene, new THREE.Group());
   const x0 = WING_X0, x1 = R0, cx = (x0 + x1) / 2, w = x1 - x0, d = REST.z1 - REST.z0;
-  K.add(g, K.mesh(G.rbox(w + 0.1, 0.12, d, 0.06, 2), '#e8b67c', false, true), cx, 0.06, (REST.z0 + REST.z1) / 2);
-  for (let x = x0 + 0.3; x < x1; x += 0.6) K.add(g, K.mesh(G.rbox(0.03, 0.02, d - 0.3, 0.01), '#cf9a62', false, true), x, 0.125, (REST.z0 + REST.z1) / 2);
-  K.add(g, K.mesh(G.rbox(w, 0.03, 2.6, 0.02, 1), '#e3f1f6', false, true), cx, 0.135, RB + 1.45);
-  for (let x = x0 + 0.4; x < x1 - 0.2; x += 0.8) K.add(g, K.mesh(G.plane(0.38, 2.5), '#cbe5ef', false, true), x + 0.2, 0.152, RB + 1.45);
-  K.add(g, K.mesh(G.rbox(w, 2.2, 0.4, 0.08), '#fbf3e4'), cx, 1.1, RB);
-  K.add(g, K.mesh(G.rbox(w + 0.06, 0.3, 0.44, 0.04), '#c98a55'), cx, 0.75, RB);
-  K.add(g, K.mesh(G.rbox(w + 0.1, 0.22, 0.46, 0.05), '#59a14f'), cx, 2.2, RB);
-  const sign = P2.signBoard('戶外露台', 4, '#59a14f'); sign.position.set(cx, 2.9, RB + 0.1); g.add(sign);
+  K.add(g, K.mesh(G.rbox(w + 0.1, 0.12, d, 0.06, 2), '#a8754a', false, true), cx, 0.06, (REST.z0 + REST.z1) / 2);
+  planks(g, x0 + 0.05, x1, RB + 2.8, REST.z1 - 0.05, ['#a8754a', '#9a6a42', '#b5814f']);
+  restKitchen(g, x0 + 0.2, x1);
+  restWall(g, cx, w);
+  const sign = P6.cafeSign('戶外露台', 4.2, CF.sageDark); sign.position.set(cx, 2.95, RB + 0.1); g.add(sign);
   g.add(P6.stringLights(x0, REST.z1, x1, REST.z1, 2.5));
   for (const [a, b, c, e] of [[x0, REST.z1, x1, REST.z1], [x0, REST.z1, x0, RB + 0.2]]) g.add(P3.railLine(a, b, c, e));
   for (const [x, c] of [[x0, '#ff6b5a'], [-32, '#ffd34a'], [-27.6, '#ff6b5a']]) K.add(g, P3.lantern(c), x, 0, REST.z1);
-  for (const z of [-7.0, -12.4]) { const x = -39.0, pot = K.add(g, new THREE.Group(), x, 0.12, z); K.add(pot, K.mesh(G.cyl(0.32, 0.24, 0.45, 10), C.roof), 0, 0.22, 0); K.add(pot, P.bush(0.35), 0, 0.4, 0); box(x - 0.35, z - 0.35, x + 0.35, z + 0.35); }
+  for (const z of [-7.0, -12.4]) { const x = -39.0; g.add(shopPot(x, z)); box(x - 0.35, z - 0.35, x + 0.35, z + 0.35); }
   box(x0 - 0.15, REST.z1 - 0.15, x1, REST.z1 + 0.15);
   box(x0 - 0.15, RB, x0 + 0.15, REST.z1);
   box(x0, RB - 0.3, x1, RB + 0.2);
@@ -1394,7 +1487,7 @@ function buildWing(instant) {
 function buildTable(i, instant) {
   if (tables.some((t) => t.i === i)) return;
   const [x, z] = T_POS[i];
-  const tb = P3.diningTable(); tb.g.position.set(x, 0.12, z); scene.add(tb.g);
+  const tb = P6.bistroTable(); tb.g.position.set(x, 0.12, z); scene.add(tb.g);
   const t = { i, x, z, g: tb.g, st: 'free', seats: [], pile: { value: state.tpiles[i] || 0 }, patience: 0, claim: null, t: 0, arrived: 0 };
   for (const sd of tb.seats) {
     const seat = { wx: x + sd.x, wz: z + sd.z, face: sd.face, dish: null, got: false, diner: null, claim: null, vis: {} };
@@ -1475,8 +1568,8 @@ function questSteps() {
   const picked = DEFS.find((d) => d.start && isBuilt(d.id));
   return [
     { t: '二選一：咖啡園或乳牛棚', ok: !!picked },
-    { t: '蓋收銀台', ok: isBuilt('counter') },
-    { t: picked ? '蓋' + DEF[FIRST_SHELF[picked.id]].name : '蓋貨架或冷藏櫃', ok: Object.values(FIRST_SHELF).some(isBuilt) },
+    { t: '蓋點餐櫃台', ok: isBuilt('counter') },
+    { t: picked ? '蓋' + DEF[FIRST_SHELF[picked.id]].name : '蓋展示架或玻璃櫃', ok: Object.values(FIRST_SHELF).some(isBuilt) },
   ];
 }
 let questHtml = '', questDoneT = -1;
@@ -1521,7 +1614,8 @@ function refreshZones() {
 }
 function frontOf(def) {
   if (def.kind === 'crop') return [def.pos[0], def.pos[1] + CROP_LAYOUT[def.plant].d / 2 + 1.5];
-  if (def.kind === 'machine' || def.kind === 'shelf' || def.kind === 'table') return [def.pos[0], def.pos[1] + 1.7];
+  if (def.kind === 'shelf') { const [fx, fz] = FACE[def.face || 'S']; return [def.pos[0] + fx * 1.7, def.pos[1] + fz * 1.7]; }
+  if (def.kind === 'machine' || def.kind === 'table') return [def.pos[0], def.pos[1] + 1.7];
   return def.zone || def.pos;
 }
 function zoneSpot(def) { return def.zone || frontOf(def); }
@@ -1666,7 +1760,7 @@ function makeWorker(role, at, pop) {
   return w;
 }
 // 管理層 NPCs: the 店長 walks the market aisle, the 莊園主管 the processing yard (they only wander and boost the others)
-const MGR_HOME = { manager: [-2.6, -8.9], supervisor: [-2.4, 5.2] };
+const MGR_HOME = { manager: [-1.0, -12.4], supervisor: [-2.4, 5.2] };
 function spawnManager(k, quiet) {
   const role = k === 'mgrShop' ? 'manager' : 'supervisor';
   if (workers.some((w) => w.role === role)) return;
@@ -1702,7 +1796,7 @@ function trashRun(w, dt, sp) {
 // walk along a nav path; arrives at the last waypoint (the target, or the nearest free spot when it is blocked)
 function go(w, x, z, dt, speed) {
   const key = x.toFixed(2) + ',' + z.toFixed(2);
-  if (w.routeKey !== key || w.navV !== navV) { w.routeKey = key; w.navV = navV; const p = w.p.root.position; w.route = nav.path(p.x, p.z, x, z); if (!w.route.length) w.route = [[x, z]]; }
+  if (w.routeKey !== key || w.navV !== navV) { if (!navTake()) { w.moving = 0; return false; } w.routeKey = key; w.navV = navV; const p = w.p.root.position; w.route = nav.path(p.x, p.z, x, z); if (!w.route.length) w.route = [[x, z]]; }
   while (w.route.length > 1 && walkTo(w, w.route[0][0], w.route[0][1], dt, speed)) w.route.shift();
   if (w.route.length > 1) return false;
   return walkTo(w, w.route[0][0], w.route[0][1], dt, speed);
@@ -1720,14 +1814,25 @@ function turn(p, face, dt) {
   while (diff > Math.PI) diff -= Math.PI * 2; while (diff < -Math.PI) diff += Math.PI * 2;
   p.root.rotation.y = r + diff * Math.min(1, dt * 12);
 }
-const listOf = (kind) => Object.values(stations).filter((s) => s.kind === kind);
+let kindCache = null;
+function listOf(kind) {
+  if (!kindCache) { kindCache = {}; for (const s of Object.values(stations)) (kindCache[s.kind] = kindCache[s.kind] || []).push(s); }
+  return kindCache[kind] || [];
+}
 const binStations = () => Object.values(stations).filter((s) => s.bin && BIN_KINDS.includes(s.kind));
 function idleWander(w, dt, cx, cz) {
   w.wait -= dt;
   if (!w.wp || w.wait <= 0) { w.wp = [cx + (Math.random() - 0.5) * 2.4, cz + (Math.random() - 0.5) * 1.6]; w.wait = 2 + Math.random() * 2; }
   go(w, w.wp[0], w.wp[1], dt, 1.6);
 }
-const storeCap = () => upVal('store');
+const stores = () => listOf('store');
+const storeCap = () => upVal('store') * Math.max(1, stores().length);
+// the warehouse nearest to a spot (workers drop off and pick up at the closest one)
+function nearStore(p) {
+  let best = null, bd = 1e9;
+  for (const s of stores()) { const d = dist2(p, s.depPt.x, s.depPt.z); if (d < bd) { bd = d; best = s; } }
+  return best;
+}
 const storeTotal = () => Object.values(state.store).reduce((a, b) => a + b, 0);
 const srcCount = (src, item) => src.kind === 'store' ? (state.store[item] || 0) : src.kind === 'machine' ? binCount(src.outBin, item) : src.bin ? binCount(src.bin, item) : 0;
 function srcTake(src, item) { if (src.kind === 'store') state.store[item]--; else if (src.kind === 'machine') binTake(src.outBin, item); else if (src.bin) binTake(src.bin, item); }
@@ -1785,7 +1890,7 @@ function pickJob(w) {
     consider(space * 0.9 + (inCount(m, item) === 0 ? 5 : 0) + (dish ? 6 : 0) + Math.random() * 2 - (taken(m, item) ? 12 : 0), m, src, item);
   }
   // crates and machine trays filling up with things nobody needs yet: move them to the warehouse so work keeps going
-  const wh = stations.warehouse;
+  const wh = nearStore(w.p.root.position);
   if (wh && storeTotal() < storeCap() - 10) for (const s of [...binStations(), ...listOf('machine')]) {
     const b = s.kind === 'machine' ? s.outBin : s.bin;
     const fill = b.list.length / b.max; if (fill < 0.6) continue;
@@ -1832,9 +1937,10 @@ function isFull(dst, item) {
   return inCount(dst, item) + inPend(dst, item) >= dst.inMax;
 }
 const orderWants = (t) => Object.values(orders).some((o) => o.st === 'wait' && o.order && o.order[t] > 0);
-const usable = (t) => DEFS.some((d) => (isBuilt(d.id) || zones[d.id]) && ((d.items && d.items.includes(t)) || d.in === t || d.in2 === t || (d.inAny && d.inAny.includes(t)))) || Object.values(zones).some((z) => z.def.cost[t] && left(z, t) > 0) || !!stations.warehouse || orderWants(t);
-function dstFor(type) {
-  return listOf('shelf').find((s) => s.items.includes(type) && !isFull(s, type)) || listOf('machine').find((m) => machIns(m).includes(type) && !isFull(m, type)) || (stations.warehouse && storeTotal() < storeCap() ? stations.warehouse : null);
+const usable = (t) => DEFS.some((d) => (isBuilt(d.id) || zones[d.id]) && ((d.items && d.items.includes(t)) || d.in === t || d.in2 === t || (d.inAny && d.inAny.includes(t)))) || Object.values(zones).some((z) => z.def.cost[t] && left(z, t) > 0) || stores().length > 0 || orderWants(t);
+function dstFor(type, at) {
+  const wh = stores().length && storeTotal() < storeCap() ? nearStore(at || V3(0, 0, 0)) : null;
+  return listOf('shelf').find((s) => s.items.includes(type) && !isFull(s, type)) || listOf('machine').find((m) => machIns(m).includes(type) && !isFull(m, type)) || wh;
 }
 function updateWorker(w, dt) {
   const sp = upVal('wspeed') * (isFarmRole(w.role) ? FARM_SP[mFarm()] : 1);
@@ -1849,7 +1955,7 @@ function updateWorker(w, dt) {
   const home = w.home || HIRE[w.role].home;
   if (!w.job) {
     if (w.carry.length && !w.incoming) {
-      const type = w.carry[w.carry.length - 1].type, dst = dstFor(type);
+      const type = w.carry[w.carry.length - 1].type, dst = dstFor(type, w.p.root.position);
       if (dst) { w.job = { dst, item: type, phase: 'put' }; w.hold = 0; }
       else {
         // no shelf, machine or warehouse with room for it: wait a moment, then dump it in the trash bin
@@ -1880,8 +1986,8 @@ function updateWorker(w, dt) {
   } else if (j.phase === 'put') {
     if (!w.incoming) {
       // carrying something else too (a rare bean from the field): deliver the top of the stack first
-      if (!count(w, j.item) && w.carry.length) { j.item = w.carry[w.carry.length - 1].type; const d2 = dstFor(j.item); if (d2) j.dst = d2; else { j.phase = 'done'; } }
-      if (j.phase === 'put' && isFull(j.dst, j.item) && count(w, j.item)) { const d2 = dstFor(j.item); if (d2 && d2 !== j.dst) j.dst = d2; }
+      if (!count(w, j.item) && w.carry.length) { j.item = w.carry[w.carry.length - 1].type; const d2 = dstFor(j.item, w.p.root.position); if (d2) j.dst = d2; else { j.phase = 'done'; } }
+      if (j.phase === 'put' && isFull(j.dst, j.item) && count(w, j.item)) { const d2 = dstFor(j.item, w.p.root.position); if (d2 && d2 !== j.dst) j.dst = d2; }
       if (j.phase === 'put') {
         const p = dstPoint(j.dst, j.item);
         if (go(w, p.x + 0.4, p.z, dt, sp) || dist2(w.p.root.position, p.x, p.z) < 1.1) {
@@ -1899,7 +2005,7 @@ function seatOk(t, s, type) { return t.st === 'wait' && s.diner && s.dish === ty
 function demandFor(type) { let n = 0; for (const t of tables) for (const s of t.seats) if (seatOk(t, s, type)) n++; return n; }
 function dishSource(type, w) {
   let best = null, bd = 1e9;
-  for (const s of Object.values(stations)) {
+  for (const s of [...listOf('machine'), ...listOf('store')]) {
     const ok = (s.kind === 'machine' && binCount(s.outBin, type) > 0) || (s.kind === 'store' && (state.store[type] || 0) > 0);
     if (!ok) continue;
     const d = dist2(w.p.root.position, s.outPt.x, s.outPt.z);
@@ -1931,7 +2037,7 @@ function updateWaiter(w, dt, sp) {
       // nobody wants it any more: put it back on the counter it came from
       w.hold = (w.hold || 0) + dt;
       if (w.hold < 4) { idleWander(w, dt, -12.6, -11.0); return; }
-      const back = listOf('machine').find((m) => machOuts(m).includes(type) && m.outBin.list.length < m.outMax) || stations.warehouse;
+      const back = listOf('machine').find((m) => machOuts(m).includes(type) && m.outBin.list.length < m.outMax) || nearStore(w.p.root.position);
       if (!back) { w.hold = 0; w.job = { phase: 'trash' }; return; }
       const pt = back.kind === 'store' ? back.depPt : V3(back.outPt.x, 0, back.outPt.z + 0.9);
       if (go(w, pt.x, pt.z, dt, sp)) {
@@ -2030,6 +2136,8 @@ function pickPlant(s, pl, c) {
 // ---------- market customers ----------
 const customers = [];
 const CUST_COLS = ['#ff9f43', '#5ec8ff', '#ffd34a', '#ff7eb6', '#9fd86b', '#c69bff', '#ff8a6b', '#6fe3c8'];
+// phones: never more than this many shoppers and café guests walking around at once
+const MAX_PEOPLE = 30;
 // a line in front of counter ci: qmax spots in the first row, then a second row just behind it
 function queueAt(ci, i) {
   const k = COUNTERS[ci], row = i < k.qmax ? 0 : 1, j = row ? i - k.qmax : i;
@@ -2063,13 +2171,35 @@ function shopGoods(shelves) {
   }
   return goods;
 }
-const shelfSpot = (sh) => [sh.front.x + rand(-0.75, 0.75), sh.front.z + rand(0.2, 1.1)];
+// a spot in front of a display (it may face any way), a little to the side and a step back
+const shelfSpot = (sh) => { const [fx, fz] = sh.fv, a = rand(-0.75, 0.75), b = rand(0.2, 1.1); return [sh.front.x + fx * b - fz * a, sh.front.z + fz * b + fx * a]; };
 // walk the nav path, then the next stop in c.via (the door a shopper uses), until the last stop is reached
 function walkVia(c, dt, speed) {
   if (!stepPath(c, dt, speed)) return false;
   if (c.via && c.via.length) { const v = c.via.shift(); setGoal(c, v[0], v[1]); return false; }
   return true;
 }
+// how many goods in all: most take a couple, some fill a basket, a few stock up with a cart
+function shopTotal() { const r = Math.random(); return r < 0.55 ? 2 + Math.floor(Math.random() * 2) : r < 0.85 ? 8 + Math.floor(Math.random() * 5) : 18 + Math.floor(Math.random() * 11); }
+// doors: the open one whose inside step is nearest a spot; shoppers come from the end of the road nearer that door
+const openDoors = () => DOORS.filter(doorOpen);
+// shoppers who still have to pass through a door (on their way in or out), so a busy door hands some over to the next one
+const doorLoad = (D) => { let n = 0; for (const c of customers) if (c.door === D) n++; return n; };
+// walking distance to a door; from the 烘豆工坊 the way runs through one of the two openings beside the back bar
+const PASSAGES = [[-3.4, -17.3], [5.6, -17.3]];
+function doorDist(D, x, z) {
+  if (z > -17.4) return Math.hypot(D.in[0] - x, D.in[1] - z);
+  let best = 1e9;
+  for (const [px, pz] of PASSAGES) best = Math.min(best, Math.hypot(px - x, pz - z) + Math.hypot(D.in[0] - px, D.in[1] - pz));
+  return best;
+}
+// the nearest open door; each shopper already heading through a door counts as 3 extra steps, so crowds spread out
+function nearDoor(x, z) {
+  let best = DOORS[0], bs = 1e9;
+  for (const D of openDoors()) { const sc = doorDist(D, x, z) + 3 * doorLoad(D); if (sc < bs) { bs = sc; best = D; } }
+  return best;
+}
+const spawnFor = (D) => (Math.abs(D.out[0] - SPAWN[0]) <= Math.abs(D.out[0] - SPAWN_W[0]) ? SPAWN : SPAWN_W);
 function spawnCustomer() {
   const shelves = listOf('shelf');
   if (!shelves.length) return null;
@@ -2081,24 +2211,31 @@ function spawnCustomer() {
     const left = keys.filter((t) => !list.some((e) => e.item === t));
     const st = left.filter((t) => goods[t].stocked.length), no = left.filter((t) => !goods[t].stocked.length);
     const item = st.length && (Math.random() < 0.85 || !no.length) ? pick(st) : pick(no);
-    const g = goods[item], big = ITEMS[item].price >= 40;
-    const need = big ? 1 : 1 + Math.floor(Math.random() * Math.min(nK > 1 ? 3 : 4, 1 + shelves.length));
-    list.push({ item, shelf: pick(g.stocked.length ? g.stocked : g.all), need, got: 0 });
+    const g = goods[item];
+    list.push({ item, shelf: pick(g.stocked.length ? g.stocked : g.all), need: 1, got: 0 });
   }
+  // spread the total over the list; dear goods (rare beans, desserts) only a few each
+  const total = Math.max(nK, shopTotal());
+  for (let n = total - nK; n > 0; n--) pick(list).need++;
+  // dear goods only a few each when the list has cheaper goods to take the rest
+  const cheap = list.filter((e) => ITEMS[e.item].price < 40);
+  if (cheap.length) for (const e of list) if (ITEMS[e.item].price >= 40) { const cap = Math.max(1, Math.round(total / 6)); for (; e.need > cap; e.need--) pick(cheap).need++; }
   list.sort((a, b) => b.shelf.front.z - a.shelf.front.z || a.shelf.front.x - b.shelf.front.x);
-  const sh = list[0].shelf;
+  const sh = list[0].shelf, D = nearDoor(sh.front.x, sh.front.z), from = spawnFor(D);
   const p = K.person(customerLook());
-  p.root.position.set(SPAWN[0], 0, SPAWN[1]); scene.add(p.root);
-  const c = { p, list, li: 0, shelf: sh, item: list[0].item, need: list[0].need, got: 0, st: 'in', path: [], via: [], t: 0, face: 0, moving: 0, qi: 99, ci: 0, age: 0 };
-  const tgt = shelfSpot(sh);
-  // shoppers for the west shelves come in through the 百貨公司's 2nd door
-  if (shopDoor2.d && sh.front.x < WEST_X) { c.via = [DOOR2_IN, tgt]; setGoal(c, DOOR2_OUT[0], DOOR2_OUT[1]); } else setGoal(c, tgt[0], tgt[1]);
+  p.root.position.set(from[0] + rand(-0.4, 0.4), 0, from[1] + rand(-0.3, 0.3)); scene.add(p.root);
+  const c = { p, list, li: 0, shelf: sh, item: list[0].item, need: list[0].need, got: 0, st: 'in', path: [], via: [], t: 0, face: 0, moving: 0, qi: 99, ci: 0, age: 0, total: list.reduce((a, e) => a + e.need, 0) };
+  // along the middle of the road, then in through the door nearest the first display on the list
+  c.door = D; c.via = [D.out, D.in, shelfSpot(sh)]; setGoal(c, D.x, ROAD_Z);
   c.label = label('bubble', '', (o) => { o.copy(c.p.root.position); o.y = 2.05; });
   customers.push(c);
   return c;
 }
 function stepPath(c, dt, speed) {
-  if (c.goal && c.navV !== navV) setGoal(c, ...c.goal);
+  if (c.goal && c.navV !== navV) {
+    if (!navTake()) return false;
+    const p = c.p.root.position; c.navV = navV; c.path = navPath(p.x, p.z, c.goal[0], c.goal[1], c.goal[2]);
+  }
   if (!c.path.length) return true;
   const [tx, tz] = c.path[0];
   const dx = tx - c.p.root.position.x, dz = tz - c.p.root.position.z, d = Math.hypot(dx, dz);
@@ -2110,7 +2247,7 @@ function updateCustomers(dt) {
   const shelfN = listOf('shelf').length;
   if (shelfN && COUNTERS[0].on) {
     spawnT -= dt * crowd();
-    const maxC = Math.min(16, 3 + Math.round(shelfN * 1.5));
+    const maxC = Math.min(22, 3 + Math.round(shelfN * 1.5), MAX_PEOPLE - diners.length);
     if (spawnT <= 0 && customers.length < maxC) { spawnCustomer(); spawnT = Math.max(1.4, 7 - shelfN * 0.7) * (0.7 + Math.random() * 0.6); }
   }
   const served = COUNTERS.map((k, ci) => k.on && (workers.some((w) => w.role === 'cashier' && (w.counter || 0) === ci && dist2(w.p.root.position, k.serve.x, k.serve.z) < 0.6) || dist2(player.p.root.position, k.serve.x, k.serve.z) < 1.3));
@@ -2119,15 +2256,21 @@ function updateCustomers(dt) {
     const c = customers[i];
     c.moving = 0;
     c.age += dt;
-    // 購物籃架: shoppers take a basket (Lv1) or a cart (Lv2) once they are inside the market and leave it on the way out
+    // 提籃和推車: once inside, a shopper takes a basket, or a cart when the list is long (8 goods or more)
     const cpos = c.p.root.position;
-    if (state.up.basket && !c.cart && c.st !== 'leave' && inShop(cpos.x, cpos.z) && cpos.z < -8.0) { c.cart = state.up.basket >= 2 ? shopCart() : shopBasket(); c.p.front.add(c.cart); }
+    if (state.up.basket && !c.cart && c.st !== 'leave' && inShop(cpos.x, cpos.z) && cpos.z < -8.0) { c.cart = c.total >= 8 ? shopCart() : shopBasket(); c.p.front.add(c.cart); }
     if (c.cart && c.st === 'leave' && (cpos.z > -8.3 || !inShop(cpos.x, cpos.z))) { c.p.front.remove(c.cart); c.cart = null; }
     const cs = c.cart ? upVal('basket') : 1;
-    if (c.st === 'in') { if (walkVia(c, dt, 2.6 * cs)) { c.st = 'shop'; c.face = Math.PI; c.t = 0.4; c.patience = (c.li ? 22 : 32) + MGR_PAT[mShop()]; } }
-    else if (c.st === 'shop') {
+    if (c.door && (c.st === 'leave' ? cpos.z > -6.1 : cpos.z < -8.5)) c.door = null;   // through the door now
+    if (c.st === 'in') {
+      if (walkVia(c, dt, 2.6 * cs)) {
+        // face the display; patience grows with how much is on the list here
+        c.st = 'shop'; c.door = null; c.face = Math.atan2(c.shelf.def.pos[0] - cpos.x, c.shelf.def.pos[1] - cpos.z); c.t = 0.4;
+        c.patience = (c.li ? 22 : 32) + MGR_PAT[mShop()] + c.need * 1.2;
+      }
+    } else if (c.st === 'shop') {
       c.t -= dt; c.patience -= dt;
-      if (c.age > 75) c.patience = Math.min(c.patience, 0);   // shopped long enough: pay for what is in the basket
+      if (c.age > 75 + c.total * 2) c.patience = Math.min(c.patience, 0);   // shopped long enough: pay for what is in the basket
       if (c.t <= 0 && binCount(c.shelf.bin, c.item) > 0 && c.got < c.need) {
         c.t = 0.35 / upVal('basket'); binTake(c.shelf.bin, c.item); c.got++;
         fly(c.item, V3(c.shelf.def.pos[0], 0.8, c.shelf.def.pos[1]), (o) => { o.copy(c.p.root.position); o.y = 1.2; }, 0.25, null);
@@ -2174,9 +2317,9 @@ function updateCustomers(dt) {
 function leaveShop(c) {
   c.st = 'leave'; c.label.show = false; c.via = [];
   const pos = c.p.root.position;
-  // still at a west shelf (gave up waiting): out through the nearer 2nd door
-  if (shopDoor2.d && inShop(pos.x, pos.z) && pos.x < WEST_X) { c.via = [DOOR2_OUT, [SPAWN[0], SPAWN[1] + 1]]; setGoal(c, DOOR2_IN[0], DOOR2_IN[1]); }
-  else setGoal(c, SPAWN[0], SPAWN[1] + 1);
+  // out through the door nearest the bar they paid at (or the display they gave up at), then down the road
+  if (inShop(pos.x, pos.z)) { const D = nearDoor(pos.x, pos.z), home = spawnFor(D); c.door = D; c.via = [D.out, [D.x, ROAD_Z], home]; setGoal(c, D.in[0], D.in[1]); }
+  else { const home = pos.x < 0 ? SPAWN_W : SPAWN; setGoal(c, home[0], home[1]); }
 }
 // one payment for the whole list
 function pay(c) {
@@ -2230,7 +2373,7 @@ function updateDiners(dt, T) {
     const free = tables.filter((t) => t.st === 'free');
     if (free.length) {
       dinerT -= dt * dinerCrowd();
-      if (dinerT <= 0) { spawnGroup(pick(free)); dinerT = Math.max(2.6, 11 - tables.length * 1.0) * rand(0.7, 1.3); }
+      if (dinerT <= 0 && diners.length + customers.length + 2 <= MAX_PEOPLE) { spawnGroup(pick(free)); dinerT = Math.max(2.6, 11 - tables.length * 1.0) * rand(0.7, 1.3); }
     }
   }
   for (let i = diners.length - 1; i >= 0; i--) {
@@ -2304,9 +2447,23 @@ function orderRows(order) { let r = ''; for (const k in order) if (order[k] > 0)
 function orderDone(order) { for (const k in order) if (order[k] > 0) return false; return true; }
 function feedOrder(order, dropFn, dt, st) {
   st.xfer = (st.xfer || 0) - dt;
-  if (st.xfer > 0) return;
-  for (const k in order) if (order[k] > 0 && count(player, k) > 0) { order[k]--; st.xfer = 0.08; sfx('drop'); giveFrom(player, k, dropFn, null); return; }
+  if (st.xfer > 0) return null;
+  for (const k in order) if (order[k] > 0 && count(player, k) > 0) { order[k]--; st.xfer = 0.06; sfx('drop'); giveFrom(player, k, dropFn, null); return k; }
+  return null;
 }
+// how far the café has come: 0 at the start of the mid game … 1 near the end of the unlock list
+const progressK = () => Math.min(1, Math.max(0, (state.built.length - 35) / 60));
+// a big order: Q goods over 3–5 kinds (dear goods fewer); early about 20–40, late game 100–500
+function makeBigOrder() {
+  const k = progressK(), Q = Math.round(rand(20 + k * 80, 40 + k * 460));
+  const items = sellables().sort(() => Math.random() - 0.5).slice(0, 3 + Math.floor(Math.random() * 3)), order = {};
+  if (!items.length) return null;
+  const w = items.map((t) => (ITEMS[t].price >= 40 ? 0.3 : 1)), sw = w.reduce((a, b) => a + b, 0);
+  items.forEach((t, i) => { order[t] = Math.max(1, Math.round(Q * w[i] / sw)); });
+  return order;
+}
+const orderCount = (order) => { let n = 0; for (const k in order) n += Math.max(0, order[k]); return n; };
+const barHtml = (k, col) => '<div style="height:7px;margin:3px 0 2px;background:#eadcc4;border-radius:4px;overflow:hidden"><div style="height:100%;width:' + Math.round(k * 100) + '%;background:' + col + '"></div></div>';
 function bonusToPlayer(v, at) {
   floatText('+' + fmtMoney(v), at, 'money big'); sfx('vip');
   const n = 8;
@@ -2327,18 +2484,26 @@ function updateOrders(dt) {
     if (!D.label) { D.label = label('zone order', '', (o) => o.set(D.x, 0.3, D.z - 0.2)); D.label.show = false; }
     D.t -= dt;
     if (D.st === 'away' && D.t <= 0) {
-      const late = state.built.length > 45;
-      D.order = makeOrder(3, late ? 6 : 4, late ? 12 : 8); D.value = orderValue(D.order, 5) + 300;
-      D.st = 'come'; D.sx = 16; D.scooter.visible = true;
-      toast('🛵 外送大單！辦公室訂了一大批');
+      D.order = makeBigOrder();
+      if (!D.order) D.t = 30;
+      else {
+        // pays 2.5× the shelf price per good (plus a tip when it is all there); every good handed over is paid
+        D.total = orderCount(D.order); D.given = 0; D.bank = 0; D.unit = {};
+        for (const k in D.order) D.unit[k] = Math.round(ITEMS[k].price * upVal('price') * 2.5);
+        D.value = orderValue(D.order, 2.5); D.tip = Math.round(D.value * 0.2) + 300;
+        D.st = 'come'; D.sx = 16; D.scooter.visible = true;
+        toast('🛵 外送大單！辦公室訂了 ' + D.total + ' 份，可以分很多趟送');
+      }
     }
-    if (D.st === 'come') { D.sx = Math.max(D.x + 1.7, D.sx - 8 * dt); if (D.sx <= D.x + 1.7) { D.st = 'wait'; D.t = 150; D.label.show = true; } }
+    if (D.st === 'come') { D.sx = Math.max(D.x + 1.7, D.sx - 8 * dt); if (D.sx <= D.x + 1.7) { D.st = 'wait'; D.t = Math.min(600, 150 + D.total * 0.9); D.label.show = true; } }
     if (D.st === 'wait') {
-      setLabel(D.label, '<div class="zn">🛵 外送大單 ' + Math.ceil(D.t) + '秒</div>' + orderRows(D.order) + '<div class="rew">' + ICON.money + fmtMoney(D.value) + '</div>');
-      if (dist2(pp, D.x, D.z) < 2.0) feedOrder(D.order, (o) => o.set(D.x + 1.7, 1.0, D.z), dt, D);
+      const left = orderCount(D.order);
+      setLabel(D.label, '<div class="zn">🛵 外送大單 ' + Math.ceil(D.t) + '秒</div><div class="rew">已送 ' + D.given + ' / ' + D.total + '</div>' + barHtml(D.given / D.total, '#59a14f') +
+        (left ? orderRows(D.order) : '') + '<div class="rew">' + ICON.money + fmtMoney(D.bank) + ' / ' + fmtMoney(D.value + D.tip) + '</div>');
+      if (dist2(pp, D.x, D.z) < 2.0) { const k = feedOrder(D.order, (o) => o.set(D.x + 1.7, 1.0, D.z), dt, D); if (k) { D.given++; D.bank += D.unit[k]; } }
       const done = orderDone(D.order);
-      if (done) { stats.delivery++; bonusToPlayer(D.value, V3(D.x, 2, D.z)); confetti(D.x, D.z); }
-      else if (D.t <= 0) toast('外送單取消了…');
+      if (done) { stats.delivery++; bonusToPlayer(D.bank + D.tip, V3(D.x, 2, D.z)); confetti(D.x, D.z); toast('🛵 外送大單全部送完！多給了小費'); }
+      else if (D.t <= 0) { if (D.bank > 0) { bonusToPlayer(D.bank, V3(D.x, 2, D.z)); toast('外送時間到，送到的 ' + D.given + ' 份照樣付錢'); } else toast('外送單取消了…'); }
       if (done || D.t <= 0) { D.st = 'leave'; D.label.show = false; }
     }
     if (D.st === 'leave') { D.sx += 9 * dt; if (D.sx > 16) { D.st = 'away'; D.t = rand(120, 200); D.scooter.visible = false; } }
@@ -2352,10 +2517,11 @@ function updateOrders(dt) {
     const drinks = menu().filter((t) => DRINKS.includes(t) && t !== 'civetpour');
     if (J.st === 'away' && J.t <= 0) {
       if (drinks.length) {
-        const pickN = drinks.slice().sort(() => Math.random() - 0.5).slice(0, 3), order = {};
-        for (let i = 0; i < 3; i++) order[pickN[i % pickN.length]] = (order[pickN[i % pickN.length]] || 0) + 1;
-        J.order = order; J.value = orderValue(order, 10) + 1500; J.st = 'wait'; J.t = 90; J.label.show = true; J.p.root.visible = true; popIn(J.p.root);
-        toast('🏆 咖啡比賽！評審要試喝 3 杯');
+        // the judges taste more as the café grows: 3 cups at first, up to 12
+        const n = 3 + Math.floor(progressK() * 9), pickN = drinks.slice().sort(() => Math.random() - 0.5).slice(0, 4), order = {};
+        for (let i = 0; i < n; i++) order[pickN[i % pickN.length]] = (order[pickN[i % pickN.length]] || 0) + 1;
+        J.order = order; J.value = orderValue(order, 10) + 1500; J.st = 'wait'; J.t = 90 + n * 8; J.label.show = true; J.p.root.visible = true; popIn(J.p.root);
+        toast('🏆 咖啡比賽！評審要試喝 ' + n + ' 杯');
       } else J.t = 30;
     }
     if (J.st === 'wait') {
@@ -2443,7 +2609,7 @@ function openPanel(kind) {
       if (ti === 1 && !workers.length) { body.innerHTML = '<div class="empty">解鎖第一位員工後開放</div>'; return; }
       if (ti === 1) {
         const n = (r) => workers.filter((w) => w.role === r).length;
-        body.insertAdjacentHTML('beforeend', '<div class="chips staff">' + [['cashier', '收銀員'], ['picker', '採豆工'], ['roaster', '烘豆師'], ['barista', '咖啡師'], ['waiter', '外場'], ['washer', '洗杯工'], ['baker', '烘焙師'], ['manager', '店長'], ['supervisor', '莊園主管']].filter(([r]) => n(r) || r === 'cashier').map(([r, nm]) => '<span class="chip">' + nm + ' ×' + n(r) + '</span>').join('') + '</div>');
+        body.insertAdjacentHTML('beforeend', '<div class="chips staff">' + [['cashier', '櫃台店員'], ['picker', '採豆工'], ['roaster', '烘豆師'], ['barista', '咖啡師'], ['waiter', '外場'], ['washer', '洗杯工'], ['baker', '烘焙師'], ['manager', '店長'], ['supervisor', '莊園主管']].filter(([r]) => n(r) || r === 'cashier').map(([r, nm]) => '<span class="chip">' + nm + ' ×' + n(r) + '</span>').join('') + '</div>');
         for (const role in HIRE) {
           if (!roleOpen(role)) continue;
           const h = HIRE[role], cost = hireCost(role), max = cost === null;
@@ -2493,12 +2659,12 @@ function openPanel(kind) {
     const chipsOf = (cnt) => { const ks = Object.keys(cnt).filter((k) => cnt[k] > 0); return ks.length ? ks.map((k) => '<span class="chip">' + ICON[k] + cnt[k] + '</span>').join('') : '<span class="empty">空空的</span>'; };
     const cntList = (list) => { const o = {}; for (const t of list) o[t] = (o[t] || 0) + 1; return o; };
     let h = '<div class="sec">背包 ' + player.carry.length + '/' + player.cap() + '</div><div class="chips">' + chipsOf(cntList(player.carry.map((c) => c.type))) + '</div>';
-    h += '<div class="sec">山城市集</div>';
+    h += '<div class="sec">山城咖啡屋</div>';
     const sh = listOf('shelf');
     h += sh.length ? sh.map((s) => '<div class="chips"><span class="chip">' + s.def.name + ' ' + s.bin.list.length + '/' + upVal('shelfCap') + '</span>' + s.items.map((t) => '<span class="chip">' + ICON[t] + binCount(s.bin, t) + '</span>').join('') + '</div>').join('') : '<div class="empty">還沒有貨架</div>';
     const bs = binStations();
     if (bs.length) h += '<div class="sec">牛奶箱和雞蛋箱</div>' + bs.map((s) => '<div class="chips"><span class="chip">' + s.def.name + ' ' + s.bin.list.length + '/' + s.bin.max + '</span>' + chipsOf(cntList(s.bin.list)) + '</div>').join('');
-    if (stations.warehouse) h += '<div class="sec">倉庫 ' + storeTotal() + '/' + storeCap() + '</div><div class="chips">' + chipsOf(state.store) + '</div>';
+    if (stores().length) h += '<div class="sec">倉庫（' + stores().length + ' 間）' + storeTotal() + '/' + storeCap() + '</div><div class="chips">' + chipsOf(state.store) + '</div>';
     h += '<div class="sec">加工機器</div><div class="chips">';
     for (const s of listOf('machine')) h += '<span class="chip">' + s.def.name + ' ' + (s.def.inAny ? ICON.geisha + s.inBin.list.length : s.def.in ? ICON[s.def.in] + s.inN : '') + (s.def.in2 ? ' ' + ICON[s.def.in2] + s.inN2 : '') + ' → ' + machOuts(s).map((t) => ICON[t] + binCount(s.outBin, t)).join(' ') + '</span>';
     if (tables.length) {
@@ -2586,19 +2752,19 @@ function playerInteract(dt) {
         if (!t && s.bin.list.length >= s.bin.max * 0.8) t = s.bin.list[s.bin.list.length - 1];
         if (t) { player.xfer2 = 0.08; binTake(s.bin, t); sfx('pop'); takeInto(player, t, V3(s.outPt.x, 0.4, s.outPt.z)); }
       }
-    } else if (s.kind === 'shelf' && dist2(pp, s.front.x, s.front.z - 0.6) < 1.7) {
+    } else if (s.kind === 'shelf' && dist2(pp, s.front.x - s.fv[0] * 0.6, s.front.z - s.fv[1] * 0.6) < 1.7) {
       for (const t of s.items) if (count(player, t) > 0) { depositTo(player, s, t, dt); break; }
     }
   }
-  const wh = stations.warehouse;
-  if (wh) {
+  const kinds = Object.keys(state.store).filter((k) => state.store[k] > 0).sort((a, b) => state.store[b] - state.store[a]);
+  const whHtml = '<div class="zn">倉庫 ' + storeTotal() + '/' + storeCap() + '</div>' + (kinds.length ? '<div class="inv">' + kinds.slice(0, 8).map((k) => '<span>' + ICON[k] + state.store[k] + '</span>').join('') + '</div>' : '<div class="inv">空的</div>');
+  for (const wh of stores()) {
     if (dist2(pp, wh.depPt.x, wh.depPt.z) < 1.0 && player.carry.length) depositTo(player, wh, player.carry[player.carry.length - 1].type, dt);
     if (player.xfer2 <= 0 && dist2(pp, wh.outPt.x, wh.outPt.z) < 1.0 && room(player) > 0) {
       let best = null; for (const t in state.store) if (state.store[t] > 0 && (!best || state.store[t] > state.store[best])) best = t;
       if (best) { player.xfer2 = 0.08; state.store[best]--; sfx('pop'); takeInto(player, best, V3(wh.outPt.x, 0.5, wh.outPt.z)); }
     }
-    const kinds = Object.keys(state.store).filter((k) => state.store[k] > 0).sort((a, b) => state.store[b] - state.store[a]);
-    setLabel(wh.label, '<div class="zn">倉庫 ' + storeTotal() + '/' + storeCap() + '</div>' + (kinds.length ? '<div class="inv">' + kinds.map((k) => '<span>' + ICON[k] + state.store[k] + '</span>').join('') + '</div>' : '<div class="inv">空的</div>'));
+    setLabel(wh.label, whHtml);
   }
   // café: serve, wipe, collect
   player.xfer3 = (player.xfer3 || 0) - dt;
@@ -2708,6 +2874,7 @@ function updateWorld(dt, T) {
         }
       }
     } else if (s.kind === 'shelf') {
+      if (s.big !== cap > 40) shelfModel(s, cap > 40);
       while (s.bin.list.length > cap) binTake(s.bin);
       binRender(s.bin);
       const cnt = {}; for (const t of s.bin.list) cnt[t] = (cnt[t] || 0) + 1;
@@ -2770,10 +2937,8 @@ function someoneNear(x, z, r) {
 }
 function updateDoorsAndLights(dt) {
   const ease = Math.min(1, dt * 7);
-  if (shopDoor.d) { shopDoor.k += ((someoneNear(6.5, -7.3, 2.3) ? 1 : 0) - shopDoor.k) * ease; shopDoor.d.open(shopDoor.k); }
-  if (shopDoor2.d) { shopDoor2.k += ((someoneNear(DOOR2_X, -7.3, 2.3) ? 1 : 0) - shopDoor2.k) * ease; shopDoor2.d.open(shopDoor2.k); }
-  const wh = stations.warehouse;
-  if (wh) { wh.k += ((someoneNear(wh.def.pos[0], wh.def.pos[1] + 2.4, 2.8) ? 1 : 0) - wh.k) * ease; wh.door.position.y = wh.k * 1.85; }
+  for (const wh of stores()) { wh.k += ((someoneNear(wh.def.pos[0], wh.def.pos[1] + 2.4, 2.8) ? 1 : 0) - wh.k) * ease; wh.door.position.y = wh.k * 1.85; }
+  for (const D of DOORS) if (D.d) { D.k += ((someoneNear(D.x, -7.3, 2.3) ? 1 : 0) - D.k) * ease; D.d.open(D.k); }
   for (const sh of listOf('shelf')) {
     if (!sh.door) continue;
     sh.dk += ((someoneNear(sh.front.x, sh.front.z, 1.9) ? 1 : 0) - sh.dk) * ease;
@@ -2815,6 +2980,7 @@ function updateCamera(dt, snap) {
 buildWorld();
 ITEMS.seasonal.name = '季節限定・' + SEASONS[0];
 for (const def of DEFS) if (isBuilt(def.id)) build(def, true);
+booting = false;
 for (const role in state.extra) if (HIRE[role] && roleOpen(role)) for (let i = 0; i < Math.min(HIRE_MAX, state.extra[role]); i++) makeWorker(role, HIRE[role].home, false);
 applyShopLook(false); applyFloor(false); applyAd(false); applyBasket(false);
 for (const k of ['mgrShop', 'mgrFarm']) if (state.up[k]) spawnManager(k, true);
@@ -2832,7 +2998,7 @@ function frame(now) {
   saveT += dt; if (saveT > 4) { saveT = 0; save(); }
 }
 function step(dt) {
-  T += dt;
+  T += dt; navLeft = NAV_BUDGET;
   for (let i = later.length - 1; i >= 0; i--) { later[i].t -= dt; if (later[i].t <= 0) { const f = later[i].fn; later.splice(i, 1); f(); } }
   movePlayer(dt);
   playerInteract(dt);
@@ -2879,7 +3045,9 @@ addEventListener('pagehide', save);
 // test hooks
 window.__cafe = {
   state, stations, player, zones, customers, diners, tables, workers, orders, events, DEFS, COUNTERS, sink, stats, colliders, LOG_PAGES, ITEMS,
-  SHOP, shopDoor2, mapsGet, refreshZones, inside: (x, z) => !!insideBox(x, z),
+  SHOP, DOORS, navStats, MAX_PEOPLE, mapsGet, refreshZones, inside: (x, z) => !!insideBox(x, z), storeCap, stores: () => stores().map((q) => q.id),
+  shelfInfo: () => listOf('shelf').map((q) => [q.id, q.def.pos[0], q.def.pos[1], q.def.face, q.bin.list.length, q.big]),
+  fillShelves(n) { for (const q of listOf('shelf')) { let k = 0; while (q.bin.list.length < n) binAdd(q.bin, q.items[k++ % q.items.length]); } },
   give(type, n) { for (let i = 0; i < n && room(player) > 0; i++) stackAdd(player, type); },
   cash(n) { state.money += n; updateMoney(); },
   tp(x, z) { player.p.root.position.set(x, 0, z); updateCamera(0, true); },
