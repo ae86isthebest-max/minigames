@@ -24,6 +24,13 @@ export const ITEMS4 = {
   tempura: { name: '炸蝦', icon: '🍤', h: 0.16, price: 24 },
   squidgrill: { name: '烤魷魚', icon: '🦑', h: 0.14, price: 26 },
   lobstermeal: { name: '龍蝦餐', icon: '🦞', h: 0.2, price: 140 },
+  // 南灣 expansion: new product lines
+  oyster: { name: '生蠔', icon: '🦪', h: 0.14, price: 28 },
+  urchin: { name: '海膽', icon: '🟣', h: 0.2, price: 52 },
+  salt: { name: '海鹽', icon: '🧂', h: 0.26, price: 18 },
+  oystersauce: { name: '蠔油', icon: '🍶', h: 0.34, price: 66 },
+  fishball: { name: '魚丸', icon: '🍡', h: 0.14, price: 30 },
+  smoked: { name: '煙燻魚', icon: '🐟', h: 0.18, price: 42 },
 };
 
 const cache = new Map();
@@ -166,9 +173,89 @@ function build(type) {
     lobsterShape(g, 0.9, 0.1);
     for (const [x, z] of [[-0.18, 0.18], [0.2, -0.17]]) add(g, mesh(G.sphere(0.05, 8, 6), '#59c25b'), x, 0.07, z).scale.set(1.3, 0.4, 1);
     add(g, mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.03, 10, 1, false, 0, Math.PI), '#ffe14d'), 0.05, 0.07, 0.2);
+  } else if (type === 'oyster') {
+    oysterShape(g, 1, 0.05);
+  } else if (type === 'urchin') {
+    urchinShape(g, 1, 0.13);
+  } else if (type === 'salt') {
+    // little cloth bag of sea salt, tied with a blue ribbon
+    add(g, mesh(G.rbox(0.26, 0.22, 0.22, 0.08), '#fbf7ec'), 0, 0.11, 0);
+    add(g, mesh(G.cone(0.1, 0.12, 6), '#fbf7ec'), 0, 0.27, 0);
+    add(g, mesh(G.cyl(0.05, 0.05, 0.04, 8), '#4f9cf0'), 0, 0.23, 0);
+    add(g, mesh(G.rbox(0.18, 0.08, 0.02, 0.02), '#5aa9ff', false), 0, 0.11, 0.115);
+    for (const [x, z] of [[-0.04, 0.02], [0.03, -0.02], [0.0, 0.04]]) add(g, mesh(G.rbox(0.03, 0.03, 0.03, 0.008), '#ffffff', false), x, 0.34, z).rotation.set(0.5, 0.6, 0);
+  } else if (type === 'oystersauce') {
+    // dark bottle, red label, yellow cap
+    add(g, mesh(G.cyl(0.085, 0.09, 0.22, 12), '#4a2a1c'), 0, 0.11, 0);
+    add(g, mesh(G.cyl(0.04, 0.07, 0.08, 12), '#4a2a1c'), 0, 0.26, 0);
+    add(g, mesh(G.cyl(0.045, 0.045, 0.05, 10), '#ffd34a'), 0, 0.32, 0);
+    add(g, mesh(G.cyl(0.092, 0.092, 0.1, 12), '#e8494d'), 0, 0.12, 0);
+    add(g, mesh(G.rbox(0.07, 0.05, 0.02, 0.01), '#fff3c9', false), 0, 0.12, 0.09);
+  } else if (type === 'fishball') {
+    // skewer of three fish balls on a paper boat
+    add(g, mesh(G.rbox(0.42, 0.04, 0.2, 0.02), '#f6e3c0'), 0, 0.02, 0);
+    const st = add(g, mesh(G.cyl(0.01, 0.01, 0.5, 5), '#d9a066'), 0, 0.09, 0); st.rotation.z = Math.PI / 2;
+    for (const x of [-0.12, 0, 0.12]) add(g, mesh(G.sphere(0.06, 10, 8), '#fff2dc'), x, 0.09, 0);
+    add(g, mesh(G.rbox(0.3, 0.012, 0.03, 0.006), '#e8694d', false), 0, 0.15, 0);
+  } else if (type === 'smoked') {
+    const f = fishShape(g, 1.0, '#b5642e', '#e8a85a', 0.1);
+    for (const x of [-0.1, -0.02, 0.06, 0.14]) add(f, mesh(G.rbox(0.02, 0.02, 0.12, 0.006), '#6b3416', false), x, 0.075, 0.02).rotation.y = 0.4;
   }
   g.traverse((o) => { if (o.isMesh && !o.userData.outline && o.material.isMeshLambertMaterial) o.castShadow = true; });
   bakeStatic(g);
+  return g;
+}
+function oysterShape(g, s, y0) {
+  const r = add(g, new THREE.Group(), 0, y0, 0); r.scale.setScalar(s);
+  add(r, mesh(G.sphere(0.17, 10, 6), '#8f8a7e'), 0, 0, 0).scale.set(1.25, 0.32, 1);
+  add(r, mesh(G.sphere(0.14, 10, 6), '#efe9df'), 0.02, 0.04, 0).scale.set(1.15, 0.22, 0.9);
+  add(r, mesh(G.sphere(0.07, 8, 6), '#f4e8d0'), 0.03, 0.065, 0).scale.set(1.2, 0.5, 0.9);
+  const lid = add(r, mesh(G.sphere(0.16, 10, 6), '#a39d90'), -0.13, 0.1, 0); lid.scale.set(0.5, 0.2, 0.95); lid.rotation.z = 1.0;
+  for (const [x, z] of [[0.12, 0.06], [-0.05, -0.1], [0.06, -0.08]]) add(r, mesh(G.sphere(0.03, 5, 4), '#6f6a60', false), x, 0.03, z).scale.set(1, 0.4, 1);
+  return r;
+}
+function urchinShape(g, s, y0) {
+  const r = add(g, new THREE.Group(), 0, y0, 0); r.scale.setScalar(s);
+  add(r, mesh(G.sphere(0.12, 12, 8), '#5b2a6e'), 0, 0, 0).scale.set(1, 0.85, 1);
+  for (let i = 0; i < 16; i++) {
+    const a = i * 2.4, y = -0.5 + (i % 4) * 0.4, rr = Math.sqrt(1 - y * y * 0.5);
+    const sp = add(r, mesh(G.cone(0.022, 0.13, 4), i % 2 ? '#7a3a8f' : '#4a1f5c'), Math.cos(a) * 0.12 * rr, y * 0.11, Math.sin(a) * 0.12 * rr);
+    sp.lookAt(Math.cos(a) * 2 * rr, y * 1.8, Math.sin(a) * 2 * rr); sp.rotateX(Math.PI / 2);
+  }
+  add(r, mesh(G.sphere(0.05, 8, 6), '#ffa23a'), 0, 0.09, 0).scale.set(1.3, 0.4, 0.9);
+  return r;
+}
+
+// ---------- 南灣 crops: oyster racks, urchin rocks, salt heaps ----------
+export function oysterPlant() {
+  const g = new THREE.Group();
+  add(g, mesh(G.cyl(0.06, 0.07, 0.7, 6), '#9a6236'), 0, 0.35, 0);
+  add(g, mesh(G.cyl(0.08, 0.08, 0.06, 6), '#7a4a26'), 0, 0.71, 0);
+  const fruit = add(g, new THREE.Group());
+  for (let i = 0; i < 4; i++) { const o = add(fruit, new THREE.Group(), Math.cos(i * 1.6) * 0.13, 0.18 + i * 0.12, Math.sin(i * 1.6) * 0.13); o.rotation.set(0.9, i * 1.6, 0.3); oysterShape(o, 0.85, 0); }
+  return { g, fruit };
+}
+export function urchinPlant() {
+  const g = new THREE.Group();
+  const rk = add(g, mesh(new THREE.DodecahedronGeometry(0.3, 0), '#8f9aa0'), 0, 0.1, 0); rk.scale.set(1.2, 0.5, 1);
+  const fruit = add(g, new THREE.Group());
+  for (const [x, z] of [[-0.14, 0.05], [0.16, -0.04], [0.0, 0.18]]) urchinShape(fruit, 0.9, 0).position.set(x, 0.28, z);
+  return { g, fruit };
+}
+export function saltPlant() {
+  const g = new THREE.Group();
+  add(g, mesh(G.rbox(0.62, 0.05, 0.62, 0.03), '#c9d6dc', false, true), 0, 0.025, 0);
+  const fruit = add(g, new THREE.Group());
+  add(fruit, mesh(G.cone(0.26, 0.36, 9), '#ffffff'), 0, 0.2, 0);
+  for (const [x, z] of [[0.2, 0.12], [-0.18, 0.16]]) add(fruit, mesh(G.cone(0.1, 0.14, 7), '#f4f8fb'), x, 0.08, z);
+  return { g, fruit };
+}
+// shallow evaporation pan with a white salt crust round the edge
+export function saltPan(w, d) {
+  const g = new THREE.Group();
+  add(g, mesh(G.rbox(w, 0.14, d, 0.06), '#b9a27a', false, true), 0, 0.07, 0);
+  add(g, mesh(G.rbox(w - 0.24, 0.04, d - 0.24, 0.04), '#cfe8ef', false, true), 0, 0.13, 0);
+  for (let i = 0; i < 10; i++) add(g, mesh(G.rbox(0.3, 0.03, 0.12, 0.02), '#ffffff', false, true), -w / 2 + 0.3 + (i % 5) * (w - 0.6) / 4, 0.155, i < 5 ? -d / 2 + 0.2 : d / 2 - 0.2);
   return g;
 }
 
@@ -349,6 +436,38 @@ export function machine4(kind) {
     spin = add(g, new THREE.Group(), 0, 0.95, -0.2);
     for (const x of [-0.35, 0.15]) { const s = itemMesh('squidgrill'); s.scale.setScalar(0.9); s.position.set(x, 0, 0); s.rotation.y = Math.PI / 2; spin.add(s); }
     spin.userData.axis = 'flip2';
+  } else if (kind === 'fishball') {
+    // steel mixer: fish paste bowl with a turning paddle, a few finished balls in front
+    add(g, mesh(G.rbox(1.6, 0.85, 1.0, 0.12), '#cfe9ff'), 0, 0.43, -0.2);
+    add(g, mesh(G.rbox(1.66, 0.1, 1.06, 0.04), '#5aa9ff'), 0, 0.88, -0.2);
+    add(g, mesh(G.cyl(0.42, 0.34, 0.4, 16), '#e4e9ee'), -0.15, 1.12, -0.25);
+    add(g, mesh(G.cyl(0.38, 0.38, 0.04, 16), '#fff2dc', false), -0.15, 1.31, -0.25);
+    for (const [x, z] of [[0.55, 0.12], [0.45, -0.05], [0.62, -0.1]]) add(g, mesh(G.sphere(0.07, 8, 6), '#fff2dc'), x, 0.98, z);
+    spin = add(g, new THREE.Group(), -0.15, 1.36, -0.25);
+    add(spin, mesh(G.cyl(0.03, 0.03, 0.4, 6), '#8f969f'), 0, 0.15, 0);
+    add(spin, mesh(G.rbox(0.56, 0.05, 0.08, 0.02), '#8f969f'), 0, 0.0, 0);
+  } else if (kind === 'smoker') {
+    // wooden smokehouse with a chimney and fish hanging in the smoke
+    add(g, mesh(G.rbox(1.5, 1.4, 1.0, 0.12), '#a8693a'), 0, 0.7, -0.25);
+    add(g, mesh(G.rbox(1.62, 0.14, 1.12, 0.05), '#6b3416'), 0, 1.45, -0.25);
+    add(g, mesh(G.rbox(1.0, 0.85, 0.06, 0.05), '#3a2a22'), 0, 0.7, 0.26);
+    add(g, mesh(G.cyl(0.13, 0.15, 0.7, 8), '#6a7382'), 0.5, 1.85, -0.5);
+    add(g, mesh(G.cyl(0.17, 0.17, 0.08, 8), '#4a4f5a'), 0.5, 2.22, -0.5);
+    for (const [x, y] of [[0.5, 2.45], [0.62, 2.7], [0.42, 2.95]]) add(g, mesh(G.sphere(0.12, 8, 6), '#dcdcdc', false), x, y, -0.5);
+    spin = add(g, new THREE.Group(), 0, 1.15, 0.33);
+    add(spin, mesh(G.rbox(0.9, 0.03, 0.03, 0.01), C.woodDark), 0, 0, 0);
+    for (const x of [-0.28, 0, 0.28]) { const f = itemMesh('smoked'); f.rotation.set(0, 0, Math.PI / 2); f.scale.setScalar(0.8); f.position.set(x, -0.25, 0.02); spin.add(f); }
+    spin.userData.axis = 'sway';
+  } else if (kind === 'oystersauce') {
+    // big simmering pot on a brick stove, a ladle stirring, filled bottles on the side
+    add(g, mesh(G.rbox(1.6, 0.6, 1.0, 0.1), '#c9603f'), 0, 0.3, -0.2);
+    for (const y of [0.18, 0.4]) add(g, mesh(G.rbox(1.62, 0.03, 1.02, 0.01), '#a84a30', false), 0, y, -0.2);
+    add(g, mesh(G.cyl(0.48, 0.42, 0.5, 18), '#3a3540'), -0.15, 0.85, -0.2);
+    add(g, mesh(G.cyl(0.44, 0.44, 0.04, 18), '#6b3a22', false), -0.15, 1.08, -0.2);
+    for (const x of [0.5, 0.68]) { const b = itemMesh('oystersauce'); b.position.set(x, 0.6, 0.1); g.add(b); }
+    spin = add(g, new THREE.Group(), -0.15, 1.1, -0.2);
+    const ld = add(spin, mesh(G.cyl(0.025, 0.025, 0.7, 6), C.woodDark), 0.22, 0.25, 0); ld.rotation.z = -0.4;
+    add(spin, mesh(G.sphere(0.08, 8, 6), C.woodDark), 0.1, 0.0, 0).scale.set(1, 0.5, 1);
   } else {
     // lobster pot on a stove
     add(g, mesh(G.rbox(1.6, 0.6, 1.0, 0.1), '#5b6474'), 0, 0.3, -0.2);

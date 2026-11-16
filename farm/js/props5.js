@@ -30,6 +30,16 @@ export const ITEMS5 = {
   bed_r: { name: '彩繪床', icon: '🛏', h: 0.42, price: 220, ss: 0.8 },
   bookcase_r: { name: '彩繪書櫃', icon: '📚', h: 0.66, price: 180, ss: 0.85 },
   rocker_r: { name: '彩繪搖椅', icon: '🪑', h: 0.64, price: 280, ss: 0.85 },
+  // the new east woodland (擴建：東部林地): four orchard lines and the wood carver
+  blueberry: { name: '藍莓', icon: '🫐', h: 0.16, price: 18 },
+  jam: { name: '藍莓果醬', icon: '🍯', h: 0.27, price: 60 },
+  chestnut: { name: '栗子', icon: '🌰', h: 0.16, price: 22 },
+  roastnut: { name: '糖炒栗子', icon: '🌰', h: 0.3, price: 72 },
+  bamboo: { name: '竹子', icon: '🎋', h: 0.18, price: 20 },
+  bambooware: { name: '竹籃', icon: '🧺', h: 0.3, price: 95 },
+  lavender: { name: '薰衣草', icon: '💜', h: 0.14, price: 26 },
+  soap: { name: '薰衣草皂', icon: '🧼', h: 0.13, price: 105 },
+  carving: { name: '木雕小熊', icon: '🐻', h: 0.42, price: 170 },
   money: { name: '錢', icon: '💵', h: 0.07, price: 0 },
 };
 
@@ -136,6 +146,62 @@ function buildItem(type) {
     chairShape(g, wood, accent);
     for (const x of [-0.16, 0.16]) { const r = add(g, mesh(new THREE.TorusGeometry(0.36, 0.022, 5, 18, Math.PI * 0.42), wood), x, 0.4, 0); r.rotation.set(0, Math.PI / 2, Math.PI * 1.29); }
     for (const x of [-0.17, 0.17]) add(g, mesh(G.rbox(0.04, 0.04, 0.3, 0.015), accent), x, 0.38, 0.02);
+  } else if (type === 'blueberry') {
+    add(g, mesh(G.rbox(0.34, 0.1, 0.26, 0.03), '#e8c290'), 0, 0.05, 0);
+    add(g, mesh(G.rbox(0.36, 0.02, 0.28, 0.01), '#c98a55', false), 0, 0.1, 0);
+    for (const [x, z, c, y] of [[-0.09, -0.05, '#4a5fc9', 0], [0.0, -0.06, '#3a4aa8', 0], [0.09, -0.04, '#5468d6', 0], [-0.08, 0.06, '#3a4aa8', 0], [0.02, 0.05, '#4a5fc9', 0], [0.1, 0.06, '#3a4aa8', 0], [0.0, 0.0, '#5468d6', 0.04]]) {
+      add(g, mesh(G.sphere(0.055, 8, 6), c), x, 0.14 + y, z);
+    }
+    add(g, mesh(G.sphere(0.02, 5, 4), '#2a2f6a', false), 0, 0.22, 0);
+  } else if (type === 'jam') {
+    add(g, mesh(G.cyl(0.11, 0.11, 0.18, 14), '#6a3fa0'), 0, 0.09, 0);
+    add(g, mesh(G.cyl(0.115, 0.115, 0.07, 14), '#fff3dd'), 0, 0.09, 0);
+    add(g, mesh(G.cyl(0.12, 0.12, 0.04, 14), '#ff5a6e'), 0, 0.2, 0);
+    add(g, mesh(G.cyl(0.14, 0.13, 0.03, 8), '#fbfaf5'), 0, 0.225, 0);
+    add(g, mesh(G.sphere(0.035, 7, 5), '#4a5fc9', false), 0, 0.1, 0.11);
+  } else if (type === 'chestnut') {
+    for (const [x, z, r] of [[-0.08, 0.02, 0], [0.08, 0.03, 0.8], [0, -0.08, 1.6]]) {
+      const n = add(g, mesh(G.sphere(0.085, 10, 8), '#8b4a24'), x, 0.08, z); n.scale.set(1, 0.85, 0.9); n.rotation.y = r;
+      add(g, mesh(G.sphere(0.06, 8, 6), '#e0c08a', false), x, 0.035, z).scale.set(1.1, 0.45, 1);
+      add(g, mesh(G.cone(0.025, 0.05, 5), '#5a3018', false), x, 0.16, z);
+    }
+  } else if (type === 'roastnut') {
+    add(g, mesh(G.cyl(0.13, 0.09, 0.22, 10), '#e8c290'), 0, 0.11, 0);
+    add(g, mesh(G.cyl(0.133, 0.12, 0.06, 10), '#e8494d'), 0, 0.16, 0);
+    for (const [x, z] of [[-0.05, 0.02], [0.05, -0.02], [0, 0.05], [0.02, -0.06]]) add(g, mesh(G.sphere(0.055, 8, 6), '#6b3418'), x, 0.24, z).scale.set(1, 0.8, 1);
+    add(g, mesh(G.sphere(0.03, 6, 5), '#ffd34a', false), 0.06, 0.27, 0.05);
+  } else if (type === 'bamboo') {
+    for (const [y, z] of [[0.06, -0.08], [0.06, 0.06], [0.16, -0.01]]) {
+      const c = add(g, mesh(G.cyl(0.055, 0.055, 0.56, 10), '#7fc85a'), 0, y, z); c.rotation.z = Math.PI / 2;
+      for (const x of [-0.14, 0.12]) { const n = add(g, mesh(G.cyl(0.062, 0.062, 0.025, 10), '#5a9f42', false), x, y, z); n.rotation.z = Math.PI / 2; }
+    }
+    add(g, mesh(G.rbox(0.06, 0.24, 0.24, 0.02), '#c98a55'), 0, 0.1, -0.01);
+    const lf = add(g, mesh(G.sphere(0.06, 6, 5), '#9fe07a', false), 0.27, 0.2, 0); lf.scale.set(1.8, 0.3, 0.8);
+  } else if (type === 'bambooware') {
+    add(g, mesh(G.cyl(0.18, 0.14, 0.18, 14), '#d9b45a'), 0, 0.09, 0);
+    for (const y of [0.05, 0.11, 0.17]) add(g, mesh(G.cyl(0.165 + y * 0.12, 0.165 + y * 0.12, 0.02, 14), '#b8903a', false), 0, y, 0);
+    add(g, mesh(new THREE.TorusGeometry(0.15, 0.018, 6, 16, Math.PI), '#b8903a'), 0, 0.18, 0);
+    add(g, mesh(G.sphere(0.07, 8, 6), '#7fc85a', false), 0.04, 0.19, 0.03).scale.set(1, 0.4, 1);
+  } else if (type === 'lavender') {
+    for (let i = 0; i < 6; i++) {
+      const a = (i - 2.5) * 0.12;
+      const st = add(g, mesh(G.cyl(0.012, 0.012, 0.42, 5), '#6fae4a', false), 0, 0.06, (i - 2.5) * 0.025); st.rotation.z = Math.PI / 2 + a;
+      add(g, mesh(G.capsule(0.03, 0.14, 6), i % 2 ? '#a98bff' : '#8f6ad6'), 0.22, 0.07 + a * 0.4, (i - 2.5) * 0.025).rotation.z = Math.PI / 2;
+    }
+    add(g, mesh(G.rbox(0.05, 0.08, 0.1, 0.02), '#ff8fb1'), -0.04, 0.06, 0);
+  } else if (type === 'soap') {
+    add(g, mesh(G.rbox(0.28, 0.1, 0.19, 0.04), '#e3d2ff'), 0, 0.05, 0);
+    add(g, mesh(G.rbox(0.08, 0.105, 0.2, 0.01), '#fff3dd'), 0, 0.05, 0);
+    add(g, mesh(G.capsule(0.02, 0.08, 5), '#8f6ad6', false), 0.07, 0.115, 0).rotation.z = Math.PI / 2;
+    add(g, mesh(G.sphere(0.02, 5, 4), '#6fae4a', false), 0, 0.112, 0);
+  } else if (type === 'carving') {
+    add(g, mesh(G.cyl(0.15, 0.16, 0.05, 12), '#8b5a3c'), 0, 0.025, 0);
+    add(g, mesh(G.sphere(0.12, 10, 8), '#c98a55'), 0, 0.15, 0).scale.set(1, 1.05, 0.9);
+    add(g, mesh(G.sphere(0.09, 10, 8), '#d9a066'), 0, 0.31, 0.01);
+    for (const s of [-1, 1]) { add(g, mesh(G.sphere(0.035, 6, 5), '#c98a55'), s * 0.065, 0.39, 0); add(g, mesh(G.sphere(0.035, 6, 5), '#c98a55'), s * 0.1, 0.18, 0.07); }
+    add(g, mesh(G.sphere(0.04, 6, 5), '#f2d2a2'), 0, 0.29, 0.085);
+    add(g, mesh(G.sphere(0.014, 5, 4), '#3a2a22', false), 0, 0.305, 0.12);
+    add(g, mesh(G.rbox(0.12, 0.03, 0.03, 0.01), '#ff5a6e', false), 0, 0.23, 0.08);
   } else if (type === 'money') {
     add(g, mesh(G.rbox(0.42, 0.06, 0.24, 0.02), C.money), 0, 0.03, 0);
     add(g, mesh(G.rbox(0.1, 0.065, 0.245, 0.01), '#d8f7c8'), 0, 0.03, 0);
@@ -223,6 +289,69 @@ export function mossPlot(w, d) {
   return g;
 }
 
+// ---------- east woodland orchards (fruit = the part that is picked) ----------
+export function soilPlot(w, d) {
+  const g = new THREE.Group();
+  add(g, mesh(G.rbox(w, 0.08, d, 0.3), '#b8875a', false, true), 0, 0.04, 0);
+  for (let z = -d / 2 + 0.55; z < d / 2 - 0.3; z += 0.85) add(g, mesh(G.rbox(w - 0.5, 0.03, 0.3, 0.1), '#a3744a', false, true), 0, 0.085, z);
+  for (const [x, z] of [[-w / 2 + 0.1, -d / 2 + 0.1], [w / 2 - 0.1, d / 2 - 0.1]]) add(g, mesh(G.sphere(0.3, 7, 5), '#6fbf55'), x, 0.12, z).scale.set(1.2, 0.5, 1);
+  return g;
+}
+export function berryBush() {
+  const g = new THREE.Group();
+  g.add(blob(0.7));
+  add(g, mesh(G.sphere(0.48, 10, 8), '#4f9d40'), 0, 0.46, 0).scale.set(1, 0.85, 1);
+  add(g, mesh(G.sphere(0.32, 9, 7), '#5fae4a'), 0.28, 0.6, 0.12);
+  add(g, mesh(G.sphere(0.3, 9, 7), '#478f3a'), -0.26, 0.58, -0.1);
+  const fruit = add(g, new THREE.Group());
+  for (let i = 0; i < 9; i++) { const a = i * 2.4, y = 0.35 + (i % 3) * 0.16; add(fruit, mesh(G.sphere(0.065, 7, 5), i % 2 ? '#3a4aa8' : '#5468d6'), Math.cos(a) * 0.44, y, Math.sin(a) * 0.44); }
+  return { g, fruit };
+}
+export function chestnutTree() {
+  const g = new THREE.Group();
+  g.add(blob(1.0));
+  add(g, mesh(G.cyl(0.2, 0.28, 1.2, 8), '#7e4a24'), 0, 0.6, 0);
+  add(g, mesh(G.sphere(0.95, 10, 8), '#6aa84f'), 0, 1.75, 0).scale.set(1.1, 0.85, 1.1);
+  add(g, mesh(G.sphere(0.6, 9, 7), '#7cbb5a'), 0.5, 2.05, 0.2);
+  add(g, mesh(G.sphere(0.55, 9, 7), '#5a9a42'), -0.5, 2.0, -0.2);
+  const fruit = add(g, new THREE.Group());
+  for (let i = 0; i < 6; i++) {
+    const a = i * 1.05, x = Math.cos(a) * 0.85, z = Math.sin(a) * 0.85 + 0.15, y = 1.45 + (i % 2) * 0.35;
+    add(fruit, mesh(G.sphere(0.13, 8, 6), '#b9c94a'), x, y, z);
+    for (const [dx, dy] of [[0.1, 0.05], [-0.1, 0.06], [0, -0.11]]) add(fruit, mesh(G.cone(0.03, 0.08, 4), '#9aab34', false), x + dx, y + dy, z + 0.05);
+  }
+  return { g, fruit };
+}
+function culm(parent, x, z, h, col) {
+  add(parent, mesh(G.cyl(0.07, 0.08, h, 8), col), x, h / 2, z);
+  for (let y = 0.45; y < h; y += 0.45) add(parent, mesh(G.cyl(0.085, 0.085, 0.04, 8), '#4f8f38', false), x, y, z);
+  for (const s of [-1, 1]) { const lf = add(parent, mesh(G.sphere(0.12, 6, 5), '#7fd06a', false), x + s * 0.16, h - 0.1, z); lf.scale.set(1.8, 0.3, 0.7); lf.rotation.z = s * 0.4; }
+}
+export function bambooClump() {
+  const g = new THREE.Group();
+  g.add(blob(0.8));
+  add(g, mesh(G.cyl(0.45, 0.5, 0.12, 10), '#8b6a3c'), 0, 0.06, 0);
+  culm(g, -0.22, -0.12, 2.6, '#5fae4a');
+  culm(g, 0.24, -0.18, 2.2, '#4f9d40');
+  const fruit = add(g, new THREE.Group());
+  culm(fruit, 0.02, 0.2, 2.0, '#8fd86a');
+  culm(fruit, -0.3, 0.22, 1.6, '#9fe07a');
+  add(fruit, mesh(G.cone(0.12, 0.36, 7), '#e0c86a'), 0.32, 0.18, 0.22);
+  return { g, fruit };
+}
+export function lavenderPlant() {
+  const g = new THREE.Group();
+  g.add(blob(0.65));
+  add(g, mesh(G.sphere(0.52, 9, 7), '#6f9d5a'), 0, 0.22, 0).scale.set(1.1, 0.55, 1.1);
+  const fruit = add(g, new THREE.Group());
+  for (let i = 0; i < 11; i++) {
+    const a = i * 0.62, r = 0.12 + (i % 3) * 0.12, x = Math.cos(a) * r, z = Math.sin(a) * r;
+    add(fruit, mesh(G.cyl(0.016, 0.016, 0.5, 4), '#6fae4a', false), x, 0.52, z);
+    add(fruit, mesh(G.capsule(0.055, 0.22, 6), i % 2 ? '#a98bff' : '#8f6ad6'), x, 0.86, z);
+  }
+  return { g, fruit };
+}
+
 // ---------- beehive, flowers ----------
 export function hive() {
   const g = new THREE.Group();
@@ -304,6 +433,59 @@ export function machine5(kind) {
     spin = add(g, new THREE.Group(), 0, 1.6, -0.25);
     add(spin, mesh(G.cyl(0.1, 0.12, 0.4, 8), '#6a7382'), 0, 0, 0);
     spin.userData.axis = 'none';
+  } else if (kind === 'jam') {
+    // stove with a copper pot of bubbling blueberry jam and a stirring spoon
+    add(g, mesh(G.rbox(1.5, 0.6, 1.0, 0.1), '#5b6474'), 0, 0.3, -0.2);
+    add(g, mesh(G.rbox(1.56, 0.06, 1.06, 0.03), '#3d4452'), 0, 0.62, -0.2);
+    add(g, mesh(G.cyl(0.42, 0.36, 0.42, 16), '#d98a3a'), 0, 0.86, -0.2);
+    add(g, mesh(G.cyl(0.38, 0.38, 0.03, 16), '#6a3fa0', false, true), 0, 1.06, -0.2);
+    for (const s of [-1, 1]) add(g, mesh(G.rbox(0.16, 0.06, 0.08, 0.02), '#b8733f'), s * 0.48, 0.98, -0.2);
+    for (const [x, z] of [[-0.12, -0.1], [0.1, -0.3]]) add(g, mesh(G.sphere(0.05, 6, 5), '#8a5ad0', false), x, 1.08, z);
+    spin = add(g, new THREE.Group(), 0, 1.0, -0.2);
+    add(spin, mesh(G.rbox(0.05, 0.6, 0.05, 0.02), '#c98a55'), 0.18, 0.25, 0).rotation.z = -0.35;
+    spin.userData.axis = 'y';
+  } else if (kind === 'roaster') {
+    // chestnut roaster: a black drum turning over the fire, a little chimney
+    add(g, mesh(G.rbox(1.6, 0.55, 1.0, 0.1), '#8f5a36'), 0, 0.28, -0.2);
+    add(g, mesh(G.rbox(1.2, 0.08, 0.6, 0.04), '#ff8a2a', false), 0, 0.58, -0.2);
+    spin = add(g, new THREE.Group(), 0, 0.95, -0.2);
+    add(spin, mesh(G.cyl(0.36, 0.36, 1.2, 14), '#2f2a28'), 0, 0, 0).rotation.z = Math.PI / 2;
+    for (const x of [-0.4, 0, 0.4]) add(spin, mesh(G.cyl(0.38, 0.38, 0.05, 14), '#6a5a50'), x, 0, 0).rotation.z = Math.PI / 2;
+    spin.userData.axis = 'x';
+    add(g, mesh(G.cyl(0.08, 0.1, 0.9, 8), '#6a7382'), 0.62, 1.0, -0.55);
+    add(g, mesh(G.cyl(0.13, 0.08, 0.12, 8), '#6a7382'), 0.62, 1.5, -0.55);
+  } else if (kind === 'bamboo') {
+    // weaving bench: a bamboo frame over a table, a basket turning on the stand
+    add(g, mesh(G.rbox(1.7, 0.12, 1.0, 0.04), '#c98a55'), 0, 0.78, -0.2);
+    for (const [x, z] of [[-0.75, -0.6], [0.75, -0.6], [-0.75, 0.2], [0.75, 0.2]]) add(g, mesh(G.cyl(0.05, 0.05, 0.78, 6), '#7fc85a'), x, 0.39, z);
+    for (const x of [-0.7, 0.7]) add(g, mesh(G.cyl(0.04, 0.04, 1.0, 6), '#5fae4a'), x, 1.3, -0.6);
+    add(g, mesh(G.cyl(0.04, 0.04, 1.44, 6), '#5fae4a'), 0, 1.8, -0.6).rotation.z = Math.PI / 2;
+    for (const x of [-0.35, 0.05, 0.4]) add(g, mesh(G.cyl(0.05, 0.05, 0.5, 6), '#9fe07a'), x, 1.05, -0.62).rotation.x = 0.2;
+    spin = add(g, new THREE.Group(), 0.1, 0.84, -0.15);
+    add(spin, mesh(G.cyl(0.24, 0.19, 0.24, 12), '#d9b45a'), 0, 0.12, 0);
+    for (const y of [0.06, 0.16]) add(spin, mesh(G.cyl(0.235, 0.235, 0.025, 12), '#b8903a', false), 0, y, 0);
+    spin.userData.axis = 'y';
+  } else if (kind === 'soap') {
+    // pastel soap press: the press head stamps the bars
+    add(g, mesh(G.rbox(1.5, 0.7, 1.0, 0.1), '#d9c7ff'), 0, 0.35, -0.2);
+    add(g, mesh(G.rbox(1.56, 0.06, 1.06, 0.03), '#a98bff'), 0, 0.72, -0.2);
+    for (const x of [-0.55, 0.55]) add(g, mesh(G.rbox(0.12, 0.9, 0.12, 0.04), '#8f6ad6'), x, 1.15, -0.3);
+    add(g, mesh(G.rbox(1.3, 0.14, 0.3, 0.05), '#8f6ad6'), 0, 1.62, -0.3);
+    for (const x of [-0.3, 0, 0.3]) add(g, mesh(G.rbox(0.22, 0.08, 0.16, 0.03), '#e3d2ff'), x, 0.79, -0.1);
+    spin = add(g, new THREE.Group(), 0, 1.15, -0.3);
+    add(spin, mesh(G.rbox(0.9, 0.16, 0.36, 0.05), '#fbfaf5'), 0, 0, 0);
+    add(spin, mesh(G.cyl(0.04, 0.04, 0.4, 6), '#cfd6de'), 0, 0.28, 0);
+    spin.userData.axis = 'dip';
+  } else if (kind === 'carver') {
+    // wood lathe: a block of wood turning between two heads, shavings on the bed
+    add(g, mesh(G.rbox(1.7, 0.6, 0.9, 0.1), '#6a7382'), 0, 0.3, -0.2);
+    add(g, mesh(G.rbox(1.76, 0.06, 0.96, 0.03), '#4a525e'), 0, 0.62, -0.2);
+    for (const x of [-0.7, 0.7]) add(g, mesh(G.rbox(0.26, 0.5, 0.4, 0.05), '#ff8a6b'), x, 0.9, -0.2);
+    spin = add(g, new THREE.Group(), 0, 0.95, -0.2);
+    add(spin, mesh(G.cyl(0.2, 0.2, 1.0, 8), '#e0a96a'), 0, 0, 0).rotation.z = Math.PI / 2;
+    for (const x of [-0.2, 0.15]) add(spin, mesh(G.cyl(0.21, 0.21, 0.04, 8), '#b8793f'), x, 0, 0).rotation.z = Math.PI / 2;
+    spin.userData.axis = 'x';
+    for (const [x, z] of [[-0.3, 0.1], [0.2, 0.15], [0.4, -0.05]]) add(g, mesh(G.sphere(0.06, 6, 5), '#f6d7a4', false), x, 0.67, z).scale.set(1.4, 0.3, 1);
   } else {
     // furniture workbench: wooden table with a saw going back and forth
     add(g, mesh(G.rbox(1.7, 0.12, 1.0, 0.04), '#c98a55'), 0, 0.82, -0.2);

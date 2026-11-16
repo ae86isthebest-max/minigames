@@ -83,9 +83,15 @@ const MKT_DOOR = 6.5, DOOR2_X = -8.2;   // the market door, and the 2nd door the
 const SHOP = { x0: -9.4, x1: 7.95, z0: -17.4, z1: -7.3 };
 const SHOW = { x0: -23.6, x1: -11.2, z0: -18, z1: -6 };
 const RIVER = { x0: 12.6, x1: 15.0 };
-const BRIDGES = [-4.9, 18.0];
+const BRIDGES = [-4.9, 19.6];
 const SPAWN = [17.6, -4.9];   // townsfolk come over the main bridge
 const SPAWN2 = [-25.2, -4.9];  // furniture buyers come down the forest road from the west
+const SPAWN3 = [69.0, -4.9];   // shoppers of the 林間市集 walk in along the road from the east
+// 擴建：東部林地 — the new land east of the town, behind the old wall of trees
+const EAST = { x0: 32, x1: 68, z0: -23, z1: 26.5 };
+// 林間市集: a second shop in the new land, two rows of shelves for the new goods
+const ANNEX = { x0: 34.0, x1: 50.4, z0: -21.6, z1: -7.3 };
+const ANNEX_DOOR = 36.2, AN_Z1 = -14.6, AN_Z2 = -19.6;
 const START = [-1.5, 4.6];
 const FLUME = { hop: [-5.2, 12.2], pad: [-5.2, 13.6], path: [[-5.2, 12.2], [6.4, 12.2], [7.95, 8.9]] };
 const LOTS = {
@@ -124,22 +130,22 @@ const DEFS = [
   { id: 'planer', name: '刨木機', upAt: [9.4, 2.5], kind: 'machine', mk: 'planer', ins: ['plank'], need: 1, out: 'refined', iv: 2.4, pos: [9.4, 4.6], cost: { money: 650, plank: 15 }, req: ['planter'] },
   { id: 'shelfGoods', name: '雜貨架', kind: 'shelf', items: ['refined', 'candle'], pos: [-7.6, SH_Z], cost: { money: 480 }, req: ['planer'] },
   { id: 'showroom', name: '家具展示館', desc: '賣家具的展示館，有自己的收銀台', kind: 'showroom', zone: [-12.7, -4.0], cost: { money: 1200, plank: 20 }, req: ['shelfGoods'] },
-  { id: 'chairBench', name: '椅子工作台', upAt: [-7.2, 24.3], kind: 'machine', mk: 'bench', ins: ['refined'], need: 1, out: 'chair', iv: 4, pos: [-7.2, 21.6], cost: { money: 700, refined: 10 }, req: ['showroom'] },
+  { id: 'chairBench', name: '椅子工作台', upAt: [-7.2, 25.7], kind: 'machine', mk: 'bench', ins: ['refined'], need: 1, out: 'chair', iv: 4, pos: [-7.2, 23.0], cost: { money: 700, refined: 10 }, req: ['showroom'] },
   { id: 'platChair', name: '椅子展示台', kind: 'platform', items: ['chair', 'chair_r'], pos: P_POS.chair, cost: { money: 500 }, req: ['chairBench'] },
   { id: 'clerk', name: '店員', desc: '在展示館收銀台幫你收錢', kind: 'hire', role: 'clerk', zone: [-14.6, -10.8], cost: { money: 850 }, req: ['platChair'] },
   { id: 'flume', name: '河道運木', desc: '原木放上去，會自己漂到鋸木廠', kind: 'flume', zone: [-5.2, 14.4], cost: { money: 1500 }, req: ['clerk'] },
-  { id: 'tableBench', name: '桌子工作台', upAt: [-3.0, 24.3], kind: 'machine', mk: 'bench', ins: ['refined'], need: 2, out: 'table', iv: 5, pos: [-3.0, 21.6], cost: { money: 1800 }, req: ['flume'] },
+  { id: 'tableBench', name: '桌子工作台', upAt: [-3.0, 25.7], kind: 'machine', mk: 'bench', ins: ['refined'], need: 2, out: 'table', iv: 5, pos: [-3.0, 23.0], cost: { money: 1800 }, req: ['flume'] },
   { id: 'platTable', name: '桌子展示台', kind: 'platform', items: ['table', 'table_r'], pos: P_POS.table, cost: { money: 1200 }, req: ['tableBench'] },
   { id: 'mapleGrove', name: '楓樹林', desc: '楓樹會流出楓汁', kind: 'crop', plant: 'tap', out: 'sap', grow: 8, pos: [-19.4, 21.5], cost: { money: 1600 }, req: ['platTable'] },
-  { id: 'syrupHouse', name: '楓糖屋', upAt: [3.4, 16.3], kind: 'machine', mk: 'syrup', ins: ['sap'], need: 2, out: 'syrup', iv: 4, pos: [3.4, 14.0], cost: { money: 2000, sap: 10 }, req: ['mapleGrove'] },
+  { id: 'syrupHouse', name: '楓糖屋', upAt: [3.4, 17.8], kind: 'machine', mk: 'syrup', ins: ['sap'], need: 2, out: 'syrup', iv: 4, pos: [3.4, 14.6], cost: { money: 2000, sap: 10 }, req: ['mapleGrove'] },
   { id: 'shelfSweet', name: '蜂蜜糖漿架', kind: 'shelf', items: ['syrup', 'honey'], pos: [-1.6, SH_Z], cost: { money: 1400 }, req: ['syrupHouse'] },
   { id: 'sapper', name: '採汁員', desc: '負責楓汁和楓糖漿', kind: 'hire', role: 'sapper', zone: [-15.2, 25.4], cost: { money: 1800 }, req: ['shelfSweet'] },
   { id: 'house', name: '房屋', kind: 'town', lot: 'A', bld: 'house', note: '客人變多了', need: { plank: 20, chair: 2 }, cost: { money: 2500 }, req: ['sapper'] },
-  { id: 'bedBench', name: '床工作台', upAt: [1.2, 24.3], kind: 'machine', mk: 'bench', ins: ['refined'], need: 3, out: 'bed', iv: 6, pos: [1.2, 21.6], cost: { money: 3000 }, req: ['house'] },
+  { id: 'bedBench', name: '床工作台', upAt: [1.2, 25.7], kind: 'machine', mk: 'bench', ins: ['refined'], need: 3, out: 'bed', iv: 6, pos: [1.2, 23.0], cost: { money: 3000 }, req: ['house'] },
   { id: 'platBed', name: '床展示台', kind: 'platform', items: ['bed', 'bed_r'], pos: P_POS.bed, cost: { money: 2400 }, req: ['bedBench'] },
-  { id: 'carpenter', name: '木匠', desc: '站在工作台旁邊，家具做更快', kind: 'hire', role: 'carpenter', zone: [3.3, 26.6], cost: { money: 2600 }, req: ['platBed'] },
+  { id: 'carpenter', name: '木匠', desc: '站在工作台旁邊，家具做更快', kind: 'hire', role: 'carpenter', zone: [-10.6, 23.2], cost: { money: 2600 }, req: ['platBed'] },
   { id: 'apiary', name: '蜂場', desc: '蜂巢會產蜂蜜和蜂蠟', kind: 'apiary', zone: [-19.8, 15.8], cost: { money: 3200 }, req: ['carpenter'] },
-  { id: 'candleShop', name: '蠟燭工坊', upAt: [9.4, 16.3], kind: 'machine', mk: 'candle', ins: ['wax'], need: 1, out: 'candle', iv: 3, pos: [9.4, 14.0], cost: { money: 3500, wax: 10 }, req: ['apiary'] },
+  { id: 'candleShop', name: '蠟燭工坊', upAt: [9.4, 17.8], kind: 'machine', mk: 'candle', ins: ['wax'], need: 1, out: 'candle', iv: 3, pos: [9.4, 14.6], cost: { money: 3500, wax: 10 }, req: ['apiary'] },
   { id: 'beekeeper', name: '養蜂人', desc: '負責蜂蜜、蜂蠟和蠟燭', kind: 'hire', role: 'beekeeper', zone: [-17.4, 16.8], cost: { money: 3000 }, req: ['candleShop'] },
   { id: 'bakery', name: '麵包店', kind: 'town', lot: 'B', bld: 'bakery', note: '幫你賣蜂蜜和楓糖漿', need: { refined: 15, table: 2, syrup: 6 }, cost: { money: 4000 }, req: ['beekeeper'], reqDone: ['house'] },
   { id: 'paperMill', name: '造紙廠', upAt: [3.4, 10.4], kind: 'machine', mk: 'paper', ins: ['sawdust'], need: 2, out: 'paper', iv: 3, pos: [3.4, 7.8], cost: { money: 4500, sawdust: 20 }, req: ['bakery'] },
@@ -155,25 +161,70 @@ const DEFS = [
   { id: 'shelfPaper2', name: '文具架２', kind: 'shelf', items: ['paper', 'notebook'], pos: [-4.6, SH_Z2], cost: { money: 2800 }, req: ['dept', 'shelfPaper'] },
   { id: 'shelfGoods2', name: '雜貨架２', kind: 'shelf', items: ['refined', 'candle'], pos: [-7.6, SH_Z2], cost: { money: 900 }, req: ['dept', 'shelfGoods'] },
   { id: 'school', name: '學校', kind: 'town', lot: 'C', bld: 'school', note: '員工走得更快了', need: { plank: 30, notebook: 12, chair: 6 }, cost: { money: 6000 }, req: ['hauler2'], reqDone: ['bakery'] },
-  { id: 'shroomHouse', name: '菇寮', upAt: [-2.6, 16.3], kind: 'machine', mk: 'shroom', ins: ['pine'], need: 1, out: 'shiitake', iv: 5, pos: [-2.6, 14.0], cost: { money: 5500, pine: 10 }, req: ['school'] },
+  { id: 'shroomHouse', name: '菇寮', upAt: [-2.6, 17.8], kind: 'machine', mk: 'shroom', ins: ['pine'], need: 1, out: 'shiitake', iv: 5, pos: [-2.6, 14.6], cost: { money: 5500, pine: 10 }, req: ['school'] },
   { id: 'forager', name: '採菇員', desc: '負責採香菇和松露', kind: 'hire', role: 'forager', zone: [6.6, 5.4], cost: { money: 5000 }, req: ['shroomHouse'] },
-  { id: 'bookBench', name: '書櫃工作台', upAt: [5.4, 24.3], kind: 'machine', mk: 'bench', ins: ['refined'], need: 2, out: 'bookcase', iv: 5, pos: [5.4, 21.6], cost: { money: 7000 }, req: ['forager'] },
+  { id: 'bookBench', name: '書櫃工作台', upAt: [5.4, 25.7], kind: 'machine', mk: 'bench', ins: ['refined'], need: 2, out: 'bookcase', iv: 5, pos: [5.4, 23.0], cost: { money: 7000 }, req: ['forager'] },
   { id: 'platBook', name: '書櫃展示台', kind: 'platform', items: ['bookcase', 'bookcase_r'], pos: P_POS.bookcase, cost: { money: 5500 }, req: ['bookBench'] },
   { id: 'courier', name: '送貨員', desc: '貨車幫你送家具，家具加收送貨費', kind: 'courier', note: '家具加收送貨費', zone: [-17.6, -4.2], cost: { money: 8000 }, req: ['platBook'] },
   { id: 'park', name: '公園', kind: 'town', lot: 'D', bld: 'park', note: '客人更有耐心、多給小費', need: { refined: 30, chair: 6, honey: 10 }, cost: { money: 8000 }, req: ['courier'], reqDone: ['school'] },
   { id: 'lumberjack2', name: '伐木工', desc: '自動砍樹，原木送去鋸木廠或貨架', kind: 'hire', role: 'lumberjack', zone: [-5.2, 0.2], cost: { money: 7500 }, req: ['park'] },
-  { id: 'rockerBench', name: '搖椅工作台', upAt: [9.6, 24.3], kind: 'machine', mk: 'bench', ins: ['refined'], need: 3, out: 'rocker', iv: 7, pos: [9.6, 21.6], cost: { money: 10000 }, req: ['lumberjack2'] },
+  { id: 'rockerBench', name: '搖椅工作台', upAt: [9.6, 25.7], kind: 'machine', mk: 'bench', ins: ['refined'], need: 3, out: 'rocker', iv: 7, pos: [9.6, 23.0], cost: { money: 10000 }, req: ['lumberjack2'] },
   { id: 'platRocker', name: '搖椅展示台', kind: 'platform', items: ['rocker', 'rocker_r'], pos: P_POS.rocker, cost: { money: 8000 }, req: ['rockerBench'] },
   { id: 'fireStation', name: '消防局', kind: 'town', lot: 'E', bld: 'fire', note: '森林大火變小了', need: { plank: 40, refined: 30, candle: 10 }, cost: { money: 12000 }, req: ['platRocker'], reqDone: ['park'] },
   { id: 'hauler3', name: '搬運工', desc: '把做好的貨補上貨架，材料送進機器', kind: 'hire', role: 'hauler', zone: [-6.4, -5.8], cost: { money: 11000 }, req: ['fireStation'] },
-  { id: 'carpenter2', name: '木匠', desc: '站在工作台旁邊，家具做更快', kind: 'hire', role: 'carpenter', zone: [3.3, 26.6], cost: { money: 12000 }, req: ['hauler3'] },
+  { id: 'carpenter2', name: '木匠', desc: '站在工作台旁邊，家具做更快', kind: 'hire', role: 'carpenter', zone: [-10.6, 23.2], cost: { money: 12000 }, req: ['hauler3'] },
   { id: 'trainStation', name: '火車站', kind: 'town', lot: 'F', bld: 'train', note: '火車會來下大訂單', need: { plank: 60, refined: 40, table: 4, bed: 2 }, cost: { money: 18000 }, req: ['carpenter2'], reqDone: ['fireStation'] },
   { id: 'planter2', name: '植樹員', desc: '把樹樁種回小樹，樹長得更快', kind: 'hire', role: 'planter', zone: [-5.6, -1.8], cost: { money: 14000 }, req: ['trainStation'] },
-  { id: 'forestExpand', name: '擴大林場', desc: '林場變大，可以再種 8 棵樹', kind: 'expand', note: '可以再種 8 棵樹', zone: [-5.0, 16.4], cost: { money: 20000 }, req: ['planter2'] },
+  { id: 'forestExpand', name: '擴大林場', desc: '林場變大，可以再種 8 棵樹', kind: 'expand', note: '可以再種 8 棵樹', zone: [-6.6, 17.4], cost: { money: 20000 }, req: ['planter2'] },
+  // ---- 擴建：東部林地 and everything in it ----
+  { id: 'eastland', name: '擴建：東部林地', desc: '拆掉東邊的樹林，開出一大片新林地', kind: 'eastland', zone: [28.6, -4.9], cost: { money: 30000, plank: 60 }, req: ['dept'], reqDone: ['school'], nx: true },
+  { id: 'annex', name: '林間市集', desc: '新林地的第二家店，專賣新的森林好物', kind: 'annex', zone: [42.0, -11.0], cost: { money: 25000 }, req: ['eastland'], nx: true },
+  { id: 'cashier4', name: '收銀員', desc: '站在林間市集的收銀台幫你收錢', kind: 'hire', role: 'cashier', counter: 4, zone: [41.2, -12.0], cost: { money: 6000 }, req: ['annex'], nx: true },
+  { id: 'berryBush', name: '藍莓叢', desc: '藍莓叢會結一串串藍莓', kind: 'crop', plant: 'berry', out: 'blueberry', grow: 7, pos: [37.0, 0.0], cost: { money: 20000 }, req: ['annex'], nx: true },
+  { id: 'shelfBerry', name: '藍莓架', kind: 'shelf', shop: 2, items: ['blueberry', 'jam'], pos: [37.0, AN_Z1], cost: { money: 12000 }, req: ['berryBush'], nx: true },
+  { id: 'picker', name: '果農', desc: '負責藍莓、栗子、竹子、薰衣草和它們做成的貨', kind: 'hire', role: 'picker', zone: [41.4, 3.85], cost: { money: 15000 }, req: ['shelfBerry'], nx: true },
+  { id: 'jamMaker', name: '果醬機', upAt: [45.0, 3.1], kind: 'machine', mk: 'jam', ins: ['blueberry'], need: 2, out: 'jam', iv: 4, pos: [45.0, 0.0], cost: { money: 35000, blueberry: 20 }, req: ['shelfBerry'], nx: true },
+  { id: 'shelfBerry2', name: '藍莓架２', kind: 'shelf', shop: 2, items: ['blueberry', 'jam'], pos: [37.0, AN_Z2], cost: { money: 20000 }, req: ['jamMaker'], nx: true },
+  { id: 'sawmill2', name: '鋸木廠２', upAt: [53.0, 3.1], kind: 'machine', mk: 'sawmill', ins: ['pine', 'oak', 'maple'], need: 1, out: 'plank', iv: 2.5, pos: [53.0, 0.0], cost: { money: 30000, pine: 30 }, req: ['eastland'], nx: true },
+  { id: 'planer2', name: '刨木機２', upAt: [59.0, 3.1], kind: 'machine', mk: 'planer', ins: ['plank'], need: 1, out: 'refined', iv: 2.4, pos: [59.0, 0.0], cost: { money: 45000, plank: 30 }, req: ['sawmill2'], nx: true },
+  { id: 'chestnut', name: '栗子林', desc: '栗子樹會長出刺刺的栗子', kind: 'crop', plant: 'nut', out: 'chestnut', grow: 9, pos: [37.0, 7.5], cost: { money: 50000 }, req: ['jamMaker'], nx: true },
+  { id: 'shelfNut', name: '栗子架', kind: 'shelf', shop: 2, items: ['chestnut', 'roastnut'], pos: [40.0, AN_Z1], cost: { money: 30000 }, req: ['chestnut'], nx: true },
+  { id: 'counter5', name: '林間第二收銀台', desc: '林間市集多一個收銀台', kind: 'counterX', ci: 5, zone: [45.6, -8.9], cost: { money: 40000 }, req: ['shelfNut'], nx: true },
+  { id: 'cashier5', name: '收銀員', desc: '站在林間第二收銀台幫你收錢', kind: 'hire', role: 'cashier', counter: 5, zone: [47.6, -12.0], cost: { money: 20000 }, req: ['counter5'], nx: true },
+  { id: 'roaster', name: '炒栗子機', upAt: [45.0, 10.6], kind: 'machine', mk: 'roaster', ins: ['chestnut'], need: 2, out: 'roastnut', iv: 4, pos: [45.0, 7.5], cost: { money: 70000, chestnut: 20 }, req: ['shelfNut'], nx: true },
+  { id: 'shelfNut2', name: '栗子架２', kind: 'shelf', shop: 2, items: ['chestnut', 'roastnut'], pos: [40.0, AN_Z2], cost: { money: 40000 }, req: ['roaster'], nx: true },
+  { id: 'chairBench2', name: '椅子工作台２', upAt: [53.0, 18.1], kind: 'machine', mk: 'bench', ins: ['refined'], need: 1, out: 'chair', iv: 4, pos: [53.0, 15.0], cost: { money: 50000 }, req: ['planer2'], nx: true },
+  { id: 'tableBench2', name: '桌子工作台２', upAt: [59.0, 18.1], kind: 'machine', mk: 'bench', ins: ['refined'], need: 2, out: 'table', iv: 5, pos: [59.0, 15.0], cost: { money: 70000 }, req: ['chairBench2'], nx: true },
+  { id: 'paperMill2', name: '造紙廠２', upAt: [53.0, 10.6], kind: 'machine', mk: 'paper', ins: ['sawdust'], need: 2, out: 'paper', iv: 3, pos: [53.0, 7.5], cost: { money: 60000 }, req: ['roaster'], nx: true },
+  { id: 'binder2', name: '筆記本機２', upAt: [59.0, 10.6], kind: 'machine', mk: 'binder', ins: ['paper'], need: 2, out: 'notebook', iv: 3.5, pos: [59.0, 7.5], cost: { money: 75000 }, req: ['paperMill2'], nx: true },
+  { id: 'bambooGrove', name: '竹林', desc: '竹子長得又高又快', kind: 'crop', plant: 'bamboo', out: 'bamboo', grow: 10, pos: [37.0, 15.0], cost: { money: 100000 }, req: ['roaster'], nx: true },
+  { id: 'shelfBamboo', name: '竹器架', kind: 'shelf', shop: 2, items: ['bamboo', 'bambooware'], pos: [43.0, AN_Z1], cost: { money: 50000 }, req: ['bambooGrove'], nx: true },
+  { id: 'picker2', name: '果農', desc: '負責藍莓、栗子、竹子、薰衣草和它們做成的貨', kind: 'hire', role: 'picker', zone: [41.4, 11.35], cost: { money: 27000 }, req: ['bambooGrove'], nx: true },
+  { id: 'bambooShop', name: '竹器工坊', upAt: [45.0, 18.1], kind: 'machine', mk: 'bamboo', ins: ['bamboo'], need: 2, out: 'bambooware', iv: 5, pos: [45.0, 15.0], cost: { money: 130000, bamboo: 20 }, req: ['shelfBamboo'], nx: true },
+  { id: 'shelfBamboo2', name: '竹器架２', kind: 'shelf', shop: 2, items: ['bamboo', 'bambooware'], pos: [43.0, AN_Z2], cost: { money: 70000 }, req: ['bambooShop'], nx: true },
+  { id: 'syrupHouse2', name: '楓糖屋２', upAt: [65.0, 10.6], kind: 'machine', mk: 'syrup', ins: ['sap'], need: 2, out: 'syrup', iv: 4, pos: [65.0, 7.5], cost: { money: 90000 }, req: ['bambooShop'], nx: true },
+  { id: 'candleShop2', name: '蠟燭工坊２', upAt: [53.0, 25.6], kind: 'machine', mk: 'candle', ins: ['wax'], need: 1, out: 'candle', iv: 3, pos: [53.0, 22.5], cost: { money: 110000 }, req: ['syrupHouse2'], nx: true },
+  { id: 'bedBench2', name: '床工作台２', upAt: [65.0, 18.1], kind: 'machine', mk: 'bench', ins: ['refined'], need: 3, out: 'bed', iv: 6, pos: [65.0, 15.0], cost: { money: 120000 }, req: ['tableBench2', 'bambooShop'], nx: true },
+  { id: 'lavender', name: '薰衣草田', desc: '一整片紫色的薰衣草', kind: 'crop', plant: 'lav', out: 'lavender', grow: 8, pos: [37.0, 22.5], cost: { money: 180000 }, req: ['bambooShop'], nx: true },
+  { id: 'shelfLav', name: '薰衣草架', kind: 'shelf', shop: 2, items: ['lavender', 'soap'], pos: [46.0, AN_Z1], cost: { money: 90000 }, req: ['lavender'], nx: true },
+  { id: 'soapMaker', name: '香皂工坊', upAt: [45.0, 25.6], kind: 'machine', mk: 'soap', ins: ['lavender'], need: 2, out: 'soap', iv: 5, pos: [45.0, 22.5], cost: { money: 220000, lavender: 20 }, req: ['shelfLav'], nx: true },
+  { id: 'shelfLav2', name: '薰衣草架２', kind: 'shelf', shop: 2, items: ['lavender', 'soap'], pos: [46.0, AN_Z2], cost: { money: 120000 }, req: ['soapMaker'], nx: true },
+  { id: 'shroomHouse2', name: '菇寮２', upAt: [59.0, 25.6], kind: 'machine', mk: 'shroom', ins: ['pine'], need: 1, out: 'shiitake', iv: 5, pos: [59.0, 22.5], cost: { money: 150000 }, req: ['candleShop2'], nx: true },
+  { id: 'carver', name: '木雕工坊', upAt: [65.0, 3.1], kind: 'machine', mk: 'carver', ins: ['refined'], need: 2, out: 'carving', iv: 6, pos: [65.0, 0.0], cost: { money: 280000, refined: 40 }, req: ['soapMaker'], nx: true },
+  { id: 'shelfCraft', name: '工藝品架', kind: 'shelf', shop: 2, items: ['carving'], pos: [49.0, AN_Z1], cost: { money: 150000 }, req: ['carver'], nx: true },
+  { id: 'rockerBench2', name: '搖椅工作台２', upAt: [65.0, 25.6], kind: 'machine', mk: 'bench', ins: ['refined'], need: 3, out: 'rocker', iv: 7, pos: [65.0, 22.5], cost: { money: 250000 }, req: ['bedBench2', 'carver'], nx: true },
+  { id: 'shelfCraft2', name: '工藝品架２', kind: 'shelf', shop: 2, items: ['carving'], pos: [49.0, AN_Z2], cost: { money: 200000 }, req: ['shelfCraft'], nx: true },
+  { id: 'harvestFest', name: '林間大慶典', desc: '路口搭起慶典拱門，所有商品再貴一成', kind: 'fest', zone: [33.6, -2.6], cost: { money: 500000 }, req: ['shelfCraft2', 'rockerBench2', 'shroomHouse2'], nx: true },
   { id: 'clockTower', name: '鐘樓', kind: 'town', lot: 'G', bld: 'clock', note: '小鎮慶典！所有商品售價 ×1.2', need: { refined: 80, bookcase: 4, rocker: 4, notebook: 20 }, cost: { money: 40000 }, req: ['forestExpand'], reqDone: ['trainStation'] },
 ];
 for (const d of DEFS) if (d.kind === 'town') { d.zone = LOTS[d.lot].pad; d.desc = '蓋好後：' + d.note; }
 const DEF = Object.fromEntries(DEFS.map((d) => [d.id, d]));
+// 遊戲時間 ×5–6: after the opening (up to the first 搬運工) buildings, upgrades and growth steps cost about ×2.75
+const EARLY = new Set(['logging', 'mushrooms', 'shelfWood', 'shelfMush', 'counter', 'cashier', 'sawmill', 'lumberjack', 'squirrel', 'hauler']);
+const lateK = (c) => Math.min(2.75, Math.max(1, (c - 100) / 110));
+const nice = (v) => (v < 1000 ? Math.round(v / 10) * 10 : v < 10000 ? Math.round(v / 100) * 100 : Math.round(v / 1000) * 1000);
+const late = (c) => nice(c * lateK(c));
+for (const d of DEFS) if (!EARLY.has(d.id) && !d.nx && d.cost.money) d.cost.money = late(d.cost.money);
 
 const lv = (n, base, k) => Array.from({ length: n }, (_, i) => Math.round(base * Math.pow(k, i) / 10) * 10);
 const UPS = {
@@ -190,9 +241,12 @@ const UPS = {
   bee: { tab: 2, name: '蜂巢產量', ic: 'honey', need: 'apiary', vals: [12, 10, 8.5, 7, 6], cost: [1200, 2400, 4200, 7000], fmt: (v) => v + ' 秒一份' },
   flume: { tab: 2, name: '運木速度', ic: 'maple', need: 'flume', vals: [3, 4, 5, 6.5, 8], cost: [800, 1600, 3000, 5000], fmt: (v) => v.toFixed(1) },
   mach: { tab: 2, name: '機器速度', ic: 'refined', need: 'sawmill', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [400, 900, 1800, 3200, 5500], fmt: (v) => '×' + v },
+  tray: { tab: 2, name: '存貨量', ic: 'refined', need: 'sawmill', vals: [12, 16, 20, 25, 30], cost: [1200, 3000, 7000, 15000], fmt: (v) => '機器每盤 ' + v + ' 個' },
+  orchard: { tab: 2, name: '果園生長', ic: 'blueberry', need: 'berryBush', nx: true, vals: [1, 1.25, 1.5, 1.8, 2.2], cost: [20000, 45000, 90000, 160000], fmt: (v) => '×' + v },
   luck: { tab: 2, name: '彩繪家具機率', ic: 'chair_r', need: 'chairBench', vals: [0.08, 0.11, 0.14, 0.18, 0.22], cost: [1500, 3500, 7000, 12000], fmt: (v) => Math.round(v * 100) + '%' },
   price: { tab: 3, name: '商品售價', ic: 'money', need: 'cashier', vals: [1, 1.2, 1.45, 1.75, 2.05, 2.4], cost: [400, 1200, 3500, 9000, 22000], fmt: (v) => '×' + v },
-  shelfCap: { tab: 3, name: '貨架容量', ic: 'plank', need: 'cashier', vals: [8, 12, 16, 20, 24], cost: [150, 400, 900, 1800], fmt: (v) => v + ' 個' },
+  shelfCap: { tab: 3, name: '貨架容量', ic: 'plank', need: 'cashier', vals: [8, 14, 20, 26, 32, 40], cost: [150, 400, 900, 1800, 3600], fmt: (v) => v + ' 個' },
+  store: { tab: 3, name: '倉庫容量', ic: 'plank', need: 'warehouse', vals: [200, 300, 400, 500, 600], cost: [1500, 4000, 9000, 18000], fmt: (v) => v + ' 個' },
   cust: { tab: 3, name: '客人數量', ic: 'run', need: 'cashier', vals: [1, 1.2, 1.4, 1.6, 1.8, 2], cost: [300, 700, 1400, 2600, 4500], fmt: (v) => '×' + v },
   look: { tab: 3, name: '商店外觀', ic: 'shop', emo: '🏪', need: 'counter', vals: [0, 1, 2, 3], cost: [800, 3000, 9000], fmt: (v) => SHOP_LOOKS[v].name + ['', '・雨棚花台', '・燈串燈籠', '・紅地毯旗幟'][v] + (v ? '，客人更多、賣更貴' : '') },
   floor: { tab: 3, name: '地板翻新', ic: 'shop', emo: '🪵', need: 'counter', vals: [0, 1, 2, 3], cost: [600, 2400, 7000], fmt: (v) => ['原本的地板', '溫暖木地板', '奶油格子磚', '大理石＋金邊'][v] + (v ? '，客人更多' : '') },
@@ -200,12 +254,13 @@ const UPS = {
   basket: { tab: 3, name: '購物籃架', ic: 'bk', emo: '🧺', need: 'cashier', noLv: true, vals: [1, 1.35, 1.7], cost: [800, 2500], fmt: (v) => ['還沒有購物籃', '購物籃：客人提著籃子，走更快、拿更快', '購物車：客人推著車，又快又順'][v === 1 ? 0 : v < 1.5 ? 1 : 2] },
   autoCash: { tab: 3, name: '自動收款', ic: 'money', need: 'courier', vals: [0, 1], cost: [6000], fmt: (v) => v ? '錢自動入袋' : '要自己收錢' },
 };
+for (const k in UPS) if (!UPS[k].nx) UPS[k].cost = UPS[k].cost.map(late);
 const upVal = (k) => UPS[k].vals[Math.min(state.up[k] || 0, UPS[k].vals.length - 1)];
 // 管理層: 店長 (both cash desks) and 林場主管 (lumberjacks, planters and the other forest workers)
 const MGR_PAY = [0.5, 0.3, 0.25, 0.2], MGR_TIP = [1, 1.1, 1.2, 1.3], MGR_PAT = [0, 0, 10, 15];
 const WOOD_SP = [1, 1.15, 1.25, 1.35], WOOD_CAP = [0, 0, 3, 5];
 const mShop = () => Math.min(3, state.up.mgrShop || 0), mWood = () => Math.min(3, state.up.mgrWood || 0);
-const WOOD_ROLES = ['lumberjack', 'planter', 'sapper', 'beekeeper', 'forager', 'carpenter'];
+const WOOD_ROLES = ['lumberjack', 'planter', 'sapper', 'beekeeper', 'forager', 'carpenter', 'picker'];
 const isWoodRole = (r) => WOOD_ROLES.includes(r);
 // small repeatable unlocks next to a building; the woods grow in steps (at most 5 buys), machines get Lv1–4 (each level 40% faster)
 const GROW = {
@@ -225,7 +280,28 @@ const GROW = {
   shroomHouse: { start: 1, max: 4, cost: [3000, 6000, 10000], mach: true },
   bookBench: { start: 1, max: 4, cost: [4000, 7500, 12000], mach: true },
   rockerBench: { start: 1, max: 4, cost: [5500, 9500, 15000], mach: true },
+  berryBush: { start: 3, max: 6, cost: [8000, 14000, 22000], what: '＋1 叢藍莓', nx: true },
+  chestnut: { start: 3, max: 6, cost: [18000, 30000, 48000], what: '＋1 棵栗子樹', nx: true },
+  bambooGrove: { start: 3, max: 6, cost: [35000, 60000, 95000], what: '＋1 叢竹子', nx: true },
+  lavender: { start: 3, max: 6, cost: [60000, 100000, 160000], what: '＋1 叢薰衣草', nx: true },
+  jamMaker: { start: 1, max: 4, cost: [15000, 30000, 55000], mach: true, nx: true },
+  roaster: { start: 1, max: 4, cost: [28000, 55000, 95000], mach: true, nx: true },
+  bambooShop: { start: 1, max: 4, cost: [50000, 95000, 160000], mach: true, nx: true },
+  soapMaker: { start: 1, max: 4, cost: [85000, 150000, 260000], mach: true, nx: true },
+  carver: { start: 1, max: 4, cost: [110000, 200000, 340000], mach: true, nx: true },
+  sawmill2: { start: 1, max: 4, cost: [12000, 25000, 45000], mach: true, nx: true },
+  planer2: { start: 1, max: 4, cost: [18000, 35000, 60000], mach: true, nx: true },
+  paperMill2: { start: 1, max: 4, cost: [24000, 45000, 80000], mach: true, nx: true },
+  binder2: { start: 1, max: 4, cost: [30000, 55000, 95000], mach: true, nx: true },
+  chairBench2: { start: 1, max: 4, cost: [20000, 40000, 70000], mach: true, nx: true },
+  tableBench2: { start: 1, max: 4, cost: [28000, 55000, 95000], mach: true, nx: true },
+  bedBench2: { start: 1, max: 4, cost: [48000, 90000, 150000], mach: true, nx: true },
+  rockerBench2: { start: 1, max: 4, cost: [100000, 180000, 300000], mach: true, nx: true },
+  syrupHouse2: { start: 1, max: 4, cost: [36000, 70000, 120000], mach: true, nx: true },
+  candleShop2: { start: 1, max: 4, cost: [44000, 85000, 140000], mach: true, nx: true },
+  shroomHouse2: { start: 1, max: 4, cost: [60000, 110000, 190000], mach: true, nx: true },
 };
+for (const k in GROW) if (!GROW[k].nx) GROW[k].cost = GROW[k].cost.map(late);
 const growMax = (k) => (k === 'logging' && isBuilt('forestExpand') ? 24 : GROW[k].max);
 const lvlOf = (id) => state.lvl[id] || GROW[id].start;
 const machK = (id) => (GROW[id] && GROW[id].mach ? 1 + 0.4 * (Math.min(lvlOf(id), GROW[id].max) - 1) : 1);
@@ -261,6 +337,11 @@ if (!state.upV) {
     state.up[k] = i;
   }
   state.upV = 2;
+}
+if ((state.upV || 0) < 3) {
+  const old = [8, 12, 16, 20, 24], v = old[Math.min(state.up.shelfCap || 0, old.length - 1)];
+  state.up.shelfCap = Math.max(0, UPS.shelfCap.vals.findIndex((x) => x >= v));
+  state.upV = 3;
 }
 for (const k in UPS) state.up[k] = Math.min(state.up[k], UPS[k].vals.length - 1);
 if (state.paid.cafeGate) { state.money += state.paid.cafeGate.money || 0; delete state.paid.cafeGate; }
@@ -339,7 +420,7 @@ const joy = new Joystick(canvas, $('ui'));
 joy.onStart = () => { if (actx && actx.state === 'suspended') actx.resume(); };
 
 const colliders = [];
-const nav = createNav(colliders, { x0: -26, x1: 31, z0: -27, z1: 31 }, 0.5, 0.35);
+const nav = createNav(colliders, { x0: -26, x1: 70, z0: -27, z1: 31 }, 0.5, 0.35);
 let navV = 0;
 const box = (x0, z0, x1, z1) => { const b = { x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1) }; colliders.push(b); nav.dirty(); navV++; return b; };
 function unbox(b) { const i = colliders.indexOf(b); if (i >= 0) { colliders.splice(i, 1); nav.dirty(); navV++; } }
@@ -466,9 +547,9 @@ function buildWorld() {
   // paths: in front of the shops, to the bridge and through the town; diners of the furniture showroom come the same way
   const path = (x, z, w, d, col = '#e6cf98') => K.add(D, K.mesh(G.rbox(w, 0.05, d, 0.2, 1), col, false, true), x, 0.025, z);
   path(1, -4.9, 26, 1.8); path(-19.1, -4.9, 14.4, 1.8); path(22, -4.9, 16, 1.8, '#d9c7a0'); path(22.5, 6, 1.8, 44, '#d9c7a0');
-  path(-0.4, 5.2, 1.6, 18); path(-3.5, 17.6, 30, 1.6); path(-3.5, 1.0, 1.4, 9);
+  path(-0.4, 5.2, 1.6, 18); path(-3.5, 19.6, 30, 1.6); path(-3.5, 1.0, 1.4, 9);
   path(6.5, -6.5, 2.2, 1.8);   // up to the market door
-  path(18.5, 18.0, 6.4, 1.6, '#d9c7a0');   // from the south bridge into town
+  path(18.5, 19.6, 6.4, 1.6, '#d9c7a0');   // from the south bridge into town
   path(-18.6, -2.7, 3.6, 1.6);   // the delivery truck's lay-by
   // the town: lot outlines and street lamps, railway in the south
   for (const k in LOTS) { const o = P5.lotOutline(); o.position.set(LOTS[k].x, 0, LOTS[k].z); D.add(o); }
@@ -487,9 +568,10 @@ function buildWorld() {
   for (let x = -11.4; x < 10.4; x += 2.4) tree(x + rb() * 0.8, -27.8 - rb() * 1.4, rb() < 0.7 ? 'pine' : 'oak', 0.9 + rb() * 0.4, false);
   for (let i = 0; i < 22; i++) tree(-27.5 - rnd() * 4, -17 + i * 2.3 + rnd(), rnd() < 0.6 ? 'pine' : rnd() < 0.5 ? 'oak' : 'maple', 0.9 + rnd() * 0.4, false);
   for (let i = 0; i < 26; i++) tree(-26 + i * 2.3 + rnd(), 32.5 + rnd() * 3, rnd() < 0.6 ? 'pine' : 'maple', 0.9 + rnd() * 0.4, false);
-  for (let i = 0; i < 20; i++) tree(32 + rnd() * 4, -17 + i * 2.5 + rnd(), rnd() < 0.6 ? 'pine' : 'oak', 0.9 + rnd() * 0.4, false);
+  east.trees = new THREE.Group();
+  for (let i = 0; i < 20; i++) { const x = 32 + rnd() * 4, z = -17 + i * 2.5 + rnd(), k = rnd() < 0.6 ? 'pine' : 'oak', sc = 0.9 + rnd() * 0.4; east.trees.add(P5.decoTree(k, sc).translateX(x).translateZ(z)); }
   for (const [x, z, k] of [[-24.4, -3.6, 'pine'], [-24.6, 0.6, 'oak'], [-24.2, 12.6, 'pine'], [-24.4, 27.6, 'maple'], [-12, 27.8, 'pine'], [-3.6, 28.4, 'oak'], [7.4, 28.2, 'pine'], [10.4, -2.4, 'oak'], [6.4, -2.2, 'oak'], [-3.4, -2.4, 'pine'], [29.6, -14.6, 'pine'], [29.6, 4.2, 'maple'], [29.4, 13.6, 'pine'], [16.8, 12.6, 'oak'], [16.6, 0.8, 'pine'], [28.8, 24.6, 'oak']]) tree(x, z, k, 1, true);
-  for (const [x, z, s] of [[-25.2, 19.4, 0.5], [-8.4, -2.6, 0.35], [11.0, 15.4, 0.45], [16.4, -15.6, 0.6], [29.0, -6.8, 0.5], [-14.8, 28.6, 0.5]]) {
+  for (const [x, z, s] of [[-25.2, 19.4, 0.5], [-8.4, -2.6, 0.35], [11.8, 11.6, 0.45], [16.4, -15.6, 0.6], [29.0, -6.8, 0.5], [-14.8, 28.6, 0.5]]) {
     const r = P.rock(s); r.position.set(x, 0, z); D.add(r); box(x - s * 0.8, z - s * 0.7, x + s * 0.8, z + s * 0.7);
   }
   for (const [x, z, r] of [[-0.6, -2.4, 0.5], [17.4, 9.0, 0.45], [28.6, 0.0, 0.5], [-24.0, 8.0, 0.55]]) K.add(D, P.bush(r), x, 0, z);
@@ -504,6 +586,16 @@ function buildWorld() {
   mkt.area = shopArea;
   marketFront(false);
   buildBin();
+  if (!isBuilt('eastland')) {
+    scene.add(east.trees); K.bakeStatic(east.trees);
+    // until the new land is bought: an invisible fence, and a big dashed outline showing how much land it opens
+    east.wall = box(31.3, -30, 31.7, 40);
+    const fr = new THREE.Group(), dm = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.8, depthWrite: false });
+    const dash = (x, z, w, d) => { const m = new THREE.Mesh(G.plane(w, d), dm); m.position.set(x, 0.04, z); m.renderOrder = 2; fr.add(m); };
+    for (let x = EAST.x0 + 0.6; x < EAST.x1; x += 1.6) { dash(x, EAST.z0 + 1, 0.9, 0.22); dash(x, EAST.z1 - 1, 0.9, 0.22); }
+    for (let z = EAST.z0 + 1.6; z < EAST.z1 - 1; z += 1.6) { dash(EAST.x0 + 0.6, z, 0.22, 0.9); dash(EAST.x1 - 1, z, 0.22, 0.9); }
+    scene.add(fr); east.frame = fr;
+  }
   // river ripples drift downstream
   for (let i = 0; i < 6; i++) {
     const m = new THREE.Mesh(G.plane(1.8, 0.25), new THREE.MeshBasicMaterial({ color: '#dff6ff', transparent: true, opacity: 0.5, depthWrite: false }));
@@ -512,6 +604,59 @@ function buildWorld() {
   for (const [x, z] of [[-24, -1], [27, 27]]) { const d = P5.deer(); d.g.position.set(x, 0, z); K.bakeStatic(d.b); scene.add(d.g); animals.push({ ...d, kind: 'deer', home: [x, z], tx: x, tz: z, t: 0 }); }
   for (const [x, z] of [[-10.2, 0.4], [-17.6, 11], [-6, 18.6], [18, 3]]) { const s = P5.squirrel(); s.g.position.set(x, 0, z); K.bakeStatic(s.b); scene.add(s.g); animals.push({ ...s, kind: 'squirrel', home: [x, z], tx: x, tz: z, t: 0 }); }
   return shopArea;
+}
+
+// ---------- 擴建：東部林地 ----------
+const east = { trees: null, wall: null, frame: null, done: false, fest: null };
+function applyEast(anim) {
+  if (!isBuilt('eastland') || east.done) return;
+  east.done = true;
+  if (east.trees) { scene.remove(east.trees); east.trees = null; }
+  if (east.frame) { scene.remove(east.frame); east.frame = null; }
+  if (east.wall) { unbox(east.wall); east.wall = null; }
+  const D = new THREE.Group(), rnd = mulberry(57);
+  const path = (x, z, w, d, col = '#d9c7a0') => K.add(D, K.mesh(G.rbox(w, 0.05, d, 0.2, 1), col, false, true), x, 0.025, z);
+  for (let i = 0; i < 26; i++) {
+    const r = 1.2 + rnd() * 3.2, pt = K.mesh(G.circle(r, 18), rnd() < 0.5 ? '#9ccf5e' : '#b6e47a', false, true);
+    pt.position.set(EAST.x0 + 1 + rnd() * 34, 0.003 + i * 0.0011, -20 + rnd() * 44); pt.scale.set(1, 1, 0.6 + rnd() * 0.6); pt.rotation.y = rnd() * 3; D.add(pt);
+  }
+  // the main road runs on through the new land, a path runs south between the orchards and the workshops
+  path(50.0, -4.9, 40, 1.8); path(49.0, 10.2, 1.6, 28.4); path(ANNEX_DOOR, -6.55, 2.2, 1.7, '#e6cf98');
+  const tree = (x, z, k, sc) => D.add(P5.decoTree(k, sc).translateX(x).translateZ(z));
+  // a new wall of trees further east (a gap for the road and the railway), and trees behind the new shop
+  for (let i = 0; i < 24; i++) { const z = -24 + i * 2.4 + rnd(), x = 69.6 + rnd() * 3.4, k = rnd() < 0.6 ? 'pine' : 'oak', sc = 0.9 + rnd() * 0.4; if ((z > -8 && z < -2) || (z > 26 && z < 31)) continue; tree(x, z, k, sc); }
+  for (let i = 0; i < 9; i++) { const x = 51.5 + i * 2.1 + rnd(), z = -23.5 - rnd() * 2, k = rnd() < 0.7 ? 'pine' : 'oak', sc = 0.9 + rnd() * 0.4; tree(x, z, k, sc); }
+  // a deer meadow in the corner next to the shop
+  const fl = ['#ff7eb6', '#ffffff', '#ffd34a', '#a98bff', '#ff8a6b'];
+  for (let i = 0; i < 40; i++) K.add(D, P.flower(fl[i % 5]), 52 + rnd() * 15, 0, -20 + rnd() * 12);
+  for (const [x, z] of [[40.0, -3.4], [58.0, -3.4]]) { K.add(D, P.lamp(), x, 0, z); box(x - 0.1, z - 0.1, x + 0.1, z + 0.1); }
+  K.bake(D, scene);
+  for (const [x, z] of [[58, -14], [63, -17]]) { const d = P5.deer(); d.g.position.set(x, 0, z); K.bakeStatic(d.b); scene.add(d.g); animals.push({ ...d, kind: 'deer', home: [x, z], tx: x, tz: z, t: 0 }); }
+  evict();
+  if (anim) { for (let i = 0; i < 6; i++) later.push({ t: i * 0.25, fn: () => confetti(rand(36, 64), rand(-14, 20)) }); }
+}
+const inAnnex = (x, z) => isBuilt('annex') && z < ANNEX.z1 && z > ANNEX.z0 && x > ANNEX.x0 && x < ANNEX.x1;
+function buildAnnex(instant) {
+  const g = new THREE.Group(); scene.add(g);
+  shopShell(g, ANNEX, '林間市集', '#7a4fd6', ANNEX_DOOR);
+  K.bakeStatic(g);
+  buildCounter(4);
+  evict();
+  if (!instant) popIn(g);
+}
+// 林間大慶典: a festival arch over the road where it enters the new land
+function buildFest(anim) {
+  if (east.fest) return;
+  const g = K.add(scene, new THREE.Group(), 33.6, 0, -4.9);
+  for (const z of [-1.55, 1.55]) { K.add(g, K.mesh(G.rbox(0.3, 3.2, 0.3, 0.08), '#c98a55'), 0, 1.6, z); box(33.45, -4.9 + z - 0.15, 33.75, -4.9 + z + 0.15); }
+  K.add(g, K.mesh(G.rbox(0.4, 0.3, 3.6, 0.08), '#8b5a3c'), 0, 3.3, 0);
+  // the banner faces the camera, standing on top of the beam
+  const sign = P2.signBoard('林間大慶典', 3.0, '#e0784f'); sign.scale.setScalar(0.8); sign.position.set(0, 3.95, 0.05); g.add(sign);
+  const cols = ['#ff7eb6', '#ffd34a', '#5aa9ff', '#9fd86b', '#a98bff'];
+  for (let i = 0; i < 9; i++) { const f = K.add(g, K.mesh(G.cone(0.16, 0.3, 3), cols[i % 5]), 0.2, 3.0, -1.6 + i * 0.4); f.rotation.x = Math.PI; }
+  K.bakeStatic(g); east.fest = g;
+  evict();
+  if (anim) { popIn(g); confetti(33.6, -4.9); }
 }
 
 // ---------- 百貨公司 ----------
@@ -829,7 +974,7 @@ function placeLabels() {
     L.el.style.display = '';
     L.sx = (tmpV.x + 1) / 2 * w; L.sy = (1 - tmpV.y) / 2 * h;
     if (LBL2) {
-      const far = L.el.classList.contains('zone') && dist > 8;
+      const far = L.el.classList.contains('zone') && dist > 1.6;
       if (far !== !!L.far) { L.far = far; L.el.classList.toggle('far', far); L.w = 0; }
       shown.push(L);
     } else L.el.style.transform = 'translate(' + L.sx.toFixed(1) + 'px,' + L.sy.toFixed(1) + 'px) translate(-50%,-100%)';
@@ -943,6 +1088,9 @@ const COUNTERS = [
   { x: -15.6, z: -8.6, serve: { x: -15.6, z: -10.0 }, pile: { x: -13.0, z: -9.6, value: 0 }, qDir: -1, qz: -7.25, qmax: 7, shop: 1, on: false },
   { x: -2.4, z: -9.9, serve: { x: -2.4, z: -11.3 }, pile: { x: -0.25, z: -10.3, value: 0 }, qDir: -1, qz: -8.5, qmax: 4, shop: 0, on: false },
   { x: 4.6, z: -18.6, serve: { x: 4.6, z: -20.0 }, pile: { x: 7.0, z: -18.9, value: 0 }, qDir: -1, qz: -17.2, qmax: 5, shop: 0, on: false },
+  // 林間市集: lines run east along the front wall, away from its door
+  { x: 39.0, z: -9.9, serve: { x: 39.0, z: -11.3 }, pile: { x: 35.0, z: -10.4, value: 0 }, qDir: 1, qz: -8.5, qmax: 4, shop: 2, on: false },
+  { x: 45.6, z: -9.9, serve: { x: 45.6, z: -11.3 }, pile: { x: 49.2, z: -10.8, value: 0 }, qDir: 1, qz: -8.5, qmax: 4, shop: 2, on: false },
 ];
 // checkout time: 0.8 s + 0.3 s per item, shortened by 收銀速度 and the 店長
 const payTime = () => MGR_PAY[mShop()];
@@ -993,7 +1141,14 @@ function popIn(obj) { obj.scale.setScalar(0.01); pops.push({ obj, t: 0 }); }
 const CROP_LAYOUT = {
   mush: { w: 4.2, d: 2.8, make: P5.mushroomSpot, plot: () => P5.mossPlot(4.2, 2.8), spots: [[-1.4, -0.6], [0, -0.6], [1.4, -0.6], [-1.4, 0.6], [0, 0.6], [1.4, 0.6]], solid: false, y: 0.09 },
   tap: { w: 7.6, d: 4.6, make: P5.tapMaple, plot: null, spots: [[-2.6, -1.7], [0, -1.7], [2.6, -1.7], [-2.6, 1.7], [0, 1.7], [2.6, 1.7]], solid: true, y: 0 },
+  berry: { w: 7.6, d: 4.6, make: P5.berryBush, plot: () => P5.soilPlot(7.6, 4.6), spots: [[-2.6, -1.3], [0, 1.3], [2.6, -1.3], [-2.6, 1.3], [0, -1.3], [2.6, 1.3]], solid: true, y: 0.09 },
+  nut: { w: 7.6, d: 4.6, make: P5.chestnutTree, plot: null, spots: [[-2.6, -1.7], [0, 1.7], [2.6, -1.7], [-2.6, 1.7], [0, -1.7], [2.6, 1.7]], solid: true, y: 0 },
+  bamboo: { w: 7.6, d: 4.6, make: P5.bambooClump, plot: () => P5.mossPlot(7.6, 4.6), spots: [[-2.6, -1.4], [0, 1.4], [2.6, -1.4], [-2.6, 1.4], [0, -1.4], [2.6, 1.4]], solid: true, y: 0.09 },
+  lav: { w: 7.6, d: 4.6, make: P5.lavenderPlant, plot: () => P5.soilPlot(7.6, 4.6), spots: [[-2.4, -1.2], [0, 1.2], [2.4, -1.2], [-2.4, 1.2], [0, -1.2], [2.4, 1.2]], solid: false, y: 0.09 },
 };
+// machine pairs joined by a chute (planks slide from the sawmill into the planer)
+const CHUTES = [['sawmill', 'planer'], ['sawmill2', 'planer2']];
+const trayCap = (s, out) => upVal('tray') + (out && s.def.mk === 'sawmill' ? 8 : 0);
 const bakery = { on: false, bin: null, pile: null, t: 0 };
 const courierTruck = { on: false, g: null, st: 'park', t: 0, load: 0 };
 const BIN_SRC = ['apiary'];
@@ -1023,21 +1178,22 @@ function build(def, instant) {
   } else if (def.kind === 'machine') {
     const m = P5.machine5(def.mk);
     m.g.position.set(pos[0], 0, pos[1]); scene.add(m.g);
-    if (m.wheel) { m.wheel.position.set(pos[0] + 3.6, 0.5, pos[1] - 0.2); scene.add(m.wheel); K.bakeStatic(m.wheel); s.wheel = m.wheel; }
+    if (m.wheel && id === 'sawmill') { m.wheel.position.set(pos[0] + 3.6, 0.5, pos[1] - 0.2); scene.add(m.wheel); K.bakeStatic(m.wheel); s.wheel = m.wheel; }
     K.bakeStatic(m.spin);
     const tw = m.inTray.getWorldPosition(new THREE.Vector3()), nw = m.outTray.getWorldPosition(new THREE.Vector3());
     Object.assign(s, { g: m.g, spin: m.spin, inPt: tw, outPt: nw, timer: 0 });
-    const outCap = def.mk === 'sawmill' ? 20 : 12;
-    s.inBin = makeBin(m.inTray, traySlots(), 12); s.outBin = makeBin(m.outTray, traySlots(outCap), outCap);
+    // 存貨量: trays hold 12 → 30 (the sawmill's output 8 more); slots for the biggest size, max follows the upgrade
+    s.inBin = makeBin(m.inTray, traySlots(30), 30); s.outBin = makeBin(m.outTray, traySlots(38), 38);
+    s.inBin.max = trayCap(s, false); s.outBin.max = trayCap(s, true);
     const st = state.stock[id]; if (st) { loadList(s.inBin, st.i); loadList(s.outBin, st.o); }
     box(pos[0] - 0.85, pos[1] - 0.8, pos[0] + 0.85, pos[1] + 0.4);
     s.inLabel = label('badge grp', '', (o) => o.copy(tw).setY(0.95));
     s.outLabel = label('badge grp', '', (o) => o.copy(nw).setY(0.95));
     s.tag = label('mtag', '', (o) => o.set(pos[0], 2.35, pos[1] - 0.2)); s.tag.near = 9;
     machTag(s);
-    if (def.mk === 'planer') {
+    if (CHUTES.some((c) => c[1] === id)) {
       // a short wooden chute from the sawmill's output tray into the planer
-      const ch = new THREE.Group(), a = V3(10.85, 0, 8.45), b = V3(7.95, 0, 5.25), len = a.distanceTo(b), ry = -Math.atan2(b.z - a.z, b.x - a.x);
+      const ch = new THREE.Group(), a = id === 'planer' ? V3(10.85, 0, 8.45) : V3(54.85, 0, 0.65), b = id === 'planer' ? V3(7.95, 0, 5.25) : V3(57.15, 0, 0.65), len = a.distanceTo(b), ry = -Math.atan2(b.z - a.z, b.x - a.x);
       const belt = K.add(ch, K.mesh(G.rbox(len, 0.08, 0.5, 0.03), '#c98a55'), (a.x + b.x) / 2, 0.62, (a.z + b.z) / 2); belt.rotation.y = ry;
       for (const sg of [-1, 1]) { const r = K.add(ch, K.mesh(G.rbox(len, 0.14, 0.06, 0.02), '#8b5a3c'), (a.x + b.x) / 2 - sg * 0.22 * Math.sin(ry), 0.72, (a.z + b.z) / 2 - sg * 0.22 * Math.cos(ry)); r.rotation.y = ry; }
       scene.add(ch); K.bakeStatic(ch);
@@ -1049,8 +1205,8 @@ function build(def, instant) {
     Object.assign(s, { g: sh.g, items: def.items, ci: plat ? 1 : 0, front: V3(pos[0], 0, pos[1] + (plat ? 1.35 : 1.25)) });
     const slots = [];
     if (plat) for (let i = 0; i < 12; i++) slots.push({ p: V3(-0.9 + (i % 3) * 0.9, 0.25 + Math.floor(i / 6) * 0.62, -0.38 + (Math.floor(i / 3) % 2) * 0.78), ry: 0.3 });
-    else for (let i = 0; i < 24; i++) slots.push({ p: sh.slots[i % 8].clone().setY(sh.slots[i % 8].y + Math.floor(i / 8) * 0.2), ry: Math.PI / 2 + (i % 3) * 0.2 - 0.2 });
-    s.bin = makeBin(sh.g, slots, plat ? 12 : 24);
+    else for (let i = 0; i < 40; i++) slots.push({ p: sh.slots[i % 8].clone().setY(sh.slots[i % 8].y + Math.floor(i / 8) * 0.2), ry: Math.PI / 2 + (i % 3) * 0.2 - 0.2 });
+    s.bin = makeBin(sh.g, slots, plat ? 12 : 40);
     const ic = itemMesh(def.items[0]); ic.scale.setScalar(plat ? 0.55 : 0.9); ic.position.set(0, plat ? 0.82 : 1.12, plat ? -0.92 : -0.38); ic.rotation.x = 0.5; ic.userData.dyn = true; sh.g.add(ic);
     const st = state.stock[id]; if (st) loadList(s.bin, st.l);
     s.label = label('badge big grp', '', (o) => o.set(pos[0], plat ? 1.7 : 1.95, pos[1]));
@@ -1119,6 +1275,12 @@ function build(def, instant) {
     const tr = P.truck(); tr.g.position.set(-18.6, 0, -2.7); box(-19.9, -3.2, -17.3, -2.2); tr.g.rotation.y = -Math.PI / 2; tr.g.scale.setScalar(0.8); scene.add(tr.g); K.bakeStatic(tr.g);
     Object.assign(courierTruck, { on: true, g: tr.g, bed: tr.bed, st: 'park', t: 0, load: 0 });
     if (!instant) popIn(tr.g);
+  } else if (def.kind === 'eastland') {
+    applyEast(!instant);
+  } else if (def.kind === 'annex') {
+    buildAnnex(instant);
+  } else if (def.kind === 'fest') {
+    buildFest(!instant);
   } else if (def.kind === 'expand') {
     applyGrow(stations.logging);
   } else if (def.kind === 'dept') {
@@ -1224,7 +1386,7 @@ function finishSite(s, instant) {
   }
   evict(); refreshZones(); save();
 }
-const priceMult = () => upVal('price') * (state.festival ? 1.2 : 1);
+const priceMult = () => upVal('price') * (state.festival ? 1.2 : 1) * (isBuilt('harvestFest') ? 1.1 : 1);
 const crowd = () => upVal('cust') * (siteDone('house') ? 1.3 : 1);
 const patienceK = () => (siteDone('park') ? 1.5 : 1);
 const tipK = () => (siteDone('park') ? 1 : 0) + (pets.squirrel ? 1 : 0);
@@ -1354,7 +1516,7 @@ function grow(def) {
   confetti(def.zone[0], def.zone[1]); sfx('unlock'); toast('🎉 ' + def.name + '！');
   evict(); refreshZones(); save();
 }
-const onFloor = (x, z) => (z < SHOW.z1 && z > SHOW.z0 && x > SHOW.x0 && x < SHOW.x1 && isBuilt('showroom')) || (z < SHOP.z1 && x > SHOP.x0 && x < SHOP.x1 && z > SHOP.z0);
+const onFloor = (x, z) => (z < SHOW.z1 && z > SHOW.z0 && x > SHOW.x0 && x < SHOW.x1 && isBuilt('showroom')) || (z < SHOP.z1 && x > SHOP.x0 && x < SHOP.x1 && z > SHOP.z0) || inAnnex(x, z);
 function makeZone(def) {
   const [x, z] = zoneSpot(def);
   const g = new THREE.Group(); g.position.set(x, onFloor(x, z) ? 0.15 : 0.03, z); scene.add(g);
@@ -1364,7 +1526,7 @@ function makeZone(def) {
   const paid = state.paid[def.id] || {};
   const z0 = { def, g, fill, x, z, paid, total: Object.values(def.cost).reduce((a, b) => a + b, 0), tick: 0, armed: dist2(player.p.root.position, x, z) > 1.5 };
   // a machine's 「做更快」 label sits on the near edge of its square, so it does not cover the machine's trays
-  const lz = def.kind === 'grow' && def.mach ? z + 1.05 : z + 0.2;
+  const lz = def.kind === 'grow' ? z + 1.05 : z + 0.2;
   z0.label = label('zone', '', (o) => o.set(x, def.kind === 'hire' ? 2.0 : 0.4, lz));
   zones[def.id] = z0;
   updateZoneLabel(z0);
@@ -1416,7 +1578,7 @@ function payZones(dt) {
 }
 const inShop = (x, z) => z < SHOP.z1 && z > SHOP.z0 - 0.4 && x > SHOP.x0 && x < SHOP.x1;
 const inShow = (x, z) => isBuilt('showroom') && z < SHOW.z1 && z > SHOW.z0 && x > SHOW.x0 && x < SHOW.x1;
-const floorY = (x, z) => (inShop(x, z) || inShow(x, z) ? 0.12 : 0);
+const floorY = (x, z) => (inShop(x, z) || inShow(x, z) || inAnnex(x, z) ? 0.12 : 0);
 
 // ---------- workers ----------
 const workers = [];
@@ -1430,18 +1592,20 @@ const LOOKS = {
   sapper: { body: '#ff9f43', hat: 'straw', apron: '#c96a2a' },
   beekeeper: { body: '#fbfaf5', hat: 'bun', hatColor: '#ffd34a', legs: '#ffd34a' },
   forager: { body: '#9a7ad6', hat: 'straw', apron: '#59a14f' },
+  picker: { body: '#5a8fe0', hat: 'straw', apron: '#a98bff' },
   manager: { body: '#4a5a86', hat: 'bun', hatColor: '#3a2a22', apron: '#ffffff' },
   foreman: { body: '#7aa65a', hat: 'cap', hatColor: '#3f6b2e', apron: '#e9f5d8' },
 };
 const DESK_ROLES = ['cashier', 'clerk', 'manager', 'foreman'];
-const ONLY = { sapper: ['sap', 'syrup'], beekeeper: ['honey', 'wax', 'candle'], forager: ['shiitake', 'truffle'] };
-const HOME = { lumberjack: [-5.0, 1.0], planter: [-5.4, -1.2], hauler: [0, -4.4], carpenter: [1.2, 25.0], sapper: [-15.4, 25.2], beekeeper: [-17.4, 16.6], forager: [6.4, 5.0] };
+const ONLY = { sapper: ['sap', 'syrup'], beekeeper: ['honey', 'wax', 'candle'], forager: ['shiitake', 'truffle'], picker: ['blueberry', 'jam', 'chestnut', 'roastnut', 'bamboo', 'bambooware', 'lavender', 'soap'] };
+const HOME = { lumberjack: [-5.0, 1.0], planter: [-5.4, -1.2], hauler: [0, -4.4], carpenter: [3.3, 26.2], sapper: [-15.4, 25.2], beekeeper: [-17.4, 16.6], forager: [6.4, 5.0], picker: [41.4, 7.6] };
 // one price list for hiring, whether on the map or in the 員工 tab: the base price × 1.8 for every worker of that role already working
 const HIRE = {
   lumberjack: { name: '伐木工', ic: 'pine', base: 180 }, planter: { name: '植樹員', ic: 'oak', base: 500 }, hauler: { name: '搬運工', ic: 'plank', base: 320 },
-  carpenter: { name: '木匠', ic: 'chair', base: 2600 }, sapper: { name: '採汁員', ic: 'sap', base: 1800 }, beekeeper: { name: '養蜂人', ic: 'honey', base: 3000 }, forager: { name: '採菇員', ic: 'shiitake', base: 5000 },
+  carpenter: { name: '木匠', ic: 'chair', base: 2600 }, sapper: { name: '採汁員', ic: 'sap', base: 1800 }, beekeeper: { name: '養蜂人', ic: 'honey', base: 3000 }, forager: { name: '採菇員', ic: 'shiitake', base: 5000 }, picker: { name: '果農', ic: 'blueberry', base: 15000, nx: true },
 };
 const HIRE_MAX = 6;
+for (const r in HIRE) if (!HIRE[r].nx && r !== 'lumberjack' && r !== 'hauler') HIRE[r].base = late(HIRE[r].base);
 const roleOpen = (role) => DEFS.some((d) => d.kind === 'hire' && d.role === role && isBuilt(d.id));
 const roleCount = (role) => workers.filter((w) => w.role === role).length;
 const hirePrice = (role) => Math.round(HIRE[role].base * Math.pow(1.8, roleCount(role)) / 10) * 10;
@@ -1499,7 +1663,7 @@ function idleWander(w, dt, cx, cz) {
   if (!w.wp || w.wait <= 0) { w.wp = [cx + (Math.random() - 0.5) * 2.4, cz + (Math.random() - 0.5) * 1.6]; w.wait = 2 + Math.random() * 2; }
   go(w, w.wp[0], w.wp[1], dt, 1.6);
 }
-const STORE_CAP = 200;
+const storeCap = () => upVal('store');
 const storeTotal = () => Object.values(state.store).reduce((a, b) => a + b, 0);
 const srcBin = (s) => s.outBin || null;
 const srcCount = (src, item) => src.kind === 'store' ? (state.store[item] || 0) : srcBin(src) ? binCount(srcBin(src), item) : 0;
@@ -1569,7 +1733,7 @@ function pickJob(w) {
     consider(3 + Math.random() * 2 - (taken('bakery', item) ? 12 : 0), 'bakery', src, item);
   }
   const wh = stations.warehouse;
-  if (wh && storeTotal() < STORE_CAP - 10) for (const s of Object.values(stations)) {
+  if (wh && storeTotal() < storeCap() - 10) for (const s of Object.values(stations)) {
     const b = srcBin(s); if (!b || b.list.length < b.max * 0.8) continue;
     const cnt = {}; for (const t of b.list) if (okItem(t)) cnt[t] = (cnt[t] || 0) + 1;
     const item = Object.keys(cnt).sort((a, c) => cnt[c] - cnt[a])[0]; if (!item) continue;
@@ -1589,7 +1753,7 @@ function depositTo(c, dst, item, dt) {
   c.xfer -= dt;
   if (c.xfer > 0 || count(c, item) <= 0) return;
   if (dst.kind === 'store') {
-    if (storeTotal() + (dst.pend || 0) >= STORE_CAP) return;
+    if (storeTotal() + (dst.pend || 0) >= storeCap()) return;
     c.xfer = 0.06; dst.pend = (dst.pend || 0) + 1;
     giveFrom(c, item, (o) => o.set(dst.def.pos[0], 0.8, dst.def.pos[1] + 1.6), () => { dst.pend--; state.store[item] = (state.store[item] || 0) + 1; });
   } else if (dst.kind === 'shelf' || dst.kind === 'platform') {
@@ -1618,7 +1782,7 @@ function isFull(dst, item) {
   if (dst === 'bakery') return binRoom(bakery.bin) <= 0;
   if (dst.kind === 'town') return dst.done || siteLeft(dst, item) - (dst.pend && dst.pend[item] || 0) <= 0;
   if (dst.kind === 'shelf' || dst.kind === 'platform') return shelfSpace(dst) <= 0;
-  if (dst.kind === 'store') return storeTotal() >= STORE_CAP;
+  if (dst.kind === 'store') return storeTotal() >= storeCap();
   if (dst.kind === 'flume') return dst.queue.length >= 16;
   return machSpace(dst) <= 0;
 }
@@ -1629,7 +1793,7 @@ function dstFor(type) {
   const mc = listOf('machine').find((m) => machAccepts(m, type) && !isFull(m, type));
   const site = listOf('town').find((s) => !s.done && !isFull(s, type));
   const bk = bakery.on && (type === 'syrup' || type === 'honey') && !isFull('bakery', type) ? 'bakery' : null;
-  return site || fl || mc || sh || bk || (stations.warehouse && storeTotal() < STORE_CAP ? stations.warehouse : null);
+  return site || fl || mc || sh || bk || (stations.warehouse && storeTotal() < storeCap() ? stations.warehouse : null);
 }
 // anything the player can make use of right now (so the crate pick-up takes useful things first)
 const usable = (t) => DEFS.some((d) => (isBuilt(d.id) || zones[d.id]) && ((d.items && d.items.includes(t)) || (d.ins && d.ins.includes(t)) || (d.need && d.need[t]))) || Object.values(zones).some((z) => z.def.cost[t] && left(z, t) > 0) || !!stations.warehouse;
@@ -1822,7 +1986,10 @@ function pickCounter(kind) {
   COUNTERS.forEach((k, i) => { if (!k.on || k.shop !== kind) return; const n = lineLen(i); if (n < k.qmax && n < bl) { bl = n; best = i; } });
   return best;
 }
-const spawnT = [3, 6];
+const spawnT = [3, 6, 4];
+// shop 0 = 森林市集, 1 = 家具展示館, 2 = 林間市集: their shelves, main counter and where their customers come from
+const KIND_MAIN = [0, 1, 4], KIND_SPAWN = [SPAWN, SPAWN2, SPAWN3];
+const shopShelves = (kind) => (kind === 1 ? listOf('platform') : listOf('shelf').filter((s) => (s.def.shop || 0) === kind));
 function customerLook() { return { body: pick(CUST_COLS), hat: Math.random() < 0.3 ? 'cap' : (Math.random() < 0.3 ? 'bun' : null), hatColor: pick(CUST_COLS) }; }
 function shopperWant(sh) {
   const stocked = sh.items.filter((t) => binCount(sh.bin, t) > 0);
@@ -1849,16 +2016,16 @@ function shoppingList(shelves) {
   return list.sort((a, b) => key(a) - key(b));
 }
 // patience at each shelf; a long list never keeps a shopper in the market for much more than a minute
-const shelfPatience = (c) => Math.min((c.li ? 18 : 32) * patienceK() + MGR_PAT[mShop()], Math.max(5, 60 - (c.age || 0)));
+const shelfPatience = (c) => Math.min((c.li ? 18 : 32) * patienceK() + MGR_PAT[mShop()], Math.max(5, 55 - (c.age || 0)));
 const shelfSpot = (sh) => [sh.front.x + rand(-0.75, 0.75), sh.front.z + rand(0.15, 0.6)];
 function spawnCustomer(kind) {
-  const shelves = (kind ? listOf('platform') : listOf('shelf')).filter((s) => s.items.some((t) => binCount(s.bin, t) > 0 || producible(t)));
+  const shelves = shopShelves(kind).filter((s) => s.items.some((t) => binCount(s.bin, t) > 0 || producible(t)));
   if (!shelves.length) return null;
   let list;
-  if (kind) { const sh = pick(shelves), item = shopperWant(sh); list = item ? [{ item, shelf: sh, need: 1, got: 0 }] : []; } else list = shoppingList(shelves);
+  if (kind === 1) { const sh = pick(shelves), item = shopperWant(sh); list = item ? [{ item, shelf: sh, need: 1, got: 0 }] : []; } else list = shoppingList(shelves);
   if (!list.length) return null;
   const p = K.person(customerLook());
-  const sp = kind ? SPAWN2 : SPAWN;
+  const sp = KIND_SPAWN[kind];
   p.root.position.set(sp[0], 0, sp[1] + rand(-0.5, 0.5)); scene.add(p.root);
   const e0 = list[0], sh = e0.shelf;
   const c = { p, kind, ci: -1, list, li: 0, shelf: sh, item: e0.item, need: e0.need, got: 0, st: 'in', path: [], t: 0, face: 0, moving: 0, qi: 99 };
@@ -1877,14 +2044,14 @@ function stepPath(c, dt, speed) {
   return false;
 }
 function updateCustomers(dt) {
-  for (let kind = 0; kind < 2; kind++) {
-    const n = (kind ? listOf('platform') : listOf('shelf')).length;
-    if (!n || !COUNTERS[kind].on) continue;
+  for (let kind = 0; kind < 3; kind++) {
+    const n = shopShelves(kind).length;
+    if (!n || !COUNTERS[KIND_MAIN[kind]].on) continue;
     // more market counters let a few more shoppers in
     const tills = COUNTERS.filter((k) => k.on && k.shop === kind).length;
     spawnT[kind] -= dt * crowd() * (kind ? 1 : shopCustMul());
-    const mine = customers.filter((c) => c.kind === kind).length, maxC = kind ? Math.min(6, 2 + n) : Math.min(12 + (tills - 1) * 3, 3 + Math.round(n * 1.5) + (tills - 1) * 2);
-    if (spawnT[kind] <= 0 && mine < maxC) { spawnCustomer(kind); spawnT[kind] = (kind ? Math.max(3, 9 - n) : Math.max(1.4, 7 - n * 0.7)) * (0.7 + Math.random() * 0.6); }
+    const mine = customers.filter((c) => c.kind === kind).length, maxC = kind === 1 ? Math.min(6, 2 + n) : Math.min(12 + (tills - 1) * 3, 3 + Math.round(n * 1.5) + (tills - 1) * 2);
+    if (spawnT[kind] <= 0 && mine < maxC) { spawnCustomer(kind); spawnT[kind] = (kind === 1 ? Math.max(3, 9 - n) : Math.max(1.4, 7 - n * 0.7)) * (0.7 + Math.random() * 0.6); }
   }
   const pp0 = player.p.root.position;
   const served = COUNTERS.map((k, i) => k.on && (workers.some((w) => (i === 1 ? w.role === 'clerk' : w.role === 'cashier' && (w.counter || 0) === i) && dist2(w.p.root.position, k.serve.x, k.serve.z) < 0.6) || dist2(pp0, k.serve.x, k.serve.z) < 1.3));
@@ -1939,7 +2106,7 @@ function updateCustomers(dt) {
     else if (c.st !== 'leave') setLabel(c.label, ICON.money);
   }
 }
-function leaveShop(c) { c.st = 'leave'; c.label.show = false; const sp = c.kind ? SPAWN2 : SPAWN; setGoal(c, sp[0], sp[1]); }
+function leaveShop(c) { c.st = 'leave'; c.label.show = false; const sp = KIND_SPAWN[c.kind]; setGoal(c, sp[0], sp[1]); }
 const stats = { sales: 0, furniture: 0, made: {}, sold: {}, chopped: 0, sites: 0, trains: 0, bakery: 0 };
 function pay(c) {
   // the whole shopping list is paid in one go
@@ -1964,7 +2131,7 @@ function pay(c) {
 
 // ---------- special orders: train ----------
 const train = { st: 'away', t: 60, obj: null, order: null, value: 0, label: null };
-function sellables() { return ['plank', 'refined', 'paper', 'notebook', 'syrup', 'honey', 'candle', 'shiitake', ...FURN].filter((t) => producible(t)); }
+function sellables() { return ['plank', 'refined', 'paper', 'notebook', 'syrup', 'honey', 'candle', 'shiitake', 'jam', 'roastnut', 'bambooware', 'soap', 'carving', ...FURN].filter((t) => producible(t)); }
 function makeOrder(types, lo, hi) {
   const items = sellables(), order = {};
   for (let i = 0; i < types && items.length; i++) { const it = pick(items); const big = ITEMS[it].price >= 40 ? 0.35 : 1; order[it] = (order[it] || 0) + Math.max(1, Math.round(rand(lo, hi) * big)); }
@@ -2125,7 +2292,7 @@ function openPanel(kind) {
     let h = '<div class="sec">背包 ' + player.carry.length + '/' + player.cap() + '</div><div class="chips">' + chipsOf(cntList(player.carry.map((c) => c.type))) + '</div>';
     const sh = [...listOf('shelf'), ...listOf('platform')];
     h += '<div class="sec">市集與展示館</div>' + (sh.length ? sh.map((s) => '<div class="chips"><span class="chip">' + s.def.name + ' ' + s.bin.list.length + '/' + (s.kind === 'platform' ? 12 : upVal('shelfCap')) + '</span>' + s.items.map((t) => '<span class="chip">' + ICON[t] + binCount(s.bin, t) + '</span>').join('') + '</div>').join('') : '<div class="empty">還沒有貨架</div>');
-    if (stations.warehouse) h += '<div class="sec">倉庫 ' + storeTotal() + '/' + STORE_CAP + '</div><div class="chips">' + chipsOf(state.store) + '</div>';
+    if (stations.warehouse) h += '<div class="sec">倉庫 ' + storeTotal() + '/' + storeCap() + '</div><div class="chips">' + chipsOf(state.store) + '</div>';
     h += '<div class="sec">加工</div><div class="chips">';
     for (const s of listOf('machine')) h += '<span class="chip">' + s.def.name + ' ' + s.inBin.list.length + ' → ' + s.outBin.list.length + '</span>';
     const towns = listOf('town');
@@ -2236,7 +2403,7 @@ function playerInteract(dt) {
       if (best) { player.xfer2 = 0.08; state.store[best]--; sfx('pop'); takeInto(player, best, V3(wh.outPt.x, 0.5, wh.outPt.z)); }
     }
     const kinds = Object.keys(state.store).filter((k) => state.store[k] > 0).sort((a, b) => state.store[b] - state.store[a]);
-    setLabel(wh.label, '<div class="zn">倉庫 ' + storeTotal() + '/' + STORE_CAP + '</div>' + (kinds.length ? '<div class="inv">' + kinds.map((k) => '<span>' + ICON[k] + state.store[k] + '</span>').join('') + '</div>' : '<div class="inv">空的</div>'));
+    setLabel(wh.label, '<div class="zn">倉庫 ' + storeTotal() + '/' + storeCap() + '</div>' + (kinds.length ? '<div class="inv">' + kinds.map((k) => '<span>' + ICON[k] + state.store[k] + '</span>').join('') + '</div>' : '<div class="inv">空的</div>'));
   }
   for (const k of COUNTERS) if (k.on) collectPile(k.pile, dist2(pp, k.pile.x, k.pile.z) <= 1.6, dt, () => setPile(k.pile));
   if (bakery.pile) collectPile(bakery.pile, dist2(pp, bakery.pile.x, bakery.pile.z) <= 1.6, dt, () => setPile(bakery.pile));
@@ -2251,7 +2418,8 @@ function craftOut(s, used) {
   return [d.out];
 }
 function updateMachine(s, dt, T) {
-  const d = s.def, iv = d.iv / upVal('mach') / (d.mk === 'bench' && carpenterAt(s) ? 1.6 : 1);
+  s.inBin.max = trayCap(s, false); s.outBin.max = trayCap(s, true);
+  const d = s.def, iv = d.iv / upVal('mach') / machK(s.id) / (d.mk === 'bench' && carpenterAt(s) ? 1.6 : 1);
   const need = d.need || 1, outN = d.mk === 'sawmill' ? 3 : d.mk === 'shroom' ? 2 : 1;
   const busy = s.inBin.list.length >= need && binRoom(s.outBin) >= outN;
   if (busy) {
@@ -2271,6 +2439,7 @@ function updateMachine(s, dt, T) {
   else if (ax === 'dip') { sp.userData.y0 = sp.userData.y0 ?? sp.position.y; sp.position.y = sp.userData.y0 + (busy ? Math.abs(Math.sin(T * 4)) * 0.12 : 0); }
   else if (ax === 'saw') sp.position.x = 0.2 + (busy ? Math.sin(T * 12) * 0.18 : 0);
   else if (ax === 'steam') { sp.visible = busy; sp.position.y = 1.75 + (T * 0.6) % 0.3; }
+  else if (ax === 'y') sp.rotation.y += dt * (busy ? 4 : 0);
   if (s.wheel) s.wheel.rotation.x -= dt * 1.2;
   binRender(s.inBin); binRender(s.outBin);
   setLabel(s.inLabel, binLabel(s.inBin)); setLabel(s.outLabel, binLabel(s.outBin));
@@ -2322,7 +2491,7 @@ function updateWorld(dt, T) {
     else if (s.kind === 'flume') updateFlume(s, dt);
     else if (s.kind === 'apiary') updateApiary(s, dt, T);
     else if (s.kind === 'crop') {
-      const k = s.def.plant === 'mush' ? upVal('mush') : upVal('sap');
+      const k = s.def.plant === 'mush' ? upVal('mush') : s.def.plant === 'tap' ? upVal('sap') : upVal('orchard');
       for (const pl of s.plants) if (pl.active && !pl.ripe) {
         pl.t += dt * k;
         pl.fruit.visible = pl.t > s.grow * 0.35;
@@ -2338,9 +2507,10 @@ function updateWorld(dt, T) {
       setLabel(s.label, (shown.length ? shown : s.items.slice(0, 1)).map((t) => '<span>' + ICON[t] + (cnt[t] || 0) + '</span>').join('') + '<span class="tot">' + s.bin.list.length + '/' + max + '</span>');
     }
   }
-  // the chute between sawmill and planer moves planks on its own
-  const mill = stations.sawmill, pl = stations.planer;
-  if (mill && pl) {
+  // the chutes between sawmill and planer move planks on their own
+  for (const [ma, pa] of CHUTES) {
+    const mill = stations[ma], pl = stations[pa];
+    if (!mill || !pl) continue;
     pl.chuteT = (pl.chuteT || 0) - dt;
     if (pl.chuteT <= 0 && binCount(mill.outBin, 'plank') && machSpace(pl) > 0) {
       pl.chuteT = 0.5; binTake(mill.outBin, 'plank'); pl.pend = (pl.pend || 0) + 1;
@@ -2389,7 +2559,9 @@ function movePlayer(dt) {
       else { const ex = Math.min(pos.x - b.x0, b.x1 - pos.x), ez = Math.min(pos.z - b.z0, b.z1 - pos.z); if (ex < ez) pos.x = pos.x - b.x0 < b.x1 - pos.x ? b.x0 - r : b.x1 + r; else pos.z = pos.z - b.z0 < b.z1 - pos.z ? b.z0 - r : b.z1 + r; }
     }
   }
-  pos.x = Math.max(-25.2, Math.min(30.5, pos.x)); pos.z = Math.max(mkt.dept && pos.x > SHOP.x0 - 0.4 && pos.x < SHOP.x1 + 0.2 ? SHOP.z0 + 0.3 : -17.0, Math.min(30.4, pos.z));
+  pos.x = Math.max(-25.2, Math.min(isBuilt('eastland') ? EAST.x1 - 0.8 : 30.5, pos.x));
+  const zMin = mkt.dept && pos.x > SHOP.x0 - 0.4 && pos.x < SHOP.x1 + 0.2 ? SHOP.z0 + 0.3 : isBuilt('annex') && pos.x > ANNEX.x0 - 0.4 && pos.x < ANNEX.x1 + 0.2 ? ANNEX.z0 + 0.3 : -17.0;
+  pos.z = Math.max(zMin, Math.min(30.4, pos.z));
   pos.y = floorY(pos.x, pos.z);
   const spd = Math.hypot(pVel.x, pVel.z);
   if (spd > 0.3) pFace = Math.atan2(pVel.x, pVel.z);
@@ -2510,7 +2682,7 @@ addEventListener('pagehide', save);
 
 // test hooks
 window.__forest = {
-  state, stations, player, zones, customers, workers, events, DEFS, COUNTERS, stats, colliders, train, bakery,
+  state, stations, player, zones, customers, workers, events, DEFS, COUNTERS, stats, colliders, train, bakery, UPS, GROW, HIRE,
   give(type, n) { for (let i = 0; i < n && room(player) > 0; i++) stackAdd(player, type); },
   cash(n) { state.money += n; updateMoney(); },
   tp(x, z) { player.p.root.position.set(x, 0, z); updateCamera(0, true); },
