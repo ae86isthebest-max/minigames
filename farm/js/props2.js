@@ -30,6 +30,52 @@ export function appleTree() {
   return { g, fruit };
 }
 
+// 大擴充 crops (south farmland): each returns { g, fruit } like the others; fruit hides when picked
+export function carrotPlant() {
+  const g = new THREE.Group();
+  for (let i = 0; i < 4; i++) { const l = add(g, mesh(G.cone(0.06, 0.42, 5), i % 2 ? '#5fc24f' : '#4caf45'), Math.cos(i * 1.57) * 0.06, 0.38, Math.sin(i * 1.57) * 0.06); l.rotation.z = Math.cos(i * 1.57) * 0.35; l.rotation.x = -Math.sin(i * 1.57) * 0.35; }
+  const fruit = add(g, new THREE.Group());
+  add(fruit, mesh(G.cyl(0.11, 0.085, 0.16, 10), '#ff8a2a'), 0, 0.1, 0);
+  add(fruit, mesh(G.cyl(0.1, 0.1, 0.02, 10), '#ffa24a', false), 0, 0.185, 0);
+  return { g, fruit };
+}
+export function strawberryPlant() {
+  const g = new THREE.Group();
+  for (let i = 0; i < 4; i++) { const b = add(g, mesh(G.sphere(0.17, 8, 6), i % 2 ? '#4fb04a' : '#3f9e44'), Math.cos(i * 1.57 + 0.4) * 0.13, 0.12, Math.sin(i * 1.57 + 0.4) * 0.13); b.scale.set(1, 0.55, 1); }
+  add(g, mesh(G.sphere(0.05, 6, 5), '#ffffff'), 0, 0.24, 0);
+  const fruit = add(g, new THREE.Group());
+  for (const [x, z] of [[0.2, 0.08], [-0.17, 0.12], [0.05, -0.2], [-0.08, 0.22]]) {
+    const b = add(fruit, mesh(G.cone(0.065, 0.12, 8), '#ff3b55'), x, 0.1, z); b.rotation.x = Math.PI;
+    add(fruit, mesh(G.sphere(0.04, 6, 4), '#3fa64a', false), x, 0.17, z).scale.set(1, 0.4, 1);
+  }
+  return { g, fruit };
+}
+export function pumpkinPlant() {
+  const g = new THREE.Group();
+  for (const [x, z, r] of [[-0.3, -0.15, 0.2], [0.28, -0.2, 0.18], [-0.05, 0.3, 0.17]]) { const l = add(g, mesh(G.sphere(r, 8, 6), '#5cb84c'), x, 0.08, z); l.scale.set(1.2, 0.3, 1); }
+  const vine = add(g, mesh(G.capsule(0.025, 0.5, 4), '#4c9a3e'), 0.05, 0.05, -0.05); vine.rotation.z = Math.PI / 2; vine.rotation.y = 0.6;
+  const fruit = add(g, new THREE.Group());
+  for (let i = 0; i < 6; i++) { const a = i * 1.047; add(fruit, mesh(G.sphere(0.15, 10, 8), i % 2 ? '#ff9a2e' : '#ff8a1f'), Math.cos(a) * 0.12, 0.2, Math.sin(a) * 0.12).scale.set(1, 1.1, 1); }
+  add(fruit, mesh(G.sphere(0.2, 12, 10), '#ff9330'), 0, 0.2, 0);
+  add(fruit, mesh(G.cyl(0.035, 0.05, 0.12, 6), '#6b8a2e'), 0, 0.42, 0).rotation.z = 0.3;
+  return { g, fruit };
+}
+const BLOOMS = ['#ff6fa8', '#ffd34a', '#a98bff', '#ffffff', '#ff8a6b', '#5ec8ff'];
+let bloomK = 0;
+export function flowerPlant() {
+  const g = new THREE.Group();
+  const c = BLOOMS[bloomK++ % BLOOMS.length];
+  for (let i = 0; i < 3; i++) { const a = i * 2.1, st = add(g, mesh(G.cyl(0.018, 0.022, 0.5, 4), '#5aa84a'), Math.cos(a) * 0.1, 0.25, Math.sin(a) * 0.1); st.rotation.z = Math.cos(a) * 0.2; st.rotation.x = -Math.sin(a) * 0.2; }
+  for (let i = 0; i < 3; i++) { const l = add(g, mesh(G.sphere(0.09, 7, 5), '#4fae4f'), Math.cos(i * 2.1 + 1) * 0.14, 0.1, Math.sin(i * 2.1 + 1) * 0.14); l.scale.set(1.4, 0.35, 0.8); }
+  const fruit = add(g, new THREE.Group());
+  for (let i = 0; i < 3; i++) {
+    const a = i * 2.1, x = Math.cos(a) * 0.15, z = Math.sin(a) * 0.15;
+    for (let k = 0; k < 5; k++) add(fruit, mesh(G.sphere(0.055, 6, 5), c), x + Math.cos(k * 1.257) * 0.06, 0.5, z + Math.sin(k * 1.257) * 0.06).scale.set(1, 0.6, 1);
+    add(fruit, mesh(G.sphere(0.04, 6, 5), '#ffd34a'), x, 0.53, z);
+  }
+  return { g, fruit };
+}
+
 function tray(g, x, z, col) {
   const t = add(g, new THREE.Group(), x, 0, z);
   add(t, mesh(G.rbox(1.0, 0.24, 0.8, 0.06), C.woodLight), 0, 0.12, 0);
@@ -65,6 +111,57 @@ export function machine(kind) {
     add(g, mesh(G.cyl(0.14, 0.16, 0.6, 8), '#c96d4a'), 0.35, 1.3, -0.4);
     spin = add(g, new THREE.Group(), 0.35, 1.7, -0.4);
     add(spin, mesh(G.sphere(0.16, 7, 5), '#f2f2f2'), 0, 0, 0);
+  } else if (kind === 'jam') {
+    // 果醬機: pink stove with a big steel pot of bubbling jam, the wooden paddle stirs while it works
+    add(g, mesh(G.rbox(1.6, 0.7, 1.1, 0.14), '#ff8fb1'), 0, 0.35, -0.2);
+    add(g, mesh(G.rbox(1.65, 0.1, 1.15, 0.05), C.white), 0, 0.72, -0.2);
+    for (const x of [-0.45, 0.45]) add(g, mesh(G.cyl(0.09, 0.09, 0.06, 10), '#ffd34a'), x, 0.42, 0.37).rotation.x = Math.PI / 2;
+    add(g, mesh(G.cyl(0.5, 0.42, 0.55, 16), '#c9d3db'), 0, 1.02, -0.2);
+    add(g, mesh(G.cyl(0.52, 0.52, 0.06, 16), '#e3e9ee'), 0, 1.3, -0.2);
+    add(g, mesh(G.cyl(0.44, 0.44, 0.04, 16), '#d81f4a', false), 0, 1.29, -0.2);
+    for (const s of [-1, 1]) add(g, mesh(G.rbox(0.18, 0.06, 0.08, 0.03), '#9aa3ad'), s * 0.58, 1.2, -0.2);
+    spin = add(g, new THREE.Group(), 0, 1.3, -0.2);
+    const pd = add(spin, mesh(G.rbox(0.07, 0.75, 0.07, 0.03), C.woodLight), 0.18, 0.25, 0); pd.rotation.z = -0.3;
+    add(spin, mesh(G.sphere(0.06, 6, 5), '#ff5a7a', false), -0.15, 0.03, 0.12);
+  } else if (kind === 'pie') {
+    // 南瓜派烤爐: round orange oven with a glowing door, a big pie turns on the roof as a sign
+    add(g, mesh(G.rbox(1.7, 0.35, 1.3, 0.1), '#b8733f'), 0, 0.17, -0.2);
+    add(g, mesh(G.rbox(1.5, 1.0, 1.15, 0.3), '#ff9f43'), 0, 0.8, -0.2);
+    add(g, mesh(G.rbox(1.56, 0.12, 1.2, 0.05), '#fff3dd'), 0, 1.3, -0.2);
+    add(g, mesh(G.rbox(0.7, 0.45, 0.1, 0.12), '#5b3a2c'), 0, 0.75, 0.38);
+    add(g, mesh(G.rbox(0.56, 0.3, 0.06, 0.1), '#ffcf5a'), 0, 0.74, 0.41);
+    add(g, mesh(G.cyl(0.12, 0.14, 0.5, 8), '#c96d4a'), 0.5, 1.6, -0.55);
+    spin = add(g, new THREE.Group(), -0.1, 1.42, -0.2);
+    add(spin, mesh(G.cyl(0.42, 0.36, 0.12, 16), '#e0a35a'), 0, 0.06, 0);
+    add(spin, mesh(G.cyl(0.37, 0.37, 0.03, 16), '#ff9a3c', false), 0, 0.13, 0);
+    for (let i = 0; i < 6; i++) add(spin, mesh(G.rbox(0.3, 0.035, 0.04, 0.01), '#f2c27a', false), 0, 0.15, 0).rotation.y = i * 0.524;
+  } else if (kind === 'yarn') {
+    // 毛線機: purple spinning wheel; the big wheel turns while wool becomes yarn
+    add(g, mesh(G.rbox(1.6, 0.45, 1.0, 0.1), '#a98bff'), 0, 0.23, -0.2);
+    add(g, mesh(G.rbox(1.65, 0.08, 1.05, 0.04), '#efe6ff'), 0, 0.48, -0.2);
+    for (const z of [-0.6, -0.1]) add(g, mesh(G.rbox(0.1, 1.2, 0.1, 0.03), C.woodDark), 0, 1.05, z);
+    add(g, mesh(G.cyl(0.07, 0.07, 0.6, 8), C.woodDark), 0, 1.5, -0.35).rotation.x = Math.PI / 2;
+    add(g, mesh(G.cyl(0.13, 0.13, 0.3, 10), '#ff7eb6'), 0.5, 0.65, -0.05).rotation.z = Math.PI / 2;
+    spin = add(g, new THREE.Group(), 0, 1.5, -0.35); spin.rotation.x = Math.PI / 2;
+    add(spin, mesh(new THREE.TorusGeometry(0.62, 0.05, 6, 24), C.wood), 0, 0, 0).rotation.x = Math.PI / 2;
+    for (let i = 0; i < 4; i++) add(spin, mesh(G.rbox(1.22, 0.04, 0.04, 0.015), C.woodLight), 0, 0, 0).rotation.y = i * 0.785;
+    add(spin, mesh(G.cyl(0.1, 0.1, 0.14, 10), '#ffd34a'), 0, 0, 0);
+  } else if (kind === 'hive') {
+    // 蜂箱: stacked yellow and cream bee boxes with a little roof; bees circle above while they make honey
+    add(g, mesh(G.rbox(1.5, 0.22, 1.1, 0.06), C.woodDark), 0, 0.11, -0.2);
+    const cols = ['#ffd34a', '#fff3dd', '#ffc21e'];
+    for (let i = 0; i < 3; i++) add(g, mesh(G.rbox(1.25 - i * 0.05, 0.36, 0.95 - i * 0.04, 0.06), cols[i]), 0, 0.4 + i * 0.36, -0.2);
+    add(g, mesh(G.prism(1.45, 0.4, 1.15), '#ff9f43'), 0, 1.3, -0.2);
+    add(g, mesh(G.rbox(0.36, 0.08, 0.06, 0.03), '#5b3a2c'), 0, 0.36, 0.3);
+    add(g, mesh(G.sphere(0.12, 8, 6), '#ffb21e'), 0.45, 1.1, 0.27).scale.set(1, 0.6, 0.4);
+    spin = add(g, new THREE.Group(), 0, 1.6, -0.2);
+    for (let i = 0; i < 3; i++) {
+      const a = i * 2.09, bee = add(spin, new THREE.Group(), Math.cos(a) * 0.75, 0.15 * (i % 2), Math.sin(a) * 0.75);
+      add(bee, mesh(G.sphere(0.09, 8, 6), '#ffd34a'), 0, 0, 0).scale.set(1, 0.9, 1.3);
+      add(bee, mesh(G.cyl(0.092, 0.092, 0.05, 8), '#3b2b24', false), 0, 0, 0).rotation.x = Math.PI / 2;
+      for (const s of [-1, 1]) add(bee, mesh(G.sphere(0.06, 6, 4), '#eaf6ff'), s * 0.07, 0.08, 0).scale.set(1, 0.4, 1.2);
+      bee.rotation.y = -a;
+    }
   } else {
     add(g, mesh(G.rbox(1.6, 0.5, 1.1, 0.1), C.woodLight), 0, 0.25, -0.2);
     for (const x of [-0.65, 0.65]) add(g, mesh(G.rbox(0.14, 1.4, 0.14, 0.04), C.woodDark), x, 0.9, -0.2);

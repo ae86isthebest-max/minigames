@@ -214,3 +214,7 @@ html, body {
   .lbl.mtag { font-size: 9px; }
   .lbl.mtag b { font-size: 10px; }
 }
+
+/* 大擴充: big orders show each line as got/need; finished lines fade */
+.lbl.order .cost { white-space: nowrap; }
+.lbl.order .cost.done { opacity: 0.55; text-decoration: line-through; }
