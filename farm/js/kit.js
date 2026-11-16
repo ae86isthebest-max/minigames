@@ -82,7 +82,8 @@ export function add(parent, m, x = 0, y = 0, z = 0) { m.position.set(x, y, z); p
 
 export function makeRenderer(canvas) {
   const r = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-  r.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  const phone = Math.min(window.innerWidth, window.innerHeight) < 500;
+  r.setPixelRatio(Math.min(phone ? 1.5 : 2, window.devicePixelRatio || 1));
   r.outputColorSpace = THREE.SRGBColorSpace;
   r.toneMapping = THREE.NoToneMapping;
   r.shadowMap.enabled = true;
@@ -99,7 +100,8 @@ export function makeLights(scene) {
   const sun = new THREE.DirectionalLight('#fff3dc', 2.4);
   sun.position.set(-9, 18, 7);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  const small = Math.min(window.innerWidth, window.innerHeight) < 500;
+  sun.shadow.mapSize.set(small ? 1024 : 2048, small ? 1024 : 2048);
   const sc = sun.shadow.camera; sc.left = -22; sc.right = 22; sc.top = 22; sc.bottom = -22; sc.near = 1; sc.far = 60;
   sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03; sun.shadow.radius = 3;
   scene.add(sun); scene.add(sun.target);
@@ -273,4 +275,34 @@ export function bake(group, target) {
   const list = [];
   group.traverse((o) => { if (o.isMesh) list.push(o); });
   for (const m of mergeList(list, new THREE.Matrix4())) target.add(m);
+}
+
+// Lay out floating labels so they never pile up on small screens. Important labels (the zone you stand on,
+// customer bubbles, MAX, cash) are placed first and may move up a little; less important ones (far zones,
+// shelf counts, machine tags) are hidden when they would cover something. `shown` = labels with sx, sy, el.
+const LBL_RANK = (L) => {
+  const c = L.el.classList;
+  if (c.contains('maxtag') || (c.contains('zone') && !c.contains('far'))) return 0;
+  if (c.contains('bubble') || c.contains('money')) return 1;
+  if (c.contains('zone')) return 2;
+  return 3;
+};
+export function layoutLabels(shown) {
+  for (const L of shown) { L.rank = LBL_RANK(L); if (!L.w) { L.w = L.el.offsetWidth; L.h = L.el.offsetHeight; } }
+  shown.sort((a, b) => a.rank - b.rank || b.sy - a.sy);
+  const boxes = [], gap = 4;
+  const hitAt = (x0, x1, y, h) => { for (const b of boxes) if (x0 < b.x1 + gap && x1 > b.x0 - gap && y - h < b.y1 + gap && y > b.y0 - gap) return b; return null; };
+  for (const L of shown) {
+    const x0 = L.sx - L.w / 2, x1 = L.sx + L.w / 2;
+    let y = L.sy, hit = hitAt(x0, x1, y, L.h);
+    for (let k = 0; k < 2 && hit; k++) {
+      const ny = hit.y0 - gap;
+      if (L.sy - ny > 44) break;
+      y = ny; hit = hitAt(x0, x1, y, L.h);
+    }
+    if (hit && L.rank >= 2) { L.el.style.visibility = 'hidden'; continue; }
+    L.el.style.visibility = '';
+    boxes.push({ x0, x1, y0: y - L.h, y1: y });
+    L.el.style.transform = 'translate(' + L.sx.toFixed(1) + 'px,' + y.toFixed(1) + 'px) translate(-50%,-100%)';
+  }
 }
