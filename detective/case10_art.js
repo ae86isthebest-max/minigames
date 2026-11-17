@@ -404,7 +404,7 @@ EP10.art = true;
       { id:"d10_qcake", name:"老錢的桌上", hot:[150,50,40,24], text:"老錢的桌上放著半盒鳳梨酥。他說：「我太太又烤太多了。吃一個，案子會比較順。」" } ] } ],
     rest: [
       { id:"rhall", name:"用餐區", scene:"r_hall", details:[
-        { id:"d10_tank", name:"門口的魚缸", hot:[150,60,30,12], text:"門口的水族箱裡游著幾條午仔魚。牌子寫著：「今日現撈　澄港漁港直送」。" } ] },
+        { id:"d10_tank", name:"門口的魚缸", hot:[150,60,30,12], text:"門口的水族箱裡游著幾條午仔魚。牌子寫著：「今日現撈　南澳漁港直送」。" } ] },
       { id:"rkitchen", name:"廚房", scene:"r_kitchen", details:[
         { id:"d10_knife", name:"刀架", hot:[120,30,24,20], text:"刀架上每一把刀都磨得很亮。最大的那把刀柄上刻著：「爸　1988」。" } ] },
       { id:"roffice", name:"辦公室", scene:"r_office", details:[

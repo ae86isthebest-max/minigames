@@ -42,7 +42,7 @@ EP28.art = true;
     R(0, 0, W, H, "#0c1c2c"); for (let x = 0; x < W; x += 24) R(x, 0, 1, H, "#12283c"); for (let y = 0; y < H; y += 18) R(0, y, W, 1, "#12283c");
     R(0, 0, 30, H, "#2a4a3a"); R(30, 8, 8, 34, "#2a4a3a"); R(30, 96, 6, 12, "#2a4a3a");   // 陸地
     R(26, 74, 10, 10, "#0c1c2c"); R(30, 73, 14, 1, "#8a8478"); R(30, 84, 16, 1, "#8a8478"); R(26, 88, 8, 5, "#0c1c2c");   // 漁港、北堤、南堤、舊碼頭
-    txt("澄港漁港", 1, 70, "#a8d0a8", "6px sans-serif"); txt("N", 182, 102, "#6a8aa8"); R(186, 94, 1, 8, "#6a8aa8"); P(185, 95, "#6a8aa8"); P(187, 95, "#6a8aa8");
+    txt("南澳漁港", 1, 70, "#a8d0a8", "6px sans-serif"); txt("N", 182, 102, "#6a8aa8"); R(186, 94, 1, 8, "#6a8aa8"); P(185, 95, "#6a8aa8"); P(187, 95, "#6a8aa8");
     for (let x = 128; x < 178; x += 4){ R(x, 14, 2, 1, "#2a5a7a"); R(x, 44, 2, 1, "#2a5a7a"); } for (let y = 14; y < 45; y += 4){ R(128, y, 1, 2, "#2a5a7a"); R(177, y, 1, 2, "#2a5a7a"); }
     txt("三號漁場", 130, 54, "#5a8aaa", "6px sans-serif"); R(60, 100, 28, 1, "#6a8aa8"); R(60, 98, 1, 3, "#6a8aa8"); R(87, 98, 1, 3, "#6a8aa8"); txt("10 浬", 64, 97, "#6a8aa8", "6px sans-serif");
     if (o.ring) for (let a = -100; a <= 100; a += 6){ const r = a * Math.PI / 180; P(Math.round(36 + 11 * Math.cos(r)), Math.round(80 + 11 * Math.sin(r)), "#c85a5a"); }   // 手機訊號大約到這裡
@@ -285,9 +285,9 @@ EP28.art = true;
     sudi:  { skin:"#a87048", hair:"#1a1a1a", hairStyle:"short", top:"#3a7a6a", bottom:"#3a4a6a", mood:"sad", hello:"……警察。我，沒有做壞事。" },
     zheng: { age:"old", skin:"#d0a078", hair:"#8a8a84", hairStyle:"short", top:"#f4f4f0", coat:"#6a5a3a", bottom:"#4a4a44", hello:"找到了嗎？有沒有消息？" },
     yun:   { skin:"#f0c8a8", hair:"#2a2220", hairStyle:"pony", top:"#f4e8d8", coat:"#7a9ab8", bottom:"#3a4a6a", mood:"sad", hello:"你們……是來找阿成的嗎？" },
-    longshu:{ age:"old", skin:"#c08a60", hair:"#d8d8d0", hairStyle:"short", top:"#f4f4f0", bottom:"#3a3a3a", hello:"警察先生。買魚，還是找人？" },
+    longshu:{ age:"old", skin:"#c08a60", hair:"#d8d8d0", hairStyle:"short", top:"#f4f4f0", bottom:"#3a3a3a", hello:"沈警官。年前還在忙？買魚，還是找人？" },
     dengta:{ skin:"#d8a880", hair:"#1e1e1e", hairStyle:"short", top:"#1e1e22", bottom:"#1e1e22", hello:"……" },
-    zhu:   { skin:"#d8a880", hair:"#8a8a8a", hairStyle:"bun", top:"#f4f0f4", coat:"#a85a6a", bottom:"#3a4a6a", apron:"#e86a8a", mood:"smile", hello:"警察先生！冬天沒有芒果冰喔。" },
+    zhu:   { age:"old", skin:"#d8a880", hair:"#8a8a8a", hairStyle:"bun", top:"#f4f0f4", coat:"#a85a6a", bottom:"#3a4a6a", apron:"#e86a8a", mood:"smile", hello:"警察先生，又是你們。冬天沒有芒果冰喔。" },
     chuan: { age:"old", skin:"#b8845a", hair:"#d8d8d0", hairStyle:"short", top:"#4a6a5a", bottom:"#3a3a3a", hello:"咦？你不是志翔婚禮上那個——" },
     fang:  { skin:"#d8a880", hair:"#1e1e1e", hairStyle:"short", hat:"cap", capColor:"#24324e", top:"#f4f4f0", coat:"#24324e", bottom:"#24324e", hello:"沈警官。船的位置，螢幕上看得到。" },
     jian:  { skin:"#e8c09a", hair:"#1a1a1a", hairStyle:"spiky", top:"#f4f4f0", coat:"#3a5a7a", bottom:"#2a3a5a", hello:"安檢所。要查哪一艘船？" },
