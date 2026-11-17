@@ -1,4 +1,4 @@
-/* 主線資料（第 4–30 集；第 11–20 集另有 before 開場生活小場景，第 2–20 集全部固定在露天咖啡店「海風咖啡」外面座位，scene 請做 cafe）—— 劇透，由「主線」thread 產生。載入順序：arc.js 之後、各集 case 檔之前。
+/* 主線資料（第 4–51 集；第 11–20 集另有 before 開場生活小場景，第 2–20 集全部固定在露天咖啡店「海風咖啡」外面座位，scene 請做 cafe）—— 劇透，由「主線」thread 產生。載入順序：arc.js 之後、各集 case 檔之前。
    1) ARC.defineCast：固定班底。幕間 cast 用這些 id；案件中出場也可以 look:ARC.look("xu")。
    2) ARC.define：主線旗標的標題和筆記內容。ARC_SETS 寫明哪一集的哪樣東西要加 arc:旗標；下一集的 arcRecap 對這些旗標寫 text/miss。
    3) ARC_INTER[集數].after：貼到該集 C.after。scene 只用 PX.SCENES 現有的；sceneWanted＝建議新做的場景（麵攤、高鐵、安全屋、告別式），做好之前只有對話。
@@ -242,6 +242,95 @@ ARC.defineCast({
    "top": "#5a7a5a",
    "bottom": "#3a4050"
   }
+ },
+ "weiguo": {
+  "name": "魏國良",
+  "look": {
+   "age": "old",
+   "skin": "#d8a880",
+   "hair": "#9a9a92",
+   "hairStyle": "balding",
+   "top": "#c8c0a8",
+   "bottom": "#3a3a3a",
+   "glasses": true
+  }
+ },
+ "ajun": {
+  "name": "阿駿",
+  "look": {
+   "skin": "#c9a080",
+   "hair": "#2a2a2a",
+   "hairStyle": "short",
+   "top": "#e9e4da",
+   "bottom": "#2a3a5a"
+  }
+ },
+ "abinmom": {
+  "name": "阿彬媽媽",
+  "look": {
+   "age": "old",
+   "skin": "#d8a880",
+   "hair": "#4a4440",
+   "hairStyle": "bob",
+   "top": "#7a9a7a",
+   "bottom": "#3a3a44"
+  }
+ },
+ "deng": {
+  "name": "鄧志強",
+  "look": {
+   "age": "old",
+   "skin": "#d8a880",
+   "hair": "#4a4a46",
+   "hairStyle": "short",
+   "top": "#2a2a30",
+   "bottom": "#2a2a30"
+  }
+ },
+ "fang": {
+  "name": "方以誠",
+  "look": {
+   "skin": "#e8c09a",
+   "hair": "#2a2a2a",
+   "hairStyle": "short",
+   "top": "#f4f6f6",
+   "coat": "#2a2a30",
+   "bottom": "#2a2a30",
+   "glasses": true
+  }
+ },
+ "jinshui": {
+  "name": "黃金水",
+  "look": {
+   "age": "old",
+   "skin": "#d8a880",
+   "hair": "#8a8a84",
+   "hairStyle": "short",
+   "top": "#e9e4da",
+   "bottom": "#3a3a3a"
+  }
+ },
+ "zhouyiqing": {
+  "name": "周以晴",
+  "look": {
+   "age": "young",
+   "skin": "#f0d0b0",
+   "hair": "#1e1a18",
+   "hairStyle": "long",
+   "top": "#ffffff",
+   "bottom": "#2e3a5a"
+  }
+ },
+ "heigou": {
+  "name": "黑狗",
+  "look": {
+   "age": "adult",
+   "skin": "#c89870",
+   "hair": "#141414",
+   "hairStyle": "short",
+   "top": "#1e1e1e",
+   "bottom": "#3a3a3a"
+  }
  }
 });
 
@@ -410,6 +499,241 @@ ARC.define({
   "title": "誰說出去的？",
   "text": "綁匪知道指揮所改了計畫。有人把消息傳了出去。",
   "ep": 30
+ },
+ "kidnap_saved": {
+  "title": "小瑩獲救",
+  "text": "小瑩在漁船「海順 3 號」的冰艙裡被救出。綁匪是阿帽和冰店店員阿駿。",
+  "ep": 31
+ },
+ "blackcat_exposed": {
+  "title": "黑貓的電話",
+  "text": "黑貓在天亮前打電話告訴你小瑩在哪裡。這通電話讓所有人知道他在幫警察。",
+  "ep": 31
+ },
+ "su_rep_hat": {
+  "title": "那麼快的律師",
+  "text": "阿帽被捕後一句話都不說。咖啡店隔壁桌的蘇律師一早就來當他的辯護人。",
+  "ep": 31
+ },
+ "blackcat_notes": {
+  "title": "鴿舍裡的小冊子",
+  "text": "黑貓的小冊子最後一頁：「Y 有証物室的鑰匙。Y 每個月 15 號去漁港打電話。」",
+  "ep": 32
+ },
+ "compartment_found": {
+  "title": "C 區的夾層",
+  "text": "證物室 C 區鐵架下的夾層裡有三個空的警槍盒，序號對上三把「報廢槍」。",
+  "ep": 33
+ },
+ "y_print": {
+  "title": "半枚指紋",
+  "text": "夾層裡的手寫取用紀錄寫著「証」，紙上有半枚指紋。",
+  "ep": 33
+ },
+ "y_deduced": {
+  "title": "只剩一個人",
+  "text": "指紋、筆跡、電話時間、鑰匙、誰知道指揮所位置……只剩一個人。",
+  "ep": 34
+ },
+ "cafe_knows": {
+  "title": "老闆怎麼會知道？",
+  "text": "彈頭要送台北的假消息只在局裡講過。咖啡店老闆卻問你：「聽說彈頭要送台北？」",
+  "ep": 34
+ },
+ "y_revealed": {
+  "title": "Y",
+  "text": "局內線人是證物室副管理員蔡明宏。他說：「我十九歲那年，就沒得選了。」",
+  "ep": 35
+ },
+ "y_dead": {
+  "title": "「海……」",
+  "text": "蔡明宏在押送途中被狙擊。死前只說了一個字：「海……」",
+  "ep": 35
+ },
+ "barista_arrested": {
+  "title": "海風咖啡的老闆",
+  "text": "咖啡店老闆梁文海承認收錢把警察在店裡說的話傳出去。蘇律師當他的辯護人。",
+  "ep": 35
+ },
+ "x_outside": {
+  "title": "X 還在外面",
+  "text": "黎光耀：「Y 死了，X 還在外面。」",
+  "ep": 35
+ },
+ "shen_framed": {
+  "title": "你的配槍",
+  "text": "殺死林正雄的子彈，來自你的配槍。你被停職。",
+  "ep": 36
+ },
+ "lin_executed": {
+  "title": "不是搶劫",
+  "text": "林正雄是被處決的，收銀機是事後才撬開的。他死前說：「有人叫我閉嘴。」",
+  "ep": 36
+ },
+ "gun_swapped": {
+  "title": "21:31 的刷卡",
+  "text": "有人用複製的員警卡在 21:31 把你的配槍領出去，22:48 還回來。身高約 172 公分。",
+  "ep": 37
+ },
+ "raincoat_again": {
+  "title": "又是雨衣",
+  "text": "槍械室走廊的人穿著連帽雨衣。和 2011 年那晚拖洗台階的人一樣。",
+  "ep": 37
+ },
+ "home_bugged": {
+  "title": "煙霧偵測器",
+  "text": "你家的煙霧偵測器裡有竊聽器。裝的人假扮瓦斯檢查員，手臂上有黑狗的刺青。",
+  "ep": 38
+ },
+ "cafe_skimmer": {
+  "title": "櫃台下的小盒子",
+  "text": "你的員警卡是在咖啡店被複製的。讀卡器是舊老闆裝的。",
+  "ep": 38
+ },
+ "deng_tip": {
+  "title": "黃金水的新車",
+  "text": "鄧志強說：2011 年值班表上的黃金水，最近換了一台進口車。",
+  "ep": 39
+ },
+ "bail_granted": {
+  "title": "交保",
+  "text": "法官駁回羈押。你交保，但停職繼續。",
+  "ep": 40
+ },
+ "he_article_good": {
+  "title": "〈被陷害的刑警〉",
+  "text": "何沛恩寫了一篇替你說話的報導。",
+  "ep": 40
+ },
+ "he_article_bad": {
+  "title": "〈停職刑警與消失的證物〉",
+  "text": "何沛恩寫了一篇對你不利的報導。",
+  "ep": 40
+ },
+ "he_article_neutral": {
+  "title": "何沛恩的報導",
+  "text": "何沛恩寫了一篇中立的報導。",
+  "ep": 40
+ },
+ "ayue_collector": {
+  "title": "收保護費的人",
+  "text": "阿月姨說：以後保護費交給一個退休的警察管。圓臉、開新車、戴金錶。",
+  "ep": 41
+ },
+ "shen_last_case": {
+  "title": "舅舅最後的案子",
+  "text": "舅舅最後在查 2010 年 12 月 24 日漁港失蹤的 8 歲男孩陳小安。筆記最後一頁：「小安看到的東西，就是那些槍。」",
+  "ep": 42
+ },
+ "boy_alive": {
+  "title": "3 號冰攤",
+  "text": "陳小安那晚沒有死。他被魚市 3 號冰攤的「莊太太」帶走了。",
+  "ep": 42
+ },
+ "shelter_escaped": {
+  "title": "防空洞",
+  "text": "有人打開防潮閘門想淹死你們。管理亭裡有黑狗的菸蒂。",
+  "ep": 43
+ },
+ "abin_is_xiaoan": {
+  "title": "陳小安",
+  "text": "指紋卡比對：咖啡店的阿彬，就是陳小安。",
+  "ep": 43
+ },
+ "nine_fingers": {
+  "title": "少一根手指",
+  "text": "阿彬記得：雨衣、冰櫃，還有一個左手少了一根手指的人。",
+  "ep": 43
+ },
+ "executor_caught": {
+  "title": "一隻手",
+  "text": "黃金水承認用複製卡領槍、殺林正雄、嫁禍給你。他說：「上面的人叫我做的。我只是一隻手。」",
+  "ep": 44
+ },
+ "not_x": {
+  "title": "不是他",
+  "text": "黃金水左手五根手指都在。他不是阿彬記得的那個人。",
+  "ep": 44
+ },
+ "executor_dead": {
+  "title": "看守所的早晨",
+  "text": "黃金水翻供後死在看守所。心肌梗塞，自然死亡。",
+  "ep": 45
+ },
+ "shen_indicted": {
+  "title": "起訴",
+  "text": "方以誠檢察官起訴了你。",
+  "ep": 45
+ },
+ "xu_to_taipei": {
+  "title": "調回台北",
+  "text": "許知夏被調回台北。",
+  "ep": 45
+ },
+ "team_split": {
+  "title": "只剩一個人",
+  "text": "周振邦調去交通大隊。團隊散了。",
+  "ep": 45
+ },
+ "xu_flashlight": {
+  "title": "鑑識手電筒",
+  "text": "許知夏臨走前把她的鑑識手電筒留給你。",
+  "ep": 45
+ },
+ "zhou_traffic_help": {
+  "title": "交通大隊的監視器",
+  "text": "周振邦說：交通大隊也有很多監視器。",
+  "ep": 45
+ },
+ "tuna_heavy": {
+  "title": "太重的貨箱",
+  "text": "海龍漁業幾箱冷凍鮪魚，每箱比標示重 4 到 6 公斤。你記下了貨箱編號和進港日期。",
+  "ep": 46
+ },
+ "accountant_code": {
+  "title": "頁邊的數字",
+  "text": "周以晴給你一本《小王子》，頁邊有她媽媽用鉛筆寫的數字。",
+  "ep": 47
+ },
+ "money_trail": {
+  "title": "錢去了哪裡",
+  "text": "海龍漁業 → 鼎盛海運 → 三家人頭公司 → 台北華晟投資顧問。三年約 3.2 億元。",
+  "ep": 48
+ },
+ "huasheng": {
+  "title": "同一層樓",
+  "text": "華晟投資顧問的地址，和一家律師事務所在同一棟大樓、同一層。",
+  "ep": 48
+ },
+ "alibi_proven": {
+  "title": "22:14:52",
+  "text": "外送員在 22:14:52 拍到你開門。槍聲在 22:15:40。你不可能開那一槍。",
+  "ep": 49
+ },
+ "xu_back": {
+  "title": "一週的假",
+  "text": "許知夏請假，自己出錢從台北回來。",
+  "ep": 49
+ },
+ "witness_saved": {
+  "title": "船屋",
+  "text": "你從船屋把受傷的黑狗救了出來。他願意作證。",
+  "ep": 50
+ },
+ "shen_reinstated": {
+  "title": "配槍",
+  "text": "起訴撤回。你復職了，配槍還給了你。",
+  "ep": 50
+ },
+ "su_arrested": {
+  "title": "最右邊那桌",
+  "text": "蘇明哲律師以幫助犯罪、洗錢被捕。",
+  "ep": 50
+ },
+ "taipei_network": {
+  "title": "台北",
+  "text": "華晟在台北，蘇的事務所在台北也有分所。他們在台北也有人。",
+  "ep": 50
  }
 });
 
@@ -446,7 +770,54 @@ var ARC_SETS = {
  "harbour_route": "第 28 集：碼頭夜間影像",
  "he_takedown": "第 29 集：何沛恩的問題",
  "y_writes_zheng": "第 29 集：簡訊物件",
- "kidnap_leak": "第 30 集結尾事件"
+ "kidnap_leak": "第 30 集結尾事件",
+ "kidnap_saved": "第 31 集結案",
+ "blackcat_exposed": "第 31 集 05:10 黑貓來電事件",
+ "su_rep_hat": "第 31 集結尾事件",
+ "blackcat_notes": "第 32 集鴿舍小冊子物件",
+ "compartment_found": "第 33 集豆花嗅到夾層",
+ "y_print": "第 33 集取用紀錄物件",
+ "y_deduced": "第 34 集推理全對",
+ "cafe_knows": "第 34 集咖啡店老闆那句（after 已寫，arc 欄位）",
+ "y_revealed": "第 35 集逮捕",
+ "y_dead": "第 35 集押送事件",
+ "barista_arrested": "第 35 集結尾",
+ "x_outside": "第 35 集 after（已寫）",
+ "shen_framed": "第 36 集結尾彈道報告",
+ "lin_executed": "第 36 集推理全對",
+ "gun_swapped": "第 37 集推理全對",
+ "raincoat_again": "第 37 集（只在 arc:shen_murder 時，走廊監視器物件）",
+ "home_bugged": "第 38 集竊聽器物件",
+ "cafe_skimmer": "第 38 集讀卡器物件",
+ "deng_tip": "第 39 集 after（已寫）",
+ "bail_granted": "第 40 集判決",
+ "he_article_good": "第 40 集結尾（依 c_help_he / c_help_he2）",
+ "he_article_bad": "第 40 集結尾（c_usb_li 且無 c_help_he）",
+ "he_article_neutral": "第 40 集結尾（其他）",
+ "ayue_collector": "第 41 集 after（已寫）",
+ "shen_last_case": "第 42 集筆記本物件",
+ "boy_alive": "第 42 集推理全對",
+ "shelter_escaped": "第 43 集逃出",
+ "abin_is_xiaoan": "第 43 集 after（已寫）",
+ "nine_fingers": "第 43 集 after（已寫，第二個 arc）",
+ "executor_caught": "第 44 集結案",
+ "not_x": "第 44 集觀察題（需 arc:nine_fingers）",
+ "executor_dead": "第 45 集推理全對或揭曉",
+ "shen_indicted": "第 45 集結尾",
+ "xu_to_taipei": "第 45 集結尾",
+ "team_split": "第 45 集 after（已寫）",
+ "xu_flashlight": "第 45 集結尾（c_thank_xu、c_xu_overnight、c_told_xu 任兩個）",
+ "zhou_traffic_help": "第 45 集結尾（c_roster_zhou）",
+ "tuna_heavy": "第 46 集過磅台物件（記下編號）",
+ "accountant_code": "第 47 集結案（after 已寫，arc 欄位）",
+ "money_trail": "第 48 集推理全對或揭曉",
+ "huasheng": "第 48 集大樓住戶名牌",
+ "alibi_proven": "第 49 集結案",
+ "xu_back": "第 49 集 before（已寫，arc 欄位）",
+ "witness_saved": "第 50 集救出黑狗",
+ "shen_reinstated": "第 50 集結尾",
+ "su_arrested": "第 50 集結尾",
+ "taipei_network": "第 50 集 after（已寫，arc 欄位）"
 };
 
 var ARC_INTER = {
@@ -3402,7 +3773,7 @@ var ARC_INTER = {
    "lines": [
     {
      "who": "narr",
-     "text": "（警車帶走船長許阿福。龍叔站在碼頭邊抽菸，旁邊是那個從不說話的司機。）"
+     "text": "（警車帶走船長洪阿福。龍叔站在碼頭邊抽菸，旁邊是那個從不說話的司機。）"
     },
     {
      "who": "longshu",
@@ -3622,6 +3993,2183 @@ var ARC_INTER = {
     }
    ],
    "sceneWanted": "command_post"
+  }
+ },
+ "31": {
+  "before": {
+   "title": "凌晨・海風咖啡（打烊後）",
+   "cast": [
+    {
+     "id": "xu",
+     "x": 30
+    },
+    {
+     "id": "wu",
+     "x": 60
+    },
+    {
+     "id": "kui",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（03:00。你們借了咖啡店外面的桌子當臨時集合點，店裡沒開燈。小吳一直盯著手機。）"
+    },
+    {
+     "who": "xu",
+     "text": "喝一點。"
+    },
+    {
+     "who": "wu",
+     "text": "……不想喝。"
+    },
+    {
+     "who": "kui",
+     "text": "前輩，倉庫那邊的攻堅組回報了。"
+    },
+    {
+     "who": "narr",
+     "text": "（陳葵的臉色告訴你們答案：倉庫裡沒有人。）"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "night"
+   }
+  },
+  "after": {
+   "title": "清晨・漁港 7 號碼頭",
+   "cast": [
+    {
+     "id": "xiaoying",
+     "x": 30
+    },
+    {
+     "id": "wu",
+     "x": 60
+    },
+    {
+     "id": "_you",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（小瑩裹著毯子坐在救護車後面。小吳抱著她，一句話都說不出來。）"
+    },
+    {
+     "who": "xiaoying",
+     "text": "哥……你眼鏡歪了。"
+    },
+    {
+     "who": "wu",
+     "text": "……閉嘴。"
+    },
+    {
+     "who": "you",
+     "text": "（綁匪拿到的彈頭碎片——你交出去的是哪一個？）",
+     "id": "ep31_bullet",
+     "choices": [
+      {
+       "text": "真的那顆",
+       "set": "c_gave_real",
+       "say": [
+        {
+         "who": "narr",
+         "text": "（老錢早就拍照建檔、留了切片。證物還在，只是少了一顆實物。）"
+        }
+       ]
+      },
+      {
+       "text": "老錢準備的假碎片",
+       "set": "c_gave_fake",
+       "say": [
+        {
+         "who": "narr",
+         "text": "（老錢在電話裡笑了一聲：「三十年法醫，做個假彈頭還不簡單。」）"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "who": "wu",
+     "text": "學長……謝謝你。",
+     "when": "arc:c_lend_wu"
+    },
+    {
+     "who": "wu",
+     "text": "學長，之前借錢的事……其實是小瑩的學費。對不起，我那時候沒說。",
+     "when": "arc:c_ask_wu"
+    }
+   ],
+   "sceneWanted": "harbour",
+   "opt": {
+    "time": "morning"
+   }
+  }
+ },
+ "32": {
+  "before": {
+   "title": "早上・海風咖啡",
+   "cast": [
+    {
+     "id": "wu",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    },
+    {
+     "id": "barista",
+     "x": 90
+    },
+    {
+     "id": "xu",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "wu",
+     "text": "（推眼鏡）小瑩說，她記得冰艙裡很冷，但有人把一件外套丟進來給她。"
+    },
+    {
+     "who": "you",
+     "text": "誰？"
+    },
+    {
+     "who": "wu",
+     "text": "她沒看到臉。"
+    },
+    {
+     "who": "barista",
+     "text": "她沒事就好。這杯我請。"
+    },
+    {
+     "who": "xu",
+     "text": "……謝謝。"
+    },
+    {
+     "who": "narr",
+     "text": "（老闆轉身時，許知夏看著他的背影很久。）"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning"
+   }
+  },
+  "after": {
+   "title": "黑貓的告別式外",
+   "cast": [
+    {
+     "id": "ayue",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（來的人很少。阿月姨哭得最大聲。）"
+    },
+    {
+     "who": "ayue",
+     "text": "他每次都多給我五十塊……說是買我的八卦，其實是怕我付不出那個錢。"
+    },
+    {
+     "who": "you",
+     "text": "哪個錢？"
+    },
+    {
+     "who": "ayue",
+     "text": "……你們警察不懂啦。"
+    },
+    {
+     "who": "narr",
+     "text": "（她把一包滷味放在黑貓的照片前面。）"
+    }
+   ],
+   "sceneWanted": "funeral",
+   "arc": "blackcat_notes"
+  }
+ },
+ "33": {
+  "before": {
+   "title": "早上・海風咖啡",
+   "cast": [
+    {
+     "id": "cai",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    },
+    {
+     "id": "wu",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（蔡明宏照例來買外帶，兩杯美式。）"
+    },
+    {
+     "who": "cai",
+     "text": "今天盤點，你們也要來？"
+    },
+    {
+     "who": "you",
+     "text": "督察組要求的。"
+    },
+    {
+     "who": "cai",
+     "text": "好啊，人多比較快。C 區很亂，十幾年沒人整理了。"
+    },
+    {
+     "who": "narr",
+     "text": "（他拿了咖啡就走。豆花對著他的背影搖了搖尾巴。）"
+    },
+    {
+     "who": "wu",
+     "text": "明宏哥人真的很好。"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning"
+   }
+  },
+  "after": {
+   "title": "收工後・證物室門口",
+   "cast": [
+    {
+     "id": "kui",
+     "x": 30
+    },
+    {
+     "id": "xu",
+     "x": 60
+    },
+    {
+     "id": "wu",
+     "x": 90
+    },
+    {
+     "id": "li",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "kui",
+     "text": "指紋要明天才出來。"
+    },
+    {
+     "who": "xu",
+     "text": "字是「証」。"
+    },
+    {
+     "who": "wu",
+     "text": "很多人這樣寫啦……"
+    },
+    {
+     "who": "narr",
+     "text": "（你想起早上蔡明宏手上那張盤點單。你沒有說出來。）"
+    },
+    {
+     "who": "li",
+     "text": "這件事，今晚之前不要在任何地方講。任何地方。"
+    }
+   ],
+   "sceneWanted": "police"
+  }
+ },
+ "34": {
+  "before": {
+   "title": "早上・海風咖啡",
+   "cast": [
+    {
+     "id": "li",
+     "x": 30
+    },
+    {
+     "id": "ye",
+     "x": 60
+    },
+    {
+     "id": "barista",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "li",
+     "text": "（坐下，放下茶包）指紋比對回來了。三個人。"
+    },
+    {
+     "who": "ye",
+     "text": "今天不在這裡講。去督察組。"
+    },
+    {
+     "who": "li",
+     "text": "同意。"
+    },
+    {
+     "who": "barista",
+     "text": "兩位今天不坐？"
+    },
+    {
+     "who": "li",
+     "text": "不坐。"
+    },
+    {
+     "who": "narr",
+     "text": "（他們走了。老闆把擦好的杯子放回架上，放得很慢。）"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning",
+    "rain": true
+   }
+  },
+  "after": {
+   "title": "傍晚・海風咖啡",
+   "cast": [
+    {
+     "id": "barista",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（你一個人回咖啡店拿外套。老闆一邊收椅子一邊跟你聊天。）"
+    },
+    {
+     "who": "barista",
+     "text": "聽說彈頭要送台北重驗？辛苦了。"
+    },
+    {
+     "who": "narr",
+     "text": "（那個消息，是黎光耀兩小時前在督察組會議室故意說的假消息。只在那裡說過。）"
+    },
+    {
+     "who": "you",
+     "text": "（要怎麼回答？）",
+     "id": "ep34_cafe",
+     "choices": [
+      {
+       "text": "「嗯，明天送。」若無其事",
+       "set": "c_play_along",
+       "say": [
+        {
+         "who": "barista",
+         "text": "路上小心。"
+        }
+       ]
+      },
+      {
+       "text": "「你聽誰說的？」",
+       "set": "c_press_barista",
+       "say": [
+        {
+         "who": "barista",
+         "text": "……客人說的吧。我忘了。"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "dusk"
+   },
+   "arc": "cafe_knows"
+  }
+ },
+ "35": {
+  "before": {
+   "title": "早上・海風咖啡",
+   "cast": [
+    {
+     "id": "li",
+     "x": 30
+    },
+    {
+     "id": "barista",
+     "x": 60
+    },
+    {
+     "id": "wu",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（押送前一小時。黎光耀打電話來。）"
+    },
+    {
+     "who": "li",
+     "text": "押送前集合。照原定，在咖啡店外面？",
+     "when": "arc:cafe_knows",
+     "id": "ep35_meet",
+     "choices": [
+      {
+       "text": "「改在局裡。只派小吳去買咖啡。」",
+       "set": "c_moved_meeting",
+       "say": [
+        {
+         "who": "li",
+         "text": "……好。理由你之後告訴我。"
+        }
+       ]
+      },
+      {
+       "text": "「照原定。」",
+       "say": [
+        {
+         "who": "li",
+         "text": "好。"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "who": "narr",
+     "text": "（你們照原定在咖啡店外面集合。）",
+     "unless": "arc:c_moved_meeting"
+    },
+    {
+     "who": "narr",
+     "text": "（小吳一個人來買咖啡。）",
+     "when": "arc:c_moved_meeting"
+    },
+    {
+     "who": "barista",
+     "text": "今天這麼早？要出任務？"
+    },
+    {
+     "who": "wu",
+     "text": "呃……沒有啦，例行公事。"
+    },
+    {
+     "who": "barista",
+     "text": "路上小心。港濱路那邊在修路。"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning"
+   }
+  },
+  "after": {
+   "title": "夜・督察組",
+   "cast": [
+    {
+     "id": "li",
+     "x": 30
+    },
+    {
+     "id": "ye",
+     "x": 60
+    },
+    {
+     "id": "xu",
+     "x": 90
+    },
+    {
+     "id": "_you",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "li",
+     "text": "Y 死了。X 還在外面。"
+    },
+    {
+     "who": "ye",
+     "text": "咖啡店老闆不說上家。蘇律師已經到了。"
+    },
+    {
+     "who": "xu",
+     "text": "又是蘇律師。"
+    },
+    {
+     "who": "li",
+     "text": "律師替誰辯護，不犯法。"
+    },
+    {
+     "who": "you",
+     "text": "他說了一個字。「海」。"
+    },
+    {
+     "who": "li",
+     "text": "海龍會。海風咖啡。海巡。港濱路叫海濱路的時候……這個城市什麼都叫海。"
+    },
+    {
+     "who": "narr",
+     "text": "（窗外在下雨。沒有人再說話。）"
+    }
+   ],
+   "sceneWanted": "police",
+   "arc": "x_outside"
+  }
+ },
+ "36": {
+  "before": {
+   "title": "早上・海風咖啡（換老闆了）",
+   "cast": [
+    {
+     "id": "abin",
+     "x": 30
+    },
+    {
+     "id": "abinmom",
+     "x": 60
+    },
+    {
+     "id": "wu",
+     "x": 90
+    },
+    {
+     "id": "su",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（暫停營業一週後，咖啡店又開了。櫃台後面是送貨員阿彬和他媽媽。）"
+    },
+    {
+     "who": "abin",
+     "text": "沈哥！以後是我顧店了。我媽說豆子我最熟。"
+    },
+    {
+     "who": "abinmom",
+     "text": "我只會煮咖啡和滷蛋。你們不要嫌棄。"
+    },
+    {
+     "who": "wu",
+     "text": "滷蛋配咖啡？"
+    },
+    {
+     "who": "abinmom",
+     "text": "好吃啦。"
+    },
+    {
+     "who": "narr",
+     "text": "（店名還是「海風咖啡」。最右邊那一桌，蘇律師照常在看報紙。）"
+    },
+    {
+     "who": "su",
+     "text": "（翻報紙）換老闆了？咖啡的味道倒是沒變。"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning"
+   }
+  },
+  "after": {
+   "title": "深夜・你家樓下",
+   "cast": [
+    {
+     "id": "zhou",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（周振邦開車送你回家。他沒有熄火。）"
+    },
+    {
+     "who": "zhou",
+     "text": "我信你。",
+     "when": "arc:c_roster_zhou"
+    },
+    {
+     "who": "zhou",
+     "text": "程序就是程序。我會盯著。",
+     "unless": "arc:c_roster_zhou"
+    },
+    {
+     "who": "zhou",
+     "text": "這段時間，不要碰案子。不要去找任何人。"
+    },
+    {
+     "who": "you",
+     "text": "林正雄說，有人叫他閉嘴。"
+    },
+    {
+     "who": "zhou",
+     "text": "……所以他死了。你明白嗎？"
+    },
+    {
+     "who": "narr",
+     "text": "（車子開走了。你站在樓下，抬頭看自己家的窗戶，第一次覺得那裡不安全。）"
+    }
+   ],
+   "opt": {
+    "time": "night"
+   },
+   "arc": "shen_framed"
+  }
+ },
+ "37": {
+  "before": {
+   "title": "早上・海風咖啡",
+   "cast": [
+    {
+     "id": "xu",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    },
+    {
+     "id": "abinmom",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（你停職了。每天早上還是來這裡，坐同一個位子。許知夏在你對面坐下。）"
+    },
+    {
+     "who": "xu",
+     "text": "我今天要去槍械室。你不能來。"
+    },
+    {
+     "who": "you",
+     "text": "我知道。"
+    },
+    {
+     "who": "xu",
+     "text": "有什麼要我看的？"
+    },
+    {
+     "who": "you",
+     "text": "簽名。我簽名最後一筆會往上勾。"
+    },
+    {
+     "who": "abinmom",
+     "text": "（端來一盤滷蛋）吃一點。停職也要吃飯。"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning"
+   }
+  },
+  "after": {
+   "title": "收工後・海風咖啡",
+   "cast": [
+    {
+     "id": "xu",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    }
+   ],
+   "lines": [
+    {
+     "who": "xu",
+     "text": "不是你。"
+    },
+    {
+     "who": "you",
+     "text": "我知道。"
+    },
+    {
+     "who": "xu",
+     "text": "我是說——我證明了。"
+    },
+    {
+     "who": "xu",
+     "text": "走廊上的人穿雨衣。"
+    },
+    {
+     "who": "xu",
+     "text": "……阿桃姨說的那個人，也穿雨衣。",
+     "when": "arc:shen_murder"
+    },
+    {
+     "who": "you",
+     "text": "（要怎麼回她？）",
+     "id": "ep37_thanks",
+     "choices": [
+      {
+       "text": "「謝謝妳。」",
+       "set": "c_thank_xu",
+       "say": [
+        {
+         "who": "xu",
+         "text": "……不客氣。茶錢你付。"
+        }
+       ]
+      },
+      {
+       "text": "「還不夠。」",
+       "say": [
+        {
+         "who": "xu",
+         "text": "我知道還不夠。所以明天繼續。"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "dusk"
+   }
+  }
+ },
+ "38": {
+  "before": {
+   "title": "早上・海風咖啡",
+   "cast": [
+    {
+     "id": "wu",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    },
+    {
+     "id": "abin",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "wu",
+     "text": "學長，我今天要去你家。許前輩說我要自己查。"
+    },
+    {
+     "who": "you",
+     "text": "鑰匙。"
+    },
+    {
+     "who": "wu",
+     "text": "你家……有什麼我不能看的嗎？"
+    },
+    {
+     "who": "you",
+     "text": "冰箱。"
+    },
+    {
+     "who": "abin",
+     "text": "（擦櫃台）欸，對了，重新裝修的時候，櫃台下面拆出一個奇怪的小盒子，我丟在後巷回收箱了。"
+    },
+    {
+     "who": "wu",
+     "text": "……什麼樣的盒子？"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning"
+   }
+  },
+  "after": {
+   "title": "收工後・你家",
+   "cast": [
+    {
+     "id": "wu",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（小吳把拆下來的煙霧偵測器放在證物袋裡，坐在你家的沙發上。）"
+    },
+    {
+     "who": "wu",
+     "text": "學長……你家真的好空。"
+    },
+    {
+     "who": "wu",
+     "text": "牆上那張照片，是你舅舅？"
+    },
+    {
+     "who": "you",
+     "text": "嗯。"
+    },
+    {
+     "who": "wu",
+     "text": "你笑起來跟他有點像。"
+    },
+    {
+     "who": "you",
+     "text": "我沒有笑。"
+    },
+    {
+     "who": "wu",
+     "text": "剛剛有。一下下。"
+    }
+   ],
+   "sceneWanted": "apartment",
+   "opt": {
+    "time": "night"
+   }
+  }
+ },
+ "39": {
+  "before": {
+   "title": "早上・海風咖啡",
+   "cast": [
+    {
+     "id": "deng",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    },
+    {
+     "id": "su",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（一個穿黑西裝的中年男人在你旁邊坐下。你認得他。）",
+     "when": "arcfound:evroom_rumor"
+    },
+    {
+     "who": "narr",
+     "text": "（一個穿黑西裝的中年男人在你旁邊坐下。）",
+     "unless": "arcfound:evroom_rumor"
+    },
+    {
+     "who": "deng",
+     "text": "沈先生？我姓鄧，以前在澄港當過警察，現在做保全。聽說你最近……有空。"
+    },
+    {
+     "who": "you",
+     "text": "停職。"
+    },
+    {
+     "who": "deng",
+     "text": "我有個展覽，需要一個看得懂現場的人。不用警證，用眼睛就好。"
+    },
+    {
+     "who": "su",
+     "text": "（翻報紙，頭也不抬）停職的人接私活，要小心喔。"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning"
+   }
+  },
+  "after": {
+   "title": "傍晚・海風咖啡",
+   "cast": [
+    {
+     "id": "deng",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    }
+   ],
+   "lines": [
+    {
+     "who": "deng",
+     "text": "我以前也常來這裡。舊老闆煮的咖啡比較苦。"
+    },
+    {
+     "who": "deng",
+     "text": "台北那次你很年輕。",
+     "when": "arcfound:evroom_rumor"
+    },
+    {
+     "who": "deng",
+     "text": "跟你說一件事。2011 年值班表上那個黃金水，最近換了一台新的進口車。"
+    },
+    {
+     "who": "deng",
+     "text": "車牌是 ……我寫給你。",
+     "when": "arcfound:evroom_rumor"
+    },
+    {
+     "who": "deng",
+     "text": "退休警察，哪來的錢？"
+    },
+    {
+     "who": "you",
+     "text": "你為什麼告訴我？"
+    },
+    {
+     "who": "deng",
+     "text": "因為我當年什麼都沒說。"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "dusk"
+   },
+   "arc": "deng_tip"
+  }
+ },
+ "40": {
+  "before": {
+   "title": "早上・海風咖啡",
+   "cast": [
+    {
+     "id": "ye",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    },
+    {
+     "id": "zhou",
+     "x": 90
+    },
+    {
+     "id": "kui",
+     "x": 120
+    },
+    {
+     "id": "xu",
+     "x": 150
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（羈押庭開庭前。大家都來了，沒有人說話。）"
+    },
+    {
+     "who": "ye",
+     "text": "我不能當你的檢察官。我只能當證人。"
+    },
+    {
+     "who": "you",
+     "text": "我知道。"
+    },
+    {
+     "who": "ye",
+     "text": "方以誠檢察官是個公正的人。這是好消息，也是壞消息。"
+    },
+    {
+     "who": "zhou",
+     "text": "（把一把傘放在你旁邊）走吧。我開車。"
+    },
+    {
+     "who": "kui",
+     "text": "前輩！加油！"
+    },
+    {
+     "who": "xu",
+     "text": "……別輸。"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning",
+    "rain": true
+   }
+  },
+  "after": {
+   "title": "法院外",
+   "cast": [
+    {
+     "id": "he",
+     "x": 30
+    },
+    {
+     "id": "zhou",
+     "x": 60
+    },
+    {
+     "id": "xu",
+     "x": 90
+    },
+    {
+     "id": "wu",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（你走出法院。外面有記者，有閃光燈。）"
+    },
+    {
+     "who": "he",
+     "text": "（擠過來）沈警官！我寫的那篇，你看了嗎？",
+     "when": [
+      "arc:c_help_he",
+      "arc:c_help_he2"
+     ]
+    },
+    {
+     "who": "he",
+     "text": "（站在記者群後面，沒有過來）",
+     "unless": [
+      "arc:c_help_he",
+      "arc:c_help_he2"
+     ]
+    },
+    {
+     "who": "narr",
+     "text": "（電視牆上，韓副局長在記者會說：「警方會依法處理，不護短，也不冤枉任何一個同仁。」）"
+    },
+    {
+     "who": "zhou",
+     "text": "回家吧。明天開始，你還是停職。"
+    },
+    {
+     "who": "xu",
+     "text": "但你可以喝咖啡。"
+    },
+    {
+     "who": "wu",
+     "text": "我請！"
+    }
+   ],
+   "opt": {
+    "time": "dusk"
+   },
+   "arc": "bail_granted"
+  }
+ },
+ "41": {
+  "before": {
+   "title": "傍晚・海風咖啡",
+   "cast": [
+    {
+     "id": "ayue",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    },
+    {
+     "id": "abinmom",
+     "x": 90
+    },
+    {
+     "id": "wu",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "ayue",
+     "text": "（提著一大袋菜）今晚六點，我家。全部都要來。停職的也要來。"
+    },
+    {
+     "who": "you",
+     "text": "我……"
+    },
+    {
+     "who": "ayue",
+     "text": "你不來我就把滷蛋全部倒掉。"
+    },
+    {
+     "who": "abinmom",
+     "text": "我也去！我帶咖啡凍。"
+    },
+    {
+     "who": "wu",
+     "text": "颱風要來了耶，阿姨。"
+    },
+    {
+     "who": "ayue",
+     "text": "颱風又不會吃火鍋。"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "dusk"
+   }
+  },
+  "after": {
+   "title": "深夜・阿月姨家後院",
+   "cast": [
+    {
+     "id": "ayue",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（大家都沒事。救護車走了。阿月姨坐在後院台階上。）"
+    },
+    {
+     "who": "ayue",
+     "text": "我每個月交錢給海龍會，三十年了。"
+    },
+    {
+     "who": "ayue",
+     "text": "以前是黑貓的朋友來收。黑貓的小冊子，你們找到了吧？",
+     "when": "arc:blackcat_notes"
+    },
+    {
+     "who": "ayue",
+     "text": "上個月他們說，以後交給一個退休的警察管。"
+    },
+    {
+     "who": "you",
+     "text": "你看過他嗎？"
+    },
+    {
+     "who": "ayue",
+     "text": "一次。圓臉，開新車，手上戴金錶。笑起來很客氣。"
+    }
+   ],
+   "opt": {
+    "time": "night"
+   },
+   "arc": "ayue_collector"
+  }
+ },
+ "42": {
+  "before": {
+   "title": "早上・海風咖啡",
+   "cast": [
+    {
+     "id": "abin",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（你帶著一個舊紙箱來咖啡店。箱子上寫著「國棟」。）"
+    },
+    {
+     "who": "abin",
+     "text": "沈哥，那是什麼？"
+    },
+    {
+     "who": "you",
+     "text": "我舅舅的東西。十五年沒打開。"
+    },
+    {
+     "who": "abin",
+     "text": "……要不要我幫你泡一杯熱的？"
+    },
+    {
+     "who": "narr",
+     "text": "（你打開箱子。最上面是一本黑色筆記本。）"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning",
+    "rain": true
+   }
+  },
+  "after": {
+   "title": "深夜・你家",
+   "cast": [
+    {
+     "id": "_you",
+     "x": 30
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（筆記本攤在桌上。最後一頁的字很潦草。）"
+    },
+    {
+     "who": "narr",
+     "text": "「小安看到的東西，就是那些槍。」"
+    },
+    {
+     "who": "you",
+     "text": "……你一直在找他。"
+    },
+    {
+     "who": "narr",
+     "text": "（窗外，有人在樓下抽菸。你拉上窗簾。）"
+    }
+   ],
+   "sceneWanted": "apartment",
+   "opt": {
+    "time": "night"
+   }
+  }
+ },
+ "43": {
+  "before": {
+   "title": "晚上・海風咖啡",
+   "cast": [
+    {
+     "id": "wu",
+     "x": 30
+    },
+    {
+     "id": "xu",
+     "x": 60
+    },
+    {
+     "id": "abin",
+     "x": 90
+    },
+    {
+     "id": "_you",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "wu",
+     "text": "防空洞……我不會游泳耶。"
+    },
+    {
+     "who": "xu",
+     "text": "我們是去找檔案，不是去游泳。"
+    },
+    {
+     "who": "abin",
+     "text": "（端來三杯外帶）你們要去找的那個小孩……找到了，跟我說一聲好不好？"
+    },
+    {
+     "who": "you",
+     "text": "為什麼？"
+    },
+    {
+     "who": "abin",
+     "text": "不知道。就是……想知道他後來好不好。"
+    },
+    {
+     "who": "narr",
+     "text": "（阿彬媽媽在櫃台後面，把杯子擦了一遍又一遍。）"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "night"
+   }
+  },
+  "after": {
+   "title": "凌晨・海風咖啡（打烊後）",
+   "cast": [
+    {
+     "id": "abinmom",
+     "x": 30
+    },
+    {
+     "id": "abin",
+     "x": 60
+    },
+    {
+     "id": "_you",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（指紋卡和阿彬的指紋，一模一樣。）"
+    },
+    {
+     "who": "abinmom",
+     "text": "那天晚上好冷……他躲在我的冰櫃後面，嘴唇都紫了。我兒子剛走半年……我就……"
+    },
+    {
+     "who": "abin",
+     "text": "媽。"
+    },
+    {
+     "who": "abin",
+     "text": "我記得雨衣。很多雨衣。還有一個人……左手少了一根手指。"
+    },
+    {
+     "who": "you",
+     "text": "（莊太太當年沒有報警。現在要怎麼處理？）",
+     "id": "ep43_mom",
+     "choices": [
+      {
+       "text": "依法通報，但幫她寫陳情書",
+       "set": "c_report_mom",
+       "say": [
+        {
+         "who": "abinmom",
+         "text": "……好。我早就該去了。"
+        }
+       ]
+      },
+      {
+       "text": "「明天去不去自首，妳自己決定。」",
+       "set": "c_let_mom_choose",
+       "say": [
+        {
+         "who": "abinmom",
+         "text": "謝謝你……我會去的。"
+        },
+        {
+         "who": "narr",
+         "text": "（隔天，她自己去了派出所。）"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "who": "abin",
+     "text": "沈哥……我還是阿彬，對吧？"
+    },
+    {
+     "who": "you",
+     "text": "對。"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "night"
+   },
+   "arc": [
+    "abin_is_xiaoan",
+    "nine_fingers"
+   ]
+  }
+ },
+ "44": {
+  "before": {
+   "title": "早上・海風咖啡",
+   "cast": [
+    {
+     "id": "abinmom",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    },
+    {
+     "id": "ye",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（阿彬今天沒來顧店。只有他媽媽，眼睛還是腫的。）"
+    },
+    {
+     "who": "abinmom",
+     "text": "他說要休息一天。"
+    },
+    {
+     "who": "you",
+     "text": "你們……"
+    },
+    {
+     "who": "abinmom",
+     "text": "沈先生，你要抓我，我不會跑。"
+    },
+    {
+     "who": "ye",
+     "text": "（坐下）今天不談這個。今天我們去抓另一個人。"
+    },
+    {
+     "who": "ye",
+     "text": "方檢主辦，我協辦。你，只是證人。"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning"
+   }
+  },
+  "after": {
+   "title": "夜・黃金水家門口",
+   "cast": [
+    {
+     "id": "jinshui",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（黃金水被帶上警車前，回頭看了你一眼。）"
+    },
+    {
+     "who": "jinshui",
+     "text": "你跟你舅舅一樣。不聽話。"
+    },
+    {
+     "who": "you",
+     "text": "是誰？"
+    },
+    {
+     "who": "jinshui",
+     "text": "我只是一隻手。手不知道頭在想什麼。"
+    },
+    {
+     "who": "narr",
+     "text": "（他的左手抓著車門。五根手指。）",
+     "when": "arc:nine_fingers"
+    }
+   ],
+   "opt": {
+    "time": "night"
+   }
+  }
+ },
+ "45": {
+  "before": {
+   "title": "早上・海風咖啡",
+   "cast": [
+    {
+     "id": "kui",
+     "x": 30
+    },
+    {
+     "id": "wu",
+     "x": 60
+    },
+    {
+     "id": "xu",
+     "x": 90
+    },
+    {
+     "id": "su",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "kui",
+     "text": "前輩！黃金水認了！"
+    },
+    {
+     "who": "wu",
+     "text": "這樣學長就沒事了吧？"
+    },
+    {
+     "who": "xu",
+     "text": "還要等檢察官。"
+    },
+    {
+     "who": "su",
+     "text": "（翻報紙）認罪的人，有時候也會改口喔。"
+    },
+    {
+     "who": "narr",
+     "text": "（大家轉頭看他。他已經又低頭看報紙了。）"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning"
+   }
+  },
+  "after": {
+   "title": "雨夜・海風咖啡",
+   "cast": [
+    {
+     "id": "xu",
+     "x": 30
+    },
+    {
+     "id": "zhou",
+     "x": 60
+    },
+    {
+     "id": "wu",
+     "x": 90
+    },
+    {
+     "id": "kui",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（許知夏的行李箱靠在桌邊。周振邦的調令放在桌上。）"
+    },
+    {
+     "who": "xu",
+     "text": "台北的鑑識中心。下週一報到。"
+    },
+    {
+     "who": "xu",
+     "text": "這個給你。（她把鑑識手電筒放在桌上）不要弄丟。",
+     "when": "arc:xu_flashlight"
+    },
+    {
+     "who": "zhou",
+     "text": "交通大隊。我這把年紀，去指揮交通。"
+    },
+    {
+     "who": "zhou",
+     "text": "交通大隊也有很多監視器。",
+     "when": "arc:zhou_traffic_help"
+    },
+    {
+     "who": "wu",
+     "text": "我還在！我不會走！"
+    },
+    {
+     "who": "kui",
+     "text": "我也是！"
+    },
+    {
+     "who": "narr",
+     "text": "（但第二天早上，咖啡店外面只剩你和豆花。）"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "night",
+    "rain": true
+   },
+   "arc": "team_split"
+  }
+ },
+ "46": {
+  "before": {
+   "title": "清晨・海風咖啡",
+   "cast": [
+    {
+     "id": "abin",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（只有你一個人。豆花趴在你腳邊。）"
+    },
+    {
+     "who": "abin",
+     "text": "沈哥，今天要不要也來一個三明治？"
+    },
+    {
+     "who": "you",
+     "text": "嗯。"
+    },
+    {
+     "who": "abin",
+     "text": "……我媽說，你那天讓她自己決定要不要自首。謝謝你。",
+     "when": "arc:c_let_mom_choose"
+    },
+    {
+     "who": "abin",
+     "text": "我媽去做筆錄了。她說，她早就該去。",
+     "when": "arc:c_report_mom"
+    },
+    {
+     "who": "abin",
+     "text": "漁港的魚市在徵臨時工。你有興趣嗎？我認識老闆。"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning"
+   }
+  },
+  "after": {
+   "title": "凌晨・魚市過磅台",
+   "cast": [
+    {
+     "id": "_you",
+     "x": 30
+    },
+    {
+     "id": "abinmom",
+     "x": 60
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（夜班快結束了。老包被帶走，魚市的人都在看你。）"
+    },
+    {
+     "who": "you",
+     "text": "（海龍漁業的貨箱……每一箱都比標示重四到六公斤。）",
+     "when": "arc:tuna_heavy"
+    },
+    {
+     "who": "you",
+     "text": "（又是海龍。）",
+     "when": "arc:harbour_route"
+    },
+    {
+     "who": "narr",
+     "text": "（你把貨箱編號抄在手背上。豆花打了一個噴嚏。）",
+     "when": "arc:tuna_heavy"
+    },
+    {
+     "who": "abinmom",
+     "text": "（打電話來）沈先生，夜班冷，我煮了薑茶放在店門口。",
+     "when": "arc:c_let_mom_choose"
+    },
+    {
+     "who": "abinmom",
+     "text": "（打電話來）沈先生，我做完筆錄了。店門口有薑茶。",
+     "when": "arc:c_report_mom"
+    }
+   ],
+   "opt": {
+    "time": "night"
+   }
+  }
+ },
+ "47": {
+  "before": {
+   "title": "早上・海風咖啡",
+   "cast": [
+    {
+     "id": "abin",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    },
+    {
+     "id": "abinmom",
+     "x": 90
+    },
+    {
+     "id": "su",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（你剛下夜班，身上還有冰塊的味道。豆花在聞你的褲管。）"
+    },
+    {
+     "who": "abin",
+     "text": "沈哥，魚市的工作還可以嗎？"
+    },
+    {
+     "who": "you",
+     "text": "老闆說我過磅很準。"
+    },
+    {
+     "who": "abinmom",
+     "text": "（端來熱湯）夜班的人要喝熱的。"
+    },
+    {
+     "who": "abin",
+     "text": "對了……魚市的人在講，海邊停車場那邊一早來了很多警車。"
+    },
+    {
+     "who": "su",
+     "text": "（翻報紙）停職的人，就別去湊熱鬧了吧。"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning"
+   }
+  },
+  "after": {
+   "title": "夜・海邊停車場外",
+   "cast": [
+    {
+     "id": "zhouyiqing",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（封鎖線拆了。周以晴抱著豆花，坐在路邊。）"
+    },
+    {
+     "who": "zhouyiqing",
+     "text": "媽媽說，她把手機清乾淨了，他們找不到我。"
+    },
+    {
+     "who": "you",
+     "text": "妳媽媽很勇敢。"
+    },
+    {
+     "who": "you",
+     "text": "妳可以哭。哭多久都可以。",
+     "when": "arc:c_mercy_24"
+    },
+    {
+     "who": "zhouyiqing",
+     "text": "……遺書最後一行，說帳在我小時候最愛的那本書裡。"
+    },
+    {
+     "who": "narr",
+     "text": "（她從書包裡拿出一本舊舊的《小王子》，放在你手上。）"
+    },
+    {
+     "who": "zhouyiqing",
+     "text": "你會讓他們付出代價嗎？"
+    },
+    {
+     "who": "you",
+     "text": "會。"
+    }
+   ],
+   "opt": {
+    "time": "night"
+   },
+   "arc": "accountant_code"
+  }
+ },
+ "48": {
+  "before": {
+   "title": "深夜・海風咖啡（打烊後）",
+   "cast": [
+    {
+     "id": "kui",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    },
+    {
+     "id": "abin",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（咖啡店打烊了。阿彬留了一盞燈給你。桌上攤著那本《小王子》。）"
+    },
+    {
+     "who": "kui",
+     "text": "（拉開椅子）下班時間，誰也管不著我。"
+    },
+    {
+     "who": "you",
+     "text": "妳會被記過。"
+    },
+    {
+     "who": "kui",
+     "text": "前輩以前也被記過啊。"
+    },
+    {
+     "who": "abin",
+     "text": "（放下兩杯熱可可）我不在喔。我什麼都沒看到。"
+    },
+    {
+     "who": "narr",
+     "text": "（豆花趴在《小王子》旁邊，好像在守著它。）"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "night",
+    "rain": true
+   }
+  },
+  "after": {
+   "title": "凌晨・你家",
+   "cast": [
+    {
+     "id": "kui",
+     "x": 30
+    },
+    {
+     "id": "wu",
+     "x": 60
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（牆上貼滿了紙條。箭頭從「海龍漁業」一路畫到「台北」。）"
+    },
+    {
+     "who": "kui",
+     "text": "三年，三億兩千萬。"
+    },
+    {
+     "who": "kui",
+     "text": "前輩……這個華晟，跟一家律師事務所在同一層樓。",
+     "when": "arc:huasheng"
+    },
+    {
+     "who": "wu",
+     "text": "（在門口，提著兩袋宵夜）我只是剛好路過。剛好買太多。",
+     "when": "arc:c_lend_wu"
+    },
+    {
+     "who": "wu",
+     "text": "（在門口，提著兩袋宵夜）我只是剛好路過。剛好買太多。",
+     "when": "arc:c_ask_wu",
+     "unless": "arc:c_lend_wu"
+    },
+    {
+     "who": "narr",
+     "text": "（窗外的路燈閃了一下。樓下沒有人在抽菸了。）"
+    }
+   ],
+   "sceneWanted": "apartment",
+   "opt": {
+    "time": "night"
+   }
+  }
+ },
+ "49": {
+  "before": {
+   "title": "早上・海風咖啡",
+   "cast": [
+    {
+     "id": "xu",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    },
+    {
+     "id": "wu",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（最外面那張桌子，有人比你早到。一個行李箱，一個鑑識工具箱。）"
+    },
+    {
+     "who": "xu",
+     "text": "我請了一週的假。"
+    },
+    {
+     "who": "you",
+     "text": "妳……"
+    },
+    {
+     "who": "xu",
+     "text": "機票我自己出的，不用謝。"
+    },
+    {
+     "who": "xu",
+     "text": "手電筒呢？我說過不要弄丟。",
+     "when": "arc:xu_flashlight"
+    },
+    {
+     "who": "you",
+     "text": "（從口袋拿出來）在這裡。",
+     "when": "arc:xu_flashlight"
+    },
+    {
+     "who": "xu",
+     "text": "上次是你陪我熬夜。這次換我。",
+     "when": "arc:c_xu_overnight"
+    },
+    {
+     "who": "wu",
+     "text": "（跑過來）許姐！妳怎麼——"
+    },
+    {
+     "who": "xu",
+     "text": "小吳，你沒看到我。"
+    },
+    {
+     "who": "wu",
+     "text": "……我什麼都沒看到。"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning"
+   },
+   "arc": "xu_back"
+  },
+  "after": {
+   "title": "深夜・海風咖啡",
+   "cast": [
+    {
+     "id": "xu",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    },
+    {
+     "id": "abinmom",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（很晚的晚餐。只有你和許知夏坐在外面。）"
+    },
+    {
+     "who": "xu",
+     "text": "22:14:52，你在家門口簽收一碗牛肉麵。"
+    },
+    {
+     "who": "you",
+     "text": "我自己都忘了。"
+    },
+    {
+     "who": "xu",
+     "text": "所以才需要證據，不是記憶。"
+    },
+    {
+     "who": "abinmom",
+     "text": "（多放了兩顆滷蛋）這兩顆是慶祝的。"
+    },
+    {
+     "who": "xu",
+     "text": "我下週一要回台北。"
+    },
+    {
+     "who": "xu",
+     "text": "但這次，我是回去查台北那一半的。",
+     "when": "arc:money_trail"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "night"
+   }
+  }
+ },
+ "50": {
+  "before": {
+   "title": "傍晚・海風咖啡",
+   "cast": [
+    {
+     "id": "ayue",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    },
+    {
+     "id": "abin",
+     "x": 90
+    }
+   ],
+   "lines": [
+    {
+     "who": "ayue",
+     "text": "（氣喘吁吁）黑狗的房子昨晚燒了，人不見了。"
+    },
+    {
+     "who": "ayue",
+     "text": "魚市的人說，他躲在舊漁會倉庫後面的船屋。今晚有人要去找他。"
+    },
+    {
+     "who": "you",
+     "text": "誰？"
+    },
+    {
+     "who": "ayue",
+     "text": "還能有誰。"
+    },
+    {
+     "who": "narr",
+     "text": "（最右邊那張桌子空著。報紙攤在桌上，沒有人翻。）"
+    },
+    {
+     "who": "abin",
+     "text": "蘇律師今天沒來耶。他從來不缺席的。"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "dusk"
+   }
+  },
+  "after": {
+   "title": "夜・局裡門口",
+   "cast": [
+    {
+     "id": "_you",
+     "x": 30
+    },
+    {
+     "id": "he",
+     "x": 60
+    },
+    {
+     "id": "han",
+     "x": 90
+    },
+    {
+     "id": "zhou",
+     "x": 120
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（黑狗在醫院，有人二十四小時看守。蘇明哲被帶上車時，回頭看了一眼局裡的大樓。）"
+    },
+    {
+     "who": "you",
+     "text": "（左手少一根手指的人……黑狗不敢說。）",
+     "when": "arc:nine_fingers"
+    },
+    {
+     "who": "he",
+     "text": "沈警官，第一篇報導，我寫你回來了。",
+     "when": "arc:he_article_good"
+    },
+    {
+     "who": "he",
+     "text": "沈警官……之前那篇，對不起。",
+     "when": "arc:he_article_bad"
+    },
+    {
+     "who": "han",
+     "text": "（從大樓走出來，伸出手）沈岳。歡迎回來。這段時間辛苦你了。"
+    },
+    {
+     "who": "you",
+     "text": "謝謝局長。"
+    },
+    {
+     "who": "narr",
+     "text": "（握手。很溫暖，很有力。）"
+    },
+    {
+     "who": "zhou",
+     "text": "（電話裡）華晟在台北，蘇的事務所在台北也有分所。"
+    },
+    {
+     "who": "zhou",
+     "text": "這張網，比我們以為的還大。"
+    }
+   ],
+   "opt": {
+    "time": "night"
+   },
+   "arc": "taipei_network"
+  }
+ },
+ "51": {
+  "before": {
+   "title": "早上・海風咖啡",
+   "cast": [
+    {
+     "id": "abin",
+     "x": 30
+    },
+    {
+     "id": "_you",
+     "x": 60
+    },
+    {
+     "id": "wu",
+     "x": 90
+    },
+    {
+     "id": "kui",
+     "x": 120
+    },
+    {
+     "id": "abinmom",
+     "x": 150
+    }
+   ],
+   "lines": [
+    {
+     "who": "narr",
+     "text": "（你的警證又回到口袋裡了。阿彬在擦最右邊那張桌子，擦得特別久。）"
+    },
+    {
+     "who": "abin",
+     "text": "沈哥，這張桌子……以後要留給誰？"
+    },
+    {
+     "who": "you",
+     "text": "留給想坐的人。"
+    },
+    {
+     "who": "wu",
+     "text": "學長！今天開始我可以光明正大跟你辦案了！"
+    },
+    {
+     "who": "kui",
+     "text": "我一直都很光明正大啊。"
+    },
+    {
+     "who": "abinmom",
+     "text": "今天全部免費。滷蛋也是。"
+    }
+   ],
+   "sceneWanted": "cafe",
+   "opt": {
+    "time": "morning"
+   }
   }
  }
 };
