@@ -53,29 +53,63 @@ const WK = (() => {
     g.putImageData(d, 0, 0);
   }
   // 戶外場景：把它自己的天空挖掉，改用這個地點當天的天色（下雨天就不會出現晴天的天空）
-  function noSky(src){
-    const k = src; if (src._ns) return src._ns;
+  // 只挖「天空」：海、遠山、偏藍偏灰的牆都要留著。to＝從第幾排開始一律不挖（C.skyTo[場景名]；自動判斷不準的時候才需要寫）
+  function noSky(src, to){
+    if (src._ns) return src._ns;
     const c = document.createElement("canvas"); c.width = src.width; c.height = src.height;
     const g = c.getContext("2d"); g.drawImage(src, 0, 0);
     const d = g.getImageData(0, 0, c.width, c.height), px = d.data, W = c.width, H = c.height;
+    const A0 = new Uint8Array(W * H); for (let i = 0; i < W * H; i++) A0[i] = px[i*4 + 3] ? 1 : 0;   // 原本就有畫東西的地方
     const at = (x, y) => (px[(y*W + x)*4] << 16) | (px[(y*W + x)*4 + 1] << 8) | px[(y*W + x)*4 + 2];
-    const ref = [];
-    for (let y = 0; y < H; y++){ const n = {}; let best = 0, bc = 0; for (let x = 0; x < W; x++){ const v = at(x, y); n[v] = (n[v]||0) + 1; if (n[v] > best){ best = n[v]; bc = v; } } ref.push(best > W * 0.25 ? bc : -1); }
-    const near = (a, b) => b >= 0 && Math.abs((a>>16) - (b>>16)) + Math.abs(((a>>8)&255) - ((b>>8)&255)) + Math.abs((a&255) - (b&255)) < 18;
-    const sky = (x, y) => { const v = at(x, y); return (near(v, ref[y]) || (y && near(v, ref[y-1])) || near(v, ref[y+1] ?? -1)) && (v & 255) >= (v >> 16); };
+    const dist = (a, b) => Math.abs((a>>16) - (b>>16)) + Math.abs(((a>>8)&255) - ((b>>8)&255)) + Math.abs((a&255) - (b&255));
+    const blue = v => (v & 255) >= (v >> 16), lum = v => ((v >> 16) * 3 + ((v >> 8) & 255) * 6 + (v & 255)) / 10;
+    // 每一排最多的顏色
+    const dom = [];
+    for (let y = 0; y < H; y++){ const n = {}; let best = 0, bc = 0; for (let x = 0; x < W; x++){ const v = at(x, y); n[v] = (n[v]||0) + 1; if (n[v] > best){ best = n[v]; bc = v; } } dom.push(best > W * 0.25 ? bc : -1); }
+    // 哪幾排「最多的顏色」真的是天空（ref）：從最上面往下，顏色要接得上才算——
+    // 跟上一排天空差不多（漸層一點一點變；中間隔著招牌、屋頂的話放寬一點）、出現過的天空顏色、或是緊貼著天空而且比較亮的一條（地平線的霧）。
+    // 接不上的（rej）＝海、遠山、牆：忽然變暗、忽然變成別的顏色，或是漸層的天空下面忽然一大片同一個顏色（晚上的海）
+    const end = Math.min(H, to === undefined ? H : to);
+    const ref = new Array(H).fill(-1), rej = new Array(H).fill(-1), seen = [], bad = [], hist = [];
+    let last = -1, lastY = -1;
+    for (let y = 0; y < end; y++){ const r = dom[y]; if (r < 0 || !blue(r)) continue;
+      let ok = last < 0;
+      if (!ok && !bad.some(q => dist(q, r) < 4)){
+        const gap = y - lastY - 1, grad = new Set(hist.slice(-8)).size >= 4;
+        ok = dist(r, last) < 18 + (grad ? Math.min(30, 5 * gap) : 0) || (gap <= 1 && lum(r) > lum(last) && (lum(r) >= 160 || dist(r, last) < 26)) || seen.some(q => dist(q, r) < 4);
+        if (ok && grad && r !== last){ let n = 1; while (dom[y + n] === r) n++; if (n >= 6) ok = false; }
+      }
+      if (ok){ ref[y] = r; if (r !== last) seen.push(r); last = r; lastY = y; hist.push(r); } else { rej[y] = r; bad.push(r); }
+    }
+    const near = (a, b) => b >= 0 && dist(a, b) < 18;
+    const land = (v, y) => rej[y] >= 0 && dist(v, rej[y]) < 4;
+    const sky = (x, y) => { const v = at(x, y); return (near(v, ref[y]) || (y && near(v, ref[y-1])) || near(v, ref[y+1] ?? -1)) && blue(v) && !land(v, y); };
     // 天空是漸層：跟正上方那一格天空幾乎同色（而且偏藍）的也是天空。
     // 這樣就算那一排大部分是房子或山（天空不是最多的顏色），房子旁邊也不會留下一塊沒去掉的天空
-    const dist = (a, b) => Math.abs((a>>16) - (b>>16)) + Math.abs(((a>>8)&255) - ((b>>8)&255)) + Math.abs((a&255) - (b&255));
+    const lim = Math.min(H * 0.75, end), real = new Uint8Array(W * H);   // real＝真的當成天空挖掉的（不含夾在中間一起挖掉的雨滴）
     for (let x = 0; x < W; x++){ let up = -1;
-      for (let y = 0; y < H * 0.75; y++){
+      for (let y = 0; y < lim; y++){
         const v = at(x, y);
-        if (!sky(x, y) && !(up >= 0 && (v & 255) >= (v >> 16) && dist(v, up) < 7)){
+        if (!sky(x, y) && !(up >= 0 && blue(v) && dist(v, up) < 7 && !land(v, y))){
           // 中間夾著雨滴之類的幾個點也算天空，碰到真的不是天空的東西就停
-          let k = 1; while (k <= 6 && y + k < H && !sky(x, y + k)) k++; if (k > 6) break; for (let j = 0; j < k; j++) px[((y+j)*W + x)*4 + 3] = 0; y += k - 1; up = -1; continue; }
-        px[(y*W + x)*4 + 3] = 0; up = v;
+          let k = 1; while (k <= 6 && y + k < end && !sky(x, y + k)) k++; if (k > 6 || y + k >= end) break; for (let j = 0; j < k; j++) px[((y+j)*W + x)*4 + 3] = 0; y += k - 1; up = -1; continue; }
+        px[(y*W + x)*4 + 3] = 0; up = v; real[y*W + x] = 1;
       }
     }
+    // 招牌、屋簷正下方的一小塊天空（上面被擋住，直的掃不到）：跟同一排挖掉的天空同一個顏色、夠厚（3×3 以上，細線不算）、
+    // 而且從旁邊連得到已經挖掉的天空或畫面左右邊，才補挖。被框住的（例如跟天空同色的窗戶）連不到，不會動
+    const st = new Uint8Array(W * H), thick = new Uint8Array(W * H), q = [];   // st：1＝已經挖掉 2＝候選
+    for (let y = 0; y < lim; y++){ const cs = new Set(); for (let x = 0; x < W; x++){ const i = y*W + x; if (A0[i] && !px[i*4 + 3]){ st[i] = 1; if (real[i]) cs.add(at(x, y)); } }
+      const cl = [...cs]; if (cl.length) for (let x = 0; x < W; x++){ const i = y*W + x; if (!A0[i] || st[i]) continue; const v = at(x, y); if (blue(v) && !land(v, y) && cl.some(cc => dist(v, cc) < 4)) st[i] = 2; } }
+    for (let y = 0; y + 2 < lim; y++) for (let x = 0; x + 2 < W; x++){ let all = true; for (let j = 0; j < 3 && all; j++) for (let i = 0; i < 3; i++) if (!st[(y+j)*W + x + i]){ all = false; break; } if (all) for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) thick[(y+j)*W + x + i] = 1; }
+    for (let i = 0; i < W * H; i++) if (st[i] === 1) q.push(i);
+    for (let y = 0; y < lim; y++) [0, W - 1].forEach(x => { const i = y*W + x; if (st[i] === 2 && thick[i]){ st[i] = 1; px[i*4 + 3] = 0; q.push(i); } });
+    while (q.length){ const i = q.pop(), x = i % W, y = (i - x) / W;
+      [[x-1, y], [x+1, y], [x, y-1], [x, y+1]].forEach(([nx, ny]) => { if (nx < 0 || nx >= W || ny < 0 || ny >= lim) return; const j = ny*W + nx;
+        if (st[j] !== 2 || !thick[j]) return; st[j] = 1; px[j*4 + 3] = 0; q.push(j); }); }
     g.putImageData(d, 0, 0);
+    c._left = st.reduce((n, v) => n + (v === 2), 0);   // 還留著的「跟天空同色」的格子數（給 tools/outscenes.js 看）
+    c._land = rej.findIndex(v => v >= 0);              // 第一排「不是天空」的大片顏色（海平線、山、牆頂），沒有＝-1
     return src._ns = c;
   }
   // 把一張圖染上一層顏色（透明的地方不染）
@@ -154,7 +188,8 @@ const WK = (() => {
         if (OUT.has(r.scene)){
           // 陰天、下雨、晚上：場景跟著變暗（只染畫了東西的地方，不會在天空上留下一個方塊）；左右兩邊用樹籬接到背景，不會一刀切
           const sk = skyOf(ph);
-          const im2 = sk[4] || sk[5] ? tinted(noSky(img), sk[5] ? "#0b0f1c" : sk[1], sk[5] ? 0.45 : 0.22) : noSky(img);
+          const ns = noSky(img, (C.skyTo || {})[r.scene]);
+          const im2 = sk[4] || sk[5] ? tinted(ns, sk[5] ? "#0b0f1c" : sk[1], sk[5] ? 0.45 : 0.22) : ns;
           g.drawImage(im2, 0, 0, RW, 20, ox, 0, RW, OY + 20); g.drawImage(im2, 0, 20, RW, 88, ox, OY + 20, RW, 88);
           [ox - 3, ox + RW - 4].forEach(hx => { R(hx, 66, 7, G - 66, shade(sk[3], -.25)); R(hx - 1, 62, 9, 6, shade(sk[3], -.1)); for (let y = 70; y < G; y += 7) R(hx + 1 + (y % 3), y, 2, 2, shade(sk[3], .15)); });
           return;
