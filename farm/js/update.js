@@ -14,11 +14,13 @@ const swOk = 'serviceWorker' in navigator && location.protocol === 'https:';
 if (swOk) {
   const swUrl = new URL('../../sw.js', import.meta.url).href;
   navigator.serviceWorker.register(swUrl).then((reg) => {
-    let reloading = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloading) { reloading = true; location.reload(); } });
+    // reload ONLY after the player tapped the banner. The controller also changes when the offline cache is
+    // (re)installed in the background (first visit, or after the phone cleared it) — never reload mid-game for that.
+    let tapped = false, reloading = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (tapped && !reloading) { reloading = true; location.reload(); } });
     const offer = () => {
       // only offer when this page is already run by an older version (not on the very first install)
-      if (reg.waiting && navigator.serviceWorker.controller) banner(() => reg.waiting ? reg.waiting.postMessage('skip') : location.reload());
+      if (reg.waiting && navigator.serviceWorker.controller) banner(() => { tapped = true; if (reg.waiting) reg.waiting.postMessage('skip'); else location.reload(); });
     };
     offer();
     reg.addEventListener('updatefound', () => {

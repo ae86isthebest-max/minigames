@@ -197,3 +197,24 @@ html, body {
 .lbl.bubble .rest .ii { width: 1em; height: 1em; }
 .lbl.bubble .rest { margin-left: 4px; padding-left: 4px; border-left: 1px solid #eadcc4; opacity: 0.85; }
 .lbl.bubble .rest .ii { width: 1em; height: 1em; }
+/* smaller labels everywhere (11-17): zone labels stay compact until the player stands on the zone */
+.lbl2 .lbl.zone.far { padding: 2px 7px 3px; border-radius: 10px; opacity: 0.9; }
+.lbl2 .lbl.zone.far .zn { font-size: 10.5px; line-height: 1.2; }
+.lbl2 .lbl.zone.far .cost { font-size: 11.5px; line-height: 1.15; }
+.lbl2 .lbl.zone.far .cost .ii { width: 1.1em; height: 1.1em; }
+.lbl.badge { font-size: 10.5px; padding: 1px 6px; }
+.lbl.badge.money { font-size: 11.5px; }
+.lbl.bubble { font-size: 10.5px; padding: 2px 7px; }
+.lbl.mtag { font-size: 10px; padding: 2px 7px; }
+.lbl.mtag b { font-size: 11px; }
+@media (max-width: 400px) {
+  .lbl2 .lbl.zone.far .zn { font-size: 9.5px; }
+  .lbl2 .lbl.zone.far .cost { font-size: 10.5px; }
+  .lbl.badge, .lbl.bubble { font-size: 9.5px; }
+  .lbl.mtag { font-size: 9px; }
+  .lbl.mtag b { font-size: 10px; }
+}
+
+/* 大擴充: big orders show each line as got/need; finished lines fade */
+.lbl.order .cost { white-space: nowrap; }
+.lbl.order .cost.done { opacity: 0.55; text-decoration: line-through; }

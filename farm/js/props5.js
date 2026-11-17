@@ -503,6 +503,25 @@ export function machine5(kind) {
   return { g, inTray, outTray, spin, wheel };
 }
 
+// the big shelf (貨架容量 over 40): a deeper, stepped display with a tall back and a gold trim; 60 slots in 4 layers
+export function bigShelf() {
+  const g = new THREE.Group();
+  g.add(blob(1.5));
+  add(g, mesh(G.rbox(1.82, 0.52, 1.46, 0.08), '#c98a55'), 0, 0.26, -0.17);
+  add(g, mesh(G.rbox(1.68, 0.05, 1.3, 0.02), '#8b5a3c'), 0, 0.53, -0.17);
+  for (const [z, y] of [[-0.42, 0.62], [-0.72, 0.72]]) add(g, mesh(G.rbox(1.68, 0.08, 0.3, 0.03), '#b8793f'), 0, y, z);
+  add(g, mesh(G.rbox(1.82, 1.5, 0.12, 0.05), '#e0b070'), 0, 1.0, -0.86);
+  for (const sx of [-1, 1]) add(g, mesh(G.rbox(0.08, 0.95, 1.46, 0.03), '#e0b070'), sx * 0.89, 0.8, -0.17);
+  add(g, mesh(G.rbox(1.88, 0.09, 0.18, 0.03), '#ffd34a'), 0, 1.78, -0.86);
+  const sign = add(g, mesh(G.rbox(0.7, 0.36, 0.06, 0.05), '#fbfaf5'), 0, 1.56, -0.79);
+  const slots = [];
+  for (let i = 0; i < 60; i++) {
+    const layer = Math.floor(i / 15), col = i % 5, row = Math.floor(i / 5) % 3;
+    slots.push(new THREE.Vector3(-0.64 + col * 0.32, 0.56 + row * 0.1 + layer * 0.17, 0.32 - row * 0.4));
+  }
+  return { g, slots, sign };
+}
+
 // furniture display stage in the showroom
 export function platform() {
   const g = new THREE.Group();
