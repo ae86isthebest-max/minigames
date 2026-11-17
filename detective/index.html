@@ -331,7 +331,7 @@ body.fs .toast{bottom:calc(14px + env(safe-area-inset-bottom))}
       - phases[i].startAt ＝ 那天一開始就在的地點（不用行動點）
    共用：
       phase / until：從第幾階段開始有、到第幾階段為止
-      requires（任一）/ requiresAll（全部）：要先知道哪些線索
+      requires（任一）/ requiresAll（全部；裡面的陣列＝那一組任一）：要先知道哪些線索
       alt：問過 when 裡的問題或看過證據時，改用另一種問法／回答
       tl：[["10/17 20:16","說明"], ...] 會自動整理進筆記的「時間線」
       events：突發事件（atLoc＝人在那個地點時才發生；unless＝已知道這些就不發生）。條件（phase、requires…）一滿足就發生，可以是某天早上，也可以是玩家做了某件事之後
@@ -634,9 +634,9 @@ const extrasOf = def => (typeof def.extras === "function" ? def.extras(S.phase) 
 const ARROW = { ask:"#ffd04a", press:"#ff5a4a", done:"#8a8a8a", extra:"#6ac8ff", buddy:"#6fd46f" };
 function arrowOf(s){
   if (S.done || qLeft(s) <= 0) return { arrow: ARROW.done };
-  const open = s.questions.filter(q=>unlocked(q) && !S.asked.includes(q.id));
+  const open = s.questions.filter(q=>unlocked(q) && canAsk(q));
   if (!open.length) return { arrow: ARROW.done };
-  if (open.some(q=>/^（出示|^（質問/.test(textOf(q).q))) return { arrow: ARROW.press, blink: true };
+  if (open.some(q=>reAsk(q) || /^（出示|^（質問/.test(textOf(q).q))) return { arrow: ARROW.press, blink: true };
   return { arrow: ARROW.ask };
 }
 // 表情：依今天在做什麼，問話時被質問會嚇一跳、冒汗
@@ -676,15 +676,15 @@ function labCard(l){
     ${lockedTests?`<p class="muted small">🔒 還有 ${lockedTests} 項化驗，要先找到相關的東西才能送。</p>`:""}</div>`;
 }
 function worldTalk(s){
-  const qs = s.questions.filter(unlocked), notAsked = qs.filter(q=>!S.asked.includes(q.id));
+  const qs = s.questions.filter(unlocked), notAsked = qs.filter(canAsk);
   const left = qLeft(s), off = left<=0 || S.done, lockedN = s.questions.length - qs.length;
   const said = lastSaid && lastSaid.sid===s.id ? s.questions.find(q=>q.id===lastSaid.qid) : null;
   return `<div class="card" style="padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center"><b>${s.av} ${esc(s.name)}</b><button class="back" style="margin:0" onclick="wTalk=null;lastSaid=null;if(talkFrom){wRoom=talkFrom;talkFrom=null;}render()">${talkFrom ? "‹ 結束對話" : "結束對話 ✕"}</button></div>
     <div class="muted small">${esc(s.role)}・<span style="color:${left?"var(--accent)":"var(--red)"}">${left?`還願意回答 ${left} 題`:"今天不肯再回答了"}</span></div>
     ${said && said.note ? `<div class="note" style="margin-top:6px">${esc(said.note)}</div>` : ""}
     ${!off && !wChat ? `<button class="wq" style="border-color:var(--accent);text-align:center" onclick="wChat=true;render()">🗣️ 開始問話${CLK() ? `（每題約 ${costAsk()} 分鐘）` : ""}</button>${CLK() ? `<p class="muted small" style="margin:4px 0 0">${timeTag()}。</p>` : ""}` : ""}
-    ${off || !wChat ? "" : notAsked.map(q=>`<button class="wq" onclick="askById('${s.id}','${q.id}')">${/^（出示/.test(textOf(q).q)?'<span class="tag new">質問</span>':(q.requires||q.requiresAll)?'<span class="tag new">追問</span>':''}${esc(textOf(q).q)}</button>`).join("")}
-    ${lockedN && !off && wChat ? `<p class="muted small" style="margin:6px 0 0">🔒 還有 ${lockedN} 個問題，要先得到相關線索才能問。</p>` : ""}</div>`;
+    ${off || !wChat ? "" : notAsked.map(q=>`<button class="wq" onclick="askById('${s.id}','${q.id}')">${reAsk(q)||/^（出示/.test(textOf(q).q)?'<span class="tag new">質問</span>':(q.requires||q.requiresAll)?'<span class="tag new">追問</span>':''}${esc(askText(q))}</button>`).join("")}
+    ${lockedN && !off && wChat ? `<p class="muted small" style="margin:6px 0 0">${lockNote(s.questions, lockedN, "要先得到相關線索才能問。")}</p>` : ""}</div>`;
 }
 function worldView(l, def){
   if (fsMode()) return worldViewFS(l, def);
@@ -1010,7 +1010,7 @@ function worldHooks(l, def){
 const reportsGot = () => phasesOf(C).slice(0, S.phase+1).flatMap(p=>p.reports||[]);
 // "arc:旗標"、"arcfound:旗標" 是跨集記憶（見 arc.js），其他是這一集裡看過、問過、收到的東西
 const has = id => ARC.is(id) ? ARC.test(id) : has0(id);
-const has0 = id => (S.marks||[]).includes(id) || S.seen.includes(id) || S.asked.includes(id) || reportsGot().some(r=>r.id===id) || S.ev[id]!==undefined || tests().some(t=>t.id===id && testReady(t));
+const has0 = id => /@alt$/.test(id) ? (S.variant||{})[id.slice(0,-4)]==="alt" && S.asked.includes(id.slice(0,-4)) : (S.marks||[]).includes(id) || S.seen.includes(id) || S.asked.includes(id) || reportsGot().some(r=>r.id===id) || S.ev[id]!==undefined || tests().some(t=>t.id===id && testReady(t));
 ARC.bind(has0);
 // 突發事件：條件一滿足就發生（可能連鎖）
 function checkEvents(){
@@ -1095,13 +1095,18 @@ function afterSpend(){
     multi() && !lastPhase() ? "🌙 今天能做的都做完了，到「案情」進入下一天。" : (C.endToast || "⏰ 律師到了！調查結束，請進行指認。")), 300);
 }
 
+// 再質問：一題已經用「一般問法」問過，之後才拿到可以戳破它的東西（alt.when）→ 可以再用質問的問法問一次
+const reAsk = q => !!(q.alt && q.alt.q && q.alt.a && S.asked.includes(q.id) && (S.variant||{})[q.id]==="base" && q.alt.when.some(has));
+const canAsk = q => !S.asked.includes(q.id) || reAsk(q);
+const askText = q => reAsk(q) ? q.alt.q : textOf(q).q;
 function ask(sus, q){
-  if (S.asked.includes(q.id) || qLeft(sus) <= 0 || S.done || !unlocked(q)) return;
+  if (!canAsk(q) || qLeft(sus) <= 0 || S.done || !unlocked(q)) return;
   if (CLK() && timeLeft() < costAsk()){ toast("⏰ 沒時間了"); return; }
   const before = availCount();
   spend(costAsk());
   (S.variant = S.variant || {})[q.id] = q.alt && q.alt.when.some(has) ? "alt" : "base";
-  S.asked.push(q.id); S.qp[q.id] = S.phase; lastSaid = { sid:sus.id, qid:q.id }; afterSpend(); render();
+  if (!S.asked.includes(q.id)) S.asked.push(q.id);
+  S.qp[q.id] = S.phase; lastSaid = { sid:sus.id, qid:q.id }; afterSpend(); render();
   if (availCount() > before) setTimeout(()=>toast("🔓 聽到新線索，可以拿去問其他人"), 400);
   if (qLeft(sus)===0) setTimeout(()=>toast(sus.name + (multi() && !lastPhase() ? "：「今天就到這裡吧，我累了。」" : "：「我不會再回答了，等我的律師來。」")), 300);
 }
@@ -1333,7 +1338,7 @@ function vSuspects(){
     const qs = s.questions.filter(unlocked);
     const lockedN = s.questions.length - qs.length;
     const askedHere = s.questions.filter(q=>S.asked.includes(q.id));
-    const notAsked = qs.filter(q=>!S.asked.includes(q.id));
+    const notAsked = qs.filter(canAsk);
     const left = qLeft(s), off = left<=0||S.done;
     const status = gone ? `<div class="small" style="color:var(--red)">🕯️ ${esc(s.goneNote||"已經不在了")}</div>`
       : `<div class="small" style="color:${left?"var(--accent)":"var(--red)"}">${left?`${multi()?"今天":""}還願意回答 ${left} 題`:travel()&&!reachable(s)?"今天不在這裡":multi()&&!lastPhase()?"今天不肯再回答了":"拒絕再回答"}</div>`;
@@ -1355,9 +1360,9 @@ function vSuspects(){
       <div><h2 style="margin:0">${s.name}</h2><div class="muted small">${s.role}</div>${status}</div></div></div>
     ${off||gone?"":`<div class="card"><h3>可以問（選 ${left} 題）</h3>
       ${notAsked.length?notAsked.map(q=>`<button class="btn" onclick="askById('${s.id}','${q.id}')">
-        ${/^（出示/.test(textOf(q).q)?'<span class="tag new">質問</span>':(q.requires||q.requiresAll)?'<span class="tag new">追問</span>':''}${esc(textOf(q).q)}</button>`).join("")
+        ${reAsk(q)||/^（出示/.test(textOf(q).q)?'<span class="tag new">質問</span>':(q.requires||q.requiresAll)?'<span class="tag new">追問</span>':''}${esc(askText(q))}</button>`).join("")
       :`<p class="muted small">暫時沒有其他問題。</p>`}
-      ${lockedN?`<p class="muted small">🔒 還有 ${lockedN} 個問題，要先從其他人口中或證物裡得到相關線索才能問。</p>`:""}
+      ${lockedN?`<p class="muted small">${lockNote(s.questions, lockedN, "要先從其他人口中或證物裡得到相關線索才能問。")}</p>`:""}
     </div>`}
     ${askedHere.length?`<div class="card"><h3>已問</h3>${askedHere.map(q=>qaHTML(q)).join("")}</div>`:""}`;
   }
@@ -1402,7 +1407,7 @@ function knownThings(){
   // 所有已知的東西：{id, kind, title, text, clue, tl, who, phase}
   const out = [];
   phasesOf(C).slice(0,S.phase+1).forEach((p,i)=>(p.reports||[]).forEach(r=>out.push({...r, kind:"report", phase:i})));
-  C.suspects.forEach(s=>s.questions.forEach(q=>{ if (S.asked.includes(q.id)) out.push({...q, kind:"q", who:s.id, phase:S.qp[q.id]||0}); }));
+  C.suspects.forEach(s=>s.questions.forEach(q=>{ if (S.asked.includes(q.id)){ const A = q.alt && (S.variant||{})[q.id]==="alt" ? q.alt : {}; out.push({...q, clue:A.clue||q.clue, tl:A.tl||q.tl, note:A.note||q.note, kind:"q", who:s.id, phase:S.qp[q.id]||0}); } }));
   (C.events||[]).forEach(e=>{ if (S.ev[e.id]!==undefined) out.push({...e, kind:"report", phase:S.ev[e.id]}); });
   allItems().forEach(it=>{ if (S.seen.includes(it.id)) out.push({...it, kind:"item", phase:S.sp[it.id]||0}); });
   readyTests().forEach(t=>out.push({...t, kind:"test", phase:S.labq[t.id]+t.days}));
@@ -1448,8 +1453,22 @@ function vNotes(){
 /* ---------- 解鎖規則 ---------- */
 function unlocked(item){
   const any = item.requires ? [].concat(item.requires) : null;
-  return (item.phase===undefined || item.phase <= S.phase) && (!any || any.some(has)) && (!item.requiresAll || item.requiresAll.every(has));
+  return (item.phase===undefined || item.phase <= S.phase) && reqOK(item, has);
 }
+// requires＝任一；requiresAll＝全部，裡面可以再放一組陣列，那一組只要有其中一樣（例：requiresAll:["a",["b","c"]]）
+function reqOK(item, h){
+  const any = item.requires ? [].concat(item.requires) : null;
+  return (!any || any.some(h)) && (!item.requiresAll || item.requiresAll.every(x=>Array.isArray(x) ? x.some(h) : h(x)));
+}
+// 鎖住的問題裡，有幾題其實只差「把手上文件裡可疑的那一行圈起來」
+function docPending(qs){
+  const held = new Set([...allItems().filter(it=>S.seen.includes(it.id)), ...readyTests()].flatMap(x=>x.doc ? docHits(x.doc, x).map(h=>h.id) : []));
+  (S.marks||[]).forEach(id=>held.delete(id));
+  if (!held.size) return 0;
+  const h2 = id => has(id) || held.has(id);
+  return qs.filter(q=>!unlocked(q) && (q.phase===undefined || q.phase <= S.phase) && reqOK(q, h2)).length;
+}
+const lockNote = (qs, n, tail) => { const d = docPending(qs); return `🔒 還有 ${n} 個問題，${tail}` + (d ? `<br>📌 其中 ${d} 個的線索已經在你手上的文件裡：把可疑的那一行圈起來，就能問了。` : ""); };
 const availCount = () => C.suspects.filter(s=>!isGone(s)).flatMap(s=>s.questions).filter(unlocked).length
   + allItems().filter(it=>itemOpen(it) && unlocked(it)).length + tests().filter(testOpen).length
   + (travel() ? C.locations.filter(locOpen).length : 0);

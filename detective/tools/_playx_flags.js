@@ -17,7 +17,7 @@ const {chromium}=require('playwright'); const CID=process.env.CASE||'fingers';
   const seq={}, dep={}, how={}; let n=0, round=0;
   const mark=(id,d,h)=>{ if(seq[id]===undefined){ seq[id]=n++; dep[id]=d; how[id]={...h,round}; } };
   const pick=reqs=>{ if(!reqs) return []; const ok=[].concat(reqs).filter(has); ok.sort((a,b)=>(seq[a]??1e9)-(seq[b]??1e9)); return ok.length?[ok[0]]:[]; };
-  const reqDeps=x=>[...pick(x.requires), ...(x.requiresAll||[])];
+  const reqDeps=x=>[...pick(x.requires), ...(x.requiresAll||[]).flatMap(g=>Array.isArray(g)?pick(g):[g])];
   const N=phasesOf(C).length;
   for(let ph=0;ph<N;ph++){
    S.phase=ph; S.visits[ph]=[];
@@ -52,7 +52,7 @@ const {chromium}=require('playwright'); const CID=process.env.CASE||'fingers';
    people:allPeople().map(x=>x.id)
   };
   // 倒推
-  const targets=[]; C.reasoning.forEach(r=>targets.push(...pick(r.requires),...(r.requiresAll||[])));
+  const targets=[]; C.reasoning.forEach(r=>targets.push(...pick(r.requires),...(r.requiresAll||[]).flatMap(g=>Array.isArray(g)?pick(g):[g])));
   const pool=new Set(evidencePool().map(x=>x.id));
   const closure=(ids,acc)=>{ ids.forEach(id=>{ if(acc.has(id)) return; acc.add(id); closure(dep[id]||[],acc); }); return acc; };
   const base=closure(targets,new Set());

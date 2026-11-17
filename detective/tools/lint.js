@@ -9,7 +9,7 @@ const r=await p.evaluate((ci)=>{ localStorage.clear(); openCase(ci);
   C.suspects.forEach(s=>s.questions.forEach(q=>ids.add(q.id)));
   allItems().forEach(i=>ids.add(i.id)); tests().forEach(t=>ids.add(t.id));
   (C.events||[]).forEach(e=>ids.add(e.id)); ph.forEach(x=>(x.reports||[]).forEach(r=>ids.add(r.id)));
-  const refs=[], arcUse=[]; const chk=(o,where)=>{ const arr=v=>v===undefined?[]:Array.isArray(v)?v:[v]; [...arr(o.requires),...arr(o.requiresAll),...arr(o.unless),...arr(o.alt&&o.alt.when)].forEach(id=>{ if (ARC.is(id)){ arcUse.push(id.split(':')[1]); return; } if(!ids.has(id)) refs.push(where+':'+id); }); };
+  const refs=[], arcUse=[]; const chk=(o,where)=>{ const arr=v=>v===undefined?[]:Array.isArray(v)?v:[v]; [...arr(o.requires),...arr(o.requiresAll).flat(),...arr(o.unless),...arr(o.alt&&o.alt.when)].forEach(id=>{ if (ARC.is(id)){ arcUse.push(id.split(':')[1]); return; } if(!ids.has(id)) refs.push(where+':'+id); }); };
   C.suspects.forEach(s=>s.questions.forEach(q=>chk(q,'Q '+q.id)));
   allItems().forEach(i=>chk(i,'I '+i.id)); tests().forEach(t=>chk(t,'T '+t.id));
   (C.locations||[]).forEach(l=>chk(l,'L '+l.id)); (C.reasoning||[]).forEach((x,i)=>chk(x,'R'+i)); (C.kinds||[]).forEach(k=>chk(k,'K '+k.id)); (C.events||[]).forEach(e=>chk(e,'E '+e.id)); (C.extraPeople||[]).forEach(e=>chk(e,'X '+e.id));

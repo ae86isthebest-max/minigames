@@ -11,7 +11,7 @@ const r=await p.evaluate((CID)=>{ localStorage.clear(); window.uiConfirm=async()
   [...allItems(),...tests()].forEach(x=>x.doc&&x.doc.rows.forEach(r=>r.hit&&ids.add(r.hit.id)));
   const dupQ={}; C.suspects.forEach(s=>s.questions.forEach(q=>{ dupQ[q.id]=(dupQ[q.id]||0)+1; })); out.push('dup q ids: '+(Object.keys(dupQ).filter(k=>dupQ[k]>1).join(',')||'none'));
   const refs=[]; const arr=v=>v===undefined?[]:Array.isArray(v)?v:[v];
-  const chk=(o,w)=>[...arr(o.requires),...arr(o.requiresAll),...arr(o.unless),...arr(o.alt&&o.alt.when),...arr(o.knownBy)].forEach(id=>{ if(!ids.has(id)) refs.push(w+'→'+id); });
+  const chk=(o,w)=>[...arr(o.requires),...arr(o.requiresAll).flat(),...arr(o.unless),...arr(o.alt&&o.alt.when),...arr(o.knownBy)].forEach(id=>{ if(!ids.has(String(id).replace(/@alt$/,''))) refs.push(w+'→'+id); });
   C.suspects.forEach(s=>{ chk(s,'S '+s.id); s.questions.forEach(q=>chk(q,'Q '+q.id)); });
   allItems().forEach(i=>chk(i,'I '+i.id)); tests().forEach(t=>chk(t,'T '+t.id));
   (C.locations||[]).forEach(l=>chk(l,'L '+l.id)); (C.reasoning||[]).forEach((x,i)=>chk(x,'R'+i)); (C.kinds||[]).forEach(k=>chk(k,'K '+k.id)); (C.events||[]).forEach(e=>chk(e,'E '+e.id)); (C.extraPeople||[]).forEach(e=>chk(e,'X '+e.id));
@@ -19,7 +19,7 @@ const r=await p.evaluate((CID)=>{ localStorage.clear(); window.uiConfirm=async()
   (C.solution.keyEvidence||[]).forEach(id=>{ if(!ids.has(id)) refs.push('keyEvidence:'+id); });
   out.push('dangling refs: '+(refs.join(', ')||'none'));
   // 用不到的 hit（沒有任何東西需要它）
-  const used=new Set(); const add=o=>[...arr(o.requires),...arr(o.requiresAll),...arr(o.alt&&o.alt.when)].forEach(x=>used.add(x));
+  const used=new Set(); const add=o=>[...arr(o.requires),...arr(o.requiresAll).flat(),...arr(o.alt&&o.alt.when)].forEach(x=>used.add(x));
   C.suspects.forEach(s=>s.questions.forEach(add)); allItems().forEach(add); tests().forEach(add); C.locations.forEach(add); C.reasoning.forEach(add); C.kinds.forEach(add); C.events.forEach(add); C.extraPeople.forEach(add);
   const hits=new Set(); [...allItems(),...tests()].forEach(x=>x.doc&&x.doc.rows.forEach(r=>r.hit&&hits.add(r.hit.id)));
   out.push('hits nobody needs (just notes): '+[...hits].filter(h=>!used.has(h)).join(','));
