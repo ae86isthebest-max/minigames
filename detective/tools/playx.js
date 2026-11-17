@@ -88,16 +88,25 @@ const {chromium}=require('playwright'); const CID=process.env.CASE||'fingers';
       if(a.k==='q'){ const b=S.asked.length; askById(a.sid,a.id); return S.asked.length>b; }
       if(a.k==='event') return S.ev[a.id]!==undefined;
      },a);
-     if(!ok){ if(a.k==='test'||a.k==='q') retry.push(a); else fail.push(`${a.k} ${a.id} d${ph} t=${await p.evaluate(()=>nowStr())}`); }
+     if(!ok){ if(a.k==='test'||a.k==='q'||a.k==='item') retry.push(a); else fail.push(`${a.k} ${a.id} d${ph} t=${await p.evaluate(()=>nowStr())}`); }
      await doMarks();
     }
    }
    // 同一輪裡，化驗的前提要在後面的地點才拿得到：繞回去再送一次
    for(const a of retry.splice(0)){
-    const ok=await p.evaluate(async a=>{ if(a.loc && !here(a.loc)){ await visit(a.loc); mapFrom=a.loc; } if(a.k==='q'){ const b=S.asked.length; askById(a.sid,a.id);
-       // 這個人要等到某個時間的事件以後才出現（例如下午才來自首）：先去做別的事，等到那個時間
-       if(S.asked.length===b){ const e=(C.events||[]).find(e=>e.atTime && (e.phase||0)===S.phase && S.ev[e.id]===undefined && unlocked(e)); if(e){ const m=toMin(e.atTime)-nowMin(); if(m>0 && m<timeLeft()) spend(m); await checkEvents(); for(let j=0;j<80 && typeof inter!=="undefined" && inter;j++){ const L=interLine(); if(L && L.choices) interPick(0); else interNext(1); } if(a.loc && !here(a.loc)){ await visit(a.loc); mapFrom=a.loc; } askById(a.sid,a.id); } }
-       return S.asked.length>b; } const id=a.id.slice(2); await submitTest(id,true); return S.labq[id]!==undefined; },a);
+    const ok=await p.evaluate(async a=>{
+      const go2=async()=>{ if(a.loc && !here(a.loc)){ await visit(a.loc); mapFrom=a.loc; } };
+      const tryIt=async()=>{ await go2();
+        if(a.k==='q'){ const b=S.asked.length; askById(a.sid,a.id); return S.asked.length>b; }
+        if(a.k==='item'){ const b=S.seen.length; inspectById(a.id); return S.seen.length>b; }
+        const id=a.id.slice(2); await submitTest(id,true); return S.labq[id]!==undefined; };
+      if(await tryIt()) return true;
+      // 要等到某個時間的事件以後才做得到（例如下午才來自首、下午船才回來）：等到那個時間，再試一次
+      for(let n=0;n<4;n++){ const e=(C.events||[]).filter(e=>e.atTime && (e.phase||0)===S.phase && S.ev[e.id]===undefined && unlocked(e)).sort((x,y)=>toMin(x.atTime)-toMin(y.atTime))[0]; if(!e) break;
+        const m=toMin(e.atTime)-nowMin(); if(m>0 && m<timeLeft()) spend(m); await checkEvents();
+        for(let j=0;j<80 && typeof inter!=="undefined" && inter;j++){ const L=interLine(); if(L && L.choices) interPick(0); else interNext(1); }
+        if(await tryIt()) return true; }
+      return false; },a);
     if(ok) vis.push(a.loc+'(again)'); else fail.push(`${a.k} ${a.id} d${ph} t=${await p.evaluate(()=>nowStr())}`);
    }
   }

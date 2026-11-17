@@ -11,6 +11,7 @@ const { chromium } = require('playwright');
       while (again){ again = false;
         for (const s of C.suspects){ if (!reachable(s)) continue; for (const q of s.questions){ if (S.asked.includes(q.id) || !unlocked(q)) continue; const k = S.asked.length; askById(s.id, q.id); if (S.asked.length > k){ n++; again = true; } } }
         for (const it of allItems()){ if (S.seen.includes(it.id) || !itemOpen(it) || !unlocked(it) || (travel() && (it.loc || "_") !== lid)) continue; const k = S.seen.length; inspectById(it.id); if (S.seen.length > k){ n++; again = true; } }
+        for (const x of [...allItems().filter(i => S.seen.includes(i.id)), ...readyTests()]) if (x.doc) docHits(x.doc, x).forEach(h => { S.marks = S.marks || []; S.mp = S.mp || {}; if (!S.marks.includes(h.id)){ S.marks.push(h.id); S.mp[h.id] = S.phase; again = true; } });   // 文件上可疑的那一行都圈起來（不花時間）
         for (const t of tests()){ if (S.labq[t.id] !== undefined) continue; try { await submitTest(t.id); } catch (e) {} if (S.labq[t.id] !== undefined){ n++; again = true; } }
       } return n; };
     const res = [];
