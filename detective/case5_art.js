@@ -275,7 +275,7 @@ EP5.art = true;
   const RX = i => 116 + i * 198;
   EP5.outScenes = ["sgate","hpier"];
   EP5.fac = { chenhome:["#e8e0d0","#6a4a2a"], school:["#f4e8a8","#e86a2a"], police:["#cfcabb","#3f5a7a"], lab:["#e2e8e8","#3a7a8a"], company:["#8a96a2","#2a3a5a"], xuhome:["#a8a49a","#5a4a3a"], rental:["#d8d8d0","#2a6ab8"], harbor:["#7a848e","#2a5a7a"] };
-  EP5.setting = { chenhome:"villa", school:"town", police:"city", lab:"city", company:"city", xuhome:"town", rental:"town", harbor:"town" };
+  EP5.setting = { chenhome:"villa", school:"town", police:"city", lab:"city", company:"city", xuhome:"town", rental:"town", harbor:"coast" };
   const SKY5 = [ ["#0b0f1c","#27324a","#18202a","#1d2630",0,1], ["#8ab0d0","#d8e8f0","#4a6070","#56707a",0,0], ["#d8a070","#f0d8b0","#5a6a70","#6a7a80",0,0] ];
   EP5.worldSky = ph => SKY5[Math.min(ph || 0, SKY5.length - 1)];
   EP5.roomDesc = {

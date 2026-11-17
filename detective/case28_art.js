@@ -443,7 +443,7 @@ EP28.art = true;
 
   /* ---------- 走動畫面、地圖、開場 ---------- */
   EP28.fac = { cg:["#e8ecec","#24324e"], harbour:["#c8d0c8","#3a6a5a"], office:["#e8dcc0","#8a2a1a"], pier:["#8a96a0","#2a3a5a"], beach:["#d8c8a0","#3a6a8a"], lab:["#e2e8e8","#3a7a8a"] };
-  EP28.setting = { cg:"town", harbour:"town", office:"town", pier:"town", beach:"town", lab:"city" };
+  EP28.setting = { cg:"coast", harbour:"coast", office:"town", pier:"coast", beach:"coast", lab:"city" };
   EP28.outScenes = ["c28_cgdock","c28_berth","c28_front","c28_oldpier","c28_beach"];
   // 第一天：東北季風，陰；第二天：風停了，清晨有霧
   const SKY28 = [ ["#6a7480","#a0a8b0","#4a5a60","#56666a",0,0], ["#b8c4cc","#e4e8ea","#7a8a8a","#8a9a98",0,0] ];

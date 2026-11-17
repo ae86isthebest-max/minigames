@@ -317,7 +317,7 @@ EP12.art = true;
   EP12.outScenes = ["m12_cliff","m12_view","m12_fuel","m12_deck"];
   EP12.fac = { zhaohome:["#c8b8a0","#5a4a3a"], station:["#d8dce0","#2a4a7a"], cliff:["#8ab0d0","#6a6a62"], police:["#cfcabb","#3f5a7a"], lab:["#e2e8e8","#3a7a8a"],
     clinic:["#e8f0ec","#2f7a6a"], casino:["#5a3a24","#c8a050"], harbour:["#e0e4e8","#3a6a8a"], boat:["#3a6ab8","#e9e4da"] };
-  EP12.setting = { zhaohome:"town", station:"city", cliff:"town", police:"city", lab:"city", clinic:"town", casino:"town", harbour:"town", boat:"town" };
+  EP12.setting = { zhaohome:"town", station:"city", cliff:"coast", police:"city", lab:"city", clinic:"town", casino:"town", harbour:"coast", boat:"coast" };
   const SKY12 = [ ["#7ab0e0","#e0eef4","#4a6070","#56707a",0,0], ["#9ab8d0","#e8e0d0","#4a6070","#56707a",0,0], ["#3a4a6a","#e8b890","#3a4a5a","#4a5a6a",0,0] ];
   EP12.worldSky = ph => SKY12[Math.min(ph || 0, SKY12.length - 1)];
   EP12.roomDesc = {

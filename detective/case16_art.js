@@ -332,7 +332,7 @@ EP16.art = true;
   const RX = i => 116 + i * 198;
   EP16.outScenes = ["c16_yard","c16_pier"];
   EP16.fac = { coldstore:["#c8ccd0","#1a3a6a"], police:["#cfcabb","#3f5a7a"], lab:["#e2e8e8","#3a7a8a"], morgue:["#d8e0e0","#5a7a8a"], pier:["#e8e4d8","#c83a2a"], temple:["#8a2a1a","#e8c060"], fishmkt:["#d8d4c8","#c83a2a"] };
-  EP16.setting = { coldstore:"town", police:"city", lab:"city", morgue:"city", pier:"town", temple:"town", fishmkt:"town" };
+  EP16.setting = { coldstore:"town", police:"city", lab:"city", morgue:"city", pier:"coast", temple:"town", fishmkt:"town" };
   const SKY16 = [ ["#8ab0d0","#e8eef4","#5a7080","#56707a",0,0], ["#9ac0e0","#f0e8d8","#4a6070","#56707a",0,0], ["#9ac0e0","#f0e8d8","#4a6070","#56707a",0,0] ];
   EP16.worldSky = ph => SKY16[Math.min(ph || 0, SKY16.length - 1)];
   EP16.roomDesc = {

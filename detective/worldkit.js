@@ -109,6 +109,8 @@ const WK = (() => {
         if (st[j] !== 2 || !thick[j]) return; st[j] = 1; px[j*4 + 3] = 0; q.push(j); }); }
     g.putImageData(d, 0, 0);
     c._left = st.reduce((n, v) => n + (v === 2), 0);   // 還留著的「跟天空同色」的格子數（給 tools/outscenes.js 看）
+    c._end = 0; for (let i = W * lim - 1; i >= 0; i--) if (st[i] === 1){ c._end = Math.floor(i / W) + 1; break; }   // 挖掉的天空最低到第幾排（海邊背景的海平線不可以比它高）
+    { const sr = rej.find(v => v >= 0 && (v & 255) - (v >> 16) >= 16); c._sea = sr === undefined ? null : "#" + sr.toString(16).padStart(6, "0"); }   // 場景自己畫的海是什麼顏色（海邊背景跟著用，兩邊才接得起來）
     c._land = rej.findIndex(v => v >= 0);              // 第一排「不是天空」的大片顏色（海平線、山、牆頂），沒有＝-1
     return src._ns = c;
   }
@@ -122,7 +124,7 @@ const WK = (() => {
   const roomOpt = r => ({ ...(typeof r.opt === "function" ? r.opt(S.phase, has) : (r.opt || {})), phase:S.phase });
 
   /* ---------- 背景 ---------- */
-  function backdrop(p, t, ph, cam, w, setting){
+  function backdrop(p, t, ph, cam, w, setting, seaY, seaCol){
     const { R, P, mix } = p, [top, bot, h1, h2, , night] = skyOf(ph);
     for (let y = 0; y < 104; y += 2) R(cam - 2, y, 246, 2, mix(top, bot, y / 104));
     if (night){ p.seed(4); for (let i = 0; i < 26; i++) P(cam + p.rnd() * 240, p.rnd() * 40, "#c9d4e8"); }
@@ -130,6 +132,15 @@ const WK = (() => {
       for (let x = 0; x < 248; x += 2){ const wx = x + cam * 0.5; const h = 56 + Math.sin(wx / 41) * 9 + Math.sin(wx / 15) * 3; R(cam + x - 4, h, 2, 80 - h + 40, h1); }
       for (let x = 0; x < 248; x += 2){ const wx = x + cam * 0.7; const h = 76 + Math.sin(wx / 27) * 5; R(cam + x - 4, h, 2, 60, h2); }
       for (let x = Math.floor(cam / 23) * 23 - 23; x < cam + 260; x += 23){ const s = (x * 7) % 5; R(x + 4, 96 - s, 3, 28 + s, mix(h2, "#000", .4)); R(x - 2, 86 - s, 15, 12, mix(h2, "#000", .2)); R(x, 82 - s, 11, 5, mix(h2, "#000", .15)); }
+    } else if (setting === "coast"){
+      // 海邊：遠方只有海平線和一小段低低的岬角，沒有高樓（海平線上不會冒出大樓）。
+      // seaY＝海平線畫在哪裡：要比這個地點每個戶外場景挖掉的天空都低，才不會從場景的天空裡看到第二條海平線
+      const hy = seaY || 86, mid = mix(top, bot, .6), n = parseInt(mid.slice(1), 16), dark = ((n >> 16) * 3 + ((n >> 8) & 255) * 6 + (n & 255)) / 10 < 70;
+      const wet = skyOf(ph)[4], sea = seaCol ? (night ? mix(seaCol, "#0b0f1c", .45) : wet ? mix(seaCol, bot, .22) : seaCol) : dark ? mix(mid, "#0a2a48", .55) : mix(mix("#2f5f82", mid, .2), bot, wet ? .22 : 0), land = mix(h1, mid, .4), cape = wx => Math.round(Math.sin(wx / 67) * 8 + Math.sin(wx / 23) * 2 - 3);   // 海的顏色：這個地點的場景自己畫了海就用同一個顏色（染色也一樣），沒有就跟著當天的天色（晴天藍、陰天下雨偏灰、晚上暗）
+      for (let x = 0; x < 248; x += 2){ const hh = cape(x + cam * 0.3); if (hh > 0) R(cam + x - 4, hy - hh, 2, hh, land); }
+      if (dark) for (let i = Math.floor(cam * 0.3 / 31) - 1; i < (cam * 0.3 + 260) / 31; i++){ const wx = i * 31 + 9; if (i % 2 && cape(wx) > 3) P(wx - cam * 0.3 + cam - 4, hy - 2, "#ffd98a"); }   // 岬角上的幾點燈火
+      R(cam - 2, hy, 246, G - hy, sea); R(cam - 2, hy, 246, 1, mix(sea, bot, .4));
+      for (let i = Math.floor(cam * 0.8 / 29) - 1; i < (cam * 0.8 + 260) / 29; i++) R(i * 29 - cam * 0.8 + cam + ((i * 13) % 11), hy + 4 + ((i * 7) % 5) * 5, 5, 1, mix(sea, "#ffffff", dark ? .1 : .25));
     } else {
       const tall = setting === "city";
       for (let i = Math.floor(cam * 0.6 / 19) - 1; i < (cam * 0.6 + 260) / 19; i++){
@@ -141,7 +152,7 @@ const WK = (() => {
     }
     // 地面
     R(0, G, w, 11, setting === "villa" || setting === "village" ? "#3a352c" : "#3a3a3e"); R(0, G, w, 1, "#1a1816");
-    if (setting === "town" || setting === "city") for (let x = 6; x < w; x += 20) R(x, G + 6, 10, 1, "#c9c9a0");
+    if (setting === "town" || setting === "city" || setting === "coast") for (let x = 6; x < w; x += 20) R(x, G + 6, 10, 1, "#c9c9a0");
     // 路燈
     for (let x = 40; x < w; x += 170){ R(x, 78, 2, 46, "#4a4e54"); R(x - 4, 76, 8, 3, "#4a4e54"); R(x - 3, 79, 6, 2, night ? "#ffe8a0" : "#cfd6d6"); if (night) p.dither(x - 10, 81, 22, 42, "#ffe8a0", 4); }
   }
@@ -179,7 +190,9 @@ const WK = (() => {
     };
     function draw(p, t, op, cam, g){
       const { R, shade, windowBox } = p, ph = op.phase || 0, night = skyOf(ph)[5];
-      backdrop(p, t, ph, cam, w, setting);
+      let seaY = 0, seaCol = null; const bluer = c => { const n = parseInt(c.slice(1), 16); return (n & 255) - (n >> 16); };
+      if (setting === "coast") rooms.forEach(r => { if (!OUT.has(r.scene)) return; const ns = noSky(roomImg(r.scene, { ...roomOpt(r), ...((o.ropt || {})[r.id] || {}) }), (C.skyTo || {})[r.scene]); seaY = Math.max(seaY, OY + ns._end); if (ns._sea && (!seaCol || bluer(ns._sea) > bluer(seaCol))) seaCol = ns._sea; });   // 幾個場景都有海：用最藍的那個（不會挑到偏藍的白牆）
+      backdrop(p, t, ph, cam, w, setting, seaY ? Math.min(104, Math.max(70, seaY)) : 0, seaCol);
       if (o.drawBefore) o.drawBefore(p, t, op, cam);
       rooms.forEach((r, i) => {
         const ox = pos[r.id];

@@ -446,7 +446,7 @@ EP6.art = true;
   EP6.outScenes = ["c6_curve","c6_turn","c6_bank","c6_scaf"];
   EP6.fac = { road:["#2a2e34","#f2c94c"], kohome:["#c8bca4","#5a4a3a"], police:["#cfcabb","#3f5a7a"], lab:["#e2e8e8","#3a7a8a"], garage:["#9a9a92","#3a4a5a"],
     fanhome:["#e8e0d0","#8a6a4a"], lihome:["#d8d4c4","#5a5e64"], store:["#f4f4f0","#2a8a4a"], hongda:["#8a8a82","#e86a2a"], site:["#b8b4ac","#2a5a8a"], meihome:["#d8c8a8","#7a6a54"] };
-  EP6.setting = { road:"town", kohome:"town", police:"city", lab:"city", garage:"city", fanhome:"city", lihome:"town", store:"town", hongda:"city", site:"town", meihome:"town" };
+  EP6.setting = { road:"coast", kohome:"town", police:"city", lab:"city", garage:"city", fanhome:"city", lihome:"town", store:"town", hongda:"city", site:"town", meihome:"town" };
   const SKY6 = [ ["#0a0f1c","#1c2636","#14181e","#1a1e26",0,0], ["#8a9ab0","#d8dee4","#4a5060","#56606a",0,0], ["#9cb8d8","#e8eef0","#4a6070","#56707a",0,0] ];
   EP6.worldSky = ph => SKY6[Math.min(ph || 0, SKY6.length - 1)];
   EP6.roomDesc = {
