@@ -173,7 +173,7 @@ EP34.art = true;
     ye:    [ { room:"meet", x:158, pose:"read", doing:"站在門邊，在看一份公文。" }, { room:"meet", x:158, pose:"read", doing:"站在門邊，在看電信局傳來的那三頁紙的影本。" } ],
     liu:   [ { room:"lobby", x:112, pose:"stand", doing:"站在值班台後面。" }, { room:"lobby", x:112, pose:"write", doing:"站在值班台後面，在寫今天的值班日誌。" } ],
     pan:   [ { room:"mail", x:26, pose:"write", doing:"站在櫃台的旁邊，在分今天早上的信。" }, { room:"mail", x:26, pose:"stand", doing:"站在櫃台的旁邊，不時看一眼長椅那邊。" } ],
-    huang: [ null, { room:"mail", x:150, pose:"read", doing:"站在長椅的前面，在看報紙。安全帽放在椅子上。" } ],
+    huang: [ null, { room:"mail", x:150, pose:"read", doing:"站在長椅的前面，在看報紙。一張圓圓的臉，曬得很黑。安全帽放在椅子上。" } ],
     xia:   [ { room:"canteen", x:36, pose:"wipe", doing:"在擦配菜台的玻璃。廚房裡，湯已經在滾了。" }, { room:"canteen", x:36, pose:"wipe", doing:"在收配菜台。中午的菜，只剩下一點湯。" } ],
     cai:   [ { room:"evoffice", x:52, pose:"write", doing:"站在前台的桌子旁邊，在登記早上送來的件。" }, { room:"evoffice", x:52, pose:"type", doing:"站在電腦前面，在打下午的清冊。" } ],
     wei:   [ { room:"evoffice", x:104, pose:"cup", doing:"站在桌子的另一頭，手上端著一杯茶。行李箱立在旁邊。" }, { room:"evoffice", x:104, pose:"read", doing:"站在桌子的另一頭，在看今天的報紙。" } ],

@@ -52,7 +52,7 @@ const EP34 = {
   ],
   locations: [
     { id:"police", mins:6, name:"澄港市警察局", sign:"警察局", icon:"🚓", perVisit:3, desc:"三樓的督察組會議室（比對也在這裡做）；一樓的值班台、收發室和食堂；地下一樓的證物室" },
-    { id:"harbour", mins:14, name:"南澳漁港・舊碼頭", sign:"南澳漁港", icon:"⚓", desc:"冰店旁邊的那一支公共電話", phase:1, requires:["e34_telecom"] }
+    { id:"harbour", mins:14, name:"南澳漁港・舊碼頭", sign:"阿珠冰店", icon:"⚓", desc:"冰店旁邊的那一支公共電話", phase:1, requires:["e34_telecom"] }
   ],
   events: [
     { id:"e34_zhou", phase:0, requires:["arc:c_roster_zhou"], title:"周振邦推門進來",
