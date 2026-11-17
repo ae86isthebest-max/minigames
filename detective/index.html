@@ -1547,8 +1547,9 @@ function vCourt(){
   const ids = ((typeof K.who==="function" ? K.who(S.phase) : K.who) || C.suspects.filter(s=>!s.witness).map(s=>s.id)).filter(id=>{ const s = C.suspects.find(x=>x.id===id); return !s || !isGone(s); });
   const n = ids.length, focus = st.focus || [];
   const cast = [{ id:"_you", x:16, y:100, pose: st.who==="you" ? "point" : "stand", facing:1 }].concat(ids.map((id,j)=>{
-    const x = 44 + (n===1 ? 70 : j*(140/(n-1)));
-    const fx = focus.length ? (C.suspects.find(s=>s.id===focus[0]) ? 44 + ids.indexOf(focus[0])*(140/(n-1||1)) : x) : 0;
+    // 人是 1.4 倍大（半個人寬約 11 格），畫面寬 192：最右邊的人站在 178，整個人才在畫面裡，不會被邊緣切掉
+    const x = 44 + (n===1 ? 70 : j*(134/(n-1)));
+    const fx = focus.length ? (C.suspects.find(s=>s.id===focus[0]) ? 44 + ids.indexOf(focus[0])*(134/(n-1||1)) : x) : 0;
     const facing = focus.length && !focus.includes(id) ? (fx < x ? -1 : 1) : -1;
     return { id, x, y: 96 + (j%2)*4, pose: focus.includes(id) && st.who===id ? (st.pose||"stand") : "stand", facing, mark: focus.includes(id) };
   }));
