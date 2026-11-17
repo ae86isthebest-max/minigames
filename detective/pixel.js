@@ -228,11 +228,13 @@ const PX = (() => {
     add(3,10,10,9,top);
     if (!low && !L.skirt && !L.coat) add(3,18,10,1,shade(bot,-.35));
     add(6,10,4,1,shade(top,.22)); add(5,15,1,2,shade(top,-.12)); add(4,11,1,6,shade(top,.12)); add(3,17,10,1,shade(top,-.2));
-    if (L.coat) { add(3,10,3,10,L.coat); add(10,10,3,10,L.coat); add(6,10,1,3,shade(L.coat,.2)); add(9,10,1,3,shade(L.coat,.2)); add(4,15,1,1,shade(L.coat,-.3)); add(11,15,1,1,shade(L.coat,-.3)); }
-    if (L.apron) add(5,12,6,8,L.apron);
-    if (L.tie) add(7,11,2,5,L.tie);
-    if (L.chain) add(5,11,6,1,"#e6c34a");
-    if (L.stetho) { add(4,10,1,5,"#555"); add(11,10,1,5,"#555"); add(5,15,6,1,"#555"); }
+    // 背面（L.back）：領帶、項鍊、圍裙的正面、外套敞開的前襟都看不到。外套是一整片背，圍裙只看得到腰上的帶子和結，聽診器只看得到掛在脖子後面那一段
+    if (L.coat) { if (L.back){ add(3,10,10,10,L.coat); add(8,12,1,7,shade(L.coat,-.18)); add(3,10,10,1,shade(L.coat,.15)); }
+      else { add(3,10,3,10,L.coat); add(10,10,3,10,L.coat); add(6,10,1,3,shade(L.coat,.2)); add(9,10,1,3,shade(L.coat,.2)); add(4,15,1,1,shade(L.coat,-.3)); add(11,15,1,1,shade(L.coat,-.3)); } }
+    if (L.apron) { if (L.back){ add(3,14,10,1,L.apron); add(7,13,2,3,L.apron); add(6,10,1,1,L.apron); add(9,10,1,1,L.apron); } else add(5,12,6,8,L.apron); }
+    if (L.tie && !L.back) add(7,11,2,5,L.tie);
+    if (L.chain && !L.back) add(5,11,6,1,"#e6c34a");
+    if (L.stetho) { if (L.back) add(5,10,6,1,"#555"); else { add(4,10,1,5,"#555"); add(11,10,1,5,"#555"); add(5,15,6,1,"#555"); } }
     // 手。先照「做動作的手在 x=13 那邊」畫，如果其實是另一隻手：沒有方向的動作整個左右對調，
     // 有方向的動作（指、伸手、遞……）改成從另一邊肩膀橫過身體伸出去
     const A0 = parts.length, hands = []; let H = null, H2 = null, mirror = false, orient = "up", dflt = null;
