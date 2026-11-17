@@ -117,8 +117,8 @@ const DEFS = [
   { id: 'shelfPie2', name: '南瓜派架２', kind: 'shelf', flip: true, item: 'pie', pos: [-8.6, R2B], zone: [-8.6, R2B_ZONE], cost: { money: 44000 }, req: ['shelfPie', 'expand'] },
   { id: 'shelfYarn2', name: '毛線架２', kind: 'shelf', flip: true, item: 'yarn', pos: [-11.6, R2B], zone: [-11.6, R2B_ZONE], cost: { money: 68000 }, req: ['shelfYarn', 'expand'] },
   // more warehouses on the free land east of the road: they share one stock with the first
-  { id: 'warehouse2', name: '第二倉庫', desc: '和第一座倉庫共用存貨，容量再多一座', kind: 'store', pos: [22.5, 15.5], zone: [22.5, 19.4], cost: { money: 60000, wood: 60 }, req: ['warehouse', 'helipad', 'expand'] },
-  { id: 'warehouse3', name: '第三倉庫', desc: '和其他倉庫共用存貨，容量再多一座', kind: 'store', pos: [22.5, 25.0], zone: [22.5, 28.9], cost: { money: 160000, wood: 80 }, req: ['warehouse2', 'hall'] },
+  { id: 'warehouse2', name: '第二倉庫', desc: '和第一座倉庫共用存貨，容量再多一座', kind: 'store', pos: [22.0, 15.5], zone: [22.0, 19.4], cost: { money: 60000, wood: 60 }, req: ['warehouse', 'helipad', 'expand'] },
+  { id: 'warehouse3', name: '第三倉庫', desc: '和其他倉庫共用存貨，容量再多一座', kind: 'store', pos: [22.0, 25.0], zone: [22.0, 28.9], cost: { money: 160000, wood: 80 }, req: ['warehouse2', 'hall'] },
   // 新館 behind the 百貨公司: a third copy of every shelf (each needs the second one)
   { id: 'hall', name: '新館', desc: '百貨公司後面再蓋一館，每種貨架可以擺第三個', kind: 'hall', zone: [6.6, -24.4], cost: { money: 90000, wood: 60 }, req: ['dept', 'expand'] },
   { id: 'shelfCorn3', name: '玉米架３', kind: 'shelf', flip: true, item: 'corn', pos: [1.4, H1_Z], zone: [1.4, H1_ZONE], cost: { money: 2200 }, req: ['shelfCorn2', 'hall'] },
@@ -140,6 +140,21 @@ const DEFS = [
   { id: 'doorB', name: '側門', desc: '多開一道門，客人不用都擠在大門', kind: 'door', zone: [-3.5, -8.6], cost: { money: 300 }, req: ['shelfCorn'] },
   { id: 'doorD', name: '第四道門', desc: '超市西邊再開一道門', kind: 'door', zone: [-19.2, -8.6], cost: { money: 8000 }, req: ['market', 'counter2'] },
   { id: 'shelfHoney2', name: '蜂蜜架２', kind: 'shelf', flip: true, item: 'honey', pos: [-14.6, R2B], zone: [-14.6, R2B_ZONE], cost: { money: 100000 }, req: ['shelfHoney', 'expand'] },
+  // 11-17: more kinds of goods — 布丁 (eggs), 番茄醬 (tomatoes), 蘋果汁 (apples); the machines stand on the free west strip
+  { id: 'pudding', name: '布丁機', kind: 'machine', mk: 'pudding', in: 'egg', out: 'pudding', iv: 4, pos: [-16, 19.8], upAt: [-16, 22.5], cost: { money: 9000 }, req: ['shelfCheese', 'dept'] },
+  { id: 'shelfPudding', name: '布丁冷藏櫃', kind: 'shelf', flip: true, fridge: true, item: 'pudding', pos: [-17.6, R1B], zone: [-17.6, R1B_ZONE], cost: { money: 7000 }, req: ['pudding'] },
+  { id: 'ketchup', name: '番茄醬機', kind: 'machine', mk: 'ketchup', in: 'tomato', out: 'ketchup', iv: 4, pos: [-16, 25.0], upAt: [-16, 27.7], cost: { money: 14000 }, req: ['shelfPudding'] },
+  { id: 'shelfKetchup', name: '番茄醬架', kind: 'shelf', flip: true, item: 'ketchup', pos: [-17.6, R2B], zone: [-17.6, R2B_ZONE], cost: { money: 10000 }, req: ['ketchup'] },
+  { id: 'cider', name: '蘋果汁機', kind: 'machine', mk: 'cider', in: 'apple', out: 'cider', iv: 4.5, pos: [-16, 30.2], upAt: [-16, 32.9], cost: { money: 26000 }, req: ['shelfKetchup', 'orchard', 'hall'] },
+  { id: 'shelfCider', name: '蘋果汁冷藏櫃', kind: 'shelf', fridge: true, item: 'cider', pos: [-17.6, H2_Z], zone: [-17.6, H2_ZONE], cost: { money: 20000 }, req: ['cider'] },
+  // up to 10 warehouses: two rows on the free land east of the road, all sharing one stock
+  { id: 'warehouse4', name: '第四倉庫', desc: '和其他倉庫共用存貨，容量再多一座', kind: 'store', pos: [27.2, 15.5], zone: [27.2, 19.4], cost: { money: 120000, wood: 60 }, req: ['warehouse3'] },
+  { id: 'warehouse5', name: '第五倉庫', desc: '和其他倉庫共用存貨，容量再多一座', kind: 'store', pos: [27.2, 25.0], zone: [27.2, 28.9], cost: { money: 150000, wood: 60 }, req: ['warehouse4'] },
+  { id: 'warehouse6', name: '第六倉庫', desc: '和其他倉庫共用存貨，容量再多一座', kind: 'store', pos: [22.0, 34.5], zone: [22.0, 38.4], cost: { money: 180000, wood: 60 }, req: ['warehouse5'] },
+  { id: 'warehouse7', name: '第七倉庫', desc: '和其他倉庫共用存貨，容量再多一座', kind: 'store', pos: [27.2, 34.5], zone: [27.2, 38.4], cost: { money: 220000, wood: 60 }, req: ['warehouse6'] },
+  { id: 'warehouse8', name: '第八倉庫', desc: '和其他倉庫共用存貨，容量再多一座', kind: 'store', pos: [22.0, 44.0], zone: [22.0, 47.9], cost: { money: 260000, wood: 60 }, req: ['warehouse7'] },
+  { id: 'warehouse9', name: '第九倉庫', desc: '和其他倉庫共用存貨，容量再多一座', kind: 'store', pos: [27.2, 44.0], zone: [27.2, 47.9], cost: { money: 300000, wood: 60 }, req: ['warehouse8'] },
+  { id: 'warehouse10', name: '第十倉庫', desc: '和其他倉庫共用存貨，容量再多一座', kind: 'store', pos: [22.0, 53.5], zone: [22.0, 57.4], cost: { money: 350000, wood: 60 }, req: ['warehouse9'] },
 ];
 // the café gate counts a new product line once its first shelf is up
 const NEW_LINES = ['shelfCarrot', 'shelfStraw', 'shelfPumpkin', 'shelfYarn', 'shelfHoney'];
@@ -157,7 +172,7 @@ const UPS = {
   dogR: { tab: 2, name: '小狗吸錢範圍', noLv: false, ic: 'money', need: 'dog', vals: [3, 5, 7, 9], cost: [150, 1100, 2480], fmt: (v) => v + ' 格' },
   price: { tab: 3, name: '商品售價', ic: 'money', need: 'cashier', vals: [1, 1.2, 1.45, 1.75, 2.05, 2.4], cost: [200, 500, 3030, 6050, 11000], fmt: (v) => '×' + v },
   shelfCap: { tab: 3, name: '貨架容量', ic: 'egg', need: 'cashier', vals: [8, 14, 20, 30, 40, 50], cost: [120, 320, 1930, 3850, 9000], fmt: (v) => v + ' 個' + (v >= 30 ? '，疊得高高的' : '') },
-  storeCap: { tab: 3, name: '倉庫容量', ic: 'hay', need: 'warehouse', vals: [200, 350, 500, 650, 800, 1000], cost: [5000, 15000, 35000, 80000, 150000], fmt: (v) => '每座倉庫放 ' + v + ' 個' },
+  storeCap: { tab: 3, name: '倉庫容量', ic: 'hay', need: 'warehouse', vals: [300, 600, 1000, 1600, 2400, 3500], cost: [5000, 15000, 35000, 80000, 150000], fmt: (v) => '每座倉庫放 ' + v + ' 個' },
   cust: { tab: 3, name: '客人數量', ic: 'run', need: 'cashier', vals: [1, 1.2, 1.4, 1.6, 1.8, 2], cost: [250, 550, 3030, 5500, 9630], fmt: (v) => '×' + v },
   mach: { tab: 2, name: '所有機器一起加速', ic: 'juice', need: 'juicer', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [960, 2060, 4130, 7150, 12100], fmt: (v) => '×' + v },
   stockCap: { tab: 2, name: '動物棚和機器存貨量', ic: 'hay', need: 'juicer', vals: [12, 16, 20, 25, 30], cost: [4000, 12000, 30000, 70000], fmt: (v) => '每盤放 ' + v + ' 個' + (v >= 25 ? '，堆成小山' : '') },
@@ -175,6 +190,7 @@ const EXTRA = {
   keeper: { name: '飼養員', base: 200, need: 'keeper', ok: () => isBuilt('coop') || isBuilt('barn'), at: [-1.4, 5.4], does: '負責動物：割草餵雞餵牛餵羊，雞蛋牛奶上架' },
   farmer: { name: '農夫', base: 300, need: 'farmer', ok: () => FARM_CROPS_SRC.some(isBuilt), at: [-2, 1.6], does: '負責田地：收成後送去貨架或機器' },
   shelver: { name: '理貨員', base: 400, need: 'shelver', at: [1.6, -5], does: '負責商店：機器做好的貨和倉庫的貨補上貨架，材料送進機器' },
+  orderer: { name: '訂單專員', emo: '📦', base: 3000, need: 'market', at: [11.2, -4.6], does: '只負責大訂單：特別客人、貨車、直升機要的貨，自己去倉庫、機器和田裡拿來交' },
 };
 const EXTRA_MAX = 6;
 // 農夫 harvests every field (and feeds the animals when there is nothing to pick)
@@ -189,7 +205,7 @@ const mShop = () => state.up.mgrShop || 0, mFarm = () => state.up.mgrFarm || 0;
 const isFarmRole = (r) => r === 'keeper' || r === 'farmer';
 // one price list for hiring, whether from the map or from the 員工 tab:
 // the next 飼養員 / 農夫 / 理貨員 costs base × 1.8 for every one already working (and ×2.75 after the first one, 大擴充)
-const HIRE_BASE = { keeper: 90, farmer: 120, shelver: 250 };
+const HIRE_BASE = { keeper: 90, farmer: 120, shelver: 250, orderer: 3000 };
 const hireCost = (role) => { const n = workers.filter((w) => w.role === role).length; return Math.round(HIRE_BASE[role] * Math.pow(1.8, n) * (n ? 2.75 : 1) / 10) * 10; };
 const extraCost = (role) => hireCost(role);
 const zoneDef = (def) => (def.kind === 'hire' && HIRE_BASE[def.role] ? { ...def, cost: { money: hireCost(def.role) } } : def);
@@ -225,6 +241,9 @@ const GROW = {
   cheese2: { start: 1, max: 4, cost: [30000, 55000, 95000], what: '第二起司坊做更快' },
   oven2: { start: 1, max: 4, cost: [25000, 45000, 80000], what: '第二麵包窯做更快' },
   soyMachine2: { start: 1, max: 4, cost: [40000, 75000, 130000], what: '第二磨豆漿機做更快' },
+  pudding: { start: 1, max: 4, cost: [8000, 15000, 26000], what: '布丁機做更快' },
+  ketchup: { start: 1, max: 4, cost: [10000, 19000, 33000], what: '番茄醬機做更快' },
+  cider: { start: 1, max: 4, cost: [20000, 38000, 65000], what: '蘋果汁機做更快' },
 };
 const lvlOf = (id) => state.lvl[id] || GROW[id].start;
 // machine level 1–4: each level makes that one machine 40% faster
@@ -265,9 +284,11 @@ if (state.up.paySpeed) { const back = [150, 400, 900, 1800, 3500].slice(0, state
 for (const k in UPS) state.up[k] = Math.min(state.up[k] || 0, UPS[k].vals.length - 1);
 const isBuilt = (id) => state.built.includes(id);
 const MAPS_KEY = 'farm_maps_v1';
+// 11-17: the café, the harbour and the forest are closed for now (new ideas coming); their saves are kept
+const BRANCHES_OPEN = false;
 function mapsGet() { try { return JSON.parse(localStorage.getItem(MAPS_KEY) || '{}'); } catch (e) { return {}; } }
 function mapsSet(id) { const m = mapsGet(); m[id] = true; try { localStorage.setItem(MAPS_KEY, JSON.stringify(m)); } catch (e) { /* storage off */ } showMapBtn(); }
-function showMapBtn() { const b = document.getElementById('bMap'); if (b) b.classList.toggle('hidden', !Object.keys(mapsGet()).length); }
+function showMapBtn() { const b = document.getElementById('bMap'); if (b) b.classList.toggle('hidden', !BRANCHES_OPEN || !Object.keys(mapsGet()).length); }
 // backup code: every map's save in one base64 string, so progress survives a cleared browser or a new phone
 const SAVE_KEYS = ['farm_save_v2', 'harbor_save_v1', 'forest_save_v1', 'cafe_save_v1', MAPS_KEY];
 function exportSave() {
@@ -1307,6 +1328,7 @@ function refreshZones() {
     let open = (def.req || def.any) ? (!def.req || def.req.every(isBuilt)) && (!def.any || def.any.some(isBuilt)) : isBuilt(DEFS[i - 1].id);
     if (def.earned && state.earned < def.earned) open = false;
     if (def.lines && linesBuilt() < def.lines) open = false;
+    if (def.kind === 'mapgate' && !BRANCHES_OPEN) open = false;
     // the two starting choices: picking one hides the other until the first cashier is hired
     if (def.alt && isBuilt(def.alt) && !isBuilt('cashier')) open = false;
     if (!open && zones[def.id]) { killZone(def.id); continue; }
@@ -1425,7 +1447,7 @@ function payZones(dt) {
 const workers = [];
 function makeWorker(role, at, counter, pop, tint) {
   const look = role === 'manager' ? (counter ? { body: '#7aa65a', hat: 'cap', hatColor: '#3f6b2e', apron: '#e9f5d8' } : { body: '#4a5a86', hat: 'bun', hatColor: '#3a2a22', apron: '#ffffff' }) : role === 'cashier' ? { body: '#b48cff', hat: 'bun', hatColor: '#7a4fd6', apron: C.white }
-    : role === 'farmer' ? { body: '#7fcf6a', hat: 'straw' } : role === 'keeper' ? { body: '#ffb347', hat: 'cap', hatColor: '#ff7f6e', apron: '#fff3dd' } : { body: '#5aa9ff', hat: 'cap', hatColor: '#ffd34a', apron: '#ffd34a' };
+    : role === 'farmer' ? { body: '#7fcf6a', hat: 'straw' } : role === 'keeper' ? { body: '#ffb347', hat: 'cap', hatColor: '#ff7f6e', apron: '#fff3dd' } : role === 'orderer' ? { body: '#e8504a', hat: 'cap', hatColor: '#2f3e66', apron: '#ffe08a' } : { body: '#5aa9ff', hat: 'cap', hatColor: '#ffd34a', apron: '#ffd34a' };
   const p = K.person(look);
   p.root.position.set(at[0], 0, at[1]); scene.add(p.root); if (pop) popIn(p.root);
   const w = carrier(p);
@@ -1547,6 +1569,7 @@ function updateWorker(w, dt) {
   stuckCheck(w, dt);
   if (w.job && w.job.phase === 'trash') { trashRun(w, dt, sp); return; }
   if (w.role === 'manager') { idleWander(w, dt, w.home[0], w.home[1]); return; }
+  if (w.role === 'orderer' && orderWork(w, dt, sp)) return;
   const holdsGoods = w.carry.some((it) => it.type !== 'hay');
   if (w.role === 'keeper' && !(holdsGoods && (!w.job || typeof w.job !== 'object'))) {
     // 飼養員: feeds the animals; with upgrades also carries eggs (and milk) to the shop
@@ -1597,6 +1620,8 @@ function updateWorker(w, dt) {
 }
 
 function stuckCheck(w, dt) {
+  // a 訂單專員 on the long walk to the truck / helicopter is not stuck
+  if (w.role === 'orderer' && w.job && w.job.ord) { w.stuckT = 0; return; }
   const n = w.carry.length;
   if (n !== w.lastN || !n || w.incoming) { w.lastN = n; w.stuckT = 0; return; }
   w.stuckT += dt;
@@ -1644,6 +1669,80 @@ function feedAnimals(w, dt, sp, ok) {
     if (!t && hay > 0) w.job = 'deliver';
   } else idleWander(w, dt, -1.5, 4.5);
 }
+// ---------- 訂單專員: only the big orders (特別客人, 貨車, 直升機) — fetch what is still missing and hand it over ----------
+const ORD_HOME = [11.2, -4.6];
+function activeOrders() {
+  const r = [], c = vip.c;
+  if (c && c.st === 'wait') r.push({ h: c, t: c.patience, at: [VIP.x - 0.2, VIP.z + 1.3], r: 1.9, cx: VIP.x, cz: VIP.z, drop: (o) => { o.copy(c.p.root.position); o.y = 1.3; } });
+  if (truck.st === 'wait') r.push({ h: truck, t: truck.t, at: DOCK.drop, r: 1.6, cx: DOCK.drop[0], cz: DOCK.drop[1], drop: (o) => { truck.bed.getWorldPosition(o); o.y += 0.2; } });
+  if (heli.st === 'wait') r.push({ h: heli, t: heli.t, at: HELI.drop, r: 1.7, cx: HELI.drop[0], cz: HELI.drop[1], drop: (o) => o.set(HELI.x, 1.2, HELI.z) });
+  return r.sort((a, b) => a.t - b.t);
+}
+// warehouse, machines, animals and fields first; a shelf only when nothing else has it (customers want those)
+function orderSource(item, w) {
+  const s = sourceFor(item, w);
+  if (s) return s;
+  let best = null, bd = 1e9;
+  for (const q of listOf('shelf')) if (q.item === item && q.n > 0) { const d = dist2(w.p.root.position, q.front.x, q.front.z); if (d < bd) { bd = d; best = q; } }
+  return best;
+}
+function orderJob(w, orders) {
+  for (const o of orders) for (const k in o.h.order) {
+    const busy = workers.reduce((a, q) => a + (q !== w && q.job && q.job.ord && q.job.ord.h === o.h && q.job.item === k ? q.job.n : 0), 0);
+    const left = o.h.order[k] - busy; if (left <= 0) continue;
+    const src = orderSource(k, w); if (!src) continue;
+    return { ord: o, item: k, src, n: Math.min(left, w.cap()), phase: 'get' };
+  }
+  return null;
+}
+// returns false when the usual worker code should run (putting leftovers away after an order left)
+function orderWork(w, dt, sp) {
+  if (w.job && !w.job.ord) return false;
+  const orders = activeOrders();
+  let j = w.job;
+  if (j) {
+    const o = orders.find((q) => q.h === j.ord.h);
+    if (!o) { if (j.plant && j.plant.res === w) j.plant.res = null; w.job = j = null; } else j.ord = o;
+  }
+  if (!j) {
+    if (w.carry.length) return !!w.incoming;
+    j = w.job = orderJob(w, orders);
+    if (!j) { idleWander(w, dt, ORD_HOME[0], ORD_HOME[1]); return true; }
+  }
+  const h = j.ord.h, it = j.item;
+  if (j.phase === 'get') {
+    const have = count(w, it) + w.incoming;
+    if (have >= j.n || room(w) <= 0 || h.order[it] - have <= 0) { j.phase = have ? 'give' : 'done'; }
+    else if (j.src && j.src.kind === 'crop') {
+      const src = j.src;
+      let pl = j.plant;
+      if (!pl || !pl.ripe || (pl.res && pl.res !== w)) { pl = src.plants.find((q) => q.ripe && (!q.res || q.res === w)); j.plant = pl; if (pl) pl.res = w; }
+      if (!pl) j.src = null;
+      else if (go(w, pl.x, pl.z + 0.7, dt, sp)) { pickPlant(src, pl, w); j.plant = null; }
+    } else if (j.src) {
+      const src = j.src, shelf = src.kind === 'shelf', pt = shelf ? src.front : src.outPt;
+      const avail = shelf ? src.n : srcCount(src, it);
+      if (avail <= 0) j.src = null;
+      else if (go(w, pt.x + 0.3, pt.z + (shelf ? 0 : 0.9), dt, sp) || dist2(w.p.root.position, pt.x, pt.z) < 1.3) {
+        w.xfer -= dt;
+        if (w.xfer <= 0) { w.xfer = 0.1; if (shelf) src.n--; else srcTake(src, it); takeInto(w, it, V3(pt.x, 0.5, pt.z)); }
+      }
+    }
+    if (j.phase === 'get' && !j.src && !w.incoming) { j.src = orderSource(it, w); if (!j.src) j.phase = count(w, it) ? 'give' : 'done'; }
+  } else if (j.phase === 'give') {
+    if (w.incoming) return true;
+    const o = j.ord;
+    if (go(w, o.at[0], o.at[1], dt, sp) || dist2(w.p.root.position, o.cx, o.cz) < o.r) {
+      w.xfer -= dt;
+      if (w.xfer <= 0) {
+        if (h.order[it] > 0 && count(w, it) > 0) { h.order[it]--; w.xfer = 0.08; giveFrom(w, it, o.drop, null); }
+        else j.phase = 'done';
+      }
+    }
+  }
+  if (j.phase === 'done') { if (j.plant && j.plant.res === w) j.plant.res = null; w.job = null; }
+  return true;
+}
 function spawnManager(k, quiet) {
   const shop = k === 'mgrShop', home = shop ? [-3.4, -13.0] : [-2.5, 4.2];
   const w = makeWorker('manager', home, shop ? 0 : 1, !quiet);
@@ -1670,6 +1769,7 @@ function cutTuft(t, c) {
   t.grown = false; t.t = 0; t.res = null; t.tall.visible = false;
   puff(t.x, 0.4, t.z, '#e8dc6b', 4, 0.6);
   takeInto(c, 'hay', V3(t.x, 0.5, t.z));
+  if (room(c) > 0) takeInto(c, 'hay', V3(t.x, 0.6, t.z)); // every tuft gives two bundles
   if (c === player) sfx('pop');
   return true;
 }
@@ -1677,6 +1777,7 @@ function pickPlant(s, pl, c) {
   if (!pl.ripe || room(c) <= 0) { pl.res = null; return; }
   pl.ripe = false; pl.t = 0; pl.res = null; pl.fruit.visible = false;
   takeInto(c, s.def.out, V3(pl.x, s.def.plant === 'apple' ? 1.4 : 0.8, pl.z));
+  if (room(c) > 0) takeInto(c, s.def.out, V3(pl.x, s.def.plant === 'apple' ? 1.5 : 0.9, pl.z)); // a double harvest from every plant
   if (c === player) sfx('pop');
 }
 
@@ -1985,7 +2086,7 @@ function updateVip(dt) {
       const n = startOrder(vip.c, late ? 3 : 2, late ? 5 : 3, late ? 9 : 6, 5, 40, Math.max(1, orderScale() / 2));
       vip.c.patience = 120 + n * 0.5;
       vip.c.label = label('zone order', '', (o) => o.set(VIP.x + 0.2, 0.2, VIP.z + 2.6));
-      toast('⭐ 特別客人來了！要親手交貨');
+      toast('⭐ 特別客人來了！' + (workers.some((q) => q.role === 'orderer') ? '訂單專員會幫忙送貨' : '要親手交貨'));
     }
     return;
   }
@@ -2186,12 +2287,12 @@ function openPanel(kind) {
       if (ti === 1 && !workers.length) { body.innerHTML = '<div class="empty">解鎖第一位員工後開放</div>'; return; }
       if (ti === 1) {
         const n = (r) => workers.filter((w) => w.role === r).length;
-        body.insertAdjacentHTML('beforeend', '<div class="chips staff"><span class="chip">收銀員 ×' + n('cashier') + '</span><span class="chip">飼養員 ×' + n('keeper') + '</span><span class="chip">農夫 ×' + n('farmer') + '</span><span class="chip">理貨員 ×' + n('shelver') + '</span></div>');
+        body.insertAdjacentHTML('beforeend', '<div class="chips staff"><span class="chip">收銀員 ×' + n('cashier') + '</span><span class="chip">飼養員 ×' + n('keeper') + '</span><span class="chip">農夫 ×' + n('farmer') + '</span><span class="chip">理貨員 ×' + n('shelver') + '</span>' + (n('orderer') ? '<span class="chip">訂單專員 ×' + n('orderer') + '</span>' : '') + '</div>');
         for (const role in EXTRA) {
           const ex = EXTRA[role]; if (!(ex.ok ? ex.ok() : isBuilt(ex.need))) continue;
           const have = state.extra[role] || 0, max = have >= EXTRA_MAX, cost = extraCost(role);
           const row = document.createElement('div'); row.className = 'row';
-          row.innerHTML = '<span class="ricon"><span class="ic">🧑‍🌾</span></span><div class="rmid"><b>多請一位' + ex.name + '</b><small>' + (ex.does ? ex.does + ' · ' : '') + '現在 ' + n(role) + ' 位' + (max ? '（已達上限）' : '') + '</small></div>';
+          row.innerHTML = '<span class="ricon"><span class="ic">' + (ex.emo || '🧑‍🌾') + '</span></span><div class="rmid"><b>多請一位' + ex.name + '</b><small>' + (ex.does ? ex.does + ' · ' : '') + '現在 ' + n(role) + ' 位' + (max ? '（已達上限）' : '') + '</small></div>';
           const btn = document.createElement('button'); btn.className = 'buy' + (max ? ' max' : (state.money < cost ? ' poor' : ''));
           btn.innerHTML = max ? '已滿' : ICON.money + fmtMoney(cost);
           btn.onclick = () => {
@@ -2254,7 +2355,7 @@ function openPanel(kind) {
     }
     h += '</div><div class="sec">農場與機器</div><div class="chips">';
     for (const s of Object.values(stations)) if (s.kind === 'producer' || s.kind === 'machine') h += '<span class="chip">' + s.def.name + ' ' + ICON[s.def.in] + s.inN + ' → ' + ICON[s.def.out] + s.outN + '</span>';
-    h += '</div><div class="sec">進度</div><div class="chips"><span class="chip">已解鎖 ' + state.built.length + '/' + DEFS.length + '</span><span class="chip">總收入 ' + ICON.money + fmtMoney(state.earned) + '</span></div>';
+    h += '</div><div class="sec">進度</div><div class="chips"><span class="chip">已解鎖 ' + state.built.filter((id) => DEF[id] && DEF[id].kind !== 'mapgate').length + '/' + DEFS.filter((d) => d.kind !== 'mapgate').length + '</span><span class="chip">總收入 ' + ICON.money + fmtMoney(state.earned) + '</span></div>';
     body.innerHTML = h;
   } else if (kind === 'map') {
     $('pTitle').textContent = '地圖';
@@ -2381,7 +2482,7 @@ function updateWorld(dt, t) {
   const cap = upVal('shelfCap');
   for (const s of Object.values(stations)) {
     if (s.kind === 'producer' || s.kind === 'machine') {
-      const iv = s.kind === 'machine' ? s.def.iv / upVal('mach') / machK(s.id) : s.def.out === 'milk' ? upVal('barn') * 1.6 / lvlOf(s.id) : s.def.out === 'wool' ? upVal('barn') * 2.2 / lvlOf(s.id) : upVal('coop') * 2 / lvlOf(s.id);
+      const iv = s.kind === 'machine' ? s.def.iv / upVal('mach') / machK(s.id) : s.def.out === 'milk' ? upVal('barn') * 0.9 / lvlOf(s.id) : s.def.out === 'wool' ? upVal('barn') * 2.2 / lvlOf(s.id) : upVal('coop') * 2 / lvlOf(s.id);
       const busy = s.inN > 0 && s.outN < s.outMax;
       if (busy) {
         s.timer += dt;

@@ -26,6 +26,10 @@ export const ITEMS = {
   jam: { name: '草莓果醬', icon: '🫙', h: 0.3, price: 45 },
   pie: { name: '南瓜派', icon: '🥧', h: 0.15, price: 60 },
   yarn: { name: '毛線球', icon: '🧶', h: 0.28, price: 75 },
+  // 11-17: more kinds of goods for the shop
+  pudding: { name: '布丁', icon: '🍮', h: 0.24, price: 30 },
+  ketchup: { name: '番茄醬', icon: '🥫', h: 0.38, price: 24 },
+  cider: { name: '蘋果汁', icon: '🧃', h: 0.38, price: 32 },
   money: { name: '錢', icon: '💵', h: 0.07, price: 0 },
 };
 
@@ -128,6 +132,22 @@ function itemMeshRaw(type) {
     add(g, mesh(G.cyl(0.18, 0.18, 0.025, 14), '#ff9a3c', false), 0, 0.085, 0);
     for (let i = 0; i < 8; i++) add(g, mesh(G.sphere(0.035, 6, 4), '#f2c27a', false), Math.cos(i * 0.785) * 0.19, 0.085, Math.sin(i * 0.785) * 0.19);
     add(g, mesh(G.sphere(0.05, 8, 6), '#fffaf0'), 0, 0.11, 0).scale.set(1, 0.7, 1);
+  } else if (type === 'pudding') {
+    add(g, mesh(G.cyl(0.19, 0.19, 0.03, 14), '#ffffff'), 0, 0.015, 0);
+    add(g, mesh(G.cyl(0.11, 0.15, 0.15, 14), '#ffd86b'), 0, 0.105, 0);
+    add(g, mesh(G.cyl(0.112, 0.112, 0.045, 14), '#9a4a1c'), 0, 0.2, 0);
+    add(g, mesh(G.sphere(0.04, 8, 6), '#e8243c'), 0, 0.245, 0);
+  } else if (type === 'ketchup') {
+    add(g, mesh(G.rbox(0.18, 0.26, 0.13, 0.05), '#e8243c'), 0, 0.13, 0);
+    add(g, mesh(G.rbox(0.185, 0.09, 0.135, 0.02), '#fff3dd'), 0, 0.13, 0);
+    add(g, mesh(G.sphere(0.03, 6, 5), '#ff4a2e', false), 0, 0.13, 0.07).scale.set(1, 1, 0.3);
+    add(g, mesh(G.cyl(0.05, 0.07, 0.06, 10), '#ffffff'), 0, 0.29, 0);
+    add(g, mesh(G.cyl(0.015, 0.035, 0.06, 8), '#ffffff'), 0, 0.35, 0);
+  } else if (type === 'cider') {
+    add(g, mesh(G.cyl(0.09, 0.1, 0.24, 12), '#ffc94a'), 0, 0.12, 0);
+    add(g, mesh(G.cyl(0.095, 0.105, 0.09, 12), '#d8263a'), 0, 0.12, 0);
+    add(g, mesh(G.cyl(0.04, 0.08, 0.07, 10), '#ffc94a'), 0, 0.275, 0);
+    add(g, mesh(G.cyl(0.045, 0.045, 0.04, 10), '#6cc257'), 0, 0.33, 0);
   } else if (type === 'yarn') {
     add(g, mesh(G.sphere(0.135, 12, 10), '#ff7eb6'), 0, 0.14, 0);
     for (const [rx, rz] of [[0.3, 0], [1.2, 0.4], [-0.7, 1.1]]) { const t = add(g, mesh(new THREE.TorusGeometry(0.135, 0.016, 5, 18), '#e85a9a'), 0, 0.14, 0); t.rotation.set(rx, 0, rz); }

@@ -21,6 +21,7 @@ const params = new URLSearchParams(location.search);
 {
   let open = false;
   try { open = JSON.parse(localStorage.getItem('farm_maps_v1') || '{}').harbor === true; } catch (e) { /* storage off */ }
+  open = false; // 11-17: closed for now, every visit goes back to the farm
   if (!open && !params.has('test') && !params.has('fresh')) { location.replace('index.html'); throw new Error('harbour not unlocked yet: back to the farm'); }
 }
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z);

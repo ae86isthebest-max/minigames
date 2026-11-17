@@ -162,6 +162,38 @@ export function machine(kind) {
       for (const s of [-1, 1]) add(bee, mesh(G.sphere(0.06, 6, 4), '#eaf6ff'), s * 0.07, 0.08, 0).scale.set(1, 0.4, 1.2);
       bee.rotation.y = -a;
     }
+  } else if (kind === 'pudding') {
+    // 布丁機: cream steamer cabinet with a glass window; a big wobbly pudding turns on the roof
+    add(g, mesh(G.rbox(1.6, 1.0, 1.1, 0.14), '#fff3dd'), 0, 0.5, -0.2);
+    add(g, mesh(G.rbox(1.65, 0.1, 1.15, 0.05), '#ffb347'), 0, 1.0, -0.2);
+    add(g, mesh(G.rbox(0.9, 0.5, 0.06, 0.08), '#cdeeff'), 0, 0.55, 0.36);
+    spin = add(g, new THREE.Group(), 0, 1.05, -0.2);
+    add(spin, mesh(G.cyl(0.38, 0.38, 0.05, 16), C.white), 0, 0.03, 0);
+    add(spin, mesh(G.cyl(0.24, 0.32, 0.36, 16), '#ffd86b'), 0, 0.23, 0);
+    add(spin, mesh(G.cyl(0.245, 0.245, 0.08, 16), '#9a4a1c'), 0, 0.42, 0);
+    add(spin, mesh(G.sphere(0.08, 8, 6), '#e8243c'), 0, 0.5, 0);
+  } else if (kind === 'ketchup') {
+    // 番茄醬機: red tank on a steel base, a pipe fills the bottles; the big tomato on top spins
+    add(g, mesh(G.rbox(1.6, 0.4, 1.1, 0.1), '#c9d3db'), 0, 0.2, -0.2);
+    add(g, mesh(G.cyl(0.5, 0.5, 0.9, 16), '#e8243c'), 0, 0.85, -0.25);
+    add(g, mesh(G.cyl(0.52, 0.52, 0.08, 16), '#fff3dd'), 0, 1.32, -0.25);
+    add(g, mesh(G.rbox(0.6, 0.18, 0.06, 0.04), '#fff3dd'), 0, 0.85, 0.27);
+    add(g, mesh(G.cyl(0.06, 0.06, 0.5, 8), '#9aa3ad'), 0.55, 0.75, 0.05).rotation.z = Math.PI / 2;
+    spin = add(g, new THREE.Group(), 0, 1.4, -0.25);
+    add(spin, mesh(G.sphere(0.26, 12, 10), '#ff4a2e'), 0, 0.18, 0).scale.set(1, 0.8, 1);
+    for (let i = 0; i < 5; i++) add(spin, mesh(G.rbox(0.14, 0.03, 0.05, 0.01), '#3f9a3a'), Math.cos(i * 1.257) * 0.08, 0.39, Math.sin(i * 1.257) * 0.08).rotation.y = -i * 1.257;
+  } else if (kind === 'cider') {
+    // 蘋果汁機: green fruit press with a wooden barrel; the press wheel turns while apples become juice
+    add(g, mesh(G.rbox(1.6, 0.5, 1.1, 0.12), '#7cc95a'), 0, 0.25, -0.2);
+    add(g, mesh(G.rbox(1.65, 0.08, 1.15, 0.04), '#eaffd8'), 0, 0.52, -0.2);
+    add(g, mesh(G.cyl(0.42, 0.42, 0.6, 14), C.wood), 0, 0.85, -0.2);
+    for (const y of [0.65, 1.05]) add(g, mesh(G.cyl(0.44, 0.44, 0.05, 14), C.grey), 0, y, -0.2);
+    for (const x of [-0.55, 0.55]) add(g, mesh(G.rbox(0.1, 1.3, 0.1, 0.03), C.woodDark), x, 1.1, -0.2);
+    add(g, mesh(G.rbox(1.2, 0.1, 0.12, 0.03), C.woodDark), 0, 1.75, -0.2);
+    add(g, mesh(G.sphere(0.13, 10, 8), '#d8263a'), 0.2, 1.24, -0.2);
+    spin = add(g, new THREE.Group(), 0, 1.9, -0.2);
+    add(spin, mesh(new THREE.TorusGeometry(0.28, 0.035, 6, 16), '#ffd34a'), 0, 0, 0).rotation.x = Math.PI / 2;
+    for (let i = 0; i < 2; i++) add(spin, mesh(G.rbox(0.56, 0.04, 0.04, 0.015), '#ffd34a'), 0, 0, 0).rotation.y = i * 1.571;
   } else {
     add(g, mesh(G.rbox(1.6, 0.5, 1.1, 0.1), C.woodLight), 0, 0.25, -0.2);
     for (const x of [-0.65, 0.65]) add(g, mesh(G.rbox(0.14, 1.4, 0.14, 0.04), C.woodDark), x, 0.9, -0.2);
