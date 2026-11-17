@@ -9,7 +9,7 @@ const {chromium}=require('playwright'); const CID=process.env.CASE||'fingers';
  await p.goto('http://localhost:8765/index.html'); await p.waitForTimeout(400);
  await p.evaluate(()=>{window.uiConfirm=async()=>true; window.toast=()=>{}; localStorage.clear();});
  const idx=await p.evaluate((CID)=>CASES.findIndex(c=>c.id===CID),CID);
- await p.evaluate(async i=>{await openCase(i); restart&&0;},idx);
+ await p.evaluate(async ([i,F])=>{ F.forEach(f=>ARC.set(f)); await openCase(i); },[idx,(process.env.FLAGS||'').split(',').filter(Boolean)]);   // FLAGS=a,b：先設好前面幾集留下的主線旗標再玩
  // ---------- 1) 不限量全做 ----------
  const FULL=!!process.env.FULL;
  const plan=await p.evaluate((FULL)=>{

@@ -1,6 +1,6 @@
 // 全部走動畫面的對照圖：每一集、每個地點、每個區域（房間、戶外、二樓、暗格、街上）各拍一張，排成一張張對照圖給人看。
 // 用法：node tools/scenesheet.js <輸出資料夾> [從第幾集=1] [到第幾集=最後] [mode]
-//   mode：all（預設）＝當作什麼都解鎖了（看得到暗格和後來才出現的東西）；fresh＝剛開始什麼都不知道的樣子；last＝最後一天、全部解鎖；days＝每個地點開著的每一天都拍（看天氣、日夜）
+//   mode：all（預設）＝當作什麼都解鎖了（看得到暗格和後來才出現的東西）；fresh＝剛開始什麼都不知道的樣子；last＝最後一天、全部解鎖；days＝每個地點開著的每一天都拍（看天氣、日夜）；open＝地點和房間全開，但證物、小細節照真正的條件（條件還沒到的不會出現、不會閃；all 會把它們也當成看得到）
 //   ONLY=cliff,harbour 只拍這幾個地點；ONLY=coast（配 days）只拍海邊背景的地點
 //   PORT=8766 可以換埠號（預設 8765）；COLS=5 CELL=384 PER=25 可以改每張圖的欄數、每格寬度、每張幾格（預設 4、480、16）；STREET=0 不拍街上。圖檔：<輸出>/epNN-<mode>-<k>.png，街上的另外一份 epNN-<mode>-street-<k>.png
 // 看什麼：東西有沒有停在半空／陷進地面、門有沒有被切掉、人有沒有站在地上、有沒有疊在一起、畫面邊緣有沒有一刀切
@@ -19,7 +19,9 @@ const { chromium } = require('playwright'); const fs = require('fs');
     const plan = await p.evaluate(async ([ci, mode, only]) => {
       localStorage.clear(); window.uiConfirm = async () => true; window.toast = () => {};
       await openCase(ci); if (typeof restart === "function") try { await restart(true); } catch (e) {}
-      if (mode !== 'fresh') window.unlocked = () => true;
+      if (mode === 'open'){ const real = unlocked, things = new Set(allItems()); (C.locations || []).forEach(l => roomsOf(l).forEach(r => (r.details || []).forEach(d => things.add(d))));
+        window.unlocked = x => things.has(x) ? real(x) : true; }   // 地點、房間、暗格全開，但證物和小細節照真正的條件：玩家還看不到的不會出現、不會閃
+      else if (mode !== 'fresh') window.unlocked = () => true;
       const locs = C.locations || [{ id: "_", name: "現場" }], last = (C.phases || [0]).length - 1;
       S.introSeen = {}; locs.forEach(l => S.introSeen[l.id] = 1); if (typeof HOME !== "undefined" && HOME) S.introSeen[HOME.id] = 1;
       if (mode === 'days') return locs.filter(l => !only || only.includes(l.id) || (only.includes('coast') && (C.setting || {})[l.id] === 'coast')).flatMap(l => { const a = []; for (let ph = Math.max(0, l.phase || 0); ph <= Math.min(last, l.until ?? last); ph++) a.push({ id: l.id, ph }); return a; });
