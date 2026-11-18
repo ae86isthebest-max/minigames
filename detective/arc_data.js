@@ -311,7 +311,7 @@ ARC.defineCast({
   }
  },
  "zhouyiqing": {
-  "name": "周以晴",
+  "name": "周昀安",
   "look": {
    "age": "young",
    "skin": "#f0d0b0",
@@ -692,7 +692,7 @@ ARC.define({
  },
  "accountant_code": {
   "title": "頁邊的數字",
-  "text": "周以晴給你一本《小王子》，頁邊有她媽媽用鉛筆寫的數字。",
+  "text": "周昀安給你一本《小王子》，頁邊有她媽媽用鉛筆寫的數字。",
   "ep": 47
  },
  "money_trail": {
@@ -5748,7 +5748,7 @@ var ARC_INTER = {
    "lines": [
     {
      "who": "narr",
-     "text": "（封鎖線拆了。周以晴抱著豆花，坐在路邊。）"
+     "text": "（封鎖線拆了。周昀安抱著豆花，坐在路邊。）"
     },
     {
      "who": "zhouyiqing",
