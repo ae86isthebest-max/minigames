@@ -173,7 +173,10 @@ const WK = (() => {
     const first = roomsOf(l)[0].id, pos = {};
     let x = SX;
     rooms.forEach(r => { pos[r.id] = x; x += RW + GAP; });
-    const w = x - GAP + 70;
+    // street:false（EPn.world[地點].street = false）：這個地點只有室內，沒有街道。不能走到建築外面、鏡頭不會照到外面、
+    // 沒有「街上」這一區、門口沒有「出去」的牌子、沒有停著的車；進來就站在第一個房間裡。房間的位置不變。
+    const noStreet = o.street === false;
+    const w = x - GAP + (noStreet ? GAP : 70);
     const spots = {}, details = {};
     allItems().filter(it => (it.loc || "_") === l.id && it.hot).forEach(it => {
       const ox = pos[it.room || first]; if (ox === undefined) return;
@@ -226,6 +229,7 @@ const WK = (() => {
         const a = pos[ins[0].id] - GAP, b = pos[ins[ins.length - 1].id] + RW;
         R(a - 2, OY, 4, 98 - 32, shade(fac[0], -.5)); R(b + GAP - 2, OY, 4, 98 - 32, shade(fac[0], -.5));
       }
+      if (noStreet){ R(SX - GAP - 400, 0, 400, 135, "#0c0a08"); R(w, 0, 400, 135, "#0c0a08"); }   // 建築外面全部塗黑
       if (o.drawAfter) o.drawAfter(p, t, op, cam);
     }
     function front(p, t, op, cam){
@@ -250,7 +254,9 @@ const WK = (() => {
     }));
     // 每個房間第一次走進去說的話（C.roomDesc[房間 id]），街上也說一句
     const areas = rooms.map(r => ({ id:r.id, name:r.name, x0:pos[r.id] - GAP, x1:pos[r.id] + RW - 1, text:(C.roomDesc || {})[r.id] || `${r.name}。看起來沒什麼特別的。` }));
-    if (buildings.length) areas.push({ id:"_street", x0:0, x1:buildings[0].x0 - 1, text:"街上。這裡沒什麼特別的。" });
+    if (buildings.length && !noStreet) areas.push({ id:"_street", x0:0, x1:buildings[0].x0 - 1, text:"街上。這裡沒什麼特別的。" });
+    if (noStreet){ buildings.forEach(b => { b.doors = [false, false]; });
+      return { auto:true, areas, w, minX:SX - GAP, spawn:o.spawn || SX + 60, park:undefined, draw, front, spots, details, placeFor, buddy:o.buddy, car:false, you:o.you, intro:o.intro, rooms, pos, buildings, extras:o.extras }; }
     return { auto:true, areas, w, spawn:o.spawn || 70, park:o.park ?? 8, draw, front, spots, details, placeFor, buddy:o.buddy, car:o.car, you:o.you, intro:o.intro, rooms, pos, buildings, extras:o.extras };
   }
 
@@ -273,7 +279,9 @@ const WK = (() => {
     (p.reports || []).forEach(r => { say("wu", `報告：${r.title}`); chunks(r.text).forEach(c => say("wu", c)); });
     (C.events || []).filter(e => S.ev[e.id] === i).forEach(e => { say("wu", `出事了：${e.title}`); chunks(e.text).forEach(c => say("wu", c)); });
     tests().filter(t => S.labq[t.id] !== undefined && S.labq[t.id] + t.days === i).forEach(t => { say("wu", `化驗結果出來了：${t.title}`); chunks(t.text).forEach(c => say("wu", c)); });
-    if (travel()) say("wu", p.clock ? `今天 ${p.clock.start} 到 ${p.clock.end} 可以調查。開車要花時間，越遠越久。要去別的地方，就點左上角的「地圖」。` : `今天有 ${p.actions} 個行動點。要去別的地方，就點左上角的「地圖」。`);
+    // 最後一句提示：phases[n].tip = "字" 換成自己的話；tip:false 不說（例如這一段只能待在一個地方）
+    if (p.tip !== undefined){ if (p.tip) chunks(p.tip).forEach(c => say("wu", c)); }
+    else if (travel()) say("wu", p.clock ? `${PW.now} ${p.clock.start} 到 ${p.clock.end} 可以調查。開車要花時間，越遠越久。要去別的地方，就點左上角的「地圖」。` : `${PW.now}有 ${p.actions} 個行動點。要去別的地方，就點左上角的「地圖」。`);
     return steps;
   }
   function arrive(def){

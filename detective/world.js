@@ -15,6 +15,10 @@ const WORLD = (() => {
   // 停在場景裡的車（開場開進來的、平常停著的）：不寫＝巡邏車（白色、有警示燈和藍線）。
   //   這個地點：EPn.world[地點].car；整集：EPn.car。顏色字串（例如 "#7a8a6a"）＝一般的車，沒有警示燈；false＝沒有車（走路來的）。
   //   劇本步驟自己寫了顏色（car:[從, 到, 秒, 顏色]）就照步驟的。
+  // def.minX：場景最左邊可以走到、鏡頭可以看到的位置（不寫＝0）。只有室內、不能走到街上的地點用（worldkit 的 street:false）。
+  // 場景比畫面窄的時候（只有一個房間）鏡頭固定在中間。
+  const camClamp = (def, v) => def.minX === undefined ? Math.max(0, Math.min(def.w - VW, v))
+    : def.w - def.minX <= VW ? def.minX - (VW - (def.w - def.minX)) / 2 : Math.max(def.minX, Math.min(def.w - VW, v));
   const PATROL = "#e9e4da";
   const carOf = def => def && def.car !== undefined ? def.car : (typeof C !== "undefined" && C && C.car !== undefined ? C.car : PATROL);
   const st = {};
@@ -35,6 +39,7 @@ const WORLD = (() => {
     const wrap = canvas.parentNode, bub = wrap.querySelector(".wbubble"), tip = wrap.querySelector(".wtip");
     cur = { canvas, def, lid, hooks, s, bub, tip }; s.nearSig = null;   // 畫面重建了：「附近」清單要重新送一次
     if (s.px > def.w - 8){ s.px = def.w - 30; s.py = GROUND; resetTrail(s); }
+    if (def.minX !== undefined && (s.px < def.minX + 16 || s.px > def.w - 16)){ s.px = def.spawn || def.minX + 30; s.py = GROUND; s.bx = s.px - 20; s.by = GROUND; s.path = []; resetTrail(s); }
     // 走動的狀態是按地點 id 記的（同一次開遊戲，別的集有同名的地點會共用），所以每次進場都照這一集的設定更新停著的車；
     // 劇本步驟自己指定顏色的車（own）不動
     if (s.car && !s.car.own && !s.car.d){ if (carOf(def)) s.car.c = carOf(def); else s.car = null; }
@@ -74,7 +79,7 @@ const WORLD = (() => {
     if (!k) { s.script = null; cur.hooks.scriptDone(true); cur.hooks.refresh(); return; }
     if (k.set){
       Object.assign(s, k.set);
-      if (k.set.px!==undefined){ s.py = GROUND; s.by = GROUND; s.path = []; s.cam = Math.max(0, Math.min(cur.def.w-VW, s.px-VW/2)); resetTrail(s); }
+      if (k.set.px!==undefined){ s.py = GROUND; s.by = GROUND; s.path = []; s.cam = camClamp(cur.def, s.px-VW/2); resetTrail(s); }
     }
     if (k.walk){ const [who,x] = k.walk; if (who==="you") s.path = [[x, s.py]]; else s.btx = x; }
     const kc = k.car ? k.car[3] || carOf(cur.def) : null;   // 這個地點沒有車（car:false）：開車的步驟直接跳過
@@ -92,7 +97,7 @@ const WORLD = (() => {
       next();
     }
     s.py = GROUND; s.by = GROUND; resetTrail(s);
-    s.cam = Math.max(0, Math.min(cur.def.w - VW, s.px - VW/2));
+    s.cam = camClamp(cur.def, s.px - VW/2);
   }
 
   /* ---------- 樓層、樓梯、建築 ---------- */
@@ -131,7 +136,8 @@ const WORLD = (() => {
     return up ? [[k.x0, k.y0], [k.x1, k.y1], [x, y]] : [[k.x1, k.y1], [k.x0, k.y0], [x, y]];
   }
   function clampX(x, y){
-    if (y === GROUND) return Math.max(8, Math.min(cur.def.w - 8, x));
+    // 有 minX（只有室內）：兩邊各留 16 格，人才不會站進最外面那道牆裡
+    if (y === GROUND) return cur.def.minX === undefined ? Math.max(8, Math.min(cur.def.w - 8, x)) : Math.max(cur.def.minX + 16, Math.min(cur.def.w - 16, x));
     const f = floors().find(f => Math.abs(f.y - y) < 2);
     return f ? Math.max(f.x0 + 4, Math.min(f.x1 - 4, x)) : x;
   }
@@ -337,7 +343,7 @@ const WORLD = (() => {
     // 鏡頭
     // 右邊有選單蓋住畫面時，鏡頭往右移一點，讓主角和對話的人留在看得到的地方
     const cov = cur.hooks.cover ? cur.hooks.cover() : 0;
-    const target = Math.max(0, Math.min(def.w - VW, (s.car && s.script && step() && step().hide ? s.car.x+20 : s.px) - VW/2 + cov*VW/2));
+    const target = camClamp(def, (s.car && s.script && step() && step().hide ? s.car.x+20 : s.px) - VW/2 + cov*VW/2);
     s.cam += (target - s.cam) * Math.min(1, dt*4);
     // 對話框打字效果
     const b = bubbleNow();
@@ -652,5 +658,5 @@ const WORLD = (() => {
   function indoor(x, y){ if (!cur) return 0; const i = bldAt(x); if (i < 0) return 0; const b = blds()[i]; if (y < (b.y0 ?? 0)) return 0; if ((b.open || []).some(r => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3])) return 0; const k = levelAt(b, y); return lvVis(cur.s, i, k < 0 ? 0 : k); }
   // 外面叫主角走到某個地方（選地方移動用）：到了再呼叫 cb
   function goTo(x, y, cb){ if (!cur || cur.s.script) return false; goThen(x, y ?? GROUND, cb); return true; }
-  return { carOf, PATROL, mount, state, indoor, goTo, standIn, walking:() => !!(cur && cur.s.path.length), levelVis:(i, k) => cur ? lvVis(cur.s, i, k) : 0, skip:() => cur && cur.s.script && skip(), nearYou:q => !!cur && !cur.s.script && nearYou(cur.s, q), goSpot, spotKey, glintAt:q => { if (!cur) return null; const s = cur.s, bl = cur.hooks.people().map(v => ({ x:v.x, y:v.y || GROUND })); if (cur.hooks.buddy && cur.hooks.buddy()) bl.push({ x:s.bx, y:s.by }); bl.push({ x:s.px, y:s.py }); return glintAt(q.r, bl); }, VW, VH, GROUND, reset:(lid)=>{ delete st[lid]; } };
+  return { carOf, PATROL, mount, state, indoor, goTo, standIn, walking:() => !!(cur && cur.s.path.length), levelVis:(i, k) => cur ? lvVis(cur.s, i, k) : 0, skip:() => cur && cur.s.script && skip(), nearYou:q => !!cur && !cur.s.script && nearYou(cur.s, q), goSpot, spotKey, glintAt:q => { if (!cur) return null; const s = cur.s, bl = cur.hooks.people().map(v => ({ x:v.x, y:v.y || GROUND })); if (cur.hooks.buddy && cur.hooks.buddy()) bl.push({ x:s.bx, y:s.by }); bl.push({ x:s.px, y:s.py }); return glintAt(q.r, bl); }, VW, VH, GROUND, reset:(lid)=>{ delete st[lid]; }, resetAll:()=>{ Object.keys(st).forEach(k=>delete st[k]); } };
 })();
