@@ -608,9 +608,18 @@ const PX = (() => {
     g = canvas.getContext("2d"); RES = res; canvas.width = W*res; canvas.height = H*res; g.imageSmoothingEnabled = false;
     if (res !== 1) g.setTransform(res,0,0,res,0,0);
   }
+  // 場景裡的字（招牌、攤位名、門牌）：API.sceneLabels(場景名, opt) 回傳 [{ x, y, text, size, color, bold, align, font }]（worldkit.js 接上 EPn.world[地點].labels）。
+  // 場景畫完、人還沒畫的時候寫上去。走動畫面的小畫布（API.inWorld）不寫，那裡由 world.js 用 HTML 疊上去，字才清楚。
+  function drawLabels(name, opt){
+    if (API.inWorld || !API.sceneLabels) return;
+    const list = API.sceneLabels(name, opt) || []; if (!list.length) return;
+    g.save();
+    list.forEach(L => { g.font = `${L.bold ? "bold " : ""}${L.size || 6}px ${L.font || "sans-serif"}`; g.fillStyle = L.color || "#1a1614"; g.textAlign = L.align || "left"; g.textBaseline = "alphabetic"; g.fillText(L.text, L.x, L.y); });
+    g.restore();
+  }
   function draw(canvas, name, opt={}, res){
     setup(canvas, res || (canvas.isConnected ? HI : 1));
-    const f = SCENES[name] || SCENES.doc; f(opt);
+    const f = SCENES[name] || SCENES.doc; f(opt); drawLabels(name, opt);
     const hits = [], SF = SCENES[name] || {}; let fronted = !SF.front;
     const staffLast = SF.front && (SF.frontY||999) < 98;   // 鑑識人員站在 y=98：場景有前景（桌子、櫃台）時要畫在前景前面
     if (!staffLast) drawStaff(opt.staff);
@@ -717,7 +726,7 @@ const PX = (() => {
       setup(canvas, HI);
       // beat.scene／beat.opt：這一段換到別的場景（重播從碼頭切到辦公室之類）。沒寫就是 A.scene／A.opt
       const sn = sceneOf(beat), so = { ...(beat && beat.scene && beat.scene !== A.scene ? {} : (A.opt||{})), ...((beat && beat.opt)||{}), t:sec, p:sec/total };
-      (SCENES[sn]||SCENES.doc)(so);
+      (SCENES[sn]||SCENES.doc)(so); drawLabels(sn, so);
       Object.values(cars).forEach(c=>OBJ.car(c.x, 80, c.c||"#7a8a6a"));
       // 場景可以有前景（例如櫃台、桌子）：SCENES[x].front(opt) 畫在 y ≤ frontY 的人前面、y 比較大的人後面
       const SF = SCENES[sn] || {}, fo = so, sc = (beat && beat.s) || A.s || 1.3; let fronted = !SF.front;
@@ -844,5 +853,6 @@ const PX = (() => {
     "+":"000010111010000", "#":"101111101111101", "%":"101001010100101", "?":"111001010000010", "!":"010010010000010" };
   function tiny(str, x, y, c){ const t = String(str).toUpperCase(); [...t].forEach((ch, i) => { const gl = TINY[ch]; if (!gl) return; for (let k = 0; k < 15; k++) if (gl[k] === "1") P(x + i * 4 + k % 3, y + Math.floor(k / 3), c); }); return t.length * 4 - 1; }
   const prim = { R, P, dither, shade, mix, OBJ, windowBox, door, sign, lamp, spark, INK, sky, rain, hills, floor, wall, person, tiny, ctx:(c)=>{ g = c; RES = 1; }, res:(n)=>{ RES = n; }, g:()=>g, seed:(n)=>{ seed = n; }, rnd:()=>rnd() };
-  return { draw, person, profile, dog, play, SCENES, W, H, prim, parsePose, poseErr, stairAt, ITEMS, HI };
+  const API = { draw, person, profile, dog, play, SCENES, W, H, prim, parsePose, poseErr, stairAt, ITEMS, HI, sceneLabels:null, inWorld:false };
+  return API;
 })();
