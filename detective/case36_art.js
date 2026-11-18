@@ -269,7 +269,7 @@ EP36.art = true;
     qian: Object.assign({ age:"old", skin:"#e0b48c", hair:"#b8b8b0", hairStyle:"balding", top:"#f4f6f6", coat:"#f4f6f6", bottom:"#2a2a30", glasses:true }, AL("qian") || {}, { hello:"……你來了。" }),
     wang: { skin:"#e0b48c", hair:"#1a1410", hairStyle:"short", top:"#3a5a8a", bottom:"#24324e", hat:"police", hello:"學長。" },
     e:    { age:"old", gender:"f", skin:"#e0b890", hair:"#8a8480", hairStyle:"bun", top:"#b86a8a", apron:"#e8dcc0", bottom:"#4a4a52", mood:"sad", hello:"警察先生……" },
-    ou:   { skin:"#c89a70", hair:"#2a2220", hairStyle:"short", top:"#3a4a3a", coat:"#d8c040", bottom:"#3a3a40", mood:"tired", hello:"我、我什麼都沒有碰。" },
+    ou:   { skin:"#c89a70", hair:"#2a2220", hairStyle:"short", top:"#3a4a3a", coat:"#d8c040", bottom:"#3a3a40", mood:"tired", hello:"我、我什麼都沒有碰。", byPhase:{ 1:{ coat:"#5a6a5a" } } },   // 第一晚穿著黃色的雨衣；第二天雨停了，換了一件外套
     liu:  { skin:"#d8a880", hair:"#1a1410", hairStyle:"short", top:"#3a5a8a", bottom:"#24324e", hat:"police", hello:"沈警官。" },
     ni:   { skin:"#d8a880", hair:"#3a3430", hairStyle:"short", glasses:true, top:"#e8e4d8", coat:"#5a6a4a", bottom:"#3a3a34", mood:"tired", hello:"警察先生。" },
     li:   Object.assign({ skin:"#e8c09a", hair:"#1e1e1e", hairStyle:"slick", top:"#ffffff", bottom:"#1e2230" }, AL("li") || {}, { hello:"坐。" })
@@ -279,7 +279,7 @@ EP36.art = true;
     zhou: [ { room:"inside", x:156, pose:"cross", doing:"站在窗戶的前面，背對著外面的雨。" }, { room:"office", x:168, pose:"stand", doing:"站在檔案櫃的旁邊。手錶拿了下來，放在桌上。" } ],
     xu:   [ { room:"lot", x:126, pose:"write", doing:"站在鑑識箱的旁邊，在本子上畫現場的圖。" }, { room:"bench", x:172, pose:"write", doing:"站在櫃子的旁邊，在寫標籤。昨天晚上帶回來的東西，排在推車上。" } ],
     qian: [ { room:"lot", x:46, pose:"kneel", doing:"蹲在白布的旁邊，很久沒有動。" }, { room:"table", x:150, pose:"write", doing:"站在解剖台的另一頭，在寫報告。" } ],
-    wang: [ { room:"front", x:98, pose:"stand", doing:"站在巡邏車的旁邊，雨衣的帽子沒有戴。" }, { room:"lobby", x:52, pose:"write", doing:"站在公布欄的前面，在補昨天晚上的報告。" } ],
+    wang: [ { room:"front", x:98, pose:"stand", doing:"站在巡邏車的旁邊。帽子上都是雨水。" }, { room:"lobby", x:52, pose:"write", doing:"站在公布欄的前面，在補昨天晚上的報告。" } ],
     e:    [ { room:"front", x:128, pose:"hold@cloth", doing:"站在自己的店門口，手上抓著一條抹布。" }, { room:"front", x:128, pose:"hold@cloth", doing:"站在自己的店門口。今天沒有開店。" } ],
     ou:   [ { room:"front", x:164, pose:"stand", doing:"站在騎樓下面，自己的機車旁邊。雨衣還在滴水。" }, { room:"front", x:164, pose:"kneel", doing:"蹲在機車的旁邊，在擦座墊上的水。" } ],
     liu:  [ { room:"lobby", x:112, pose:"stand", doing:"站在值班台的後面。" }, null ],
