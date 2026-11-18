@@ -12,6 +12,11 @@ function pinWhere(){ try { return matchMedia("(orientation:portrait)").matches ?
    ========================================================= */
 const WORLD = (() => {
   const VW = 240, VH = 135, GROUND = 124, SPEED = 60, BACK = 22;
+  // 停在場景裡的車（開場開進來的、平常停著的）：不寫＝巡邏車（白色、有警示燈和藍線）。
+  //   這個地點：EPn.world[地點].car；整集：EPn.car。顏色字串（例如 "#7a8a6a"）＝一般的車，沒有警示燈；false＝沒有車（走路來的）。
+  //   劇本步驟自己寫了顏色（car:[從, 到, 秒, 顏色]）就照步驟的。
+  const PATROL = "#e9e4da";
+  const carOf = def => def && def.car !== undefined ? def.car : (typeof C !== "undefined" && C && C.car !== undefined ? C.car : PATROL);
   const st = {};
   let cur = null;
   const P = () => PX.prim;
@@ -30,7 +35,10 @@ const WORLD = (() => {
     const wrap = canvas.parentNode, bub = wrap.querySelector(".wbubble"), tip = wrap.querySelector(".wtip");
     cur = { canvas, def, lid, hooks, s, bub, tip }; s.nearSig = null;   // 畫面重建了：「附近」清單要重新送一次
     if (s.px > def.w - 8){ s.px = def.w - 30; s.py = GROUND; resetTrail(s); }
-    if (!s.car && def.park !== undefined) s.car = { x:def.park, from:def.park, to:def.park, d:0, c:"#e9e4da" };
+    // 走動的狀態是按地點 id 記的（同一次開遊戲，別的集有同名的地點會共用），所以每次進場都照這一集的設定更新停著的車；
+    // 劇本步驟自己指定顏色的車（own）不動
+    if (s.car && !s.car.own && !s.car.d){ if (carOf(def)) s.car.c = carOf(def); else s.car = null; }
+    if (!s.car && def.park !== undefined && carOf(def)) s.car = { x:def.park, from:def.park, to:def.park, d:0, c:carOf(def) };
     if (hooks.script && !s.script && !hooks.scriptDone()){ s.script = hooks.script; s.si = 0; s.sT = 0; startStep(); }
     if (hooks.areaNow) hooks.areaNow(s.script ? null : (s.lastArea ?? null), !!s.script);
     // 操作：按下去就有反應；按住或拖著，主角就一路跟著手指走
@@ -69,8 +77,9 @@ const WORLD = (() => {
       if (k.set.px!==undefined){ s.py = GROUND; s.by = GROUND; s.path = []; s.cam = Math.max(0, Math.min(cur.def.w-VW, s.px-VW/2)); resetTrail(s); }
     }
     if (k.walk){ const [who,x] = k.walk; if (who==="you") s.path = [[x, s.py]]; else s.btx = x; }
-    if (k.car) s.car = { x:k.car[0], from:k.car[0], to:k.car[1], d:k.car[2], c:k.car[3]||"#e9e4da" };
-    if (k.set || k.carStop) { if (!k.say && !k.walk && !k.car && !k.wait) next(); }
+    const kc = k.car ? k.car[3] || carOf(cur.def) : null;   // 這個地點沒有車（car:false）：開車的步驟直接跳過
+    if (kc) s.car = { x:k.car[0], from:k.car[0], to:k.car[1], d:k.car[2], c:kc, own:!!k.car[3] };
+    if (k.set || k.carStop || (k.car && !kc)) { if (!k.say && !k.walk && !kc && !k.wait) next(); }
   }
   function next(){ const s = cur.s; s.si++; s.readT = 0; startStep(); }
   // 跳過整段劇情：把每一步的結果直接套用
@@ -79,7 +88,7 @@ const WORLD = (() => {
     while (s.script && guard++ < 300){
       const k = step();
       if (k && k.walk){ if (k.walk[0]==="you"){ s.px = k.walk[1]; s.path = []; } else { s.bx = k.walk[1]; s.btx = null; } }
-      if (k && k.car) s.car = { x:k.car[1], from:k.car[1], to:k.car[1], d:0, c:k.car[3]||"#e9e4da" };
+      if (k && k.car && (k.car[3] || carOf(cur.def))) s.car = { x:k.car[1], from:k.car[1], to:k.car[1], d:0, c:k.car[3] || carOf(cur.def), own:!!k.car[3] };
       next();
     }
     s.py = GROUND; s.by = GROUND; resetTrail(s);
@@ -550,7 +559,7 @@ const WORLD = (() => {
     // 還沒查的證物：閃光（在外面看不到建築裡面的）
     if (!hooks.noSpark) hooks.spots().forEach(q => { const cx = q.r[0]+q.r[2]/2; if (q.k==="item" && q.fresh && !hiddenAt(s, cx, q.r[1]+q.r[3]/2) && Math.floor(s.t*2 + q.r[0]) % 3 !== 0) p.spark(cx, q.r[1]+2); });
     // 車
-    if (s.car){ p.OBJ.car(s.car.x, GROUND-20, s.car.c); if (s.car.c==="#e9e4da"){ p.R(s.car.x+14,GROUND-22,4,2, Math.floor(s.t*4)%2?"#e04a3a":"#3a6ae0"); p.R(s.car.x+18,GROUND-22,4,2, Math.floor(s.t*4)%2?"#3a6ae0":"#e04a3a"); p.R(s.car.x,GROUND-11,40,2,"#2a3a6a"); } }
+    if (s.car){ p.OBJ.car(s.car.x, GROUND-20, s.car.c); if (s.car.c===PATROL){ p.R(s.car.x+14,GROUND-22,4,2, Math.floor(s.t*4)%2?"#e04a3a":"#3a6ae0"); p.R(s.car.x+18,GROUND-22,4,2, Math.floor(s.t*4)%2?"#3a6ae0":"#e04a3a"); p.R(s.car.x,GROUND-11,40,2,"#2a3a6a"); } }
     // 人
     const b = bubbleNow();
     const talkingId = b && s.typed.length < b.text.length ? b.who : null;
@@ -643,5 +652,5 @@ const WORLD = (() => {
   function indoor(x, y){ if (!cur) return 0; const i = bldAt(x); if (i < 0) return 0; const b = blds()[i]; if (y < (b.y0 ?? 0)) return 0; if ((b.open || []).some(r => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3])) return 0; const k = levelAt(b, y); return lvVis(cur.s, i, k < 0 ? 0 : k); }
   // 外面叫主角走到某個地方（選地方移動用）：到了再呼叫 cb
   function goTo(x, y, cb){ if (!cur || cur.s.script) return false; goThen(x, y ?? GROUND, cb); return true; }
-  return { mount, state, indoor, goTo, standIn, walking:() => !!(cur && cur.s.path.length), levelVis:(i, k) => cur ? lvVis(cur.s, i, k) : 0, skip:() => cur && cur.s.script && skip(), nearYou:q => !!cur && !cur.s.script && nearYou(cur.s, q), goSpot, spotKey, glintAt:q => { if (!cur) return null; const s = cur.s, bl = cur.hooks.people().map(v => ({ x:v.x, y:v.y || GROUND })); if (cur.hooks.buddy && cur.hooks.buddy()) bl.push({ x:s.bx, y:s.by }); bl.push({ x:s.px, y:s.py }); return glintAt(q.r, bl); }, VW, VH, GROUND, reset:(lid)=>{ delete st[lid]; } };
+  return { carOf, PATROL, mount, state, indoor, goTo, standIn, walking:() => !!(cur && cur.s.path.length), levelVis:(i, k) => cur ? lvVis(cur.s, i, k) : 0, skip:() => cur && cur.s.script && skip(), nearYou:q => !!cur && !cur.s.script && nearYou(cur.s, q), goSpot, spotKey, glintAt:q => { if (!cur) return null; const s = cur.s, bl = cur.hooks.people().map(v => ({ x:v.x, y:v.y || GROUND })); if (cur.hooks.buddy && cur.hooks.buddy()) bl.push({ x:s.bx, y:s.by }); bl.push({ x:s.px, y:s.py }); return glintAt(q.r, bl); }, VW, VH, GROUND, reset:(lid)=>{ delete st[lid]; } };
 })();

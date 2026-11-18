@@ -251,7 +251,7 @@ const WK = (() => {
     // 每個房間第一次走進去說的話（C.roomDesc[房間 id]），街上也說一句
     const areas = rooms.map(r => ({ id:r.id, name:r.name, x0:pos[r.id] - GAP, x1:pos[r.id] + RW - 1, text:(C.roomDesc || {})[r.id] || `${r.name}。看起來沒什麼特別的。` }));
     if (buildings.length) areas.push({ id:"_street", x0:0, x1:buildings[0].x0 - 1, text:"街上。這裡沒什麼特別的。" });
-    return { auto:true, areas, w, spawn:o.spawn || 70, park:o.park ?? 8, draw, front, spots, details, placeFor, buddy:o.buddy, you:o.you, intro:o.intro, rooms, pos, buildings, extras:o.extras };
+    return { auto:true, areas, w, spawn:o.spawn || 70, park:o.park ?? 8, draw, front, spots, details, placeFor, buddy:o.buddy, car:o.car, you:o.you, intro:o.intro, rooms, pos, buildings, extras:o.extras };
   }
 
   /* ---------- 早上的簡報：小吳把今天的事講一遍 ---------- */
@@ -277,7 +277,9 @@ const WK = (() => {
     return steps;
   }
   function arrive(def){
-    return [ { set:{ px:-70, bx:-90, cam:0 }, hide:true }, { car:[-60, def.park ?? 8, 1.4, "#e9e4da"], hide:true }, { set:{ px:def.spawn, bx:def.spawn - 20, face:1 } } ];
+    const c = WORLD.carOf(def);   // 車的樣子：見 world.js 的 carOf（false＝走路來：從畫面左邊走進來）
+    if (!c) return [ { set:{ px:10, bx:-10, cam:0, face:1 } }, { walk:["you", def.spawn] } ];
+    return [ { set:{ px:-70, bx:-90, cam:0 }, hide:true }, { car:[-60, def.park ?? 8, 1.4], hide:true }, { set:{ px:def.spawn, bx:def.spawn - 20, face:1 } } ];
   }
 
   /* ---------- 區域地圖 ---------- */
@@ -316,7 +318,9 @@ const WK = (() => {
       // 車
       let car = pt(from);
       if (anim){ const k = Math.min(1, (now - anim.t0) / anim.d), e = 1 - (1 - k) * (1 - k); car = [anim.a[0] + (anim.b[0] - anim.a[0]) * e, anim.a[1] + (anim.b[1] - anim.a[1]) * e]; if (k >= 1){ const cb = anim.cb; anim = null; cb(); } }
-      R(car[0] - 4, car[1] - 1, 9, 4, "#14100c"); R(car[0] - 3, car[1], 7, 2, "#e9e4da"); R(car[0] - 1, car[1] - 1, 3, 1, Math.floor(t * 6) % 2 ? "#e04a3a" : "#3a6ae0");
+      // 地圖上的車跟整集的設定（C.car）：不寫＝巡邏車（會閃燈）；顏色＝那個顏色的車，不閃燈；false＝灰色的車，不閃燈
+      const mc = C.car === undefined ? WORLD.PATROL : C.car || "#9a9a94";
+      R(car[0] - 4, car[1] - 1, 9, 4, "#14100c"); R(car[0] - 3, car[1], 7, 2, mc); R(car[0] - 1, car[1] - 1, 3, 1, mc === WORLD.PATROL ? (Math.floor(t * 6) % 2 ? "#e04a3a" : "#3a6ae0") : PX.prim.shade(mc, -.25));
       if (night){ g.fillStyle = "rgba(10,14,40,.45)"; g.fillRect(0, 0, MW, MH); }
       onFrame && onFrame();
       requestAnimationFrame(frame);
