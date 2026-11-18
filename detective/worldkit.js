@@ -2,7 +2,8 @@
    worldkit.js：讓每個地點都變成可以走動的畫面
    - autoWorld(l)：把一個地點的房間（C.rooms）排成一整排剖面建築，
      房間裡的證物、小細節、人物位置都自動換算成走動場景的座標
-   - 天色：依天數變化（C.worldSky 可以自訂）
+   - 天色：依天數變化（C.worldSky 可以自訂：ph => [天空上面, 天空下面, 地面 A, 地面 B, 雨 0／1／2, 晚上 0／1]）
+   - 場景裡的字（招牌、門牌）：EPn.world[地點].labels，走動畫面用 HTML 疊上去，放大的畫面直接寫在畫布上
    - 區域地圖：像素畫地圖，點地點，警車開過去
    - 早上的簡報：每天第一次到出發地點時，小吳把當天的事講一遍
    用到 index.html 裡的共用函式（roomsOf、roomOpen、allItems、S、C……）
@@ -33,7 +34,9 @@ const WK = (() => {
   function roomImg(scene, opt){
     const k = scene + "|" + JSON.stringify(opt);
     if (cache[k]) return cache[k];
-    const c = document.createElement("canvas"); PX.draw(c, scene, opt);
+    const c = document.createElement("canvas");
+    PX.inWorld = true;   // 場景可以看 PX.inWorld：畫在走動畫面的小畫布上時是 true（自己用 fillText 寫的字可以跳過，改用 labels）
+    try { PX.draw(c, scene, opt); } finally { PX.inWorld = false; }
     if (!OUT.has(scene)) texture(c);
     return cache[k] = c;
   }
@@ -122,6 +125,30 @@ const WK = (() => {
     return src._tint[k] = c;
   }
   const roomOpt = r => ({ ...(typeof r.opt === "function" ? r.opt(S.phase, has) : (r.opt || {})), phase:S.phase });
+
+  /* ---------- 場景裡的字（招牌、攤位名、門牌） ----------
+     EPn.world[地點].labels = [{ room, x, y, text, size, color, bold, align, font, when, tint }]（也可以寫成 (ph, has) => 陣列）
+     x、y 是那個房間場景裡的座標（跟證物的 hot 一樣，x 0–191），跟 fillText 一樣是「左邊、基線」；align:"center"／"right" 可以改。
+     room 不寫＝第一個房間。size 不寫＝6，color 不寫＝深色，font 不寫＝sans-serif。color 可以是 (ph, opt) => 顏色；when:(ph, opt) => 要不要顯示。
+     走動畫面：用 HTML 疊在畫布上（world.js 的 sceneTexts），中文才看得清楚；戶外場景在陰天、下雨、晚上會跟著場景一起變暗（tint:false＝不要）。
+     放大的場景、監視器、重現：PX.draw／PX.play 畫完場景以後直接寫在畫布上（PX.sceneLabels），所以場景自己不用再寫這些字。 */
+  const hexOf = c => /^#[0-9a-f]{6}$/i.test(c || "") ? [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16)) : null;
+  const mixCol = (c, t, a) => { const A = hexOf(c), B = hexOf(t); return A && B ? "#" + A.map((v, i) => Math.round(v + (B[i] - v) * a).toString(16).padStart(2, "0")).join("") : c; };
+  const labelList = o => { const v = o && o.labels; return (typeof v === "function" ? v(S.phase, has) : v) || []; };
+  const labelCol = (L, ph, opt) => (typeof L.color === "function" ? L.color(ph, opt) : L.color) || "#1a1614";
+  const labelOn = (L, ph, opt) => !L.when || !!L.when(ph, opt);
+  // 某個場景（名字）要寫哪些字：找第一個用這個場景、而且有寫 labels 的房間
+  function sceneLabels(name, opt){
+    if (typeof C === "undefined" || !C || !C.world || typeof S === "undefined" || !S) return [];
+    const ph = opt && opt.phase !== undefined ? opt.phase : S.phase;
+    for (const l of C.locations || []){
+      const o = C.world[l.id], list = labelList(o); if (!list.length) continue;
+      const rs = roomsOf(l), mine = list.filter(L => { const r = rs.find(q => q.id === (L.room || rs[0].id)); return r && r.scene === name; });
+      if (mine.length) return mine.filter(L => labelOn(L, ph, opt || {})).map(L => ({ x:L.x, y:L.y, text:String(L.text), size:L.size || 6, color:labelCol(L, ph, opt || {}), bold:!!L.bold, align:L.align, font:L.font }));
+    }
+    return [];
+  }
+  if (typeof PX !== "undefined") PX.sceneLabels = sceneLabels;
 
   /* ---------- 背景 ---------- */
   function backdrop(p, t, ph, cam, w, setting, seaY, seaCol){
@@ -265,12 +292,25 @@ const WK = (() => {
         [12, 42].forEach(wx => { R(ox + wx - 3, 104, 18, 4, shade(fac[1], -.1)); R(ox + wx - 3, 104, 18, 1, shade(fac[1], .25)); R(ox + wx - 3, 107, 18, 1, shade(fac[1], -.4));
           for (let k = 0; k < 6; k++){ R(ox + wx - 2 + k*3, 102, 2, 2, k % 2 ? "#4f7f46" : "#3f6b3a"); if (k % 3 === 1) R(ox + wx - 2 + k*3, 101, 1, 1, "#f2d6dc"); } }); }
     }));
+    // 場景裡的字：換成世界座標交給 world.js（每 1/4 秒才重算一次）
+    let txAt = -1e9, txV = [];
+    const texts = !o.labels ? undefined : op => {
+      const now = typeof performance !== "undefined" ? performance.now() : Date.now(); if (now - txAt < 250 && now >= txAt) return txV;
+      const ph = op.phase || 0, sk = skyOf(ph), dim = sk[4] || sk[5];
+      txAt = now; return txV = labelList(o).map(L => {
+        const r = rooms.find(q => q.id === (L.room || first)); if (!r) return null;
+        const out = OUT.has(r.scene), ro = { ...roomOpt(r), ...((o.ropt || {})[r.id] || {}) }, col = labelCol(L, ph, ro);
+        return { x:pos[r.id] + L.x, y:out && L.y < 20 ? L.y * (OY + 20) / 20 : OY + L.y,   // 戶外場景最上面 20 排是拉長來畫的
+          text:String(L.text), size:L.size || 6, bold:!!L.bold, align:L.align, font:L.font, show:labelOn(L, ph, ro),
+          color:out && dim && L.tint !== false ? mixCol(col, sk[5] ? "#0b0f1c" : sk[1], sk[5] ? 0.45 : 0.22) : col };
+      }).filter(Boolean);
+    };
     // 每個房間第一次走進去說的話（C.roomDesc[房間 id]），街上也說一句
     const areas = rooms.map(r => ({ id:r.id, name:r.name, x0:pos[r.id] - GAP, x1:pos[r.id] + RW - 1, text:(C.roomDesc || {})[r.id] || `${r.name}。看起來沒什麼特別的。` }));
     if (buildings.length && !noStreet) areas.push({ id:"_street", x0:0, x1:buildings[0].x0 - 1, text:"街上。這裡沒什麼特別的。" });
     if (noStreet){ buildings.forEach(b => { b.doors = [false, false]; });
-      return { auto:true, areas, w, minX:SX - GAP, spawn:o.spawn || SX + 60, park:undefined, draw, front, spots, details, placeFor, buddy:o.buddy, car:false, you:o.you, intro:o.intro, rooms, pos, buildings, extras:o.extras }; }
-    return { auto:true, areas, w, spawn:o.spawn || 70, park:o.park ?? 8, draw, front, spots, details, placeFor, buddy:o.buddy, car:o.car, you:o.you, intro:o.intro, rooms, pos, buildings, extras:o.extras };
+      return { auto:true, areas, w, minX:SX - GAP, spawn:o.spawn || SX + 60, park:undefined, draw, front, spots, details, placeFor, buddy:o.buddy, car:false, you:o.you, intro:o.intro, rooms, pos, buildings, extras:o.extras, texts }; }
+    return { auto:true, areas, w, spawn:o.spawn || 70, park:o.park ?? 8, draw, front, spots, details, placeFor, buddy:o.buddy, car:o.car, you:o.you, intro:o.intro, rooms, pos, buildings, extras:o.extras, texts };
   }
 
   /* ---------- 早上的簡報：小吳把今天的事講一遍 ---------- */
@@ -350,5 +390,5 @@ const WK = (() => {
     return { drive(to, cb){ const a = pt(from), b = pt(to); from = to; anim = { a, b, t0:performance.now(), d:Math.min(1400, 500 + Math.hypot(b[0] - a[0], b[1] - a[1]) * 9), cb }; } };
   }
 
-  return { autoWorld, morning, arrive, drawMap, drawRain, chunks, skyOf, SKY, OY, G, noSky };
+  return { autoWorld, morning, arrive, drawMap, drawRain, chunks, skyOf, SKY, OY, G, noSky, sceneLabels };
 })();

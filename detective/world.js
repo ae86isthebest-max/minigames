@@ -553,6 +553,48 @@ const WORLD = (() => {
     function P(x, y, c){ R(x, y, 1, 1, c); }
   }
 
+  /* ---------- 場景裡的字（HTML） ----------
+     走動畫面的畫布很小（240×135），場景自己用 fillText 寫的中文會糊成一團。所以字另外用 HTML 疊在畫布上面：
+     def.texts = [{ x, y, text, size, color, bold, align, font, show }]（也可以是 op => 陣列）。x、y 是世界座標，跟 fillText 一樣是「左邊、基線」；
+     color、show 可以是函式（收到 hooks.opt()）。在建築裡面的字，那一棟（那一層）打開了才看得到。
+     HTML 疊在畫布上面，所以會蓋住走到前面的人：每個字各自看有沒有被這一格畫出來的人擋到，擋到的那幾個字先收起來。 */
+  function sceneTexts(s, cam, cw, chh){
+    const { canvas, def, hooks } = cur, op = hooks.opt(), k = cw / VW;
+    const list = (typeof def.texts === "function" ? def.texts(op) : def.texts) || [];
+    const els = cur.txt = cur.txt || [];
+    for (let j = list.length; j < els.length; j++) if (els[j].style.display !== "none") els[j].style.display = "none";
+    if (!list.length || !cw) return;
+    const set = (el, key, v) => { if (el["_" + key] !== v){ el["_" + key] = v; el.style[key] = v; } };
+    list.forEach((L, j) => {
+      let el = els[j];
+      if (!el){ el = els[j] = document.createElement("div"); el.className = "wtext"; (els[j - 1] || canvas).after(el); }
+      const text = String(L.text), size = L.size || 6, sig = text + "|" + (L.font || "") + "|" + (L.bold ? 1 : 0);
+      if (el._sig !== sig){   // 一個字一個 span（各自可以收起來），最後放一個量基線用的小東西
+        el._sig = sig; el._m = null; el.textContent = "";
+        Array.from(text).forEach(ch => { const sp = document.createElement("span"); sp.textContent = ch; el.appendChild(sp); });
+        const pr = document.createElement("i"); el.appendChild(pr);
+        el.style.fontFamily = L.font || "sans-serif"; el.style.fontWeight = L.bold ? "700" : "400";
+      }
+      const shown = typeof L.show === "function" ? L.show(op) : L.show !== false;
+      const bi = bldAt(L.x), lv = bi < 0 ? -1 : Math.max(0, levelAt(blds()[bi], L.y)), a = !shown ? 0 : bi < 0 ? 1 : lvVis(s, bi, lv);
+      const sx = (L.x - cam) * k;
+      if (a < 0.05 || sx < -cw || sx > cw * 2){ set(el, "display", "none"); return; }
+      set(el, "display", "block"); set(el, "opacity", String(Math.round(a * 20) / 20));
+      set(el, "fontSize", (size * k).toFixed(2) + "px"); set(el, "color", (typeof L.color === "function" ? L.color(op) : L.color) || "#1a1614");
+      if (!el._m){   // 量一次：基線離上緣多遠、每個字從哪裡到哪裡（都以字的大小為單位，畫面放大縮小不用重量）
+        const r0 = el.getBoundingClientRect(), f = size * k, ch = [...el.children], pr = ch.pop();
+        if (!r0.width || !f) return;
+        el._m = { base:(pr.getBoundingClientRect().top - r0.top) / f, w:r0.width / f, ch:ch.map(c => { const r = c.getBoundingClientRect(); return [(r.left - r0.left) / f, r.width / f]; }) };
+      }
+      const m = el._m, ax = L.align === "center" ? m.w / 2 : L.align === "right" ? m.w : 0, x0 = L.x - ax * size;
+      set(el, "left", ((x0 - cam) * k).toFixed(1) + "px"); set(el, "top", ((L.y - m.base * size) * k).toFixed(1) + "px");
+      // 被人擋住的字
+      const top = L.y - size * 0.86, bot = L.y + size * 0.1, bx = cur.boxes || [];
+      m.ch.forEach(([o, w], i) => { const c0 = x0 + o * size, c1 = c0 + w * size;
+        set(el.children[i], "visibility", bx.some(b => b.x + 1 < c1 && b.x + b.w - 1 > c0 && b.y + 1 < bot && b.y + b.h > top) ? "hidden" : "visible"); });
+    });
+  }
+
   /* ---------- 畫 ---------- */
   function draw(){
     const { canvas, def, s, hooks } = cur, g = canvas.getContext("2d"), p = P();
@@ -576,6 +618,8 @@ const WORLD = (() => {
     if (buddy && !hideYou) list.push({ id:buddy.id, x:s.bx, y:s.by, L:buddy.L, kind:"buddy" });
     if (!hideYou) list.push({ id:"you", x:s.px, y:s.py, L:hooks.you, kind:"you" });
     list.sort((a,c) => (a.z||0) - (c.z||0) || a.y - c.y);
+    const boxes = cur.boxes = [];   // 這一格畫出來的人各佔哪一塊（場景裡的字被人擋住的那幾個字要收起來）
+    const boxOf = (q, r) => boxes.push(r && r.w ? r : { x:q.x - 8, y:q.y - 30, w:16, h:30 });
     const drawOne = q => {
       // 上下樓梯：一級一級踏（腳踩在梯級上，不是沿著斜線滑上去）
       const me = q.kind==="you" || q.kind==="buddy", k = me ? stairAtXY(q.x, q.y) : null;
@@ -585,14 +629,14 @@ const WORLD = (() => {
       const talking = talkingId === q.id || (talkingId === "wu" && q.kind === "buddy");
       if (me){
         const moving = q.kind==="you" ? s.walking : s.bmove, face = q.kind==="you" ? s.face : s.bface;
-        if (sr) PX.profile(q.x, q.y, q.L, sr.frame, face, { stair: sr.stair });
-        else if (moving) PX.profile(q.x, q.y, q.L, Math.floor(s.t*8) + (q.kind==="buddy"?1:0), face);
-        else { const a = alive({ x:q.x, pose:q.kind==="buddy" ? "hold" : "stand" }, s.t, talking); PX.person(q.x, q.y, { ...q.L, ...a.fx }, 1, face, a.pose); }
+        if (sr) boxOf(q, PX.profile(q.x, q.y, q.L, sr.frame, face, { stair: sr.stair }));
+        else if (moving) boxOf(q, PX.profile(q.x, q.y, q.L, Math.floor(s.t*8) + (q.kind==="buddy"?1:0), face));
+        else { const a = alive({ x:q.x, pose:q.kind==="buddy" ? "hold" : "stand" }, s.t, talking); boxOf(q, PX.person(q.x, q.y, { ...q.L, ...a.fx }, 1, face, a.pose)); }
         if (q.kind==="buddy" && !s.script) arrow(p, { ...q, arrow:"#6fd46f" }, s.t);
         return;
       }
       const a = alive(q, s.t, talking);
-      PX.person(q.x, q.y + (q.dy||0), { ...q.L, ...a.fx, mood: q.mood || q.L.mood, tear: q.tear, sweat: q.sweat }, 1, q.facing||1, a.pose);
+      boxOf(q, PX.person(q.x, q.y + (q.dy||0), { ...q.L, ...a.fx, mood: q.mood || q.L.mood, tear: q.tear, sweat: q.sweat }, 1, q.facing||1, a.pose));
       if (a.puff) smoke(p, q.x + (q.facing||1)*-1, q.y - 30, s.t);
       arrow(p, q, s.t);
     };
@@ -650,6 +694,7 @@ const WORLD = (() => {
       el.style.left = sx + "px"; el.style.top = (L.y / VH * chh) + "px";
       el.style.fontSize = ((L.size || 6.5) / VW * cw) + "px"; el.style.color = L.color || "#fff8e8";
     }));
+    sceneTexts(s, cam, cw, chh);
     navButtons(s, cam, wrapEl, cw, chh);
     if (cur.tip) cur.tip.textContent = s.script ? (step() && step().say ? "點一下跳到下一句 ▶" : "") : "";
     const sk = cur.canvas.parentNode.querySelector(".wskip"); if (sk) sk.hidden = !s.script;
