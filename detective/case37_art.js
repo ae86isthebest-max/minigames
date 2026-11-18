@@ -242,7 +242,7 @@ EP37.art = true;
   const XU = Object.assign({ skin:"#ecc8a6", hair:"#1e1a18", hairStyle:"bob", top:"#3d6fa8", bottom:"#3d6fa8" }, AL("xu") || {});
   const SHEN = { skin:"#e8c09a", hair:"#2a2220", hairStyle:"short", top:"#e9e4da", coat:"#3a4250", bottom:"#2a2f3a" };
   const LOOK = {
-    wu:   Object.assign({ skin:"#e8c09a", hair:"#2a2a2a", hairStyle:"short", glasses:true, top:"#f4f6f6", coat:"#f4f6f6", bottom:"#3a4050" }, AL("wu") || {}, { hello:"知夏姊。" }),
+    wu:   Object.assign({ skin:"#e8c09a", hair:"#2a2a2a", hairStyle:"short", glasses:true, top:"#f4f6f6", coat:"#f4f6f6", bottom:"#3a4050" }, AL("wu") || {}, { hello:"前輩。" }),
     shen: Object.assign({}, SHEN, { mood:"tired", cupColor:"#f4f0e0", hello:"知夏。" }),
     li:   Object.assign({ skin:"#e8c09a", hair:"#1e1e1e", hairStyle:"slick", top:"#ffffff", bottom:"#1e2230" }, AL("li") || {}, { hello:"許鑑識員。" }),
     qin:  { age:"old", skin:"#d8a880", hair:"#9a9a94", hairStyle:"short", top:"#3a5a8a", bottom:"#24324e", mood:"sad", hello:"許小姐。" },
@@ -298,7 +298,7 @@ EP37.art = true;
     cafe: [
       { id:"seat", name:"海風咖啡・外面的座位", scene:"c37_cafe", opt:(ph, has) => ({ time:ph ? "morning" : "noon", note:!!(has && has("o37_sample")) }), details:[
         { id:"d37_station", name:"對面的警察局", hot:[122,22,56,30], text:"馬路的對面，就是警察局。\n從這一張桌子，看得到三樓的那一排窗戶。\n他每天，就是坐在這裡看。" },
-        { id:"d37_menu", name:"小黑板", hot:[66,52,14,14], text:"「今日：黑咖啡　烏龍　滷蛋（莊媽媽）」\n字是用粉筆寫的，有一點歪。" },
+        { id:"d37_menu", name:"小黑板", hot:[66,52,14,14], text:"「今日：黑咖啡　烏龍　滷蛋（阿彬媽媽）」\n字是用粉筆寫的，有一點歪。" },
         { id:"d37_window", name:"店裡的櫃台", hot:[6,30,26,22], text:"隔著窗戶看進去，櫃台拆了一半。\n新的木板疊在上面，還沒有釘。" },
         { id:"d37_dog", name:"桌腳的狗", hot:[110,89,20,10], text:"豆花趴在桌腳，下巴貼著地。\n牠的鼻子，朝著最左邊的那一張桌子。" },
         { id:"d37_su", name:"最右邊的那一桌", hot:[146,72,24,12], text:"一份摺好的報紙，一杯喝了一半的咖啡。\n蘇律師每天都坐這一桌。\n他沒有抬頭。" } ] }
@@ -370,6 +370,7 @@ EP37.art = true;
   const flags = () => { if (perfect()) arcSet("gun_swapped", "found"); };
   EP37.court = {
     title: "三樓督察組會議室・3 月 23 日 中午", scene: "c37_meet", opt:{ fax:true, hh:12, mm:0 },
+    detective: Object.assign({}, XU),
     who: ph => ["li", "wu"],
     open: ph => "十二點整。黎光耀把筆記本翻到新的一頁，筆帽拔開。「許鑑識員。第一個問題：3 月 19 日晚上，那一把槍，發生了什麼事？」",
     kindLine: {
@@ -414,12 +415,12 @@ EP37.art = true;
       { set:{ px:-60, bx:-80, cam:0 }, hide:true },
       { wait:0.4, hide:true },
       { set:{ px:66, bx:44, face:1 } },
-      say("wu", "知夏姊。槍械室在最裡面。老秦在裡面等，督察組叫他不要走。", "小吳"),
+      say("wu", "前輩。槍械室在最裡面。老秦在裡面等，督察組叫他不要走。", "小吳"),
       say("you", "先量門。", "你")
     ]
   });
   EP37.world.cafe.extras = [
-    { id:"x37_mom", name:"莊美鳳", x:116 + 126, L:Object.assign({ age:"old", skin:"#d8a880", hair:"#4a4440", hairStyle:"bob", top:"#7a9a7a", bottom:"#3a3a44" }, AL("abinmom") || {}, { apron:"#e8e0d0" }), pose:"hold@tray", facing:-1,
+    { id:"x37_mom", name:"阿彬媽媽", x:116 + 126, L:Object.assign({ age:"old", skin:"#d8a880", hair:"#4a4440", hairStyle:"bob", top:"#7a9a7a", bottom:"#3a3a44" }, AL("abinmom") || {}, { apron:"#e8e0d0" }), pose:"hold@tray", facing:-1,
       lines:["許小姐，妳也吃一顆滷蛋。他那一盤，我每天都放，他每天都只吃半顆。", "這個人喔，停職了，還是每天七點半到。比我們開門還準時。"] },
     { id:"x37_su", name:"蘇律師", x:116 + 167, L:{ skin:"#e8c8a8", hair:"#2a2220", hairStyle:"slick", top:"#e9e4da", coat:"#24324e", bottom:"#24324e", tie:"#7a2a2a", glasses:true }, pose:"sit+read", facing:-1,
       lines:["（他把報紙翻了一頁。沒有抬頭。）"] }
