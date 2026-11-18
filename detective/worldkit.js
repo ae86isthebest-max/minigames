@@ -272,9 +272,13 @@ const WK = (() => {
         R(lx - 400, 0, 400, 135, "#0c0a08"); R(rx, 0, 400, 135, "#0c0a08"); }
       if (o.drawAfter) o.drawAfter(p, t, op, cam);
     }
+    // 畫在所有人前面的那一層。EPn.world[地點].front(p, t, op, cam, def)：這一集自己要蓋在人上面的東西（淹到腿的水、霧、鐵窗的影子）；
+    // def 是這個地點的走動場景（def.rooms、def.pos[房間 id]＝那個房間左邊的 x）。畫在人後面的用 drawAfter。
+    let self = null;
     function front(p, t, op, cam){
       const rain = skyOf(op.phase || 0)[4];
       if (rain && !noStreet) drawRain(p, t, rain, cam);   // 只有室內的地點（street:false）不會下雨
+      if (typeof o.front === "function") o.front(p, t, op, cam, self);
     }
     // 室內的房間連在一起就是一棟建築：在外面只看得到外牆
     const buildings = [], shade = PX.prim.shade;
@@ -282,8 +286,11 @@ const WK = (() => {
       if (last && Math.abs(last.x1 - a) < GAP + 1) last.x1 = b; else buildings.push({ x0:a, x1:b }); });
     const signText = l.sign || l.name.replace(/（.*?）|\(.*?\)/g, "").replace(/・.*/, "");
     const fs = Math.min(7, 60 / Math.max(3, signText.length));
-    buildings.forEach((b, i) => Object.assign(b, {
-      labels: i || o.band === false ? [] : [ { x: b.x0 + GAP + 100, y: 38.5, text: signText, size: fs, when:"out" }, { x: b.x0 + GAP + 101, y: 13.5, text: signText, size: Math.min(6.5, fs), when:"in" } ], y0: o.band === undefined ? 4 : 24, wall:fac[0], roof:shade(fac[0], -.5), brick: setting !== "city", rows: o.band === undefined ? [8, 88] : [88], door:"#5a3e24", dark: !!o.facadeDark,   // band 有寫＝平房：外面看只有一層；facadeDark＝停電，窗和門燈都是暗的
+    // 從外面看這棟建築的樣子。EPn.world[地點].ext：不寫＝照畫（磚牆、窗、招牌）；false＝整棟塗黑（房間在山洞、地底，外面什麼都看不到）；
+    // (p, t, op, b) => {…}＝自己畫（b.x0、b.x1 是這棟的左右）。有寫 ext 的時候，外面的招牌字也不放。門還是引擎畫（street:false 的地點沒有門）。
+    const ext = o.ext === false ? (p, t, op, b) => p.R(b.x0 - 4, 0, b.x1 - b.x0 + 8, 135, "#0c0a08") : typeof o.ext === "function" ? o.ext : null;
+    buildings.forEach((b, i) => Object.assign(b, ext ? { ext } : {}, {
+      labels: i || o.band === false ? [] : [ { x: b.x0 + GAP + 100, y: 38.5, text: signText, size: fs, when:"out" }, { x: b.x0 + GAP + 101, y: 13.5, text: signText, size: Math.min(6.5, fs), when:"in" } ].filter(L => !ext || L.when !== "out"), y0: o.band === undefined ? 4 : 24, wall:fac[0], roof:shade(fac[0], -.5), brick: setting !== "city", rows: o.band === undefined ? [8, 88] : [88], door:"#5a3e24", dark: !!o.facadeDark,   // band 有寫＝平房：外面看只有一層；facadeDark＝停電，窗和門燈都是暗的
       night: op => skyOf(op.phase||0)[5],
       sign: i || o.band === false ? null : (p) => { const { R, shade } = p, ox = b.x0 + GAP; R(ox + 60, 30, 72, 16, fac[1]); R(ox + 60, 30, 72, 1, shade(fac[1], .3)); R(ox + 60, 45, 72, 1, shade(fac[1], -.4));
         if (l.id === "hospital"){ R(ox + 66, 35, 8, 2, "#e04a3a"); R(ox + 69, 32, 2, 8, "#e04a3a"); }
@@ -309,8 +316,8 @@ const WK = (() => {
     const areas = rooms.map(r => ({ id:r.id, name:r.name, x0:pos[r.id] - GAP, x1:pos[r.id] + RW - 1, text:(C.roomDesc || {})[r.id] || `${r.name}。看起來沒什麼特別的。` }));
     if (buildings.length && !noStreet) areas.push({ id:"_street", x0:0, x1:buildings[0].x0 - 1, text:"街上。這裡沒什麼特別的。" });
     if (noStreet){ buildings.forEach(b => { b.doors = [false, false]; });
-      return { auto:true, areas, w, minX:SX - GAP, spawn:o.spawn || SX + 60, park:undefined, draw, front, spots, details, placeFor, buddy:o.buddy, car:false, you:o.you, intro:o.intro, rooms, pos, buildings, extras:o.extras, texts }; }
-    return { auto:true, areas, w, spawn:o.spawn || 70, park:o.park ?? 8, draw, front, spots, details, placeFor, buddy:o.buddy, car:o.car, you:o.you, intro:o.intro, rooms, pos, buildings, extras:o.extras, texts };
+      return self = { auto:true, areas, w, minX:SX - GAP, spawn:o.spawn || SX + 60, park:undefined, draw, front, spots, details, placeFor, buddy:o.buddy, car:false, you:o.you, intro:o.intro, rooms, pos, buildings, extras:o.extras, texts }; }
+    return self = { auto:true, areas, w, spawn:o.spawn || 70, park:o.park ?? 8, draw, front, spots, details, placeFor, buddy:o.buddy, car:o.car, you:o.you, intro:o.intro, rooms, pos, buildings, extras:o.extras, texts };
   }
 
   /* ---------- 早上的簡報：小吳把今天的事講一遍 ---------- */

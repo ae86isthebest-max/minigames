@@ -71,6 +71,16 @@
      `street:false` 而且第一個／最後一個房間是戶外場景：黑色會塗到場景的邊，不會露出一條遠景。
      `EPn.worldSky = ph => [天空上面, 天空下面, 地面 A, 地面 B, 雨, 晚上]`：六格的順序就是這樣。雨＝0 沒有／1 小雨／2 大雨；晚上＝0 或 1（1 的時候窗會亮燈、戶外場景染暗 45%）。
 
+- `hooks.js [截圖資料夾]`：三個接口的檢查，最後印 `ENGINE HOOKS PASS`。都是可選的：
+  1. `EPn.world[地點].front = (p, t, op, cam, def) => {…}`：畫在走動畫面所有人前面的那一層（淹到腿的水、霧、鐵窗的影子）。`def.rooms`、`def.pos[房間 id]`（那個房間左邊的 x）
+     可以拿來一個房間一個房間畫。畫在人後面的還是用 `drawAfter`。（`labels` 的字是 HTML，在畫布上面，這一層蓋不到字。）
+  2. `EPn.world[地點].ext`：從外面看建築的樣子。不寫＝照畫；`false`＝整棟塗黑（山洞、地底：外面什麼都看不到）；`(p, t, op, b) => {…}`＝自己畫（`b.x0`、`b.x1`）。
+     有寫的時候外面的招牌字不放。門還是引擎畫（`street:false` 的地點沒有門）。
+  3. 房間這一段沒開（房間的 `phase`／`until`／`requires`），裡面的證物就不算可以查：`itemOpen()` 是 false，所以清單、小吳的提示、數目、`inspect()`、
+     `balance.js`／`playx.js` 都一致（以前走動畫面本來就點不到，但清單和工具還算得到）。index.html 的 `itemRoomOpen(it)`。
+     照舊不管的：找不到那個房間 id 的證物、用 `world[地點].spots` 或 `it.area` 搬到別處的證物、自己寫走動場景的地點（第 1、2 集）、沒有分房間的地點。
+  另外：`balance.js` 會改 `ph.clock.end`，所以 `clock` 如果是 getter，每次要回傳同一個物件。
+
 - `labels.js [截圖資料夾]`：場景裡的字（招牌、攤位名、門牌）的檢查，最後印 `SCENE LABELS PASS`。
   走動畫面的畫布只有 240×135，場景自己用 `fillText` 寫的中文會糊掉。改成寫在設定裡，引擎在每一種畫面各用適合的方法寫：
   `EPn.world[地點].labels = [{ room:"stalls", x:20, y:30, text:"阿月豆花", size:7, color:"#f8d868", bold:true }]`

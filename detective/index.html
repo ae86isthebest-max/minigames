@@ -1116,7 +1116,13 @@ const searchLeft = () => travel()
 const totalQLeft = () => C.suspects.reduce((n,s)=>n+qLeft(s),0);
 const allItems = () => [...C.cctv, ...C.evidence];
 // untilTime："HH:MM"＝那一天到了這個時間就不能再做（例如綁匪來電前才能設好追蹤）。只在 until 那一天有效
-const itemOpen = it => (it.phase||0) <= S.phase && (it.until===undefined || it.until >= S.phase) && (!it.untilTime || S.phase < (it.until===undefined ? S.phase : it.until) || !timeReached(it.untilTime));
+// 證物所在的房間這一段有沒有開（房間的 phase／until／requires）。房間沒開，裡面的東西就不算「可以查」：清單、提示、數目、inspect() 都一樣。
+// 照舊不管的：沒有分房間的地點、找不到那個房間 id 的證物、自己寫走動場景的地點（第 1、2 集）、用 world[地點].spots 或 it.area 搬到別處的證物。
+const itemRoomOpen = it => { const rs = it.loc && C.rooms && C.rooms[it.loc]; if (!rs || !rs.length) return true;
+  const w = C.world && C.world[it.loc]; if (w && (!w.auto || (w.spots && w.spots[it.id]))) return true;
+  const rid = it.room || rs[0].id; if (it.area && it.area !== rid) return true;
+  const r = rs.find(q=>q.id===rid); return !r || roomOpen(r); };
+const itemOpen = it => (it.phase||0) <= S.phase && (it.until===undefined || it.until >= S.phase) && (!it.untilTime || S.phase < (it.until===undefined ? S.phase : it.until) || !timeReached(it.untilTime)) && itemRoomOpen(it);
 const canDig = () => (CLK() ? timeLeft() > 0 && (totalQLeft()+searchLeft()) > 0 : totalQLeft()+searchLeft() > 0 || apLeft() > 0) || (multi() && !lastPhase());
 const evidencePool = () => [...allItems().filter(it=>S.seen.includes(it.id)), ...readyTests()];
 
