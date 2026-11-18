@@ -59,7 +59,7 @@ const EP40 = {
   phases: [
     { title:"上午　3月29日（一）", short:"上午", startAt:"cafe", questionLimit:6, clock:{ start:"08:00", end:"11:45", ask:5, item:7, cctv:10, test:10 },
       intro:[], reports:[] },
-    { title:"下午　3月29日（一）", short:"下午", headline:"法院・地下一樓", startAt:"hold", questionLimit:6, clock:{ start:"15:40", end:"17:00", ask:5, item:7, cctv:10, test:10 },
+    { title:"下午　3月29日（一）", short:"下午", headline:"法院・地下一樓", startAt:"hold", questionLimit:6, tip:"15:40 到 17:00。五點開庭以前，你只能待在這兩個房間。看一份卷、問一個問題，都要花時間。", clock:{ start:"15:40", end:"17:00", ask:5, item:7, cctv:10, test:10 },
       intro:[
         "3 月 29 日（一），15:40。澄港地方法院，地下一樓。",
         "下午一點半到三點二十分，方以誠檢察官問了一小時五十分鐘。每一個問題，他都問了兩次。",
@@ -302,7 +302,3 @@ EP40.suspects.push(
         clue:"法警褚金龍說：他當了二十九年法警，從來不猜結果" }
     ] }
 );
-
-/* 裴秀蓉上午才問得到的四題（until:0）：到了下午，沒有問過的就收起來（引擎的問題只有 phase，沒有 until） */
-(() => { const s = EP40.suspects.find(x => x.id === "pei"), all = s.questions;
-  Object.defineProperty(s, "questions", { enumerable:true, configurable:true, get(){ return EP40_ph() >= 1 ? all.filter(q => q.until === undefined || EP40_got(q.id)) : all; } }); })();

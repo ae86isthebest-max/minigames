@@ -384,7 +384,8 @@ EP40.art = true;
   const say = (who, text, name) => ({ say:[who, text], name });
   EP40.world = {};
   EP40.locations.forEach(l => { EP40.world[l.id] = { auto:true, you:SHEN, order:(EP40.worldOrder || {})[l.id] }; });
-  EP40.world.hold.car = false; EP40.world.hold.spawn = 116 + 64;   // 下午一開始就在候審室裡面（不是從街上走進來）
+  EP40.world.hold.street = false; EP40.world.hold.spawn = 116 + 64;   // 下午只有室內：候審室和律見室（沒有街上、沒有車、走不出去）
+  EP40.phaseWord = { unit:"段" };   // 上午、下午是同一天的兩段
   Object.assign(EP40.world.cafe, {
     intro: [
       { set:{ px:-60, cam:0 }, hide:true },
