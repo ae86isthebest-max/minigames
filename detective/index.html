@@ -422,7 +422,7 @@ async function openCase(i){
   if (art()){ if (travel()){ tab = "map"; openLoc = PH().startAt || null; } else tab = "scene"; }
   inter = null; if (interMaybe("before")){ sheetFrom = openLoc; tab = "accuse"; }   // 開場前的幕間（arc.js）
   render(); scrollTo(0,0);
-  if (fsMode()){ goFull(); if (!S.fsTip){ S.fsTip = 1; save(); setTimeout(()=>toast("💡 筆記、案情、結案：點小吳或右上角「💬 小吳」"), 1500); } }
+  if (fsMode()){ goFull(); if (!S.fsTip){ S.fsTip = 1; save(); setTimeout(()=>toast("💡 筆記、案情、結案：" + menuTip()), 1500); } }
 }
 function goHome(){ screen = "home"; wBuddy = false; exitFull(); render(); scrollTo(0,0); }
 
@@ -647,6 +647,17 @@ function worldDef(l){
   return WK.autoWorld(l, w || {});
 }
 function leaveWorld(){ mapFrom = openLoc || mapFrom; openLoc = null; wRoom = null; wGo = false; wTalk = null; wSay = null; peek = null; lastSaid = null; tab = "map"; render(); scrollTo(0,0); }
+// 這一集的拍檔（跟在主角後面、早上做簡報、選單和結案的對象）。不寫就是小吳（嫌疑人 id "wu"；沒有這個嫌疑人就用預設造型的小吳）。
+//   EPn.buddy = false                              → 這一集主角自己一個人查：沒有人跟著，也沒有預設的小吳；按鈕變成「☰ 選單」，
+//                                                    劇本裡 say:["wu", …] 的話（開場、早上簡報、出事了）改成主角自己說（名字是「你」）
+//   EPn.buddy = { id:"xu", name:"知夏", av:"👩‍🔬" } → 換一個人當拍檔：id＝C.suspects 裡那個人的 id，name＝按鈕和對話框上的稱呼，av＝頭像。
+//                                                    劇本裡的 say:["wu", …] 一律是「拍檔說」，不用跟著改
+// 存檔裡沒有任何東西記拍檔是誰，所以加不加都不影響存檔。
+const SOLO = () => typeof C !== "undefined" && !!C && C.buddy === false;
+const BUD = () => SOLO() ? { id:null, name:"", av:"" } : { id:"wu", name:"小吳", av:"🧑‍🔬", ...((typeof C !== "undefined" && C && C.buddy) || {}) };
+// 提示文字：筆記、案情、結案從哪裡打開（拍檔不在場的時候，右上角的按鈕是「☰ 選單」）
+const menuTip = () => buddyId() ? `點${BUD().name}或右上角「💬 ${BUD().name}」` : "點右上角「☰ 選單」";
+const soloSteps = steps => SOLO() && steps ? steps.map(k => k.say && k.say[0] === "wu" ? { ...k, say:["you", k.say[1]], name:"你" } : k) : steps;
 const BUDDY = { id:"_wu", name:"小吳", look:{ skin:"#e8c09a", hair:"#2a2a2a", hairStyle:"spiky", top:"#8ab4d8", coat:"#f4f6f6", bottom:"#3a4152", glasses:true, gloves:"#4a8ad8" } };
 // 這個地方的畫面上還有幾個小細節沒發現（清單裡不會列出來，要自己在畫面上點）
 function detailsLeft(l){ try { const def = worldDef(l); if (!def) return 0;
@@ -654,7 +665,7 @@ function detailsLeft(l){ try { const def = worldDef(l); if (!def) return 0;
 function buddyHint(l){
   const sl = travel() ? searchLeftAt(l) : searchLeft();
   const fresh = allItems().filter(it=>(it.loc||"_")===l.id && !S.seen.includes(it.id) && itemOpen(it) && unlocked(it)).length;
-  const s = C.suspects.find(x=>x.id==="wu");
+  const s = C.suspects.find(x=>x.id===BUD().id);
   const tail = (detailsLeft(l) ? "清單不是全部：這裡還藏著小細節，走到附近會微微閃一下，畫面下面的「🔎 附近」也會列出來，點名字就能看（不花時間）。" : "") + (s && !reachable(s) ? "要問我問題，就到鑑識中心找我。" : "");
   if (S.done) return "案子已經結了，辛苦了。";
   if (CLK()) return `${timeTag()}。${fresh ? `點${pinWhere()}的「📍」看這裡有什麼可以查，點畫面上的箭嘴換地方。` : "這裡看得到的東西都查過了。"}看錄影、查證物、問話都要花時間，挑重要的做。` + tail;
@@ -687,8 +698,8 @@ function moodOf(s, pl){
 function pendingScript(l, def){
   const seen = S.introSeen || {};
   if (S.phase===0 && def.intro && !seen[l.id]) return { key:l.id, steps:def.intro };
-  if (S.phase>0 && multi() && l.id===(PH().startAt || (travel() ? null : "_")) && !seen[l.id+"@"+S.phase]) return { key:l.id+"@"+S.phase, steps:WK.morning(def, "小吳") };
-  const news = wNews.flatMap(e=>[{ say:["wu", `出事了：${e.title}`], name:"小吳" }, ...WK.chunks(e.text).map(c=>({ say:["wu", c], name:"小吳" }))]);
+  if (S.phase>0 && multi() && l.id===(PH().startAt || (travel() ? null : "_")) && !seen[l.id+"@"+S.phase]) return { key:l.id+"@"+S.phase, steps:WK.morning(def, BUD().name) };
+  const news = wNews.flatMap(e=>[{ say:["wu", `出事了：${e.title}`], name:BUD().name }, ...WK.chunks(e.text).map(c=>({ say:["wu", c], name:BUD().name }))]);
   if (wArrive===l.id && def.park!==undefined) return { key:null, steps:[...WK.arrive(def), ...news] };
   if (news.length) return { key:null, steps:[{ set:{} }, ...news] };
   return null;
@@ -700,7 +711,7 @@ function labCard(l){
   const lockedTests = tests().filter(t=>t.loc===l.id && S.labq[t.id]===undefined && (t.until===undefined || t.until >= S.phase) && !testOpen(t)).length;
   const tl = testsLeftAt(l);
   const W = labW(l);
-  return `<div class="card"><h3>${W.ic} ${W.nm}</h3><p class="muted small" style="margin:0">${tl>0?`這次還能${W.v} <b style="color:var(--accent)">${tl}</b> 件。`:"這次能送的件數已經滿了。"}結果要等幾天，早上小吳會跟你說。</p>
+  return `<div class="card"><h3>${W.ic} ${W.nm}</h3><p class="muted small" style="margin:0">${tl>0?`這次還能${W.v} <b style="color:var(--accent)">${tl}</b> 件。`:"這次能送的件數已經滿了。"}結果要等幾天，${SOLO() ? "出來的那天早上會通知你" : `早上${BUD().name}會跟你說`}。</p>
     ${ts.map(t=>{
       if (testReady(t)) return `<div style="margin:12px 0"><div style="font-weight:700">✅ ${esc(t.title)}</div><div class="muted">${nl(t.text)}</div>${docHTML(t)}</div>`;
       if (S.labq[t.id]!==undefined) return `<p class="small" style="margin:10px 0">⏳ ${esc(t.title)}<span class="muted">（${S.labq[t.id]+t.days-S.phase} 天後出結果）</span></p>`;
@@ -728,7 +739,7 @@ function worldView(l, def){
   else if (wTalk){ const s = C.suspects.find(x=>x.id===wTalk); panel = worldTalk(s); }
   else if (peek && peek.kind==="item"){ const it = allItems().find(x=>x.id===peek.id); panel = `<div class="look"><b>${it.cctv?"📹":"🧾"} ${esc(it.title)}</b>${itemBody(it, true)}</div>`; }
   else if (peek && peek.kind==="detail"){ const d = allDetails().find(x=>x.id===peek.id); panel = `<div class="look"><b>🔎 ${esc(d.name||"你注意到")}</b>${nl(d.text)}${peek.isNew?`<div class="found" style="margin-top:4px">發現小細節！（${(S.found||[]).length}／${nd}）</div>`:""}</div>`; }
-  else panel = `<p class="hint" style="margin:0 2px 12px">點地面走過去，或點畫面上的指示牌（⬆ 上二樓、🚪 進去、出去）自動走過去，走路不花時間。看到<b style="color:#b07aff">【···】</b>代表那裡好像有暗門或秘道。頭上箭嘴：<b style="color:#ffd04a">黃</b> 可以問話、<b style="color:#ff5a4a">紅</b> 有新的質問、<b style="color:#8a8a8a">灰</b> 不肯再答、<b style="color:#6ac8ff">藍</b> 鑑識人員或員警（問話不花時間）、<b style="color:#6fd46f">綠</b> 小吳。點人、點東西會先問你要不要做，確定了才會${CLK() ? "花時間" : "用掉次數"}。<span style="color:#ffd04a">✦</span> 是還沒查過的東西，其他地方也可能藏著小細節。</p>`;
+  else panel = `<p class="hint" style="margin:0 2px 12px">點地面走過去，或點畫面上的指示牌（⬆ 上二樓、🚪 進去、出去）自動走過去，走路不花時間。看到<b style="color:#b07aff">【···】</b>代表那裡好像有暗門或秘道。頭上箭嘴：<b style="color:#ffd04a">黃</b> 可以問話、<b style="color:#ff5a4a">紅</b> 有新的質問、<b style="color:#8a8a8a">灰</b> 不肯再答、<b style="color:#6ac8ff">藍</b> 鑑識人員或員警（問話不花時間）${SOLO() ? "" : `、<b style="color:#6fd46f">綠</b> ${BUD().name}`}。點人、點東西會先問你要不要做，確定了才會${CLK() ? "花時間" : "用掉次數"}。<span style="color:#ffd04a">✦</span> 是還沒查過的東西，其他地方也可能藏著小細節。</p>`;
   const seenHere = allItems().filter(it=>(it.loc||"_")===l.id && S.seen.includes(it.id));
   const lab = l.perVisit ? `<button class="wq" style="border-color:var(--accent)" onclick="wTalk=null;peek=peek&&peek.kind==='lab'?null:{kind:'lab'};render()">${labW(l).ic} ${labW(l).nm}（這次還能${labW(l).v} ${testsLeftAt(l)} 件）</button>` : "";
   return `<div class="wtop">${travel()?`<button class="back" onclick="leaveWorld()">‹ 地圖</button>`:""}<b>${esc(travel()?l.name:"案發現場")}</b>${CLK()?`<span>🕐 ${nowStr()}・剩 ${minLabel(timeLeft())}</span>`:`<span>🔍 還能查 ${sl} 項</span>`}<span class="found">🔎 ${(S.found||[]).length}／${nd}</span></div>
@@ -741,7 +752,7 @@ let wBuddy = false, sheetFrom = null;
 const SHEETS = ["notes","brief","accuse"];
 const fsMode = () => screen==="case" && art() && typeof WORLD !== "undefined" && typeof WK !== "undefined";
 // 小吳是不是在場（第 1 集用預設的小吳；第 2 集小吳是劇中角色）
-function buddyId(){ const s = C.suspects.find(x=>x.id==="wu"); if (s) return isGone(s) ? null : s.id; return BUDDY.id; }
+function buddyId(){ if (SOLO()) return null; const s = C.suspects.find(x=>x.id===BUD().id); if (s) return isGone(s) ? null : s.id; return BUDDY.id; }
 function openBuddy(){
   const l = curLoc(), bid = buddyId();
   wGo = false; wRoom = null; wTalk = null; wAct = null; peek = null; lastSaid = null; wBuddy = true;
@@ -774,7 +785,7 @@ function hudHTML(l, extra){
     ${l && nd ? `<span class="found">🔎 ${(S.found||[]).length}／${nd}</span>` : ""}
     <span class="sp"></span>${extra || ""}
     ${canFull() && !isFull() ? `<button class="hb" onclick="goFull()" aria-label="全螢幕">⛶</button>` : ""}
-    <button class="hb buddy" onclick="openBuddy()">${bid ? "💬 小吳" : "☰ 選單"}</button></div>`;
+    <button class="hb buddy" onclick="openBuddy()">${bid ? "💬 " + esc(BUD().name) : "☰ 選單"}</button></div>`;
 }
 // 打橫時選單蓋住畫面右邊多少（0～1），給鏡頭和對話框避開
 let fsCover = 0;
@@ -787,16 +798,16 @@ function calcCover(){
 }
 addEventListener("resize", ()=>{ if (fsMode()) calcCover(); fitMapLabels(); });
 function fsFrame(l, stage, panel, extra){
-  return `<div class="fs-root">${hudHTML(l, extra)}<div class="fs-body"><div class="fs-stage">${stage}</div>${panel ? `<div class="fs-panel">${panel}</div>` : `<div class="fs-panel fs-empty"><p class="hint" style="margin:6px 2px">📱 把手機打橫，畫面會更大。<br>點人、點東西會先問你要不要做；點小吳（<b style="color:#6fd46f">綠色箭嘴</b>）或右上角「💬 小吳」，可以翻筆記、看案情、結案。</p></div>`}</div></div>`;
+  return `<div class="fs-root">${hudHTML(l, extra)}<div class="fs-body"><div class="fs-stage">${stage}</div>${panel ? `<div class="fs-panel">${panel}</div>` : `<div class="fs-panel fs-empty"><p class="hint" style="margin:6px 2px">📱 把手機打橫，畫面會更大。<br>點人、點東西會先問你要不要做；${buddyId() ? `點${BUD().name}（<b style="color:#6fd46f">綠色箭嘴</b>）或右上角「💬 ${BUD().name}」` : "點右上角「☰ 選單」"}，可以翻筆記、看案情、結案。</p></div>`}</div></div>`;
 }
-function wuSay(text){ return `<div class="wusay"><div class="who">🧑‍🔬</div><div class="t"><b>小吳</b>${esc(text)}</div></div>`; }
+function wuSay(text){ return `<div class="wusay"><div class="who">${BUD().av}</div><div class="t"><b>${esc(BUD().name)}</b>${esc(text)}</div></div>`; }
 function buddyMenu(l){
-  const wu = C.suspects.find(x=>x.id==="wu"), bid = buddyId();
+  const wu = C.suspects.find(x=>x.id===BUD().id), bid = buddyId();
   const canAsk = l && wu && reachable(wu) && !S.done;
   const seenHere = l ? allItems().filter(it=>(it.loc||"_")===l.id && S.seen.includes(it.id)) : [];
   const pending = tests().filter(t=>S.labq[t.id]!==undefined && !testReady(t));
   const B = (ic, txt, js, sub, cls) => `<button class="wq ${cls||""}" onclick="${js}">${ic} ${txt}${sub ? `<div class="muted small" style="font-weight:400">${sub}</div>` : ""}</button>`;
-  const head = `<div style="display:flex;justify-content:space-between;align-items:center"><b>${bid ? "🧑‍🔬 小吳" : "☰ 調查選單"}</b><button class="back" style="margin:0" onclick="closePanel()">✕ 關閉</button></div>`;
+  const head = `<div style="display:flex;justify-content:space-between;align-items:center"><b>${bid ? BUD().av + " " + esc(BUD().name) : "☰ 調查選單"}</b><button class="back" style="margin:0" onclick="closePanel()">✕ 關閉</button></div>`;
   if (wBuddy === "items") return `<div class="card">${head}<p class="muted small" style="margin:4px 0">這裡查過的東西：</p>
     ${seenHere.map(it=>`<button class="wq" onclick="wBuddy=false;wSay=null;peek={kind:'item',id:'${it.id}'};render()">${it.cctv?"📹":"🧾"} ${esc(it.title)}</button>`).join("")}
     <button class="back" onclick="wBuddy=true;render()">‹ 返回</button></div>`;
@@ -804,7 +815,7 @@ function buddyMenu(l){
   const nx = multi() && !lastPhase() && !S.done ? phasesOf(C)[S.phase+1] : null;
   return `<div class="card">${head}
     ${!l && bid ? `<p class="muted small" style="margin:4px 0">${CLK() ? timeTag() + "。" : ""}點地圖上的地點開車過去。</p>` : ""}
-    ${canAsk ? B("🗣️", "問小吳問題", "wBuddy=false;wChat=false;wSay=null;wTalk='wu';render()") : ""}
+    ${canAsk ? B("🗣️", `問${esc(BUD().name)}問題`, `wBuddy=false;wChat=false;wSay=null;wTalk='${BUD().id}';render()`) : ""}
     ${B("📓", "翻筆記", "openSheet('notes')", "問過的話、看過的證物、時間線都記在這裡")}
     ${seenHere.length ? B("🧾", `重看這裡查到的東西（${seenHere.length}）`, "wBuddy='items';render()") : ""}
     ${l && l.perVisit ? B(labW(l).ic, `${labW(l).nm}（這次還能${labW(l).v} ${testsLeftAt(l)} 件）`, "wBuddy=false;wSay=null;peek={kind:'lab'};render()") : ""}
@@ -813,16 +824,16 @@ function buddyMenu(l){
     ${travel() && l ? B("🗺️", "回地圖，開車去別的地方", "wBuddy=false;leaveWorld()") : ""}
     ${nx ? B("🌙", `結束今天，進入「${esc(nx.short)}」`, "nextPhase()") : ""}
     ${B("❓", "操作說明", "wBuddy='help';render()")}
-    ${B("⚖️", S.done ? "看結案結果" : "我知道真相了！跟小吳結案", "openSheet('accuse')", S.done ? "" : "隨時都可以結案；推理錯了不會公布真相，可以繼續查。不過第一次就全對才有 S", "accent")}
+    ${B("⚖️", S.done ? "看結案結果" : SOLO() ? "我知道真相了！結案" : `我知道真相了！跟${esc(BUD().name)}結案`, "openSheet('accuse')", S.done ? "" : "隨時都可以結案；推理錯了不會公布真相，可以繼續查。不過第一次就全對才有 S", "accent")}
   </div>`;
 }
 function helpText(l){
   return `移動：點畫面上的箭嘴（<b style="color:#ffd04a">⬅ 客廳、大門 🚪、⬆ 二樓</b>），你會自己走過去。<b>走路不花時間。</b><br>
   看到<b style="color:#b07aff">【···】</b>代表那裡好像有暗門或秘道。<br>
-  頭上箭嘴：<b style="color:#ffd04a">黃</b> 可以問話、<b style="color:#ff5a4a">紅</b> 有新的質問、<b style="color:#8a8a8a">灰</b> 不肯再答、<b style="color:#6ac8ff">藍</b> 鑑識人員或員警（問話不花時間）、<b style="color:#6fd46f">綠</b> 小吳。<br>
+  頭上箭嘴：<b style="color:#ffd04a">黃</b> 可以問話、<b style="color:#ff5a4a">紅</b> 有新的質問、<b style="color:#8a8a8a">灰</b> 不肯再答、<b style="color:#6ac8ff">藍</b> 鑑識人員或員警（問話不花時間）${SOLO() ? "" : `、<b style="color:#6fd46f">綠</b> ${BUD().name}`}。<br>
   到了一個地方，點${pinWhere()}<b style="color:#ffd04a">「📍 地名」</b>：那裡的人可以說話、可以調查的東西都列在裡面（黃色數字是還沒查的數量）。點人、點東西會先問你要不要做，確定了才會${CLK() ? "花時間" : "用掉次數"}。<br>
   <b style="color:#ffd04a">清單不是全部。</b>每個地方的畫面上還藏著<b>小細節</b>，清單裡不會列出來。你走到附近，還沒看過的東西會<b>微微閃一下</b>，點它就能看。點不準也沒關係：畫面下面的<b style="color:#ffd04a">「🔎 附近」</b>會列出你身邊還沒看過的東西，點名字就可以。看小細節不花時間。<br>
-  筆記、案情、結案：點小吳或右上角「💬 小吳」。`;
+  筆記、案情、結案：${menuTip()}。`;
 }
 /* ---------- 走進一個房間／區域：列出這裡可以查的東西 ---------- */
 let curArea = null, wRoom = null;   // curArea：主角現在站的區域；wRoom：打開了哪個區域的清單
@@ -963,7 +974,7 @@ function worldViewFS(l, def){
 }
 const sheetKey = () => `${tab}:${S.done?1:0}:${S.court ?? ""}`;
 function sheetWrap(v){
-  const t = { notes:"📓 筆記", brief:"📁 案情", accuse: inter ? "🎬 " + (inter.L.title || "幕間") : S.done ? "⚖️ 結案" : "⚖️ 跟小吳結案" }[tab];
+  const t = { notes:"📓 筆記", brief:"📁 案情", accuse: inter ? "🎬 " + (inter.L.title || "幕間") : S.done || SOLO() ? "⚖️ 結案" : "⚖️ 跟" + BUD().name + "結案" }[tab];
   const lead = inter ? "" : tab==="accuse" && !S.done && buddyId() ? wuSay("好，把你想到的都說出來吧。就算推理錯了也不會公布真相，我們還可以回去再查。")
     : tab==="notes" && buddyId() ? wuSay("這是我幫你記下來的東西，按重點、時間線、人物、證物都可以翻。") : "";
   return `<div class="fs-root"><div class="fs-hud"><button class="hb go" onclick="closeSheet()">✕ 回到${travel() && !sheetFrom ? "地圖" : "現場"}</button><b class="hn">${t}</b><span class="sp"></span>
@@ -989,9 +1000,9 @@ function worldHooks(l, def){
   return {
     you: def.you || (C.world && C.world.farm && C.world.farm.you) || DETECTIVE,
     // 小吳一直跟在你後面（第 1 集沒有小吳這個角色，就用預設造型）
-    buddy: () => { const s = sus(def.buddy || "wu"); if (s) return isGone(s) ? null : { id:s.id, L:lookOf(s) }; return { id:BUDDY.id, L:(C.looks && C.looks._wu) || BUDDY.look }; },
+    buddy: () => { if (SOLO()) return null; const s = sus(def.buddy || BUD().id); if (s) return isGone(s) ? null : { id:s.id, L:lookOf(s) }; return { id:BUDDY.id, L:BUD().look || (C.looks && C.looks._wu) || BUDDY.look }; },
     people: () => spreadPeople(def, [
-      ...C.suspects.filter(s=>!isGone(s) && (!travel() || whereOf(s)===l.id) && s.id!==(def.buddy || "wu")).map(s=>{
+      ...C.suspects.filter(s=>!isGone(s) && (!travel() || whereOf(s)===l.id) && (SOLO() || s.id!==(def.buddy || BUD().id))).map(s=>{
         const pl = (def.placeFor ? def.placeFor(s, S.phase) : (def.place||{})[s.id]) || {};
         const m = moodOf(s, pl);
         return { id:s.id, x: pl.x ?? 140, y: pl.y, pose: pl.pose, facing: pl.facing, L: lookOf(s), mark: wTalk===s.id, ...arrowOf(s), ...m };
@@ -1022,9 +1033,9 @@ function worldHooks(l, def){
       if (peek && peek.kind==="detail"){ const d = allDetails().find(x=>x.id===peek.id); return d ? { who:"you", text:d.text.replace(/\n/g," ") } : null; }
       return null;
     },
-    nameOf: id => id===BUDDY.id ? BUDDY.name : (extrasOf(def).find(e=>e.id===id) || {}).name || (sus(id) || { name:"" }).name.replace(/（.*）/,""),
+    nameOf: id => id===BUDDY.id || (C.buddy && (id===BUD().id || id==="wu")) ? BUD().name : (extrasOf(def).find(e=>e.id===id) || {}).name || (sus(id) || { name:"" }).name.replace(/（.*）/,""),
     opt: () => ({ phase:S.phase }),
-    script: ps && ps.steps,
+    script: ps && soloSteps(ps.steps),
     scriptDone: set => { if (set){ if (ps && ps.key){ S.introSeen = S.introSeen || {}; S.introSeen[ps.key] = 1; save(); } wArrive = null; wNews = []; } return !ps; },
     refresh: () => render(),
     cover: () => fsCover,
@@ -1191,7 +1202,7 @@ function vBrief(){
   const rules = travel() && CLK()
     ? `🕐 時間：每天 ${P.clock.start} 到 ${P.clock.end} 可以調查。<b>走路不花時間</b>；開車去別的地方要花時間（越遠越久），問一題約 ${costAsk()} 分鐘，查一樣證物約 ${P.clock.item||10} 分鐘，看監視器要看錄影長度，送化驗約 ${costTest()} 分鐘。時間用完，今天就結束了。<br>
        🗣️ 問話：每個人每天最多只肯回答你 ${P.questionLimit} 題。有人會說謊。人每天會在不同的地方。<br>
-       🧪 化驗：把證物送到鑑識中心，<b>要等 1–2 天才有結果</b>，結果會在早上由小吳告訴你。想清楚先送什麼。<br>
+       🧪 化驗：把證物送到鑑識中心，<b>要等 1–2 天才有結果</b>，結果會在早上${SOLO() ? "通知你" : `由${BUD().name}告訴你`}。想清楚先送什麼。<br>
        📅 案件一共 ${phasesOf(C).length} 天，準備好了就「進入下一天」。<br>
        💡 有些問題、地點要先聽到或看到相關線索才會出現。<br>
        💡 有人說的話對不上？拿到證據以後回去找他，同一題可以再「質問」一次。<br>
@@ -1297,7 +1308,7 @@ function mapView(){
   const P = PH(), pos = C.mapPos || {};
   const hidden = C.locations.filter(l=>!mapKnown(l)).length;
   const labels = C.locations.filter(mapKnown).map(l=>{
-    const [x,y,side] = pos[l.id] || [120,70,"d"], isOpen = locOpen(l), n = C.suspects.filter(s=>!isGone(s) && whereOf(s)===l.id && s.id!=="wu").length;
+    const [x,y,side] = pos[l.id] || [120,70,"d"], isOpen = locOpen(l), n = C.suspects.filter(s=>!isGone(s) && whereOf(s)===l.id && s.id!==BUD().id).length;
     const cur = mapFrom || PH().startAt;
     const tag = !isOpen ? "去不了" : CLK() ? (l.id===cur ? "📍 你在這裡" : `🚗 ${minLabel(costTravel(l))}`) : here(l.id) ? "📍 免費" : `🚗 ${l.cost||1} 點`;
     return `<button class="mlab ${side||"d"}${isOpen?"":" off"}${here(l.id)?" here":""}" style="left:${(x/2.4).toFixed(1)}%;top:${(y/1.35).toFixed(1)}%" ${isOpen?`onclick="visit('${l.id}')"`:`onclick="toast('${esc(l.closedText||"現在去不了")}')"`}>${l.icon} ${esc(l.name.replace(/（.*?）|・.*/g,""))}<i>${tag}${n&&isOpen?`・👤${n}`:""}</i></button>`;
