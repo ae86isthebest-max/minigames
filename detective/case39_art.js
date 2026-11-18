@@ -505,6 +505,7 @@ EP39.art = true;
   /* ---------- 走動畫面、地圖、開場 ---------- */
   EP39.fac = { hall:["#cdd4d6", "#1e3a7a"], insure:["#e8ece8", "#1e5a8a"], gemlab:["#e4e8ea", "#5a7a9a"], studio:["#d8d0c0", "#8a5a3a"] };
   EP39.setting = { hall:"city", insure:"city", gemlab:"city", studio:"city" };
+  EP39.car = "#59616b";   // 停職中：坐的是鄧主任的車（深灰色，沒有警示燈）
   EP39.outScenes = ["c39_front"];
   EP39.skyTo = { c39_front:0 };
   // 第一天：陰天，沒有下雨。第二天早上：放晴
