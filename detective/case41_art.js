@@ -379,7 +379,6 @@ EP41.art = true;
     cast:[ { id:"ayue", x:20, y:98, pose:"sit", facing:1 }, { id:"_you", x:50, y:98, pose:"stand", facing:-1 } ] });
 
   /* ---------- 走動畫面、地圖、開場 ---------- */
-  EP41.fac = { ayuehome:["#5a544a", "#a83228"] };
   EP41.setting = { ayuehome:"town" };
   EP41.car = false;   // 停職，走路來的；這一集也不用開車
   EP41.phaseWord = { unit:"晚", now:"今晚", next:"下一段", end:"結束今晚", each:"每晚", later:"之後", tomorrow:"之後" };
@@ -396,7 +395,7 @@ EP41.art = true;
   EP41.world = {};
   EP41.locations.forEach(l => { EP41.world[l.id] = { auto:true, you:SHEN, order:(EP41.worldOrder || {})[l.id] }; });
   Object.assign(EP41.world.ayuehome, {
-    street:false, band:"sign", spawn:rx(1, 94),
+    street:false, band:"sign", facadeDark:true, spawn:rx(1, 94),
     intro: [
       { set:{ px:rx(1, 94), face:1 } },
       say("wu", "學長。救護車，十一點十分才會到。……阿月姨快要把碧霞阿姨吃掉了。"),
