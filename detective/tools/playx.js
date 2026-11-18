@@ -59,7 +59,7 @@ const {chromium}=require('playwright'); const CID=process.env.CASE||'fingers';
   const keyC=C.solution.keyEvidence.filter(k=>pool.has(k)).map(k=>{ const c=closure([k],new Set(base)); return [k,c.size-base.size]; }).sort((a,b)=>a[1]-b[1]);
   const keys=keyC.slice(0,3).map(x=>x[0]);
   // FULL=1：要拿齊全部關鍵證據，再加上跟兇手對質的問題
-  const extra=FULL?[...keyC.map(x=>x[0]), ...C.suspects.find(s=>s.id===C.solution.culprits[0]).questions.filter(q=>/^（出示/.test(q.q)).map(q=>q.id)]:[];
+  const extra=FULL?[...keyC.map(x=>x[0]), ...(C.suspects.find(s=>s.id===C.solution.culprits[0])||{questions:[]}).questions.filter(q=>/^（出示/.test(q.q)).map(q=>q.id)]:[];
   const need=closure([...keys,...extra],new Set(base));
   const acts=[...need].filter(id=>how[id]).map(id=>({id,...how[id],seq:seq[id]})).sort((a,b)=>a.seq-b.seq);
   const perPh={}; Object.values(how).forEach(h=>{ if(h.mins) perPh[h.ph]=(perPh[h.ph]||0)+h.mins; });
