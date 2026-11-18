@@ -301,7 +301,7 @@ EP40.art = true;
     cctv40_lobby: mk("c40_lcam", {}, "1F 大廳", "2027-03-19", [
       { t:"18:26:10", d:5, cap:"18:26:10，你從大門走進來，對管理室的窗口點了一下頭。上樓。", st:{}, m:{ shenC:[16, F, "stand", -1, 176, F], guardC:[120, F, "stand", 1] }, out:["shenC"] },
       { t:"19:00:30", d:5, cap:"19:00:30，伍伯鎖上管理室，關掉窗口的燈，從大門出去。", st:{ night:true }, m:{ guardC:[178, F, "stand", 1, 120, F] }, out:["guardC"] },
-      { t:"21:00:00", d:4.5, cap:"19:00 到 22:51，住戶進進出出，九個人次。沒有你。", st:{ night:true }, m:{ resA:[16, F, "stand", -1, 176, F], resB:[176, F, "hold@bag", 1, 40, F] }, out:["resA","resB"] },
+      { t:"21:00:00", d:4.5, cap:"19:00 到 22:51，大廳進進出出，九個人次。沒有你。", st:{ night:true }, m:{ resA:[16, F, "stand", -1, 176, F], resB:[176, F, "hold@bag", 1, 40, F] }, out:["resA","resB"] },
       { t:"22:51:40", d:5, cap:"22:51:40，你從樓梯走下來。外套拿在手上。", st:{ night:true }, m:{ shenS:[70, F, "hold@coat/#3a4250", 1, 16, F] } },
       { t:"22:52:05", d:5, join:true, cap:"22:52:05，你推開大門。門外，有車燈掃過去。", st:{ night:true, lights:true }, m:{ shenS:[176, F, "hold@coat/#3a4250", 1, 70, F] }, out:["shenS"] }
     ])
