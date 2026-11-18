@@ -4930,6 +4930,10 @@ var ARC_INTER = {
     },
     {
      "who": "deng",
+     "text": "以前他騎一台破野狼，騎了十幾年。"
+    },
+    {
+     "who": "deng",
      "text": "車牌是 ……我寫給你。",
      "when": "arcfound:evroom_rumor"
     },
@@ -5930,7 +5934,7 @@ var ARC_INTER = {
     },
     {
      "who": "wu",
-     "text": "（跑過來）許姐！妳怎麼——"
+     "text": "（跑過來）許前輩！妳怎麼——"
     },
     {
      "who": "xu",
