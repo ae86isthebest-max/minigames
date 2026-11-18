@@ -315,13 +315,13 @@ EP36.art = true;
         { id:"d36_end", name:"巷口", hot:[172,12,20,64], text:"巷子的另一頭，是海港街。\n兩邊都是倉庫，晚上沒有人。\n一支監視器都沒有。" } ] }
     ],
     police: [
-      { id:"office", name:"2F 刑事大隊辦公室", scene:"c36_office", phase:1, opt:(ph, has) => ({ fax:!!(has && has("e36_tel")) }), details:[
+      { id:"office", name:"3F 刑事大隊辦公室", scene:"c36_office", phase:1, opt:(ph, has) => ({ fax:!!(has && has("e36_tel")) }), details:[
         { id:"d36_board", name:"白板", hot:[120,12,50,26], text:"二組的白板。\n最上面一行是新寫的：「港濱路　林記釣具　12:00 交接」。\n下面，還是空的。" },
         { id:"d36_watch", name:"桌上的手錶", hot:[71,65,12,6], text:"一支舊的機械錶，錶面朝上，放在桌上。\n隊長的。他今天沒有戴著它。" },
         { id:"d36_window", name:"窗外", hot:[13,12,34,24], text:"窗外是停車場。\n地上的水還沒有乾。" } ] },
       { id:"lobby", name:"1F 值班台", scene:"e_lobby", opt:(ph) => ({ night:ph === 0 }), details:[
         { id:"d36_clock1", name:"值班台的鐘", hot:[92,6,12,12], text:"值班台後面的鐘。\n登記簿上的時間，都是照這一個鐘寫的。" },
-        { id:"d36_stairs1", name:"往地下室的樓梯", hot:[154,60,38,30], text:"往地下室的樓梯。車庫、證物室、槍械室，都在下面。\n下班以前，配槍都要拿下去繳回。" },
+        { id:"d36_stairs1", name:"往地下室的樓梯", hot:[154,60,38,30], text:"往地下室的樓梯。車庫和證物室，都在下面。\n槍械室在三樓的最裡面。下班以前，配槍都要拿上去繳回。" },
         { id:"d36_wanted", name:"公布欄", hot:[24,22,26,20], text:"公布欄上，石文雄的通緝書還在。\n旁邊多了一張新的公告：「海風咖啡　3 月 19 日起恢復營業」。不知道是誰貼的。" } ] }
     ],
     lab: [
@@ -426,7 +426,7 @@ EP36.art = true;
   EP36.worldOrder = { shop:["front","inside","lot","lane"], police:["office","lobby"], lab:["bench"], morgue:["table"], whole:["store"] };
   EP36.roomDesc = {
     front:"港濱路口。林記釣具和阿娥粥店的前面。", inside:"林記釣具。收音機還開著，聲音很小。", lot:"店後面的停車場。兩家店的後門，都開在這裡。", lane:"防火巷。另一頭是海港街。",
-    office:"二樓，刑事大隊的辦公室。", lobby:"一樓值班台。往地下室的樓梯在右邊。",
+    office:"三樓，刑事大隊的辦公室。", lobby:"一樓值班台。往地下室的樓梯在右邊。",
     bench:"鑑識中心。", table:"法醫中心的解剖室。", store:"榮順漁具批發。到處都是紙箱。"
   };
   const say = (who, text, name) => ({ say:[who, text], name });
