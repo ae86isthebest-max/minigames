@@ -254,7 +254,7 @@ EP45.art = true;
     qi:    Object.assign({}, GUARD, { age:"old", hair:"#8a8a84", glasses:true, hello:"許鑑識官。戒護科，祁國樑。" }),
     luo:   Object.assign({}, GUARD, { skin:"#e0b48c", mood:"tired", hello:"……是我開的門。" }),
     wuu:   Object.assign({}, GUARD, { skin:"#c89a70", hair:"#3a3430", mood:"tired", hello:"鑑識的？……坐。我站一整夜了。" }),
-    wen:   { gender:"f", skin:"#ecc8a6", hair:"#2a2220", hairStyle:"bob", glasses:true, top:"#f4f6f6", coat:"#f4f6f6", bottom:"#e8ecee", hello:"衛生科，溫淑貞。" },
+    wen:   { gender:"f", skin:"#ecc8a6", hair:"#2a2220", hairStyle:"bob", glasses:true, top:"#f4f6f6", coat:"#f4f6f6", bottom:"#e8ecee", hello:"衛生科，易淑貞。" },
     chang: { skin:"#c89a70", hair:"#4a4440", hairStyle:"short", top:"#8a9aa8", bottom:"#3a3e48", hello:"報告。……是要問隔壁的事？" },
     qian:  Object.assign({ age:"old", skin:"#e0b890", hair:"#c8c8c0", hairStyle:"short", glasses:true, top:"#f4f6f6", coat:"#f4f6f6", bottom:"#3a3a44" }, AL("qian") || {}, { hello:"知夏。……妳站那一邊。" }),
     kui:   Object.assign({ gender:"f", skin:"#f0d0b4", hair:"#5a3a2a", hairStyle:"bob", top:"#3d6fa8", bottom:"#3d6fa8" }, AL("kui") || {}, { hairStyle:"pony", hello:"前輩。每一份，我都會再做一次。" }),
@@ -406,7 +406,7 @@ EP45.art = true;
   const RB = mkR([
     { t:"去年 11 月", d:6, cap:"去年十一月，他在魚市昏倒過一次。心臟的後面，留下了一塊疤。女兒從英國寄來一條手環。它響了十七次，一次比一次密。", scene:"c45_bed", opt:{}, m:{ huangV:[60, F, "stand", 1, 60, F] } },
     { t:"3/19", d:6, cap:"心臟內科的藥，他吃到了 3 月 19 日。那一天以後，藥袋裡的數字就沒有再動過。3 月 30 日的回診，他沒有去。", scene:"c45_bed", opt:{ bag:true }, m:{ huangV:[130, F, "stand", 1, 130, F] } },
-    { t:"4/13 18:55", d:6.5, cap:"4 月 13 日，入所。「心臟病？」他說：沒有。「有在吃藥嗎？」他說：沒有。溫淑貞摸到他的脈搏不整，替他排了星期五的門診。", scene:"c45_clinic", opt:{}, m:{ huangV:[50, F, "sit", 1, 50, F], wenV:[96, F, "write", -1, 96, F] } },
+    { t:"4/13 18:55", d:6.5, cap:"4 月 13 日，入所。「心臟病？」他說：沒有。「有在吃藥嗎？」他說：沒有。易淑貞摸到他的脈搏不整，替他排了星期五的門診。", scene:"c45_clinic", opt:{}, m:{ huangV:[50, F, "sit", 1, 50, F], wenV:[96, F, "write", -1, 96, F] } },
     { t:"4/13 19:05", d:5.5, cap:"他身上的東西，在前一天就被收走了：金錶、皮帶、手環，還有鑰匙圈上那一支救命的小銅管。袋子封起來，沒有人再打開過。", scene:"c45_desk", opt:{}, m:{ huangV:[104, F, "stand", 1, 104, F], luoV:[150, F, "stand", -1, 150, F] } },
     { t:"4/14 10:24", d:6, out:["wuuV"], cap:"4 月 14 日的早上，律師接見。一整片到頂的隔板，全程錄影。到他手上的，只有一張委任狀：管理員轉交的，簽完就拿回去了。", scene:"c45_visit", opt:{ pad:true, paper:"R" }, m:{ suV:[61, F, "sit", 1, 61, F], huangV:[131, F, "sit", -1, 131, F], wuuV:[160, F, "give@paper", -1, 160, F] } },
     { t:"4/14 10:47", d:6, cap:"律師問了他一個問題，告訴了他一件事。下午，他翻供了。", scene:"c45_visit", opt:{ pad:true }, m:{ suV:[61, F, "sit+write", 1, 61, F], huangV:[131, F, "sit", -1, 131, F] } },
