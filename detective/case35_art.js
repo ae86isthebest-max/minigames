@@ -240,7 +240,7 @@ EP35.art = true;
   const DAILY = {
     wu:    [ { room:"road", x:170, pose:"stand", doing:"站在你們的車子旁邊，一直看著前面那一台灰色的車。" }, { room:"meet", x:30, pose:"read", doing:"站在會議桌的旁邊，在看電信局傳來的那兩頁紙。" } ],
     xu:    [ { room:"road", x:104, pose:"write", doing:"站在押送車的旁邊，在本子上記數字。手上的雷射筆一直在轉。" }, { room:"bench", x:60, pose:"type", doing:"站在工作台的前面。昨天帶回來的東西，一袋一袋排在旁邊。" } ],
-    tang:  [ { room:"road", x:62, pose:"stand", doing:"站在護欄的旁邊，管制牌夾在手臂下面。今天，他不用舉了。" }, { room:"road", x:62, pose:"stand", doing:"站在護欄的旁邊，在等警察說可以復工。" } ],
+    tang:  [ { room:"road", x:26, pose:"stand", doing:"站在護欄的旁邊，管制牌夾在手臂下面。今天，他不用舉了。" }, { room:"road", x:26, pose:"stand", doing:"站在護欄的旁邊，在等警察說可以復工。" } ],
     lin:   [ { room:"lshop", x:70, pose:"cross", doing:"站在櫃台的前面，手抱在胸前。" }, { room:"lshop", x:140, pose:"stand", doing:"站在窗前，看著外面的路口。" } ],
     li:    [ { room:"meet", x:66, pose:"cross", doing:"站在白板的前面，看著那一個叉。" }, { room:"meet", x:66, pose:"write", doing:"站在白板的前面，在寫給上面的報告。寫了兩行，又劃掉。" } ],
     ye:    [ { room:"meet", x:158, pose:"read", doing:"站在門邊，在整理一疊文件的邊角。" }, { room:"meet", x:158, pose:"read", doing:"站在門邊，手上是一張還沒有填完的聲請書。" } ],
@@ -452,7 +452,7 @@ EP35.art = true;
     intro: [
       { set:{ px:-60, bx:-80, cam:0 }, hide:true },
       { wait:0.4, hide:true },
-      { set:{ px:150, bx:172, face:-1 } },
+      { set:{ px:166, bx:188, face:1 } },
       say("xu", "車子，我沒有讓任何人動過。", "許知夏"),
       say("wu", "學長……黎組長和葉檢回局裡了。押送組的兩位學長，也在局裡等。", "小吳"),
       say("you", "先看車。", "你")
