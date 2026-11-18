@@ -1,6 +1,6 @@
 // 四個可選設定的檢查（都在第 6 集上臨時試，試完還原）。用法：node tools/phaseopts.js [截圖資料夾]（要先在 detective/ 開 python3 -m http.server 8765）
 // 1) EPn.phaseWord：一個 phase 的叫法（今天／下一天／結束今天…）  2) phases[n].tip：早上簡報最後一句提示（字＝換掉，false＝不說）
-// 3) EPn.world[地點].street = false：只有室內，走不到街上           4) 問題的 until：過了那一段，還沒問的問題收起來
+// 3) EPn.world[地點].street = false：只有室內，走不到街上；band:false／"sign"：上面那條外牆換成天花板           4) 問題的 until：過了那一段，還沒問的問題收起來
 // 5) 每次打開案件，走動畫面的狀態都重新開始（上一集站的位置、還沒講完的開場，不會跑到有同名地點的下一集）
 // 最後要印出 PHASE OPTS PASS。
 const {chromium}=require('playwright'); const shot=process.argv[2]; const PORT=process.env.PORT||8765;
@@ -31,11 +31,11 @@ const lid=await p.evaluate(()=>C.locations.find(l=>locOpen(l) && l.id!==curLoc()
 const street=async off=>{ await p.evaluate(([lid,off])=>{ const w=(C.world=C.world||{}); window.__old=w[lid]; if (off) w[lid]={ ...(w[lid]||{}), street:false }; WORLD.reset(lid); openLoc=lid; wArrive=null; render(); },[lid,off]);
   await p.waitForTimeout(500); await p.evaluate(()=>{ WORLD.skip(); WORLD.goTo(0, 124); }); await p.waitForTimeout(3500);
   if (shot) await p.screenshot({path:`${shot}/street-${off?'off':'on'}.png`});
-  return p.evaluate(lid=>{ const l=LOC(lid), def=worldDef(l), s=WORLD.state(lid, def), r={ minX:def.minX, park:def.park, spawn:def.spawn, w:def.w, px:Math.round(s.px), cam:Math.round(s.cam), street:def.areas.some(a=>a.id==="_street"), doors:def.buildings.map(b=>JSON.stringify(b.doors||null)).join('|'), car:!!s.car, x0:def.buildings[0].x0, x1:def.buildings[def.buildings.length-1].x1,
+  return p.evaluate(lid=>{ const l=LOC(lid), def=worldDef(l), s=WORLD.state(lid, def); const w0=C.world[lid]; C.world[lid]={ ...(w0||{}), band:false }; const noLab=worldDef(l).buildings.every(b=>!(b.labels||[]).length); C.world[lid]={ ...(w0||{}), band:'sign' }; const lab=worldDef(l).buildings[0].labels.length>0; if (w0===undefined) delete C.world[lid]; else C.world[lid]=w0; const r={ band:noLab && lab && def.buildings[0].labels.length>0, minX:def.minX, park:def.park, spawn:def.spawn, w:def.w, px:Math.round(s.px), cam:Math.round(s.cam), street:def.areas.some(a=>a.id==="_street"), doors:def.buildings.map(b=>JSON.stringify(b.doors||null)).join('|'), car:!!s.car, x0:def.buildings[0].x0, x1:def.buildings[def.buildings.length-1].x1,
       chips:[...document.querySelectorAll('.wnav, .wsign, [data-nav]')].map(e=>e.textContent).join('|') };
     const w=C.world; if (window.__old===undefined) delete w[lid]; else w[lid]=window.__old; WORLD.reset(lid); return r; }, lid); };
 const S0=await street(false), S1=await street(true);
-const ok3 = S0.minX===undefined && S0.street && S0.px<S0.x0 && S0.car
+const ok3 = S0.band && S1.band && S0.minX===undefined && S0.street && S0.px<S0.x0 && S0.car
   && S1.minX===S1.x0 && !S1.street && S1.park===undefined && !S1.car && S1.spawn>S1.x0+16 && S1.px>=S1.minX+16 && S1.w===S1.x1 && S1.doors.split("|").every(d=>d==="[false,false]") && (S1.w-S1.minX<=240 ? S1.cam<=S1.minX : S1.cam>=S1.minX);
 // 4) 問題的 until
 const Q=await p.evaluate(()=>{ const s=C.suspects.find(s=>!isGone(s) && s.questions.filter(q=>unlocked(q) && !S.asked.includes(q.id)).length>=2), qs=s.questions.filter(q=>unlocked(q) && !S.asked.includes(q.id)), a=qs[0], c=qs[1], ph=S.phase, r={};

@@ -210,10 +210,17 @@ const WK = (() => {
           [ox - 3, ox + RW - 4].forEach(hx => { R(hx, 66, 7, G - 66, shade(sk[3], -.25)); R(hx - 1, 62, 9, 6, shade(sk[3], -.1)); for (let y = 70; y < G; y += 7) R(hx + 1 + (y % 3), y, 2, 2, shade(sk[3], .15)); });
           return;
         }
-        // 外牆（二樓）＋屋頂
-        R(ox - GAP, 3, RW + GAP * 2, OY - 3, fac[0]); R(ox - GAP - 3, 0, RW + GAP * 2 + 6, 4, shade(fac[0], -.45));
-        for (let k = 0; k < 6; k++) if (!(i === 0 && (k === 2 || k === 3))) windowBox(ox + 10 + k * 31, 9, 14, 11, night ? ((k + i) % 3 ? "#ffd98a" : "#1a2030") : "#9cc5e6");
-        if (i === 0){ // 招牌
+        // 外牆（二樓）＋屋頂。band（EPn.world[地點].band）：不寫＝照畫；"sign"＝沒有二樓（地下室、平房裡面）：不畫窗和屋頂，改成一條水泥天花板，招牌留著；
+        // false＝只有天花板，招牌和招牌上的字也不要
+        if (o.band === undefined){
+          R(ox - GAP, 3, RW + GAP * 2, OY - 3, fac[0]); R(ox - GAP - 3, 0, RW + GAP * 2 + 6, 4, shade(fac[0], -.45));
+          for (let k = 0; k < 6; k++) if (!(i === 0 && (k === 2 || k === 3))) windowBox(ox + 10 + k * 31, 9, 14, 11, night ? ((k + i) % 3 ? "#ffd98a" : "#1a2030") : "#9cc5e6");
+        } else {
+          const cc = "#3b3b40";   // 水泥樓板：上面暗、下緣一條亮線，每隔一段有一道接縫
+          R(ox - GAP, 0, RW + GAP * 2, OY, cc); R(ox - GAP, 0, RW + GAP * 2, 6, shade(cc, -.35)); R(ox - GAP, OY - 3, RW + GAP * 2, 2, shade(cc, .22)); R(ox - GAP, OY - 1, RW + GAP * 2, 1, shade(cc, -.45));
+          for (let k = 0; k < 4; k++) R(ox + 24 + k * 48, 6, 1, OY - 9, shade(cc, -.18));
+        }
+        if (i === 0 && o.band !== false){ // 招牌
           R(ox + 66, 6, 62, 14, fac[1]); R(ox + 66, 6, 62, 1, shade(fac[1], .3)); R(ox + 66, 19, 62, 1, shade(fac[1], -.4));
           if (l.id === "hospital"){ R(ox + 72, 9, 8, 2, "#e04a3a"); R(ox + 75, 7, 2, 6, "#e04a3a"); }
           if (l.id === "police"){ R(ox + 72, 8, 6, 6, "#f2d03b"); R(ox + 74, 7, 2, 8, "#f2d03b"); }
@@ -234,7 +241,7 @@ const WK = (() => {
     }
     function front(p, t, op, cam){
       const rain = skyOf(op.phase || 0)[4];
-      if (rain) drawRain(p, t, rain, cam);
+      if (rain && !noStreet) drawRain(p, t, rain, cam);   // 只有室內的地點（street:false）不會下雨
     }
     // 室內的房間連在一起就是一棟建築：在外面只看得到外牆
     const buildings = [], shade = PX.prim.shade;
@@ -243,7 +250,7 @@ const WK = (() => {
     const signText = l.sign || l.name.replace(/（.*?）|\(.*?\)/g, "").replace(/・.*/, "");
     const fs = Math.min(7, 60 / Math.max(3, signText.length));
     buildings.forEach((b, i) => Object.assign(b, {
-      labels: i ? [] : [ { x: b.x0 + GAP + 100, y: 38.5, text: signText, size: fs, when:"out" }, { x: b.x0 + GAP + 101, y: 13.5, text: signText, size: Math.min(6.5, fs), when:"in" } ], y0:4, wall:fac[0], roof:shade(fac[0], -.5), brick: setting !== "city", rows:[8, 88], door:"#5a3e24",
+      labels: i || o.band === false ? [] : [ { x: b.x0 + GAP + 100, y: 38.5, text: signText, size: fs, when:"out" }, { x: b.x0 + GAP + 101, y: 13.5, text: signText, size: Math.min(6.5, fs), when:"in" } ], y0:4, wall:fac[0], roof:shade(fac[0], -.5), brick: setting !== "city", rows:[8, 88], door:"#5a3e24",
       night: op => skyOf(op.phase||0)[5],
       sign: i ? null : (p) => { const { R, shade } = p, ox = b.x0 + GAP; R(ox + 60, 30, 72, 16, fac[1]); R(ox + 60, 30, 72, 1, shade(fac[1], .3)); R(ox + 60, 45, 72, 1, shade(fac[1], -.4));
         if (l.id === "hospital"){ R(ox + 66, 35, 8, 2, "#e04a3a"); R(ox + 69, 32, 2, 8, "#e04a3a"); }
