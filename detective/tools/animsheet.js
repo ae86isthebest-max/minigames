@@ -13,13 +13,13 @@ const BR = (process.env.BEATS || "").split("-").map(Number), B0 = BR[0] ? BR[0]-
 (async()=>{const b=await chromium.launch(); const p=await b.newPage({viewport:{width:1400,height:900}});
 const errs=[]; p.on('pageerror',e=>errs.push(e.message));
 await p.goto(`http://localhost:${port}/index.html`);
-const list = await p.evaluate((cid)=>{ localStorage.clear(); window.uiConfirm=async()=>true;
-  const i = CASES.findIndex(c=>c.id===cid); if (i < 0) return null; openCase(i);
+const list = await p.evaluate(async ([cid, F])=>{ localStorage.clear(); window.uiConfirm=async()=>true;   // FLAGS=a,b：先設好主線旗標（有兩條路線的重現用）
+  const i = CASES.findIndex(c=>c.id===cid); if (i < 0) return null; F.forEach(f=>ARC.set(f)); await openCase(i); if (F.length && typeof checkEvents === 'function') checkEvents();
   const found = [], walk = (o, path, seen=new Set()) => { if (!o || typeof o!=="object" || seen.has(o)) return; seen.add(o);
     if (Array.isArray(o.beats) && o.scene){ found.push({ A:o, path }); return; }
     for (const k in o){ let v; try { v = o[k]; } catch(e){ continue; } if (v && typeof v==="object") walk(v, Array.isArray(o) ? path+"["+(v.id||k)+"]" : path+"."+k, seen); } };
   walk(C, cid); window.__A = found;
-  return found.map((f,j)=>({ j, path:f.path, scene:f.A.scene, beats:f.A.beats.length })); }, process.env.CASE);
+  return found.map((f,j)=>({ j, path:f.path, scene:f.A.scene, beats:f.A.beats.length })); }, [process.env.CASE, (process.env.FLAGS||'').split(',').filter(Boolean)]);
 if (!list){ console.log("找不到案件：CASE=" + process.env.CASE); await b.close(); process.exit(1); }
 const warn = [];
 for (const it of list){
