@@ -428,6 +428,9 @@ async function openCase(i){
   wTalk = null; wSay = null; peek = null; mapFrom = null; wRoom = null; wGo = false; talkFrom = null;
   // 有畫面的案件：一揀完就直接進現場（第一晚的開場動畫會自動播）
   wBuddy = false; sheetFrom = null;
+  // 走動畫面的狀態（站在哪裡、播到一半的開場劇本、停著的車）是按地點 id 記的，很多集都有 cafe、police、lab：
+  // 每次打開案件都清掉，上一集的位置和還沒講完的話才不會跑到這一集來（跟重新整理網頁以後一樣，從這一集的存檔重新開始）
+  if (typeof WORLD !== "undefined" && WORLD.resetAll) WORLD.resetAll();
   if (art()){ if (travel()){ tab = "map"; openLoc = PH().startAt || null; } else tab = "scene"; }
   inter = null; if (interMaybe("before")){ sheetFrom = openLoc; tab = "accuse"; }   // 開場前的幕間（arc.js）
   render(); scrollTo(0,0);
@@ -470,8 +473,8 @@ async function visit(id){
       if (!await uiConfirm(`前往「${l.name}」？\n開車要 ${minLabel(m)}。\n${timeTag()}。`)) return;
       spend(m);
     } else {
-      if (apLeft() < cost){ toast("今天的行動點不夠了"); return; }
-      if (!await uiConfirm(`前往「${l.name}」？\n會用掉 ${cost} 個行動點（今天還剩 ${apLeft()} 點）。`)) return;
+      if (apLeft() < cost){ toast(pw("今天的行動點不夠了")); return; }
+      if (!await uiConfirm(`前往「${l.name}」？\n會用掉 ${cost} 個行動點（${PW.now}還剩 ${apLeft()} 點）。`)) return;
     }
     (S.visits[S.phase] = S.visits[S.phase] || []).push(id); save(); wNews = checkEvents().filter(e=>e.atLoc===id);
   }
@@ -482,11 +485,11 @@ async function visit(id){
 async function submitTest(id, sure){
   const t = tests().find(x=>x.id===id), l = LOC(t.loc);
   if (S.done || !here(l.id) || S.labq[id]!==undefined || testsLeftAt(l)<=0 || !testOpen(t)) return;
-  if (CLK() && timeLeft() < costTest()){ toast("今天來不及了"); return; }
-  if (!sure && !await uiConfirm(`${t.rec ? "申請調閱" : "送去化驗"}「${t.title}」？\n${t.rec ? "資料要等到明天早上才會拿到。" : `結果要等 ${t.days} 天才會出來。`}這次還能送 ${testsLeftAt(l)} 件。${CLK() ? `\n填單、交件要 ${minLabel(costTest())}。${timeTag()}。` : ""}`)) return;
+  if (CLK() && timeLeft() < costTest()){ toast(pw("今天來不及了")); return; }
+  if (!sure && !await uiConfirm(`${t.rec ? "申請調閱" : "送去化驗"}「${t.title}」？\n${t.rec ? pw("資料要等到明天早上才會拿到。") : `結果要等 ${t.days} ${PW.unit}才會出來。`}這次還能送 ${testsLeftAt(l)} 件。${CLK() ? `\n填單、交件要 ${minLabel(costTest())}。${timeTag()}。` : ""}`)) return;
   spend(costTest());
   S.labq[id] = S.phase; checkEvents(); save(); render();
-  toast(t.rec ? `📑 已申請，明天早上拿到` : `🧪 已送出，${t.days} 天後會有結果`);
+  toast(t.rec ? `📑 已申請，${PW.tomorrow}拿到` : `🧪 已送出，${t.days} ${PW.unit}後會有結果`);
 }
 
 /* ---------- 像素場景（案件有 art:true 才會畫） ---------- */
@@ -576,7 +579,7 @@ function doAct(id){
   const it = allItems().find(x=>x.id===id);
   if (S.seen.includes(id)){ const from = wAct && wAct.ids.length > 1 ? wAct.ids : null; wAct = null; peek = { kind:"item", id, from }; render(); return; }
   const l = travel() ? LOC(openLoc) : HOME;
-  if ((travel() ? searchLeftAt(l) : searchLeft()) <= 0){ toast(CLK() ? "⏰ 沒時間了" : "這裡今天已經查不了更多了。"); return; }
+  if ((travel() ? searchLeftAt(l) : searchLeft()) <= 0){ toast(CLK() ? "⏰ 沒時間了" : pw("這裡今天已經查不了更多了。")); return; }
   const from = wAct && wAct.ids.length > 1 ? wAct.ids : null;
   inspectById(id); if (S.seen.includes(id)){ wAct = null; peek = { kind:"item", id, from }; render(); }
 }
@@ -664,6 +667,16 @@ function leaveWorld(){ mapFrom = openLoc || mapFrom; openLoc = null; wRoom = nul
 // 存檔裡沒有任何東西記拍檔是誰，所以加不加都不影響存檔。
 const SOLO = () => typeof C !== "undefined" && !!C && C.buddy === false;
 const BUD = () => SOLO() ? { id:null, name:"", av:"" } : { id:"wu", name:"小吳", av:"🧑‍🔬", ...((typeof C !== "undefined" && C && C.buddy) || {}) };
+// 一個 phase 的叫法。平常一個 phase 是一天；如果一集的幾個 phase 是同一天的上午、下午，就寫
+//   EPn.phaseWord = { unit:"段" }   → 「這一段」「下一段」「結束這一段」「每一段」「案件一共 2 段」
+// 也可以每個字自己寫：{ unit:"段", now:"這一段", next:"下一段", end:"結束這一段", each:"每一段", later:"下一段", tomorrow:"下一段", icon:"⏭" }
+// 不寫＝今天／下一天／結束今天／每天／隔天／明天早上／🌙，跟以前一模一樣。只換畫面上的字，存檔不變。
+const PW = (() => { const D = { unit:"天", now:"今天", next:"下一天", end:"結束今天", each:"每天", later:"隔天", tomorrow:"明天早上", icon:"🌙" };
+  const of = k => { const w = typeof C !== "undefined" && C && C.phaseWord; if (!w) return D[k]; if (w[k] !== undefined) return w[k]; const u = w.unit || D.unit;
+    return u === D.unit ? D[k] : { unit:u, now:"這一" + u, next:"下一" + u, end:"結束這一" + u, each:"每一" + u, later:"下一" + u, tomorrow:"下一" + u, icon:"⏭" }[k]; };
+  const o = {}; Object.keys(D).forEach(k => Object.defineProperty(o, k, { get:() => of(k) })); return o; })();
+// 整句是引擎自己的字（沒有劇本內容）的時候用：把裡面的 今天／下一天… 換成這一集的叫法；沒有設定就原樣傳回
+const pw = str => typeof C !== "undefined" && C && C.phaseWord ? str.replace(/結束今天/g, PW.end).replace(/下一天/g, PW.next).replace(/每天/g, PW.each).replace(/隔天/g, PW.later).replace(/明天早上/g, PW.tomorrow).replace(/明天/g, PW.next).replace(/今天/g, PW.now).replace(/🌙/g, PW.icon) : str;
 // 提示文字：筆記、案情、結案從哪裡打開（拍檔不在場的時候，右上角的按鈕是「☰ 選單」）
 const menuTip = () => buddyId() ? `點${BUD().name}或右上角「💬 ${BUD().name}」` : "點右上角「☰ 選單」";
 const soloSteps = steps => SOLO() && steps ? steps.map(k => k.say && k.say[0] === "wu" ? { ...k, say:["you", k.say[1]], name:"你" } : k) : steps;
@@ -678,7 +691,7 @@ function buddyHint(l){
   const tail = (detailsLeft(l) ? "清單不是全部：這裡還藏著小細節，走到附近會微微閃一下，畫面下面的「🔎 附近」也會列出來，點名字就能看（不花時間）。" : "") + (s && !reachable(s) ? "要問我問題，就到鑑識中心找我。" : "");
   if (S.done) return "案子已經結了，辛苦了。";
   if (CLK()) return `${timeTag()}。${fresh ? `點${pinWhere()}的「📍」看這裡有什麼可以查，點畫面上的箭嘴換地方。` : "這裡看得到的東西都查過了。"}看錄影、查證物、問話都要花時間，挑重要的做。` + tail;
-  if (sl <= 0) return "這裡今天查不了更多了，去問問人吧。" + tail;
+  if (sl <= 0) return pw("這裡今天查不了更多了，去問問人吧。") + tail;
   return `這裡還可以查 ${sl} 樣東西。${fresh ? `點${pinWhere()}的「📍」看這裡有什麼可以查，點畫面上的箭嘴換地方。` : "看得到的東西都查過了，換個地方吧。"}${tail}`;
 }
 // 不是嫌疑人、但在現場可以說幾句話的人（鑑識人員、員警……）：def.extras = [{ id, name, x, y, L, pose, facing, lines, phase, until }]
@@ -687,7 +700,7 @@ const extrasOf = def => (typeof def.extras === "function" ? def.extras(S.phase) 
 const ARROW = { ask:"#ffd04a", press:"#ff5a4a", done:"#8a8a8a", extra:"#6ac8ff", buddy:"#6fd46f" };
 function arrowOf(s){
   if (S.done || qLeft(s) <= 0) return { arrow: ARROW.done };
-  const open = s.questions.filter(q=>unlocked(q) && canAsk(q));
+  const open = qsOf(s).filter(q=>unlocked(q) && canAsk(q));
   if (!open.length) return { arrow: ARROW.done };
   if (open.some(q=>reAsk(q) || /^（出示|^（質問/.test(textOf(q).q))) return { arrow: ARROW.press, blink: true };
   return { arrow: ARROW.ask };
@@ -720,24 +733,24 @@ function labCard(l){
   const lockedTests = tests().filter(t=>t.loc===l.id && S.labq[t.id]===undefined && (t.until===undefined || t.until >= S.phase) && !testOpen(t)).length;
   const tl = testsLeftAt(l);
   const W = labW(l);
-  return `<div class="card"><h3>${W.ic} ${W.nm}</h3><p class="muted small" style="margin:0">${tl>0?`這次還能${W.v} <b style="color:var(--accent)">${tl}</b> 件。`:"這次能送的件數已經滿了。"}結果要等幾天，${SOLO() ? "出來的那天早上會通知你" : `早上${BUD().name}會跟你說`}。</p>
+  return `<div class="card"><h3>${W.ic} ${W.nm}</h3><p class="muted small" style="margin:0">${tl>0?`這次還能${W.v} <b style="color:var(--accent)">${tl}</b> 件。`:"這次能送的件數已經滿了。"}結果要等幾${PW.unit}，${SOLO() ? "出來的那天早上會通知你" : `早上${BUD().name}會跟你說`}。</p>
     ${ts.map(t=>{
       if (testReady(t)) return `<div style="margin:12px 0"><div style="font-weight:700">✅ ${esc(t.title)}</div><div class="muted">${nl(t.text)}</div>${docHTML(t)}</div>`;
-      if (S.labq[t.id]!==undefined) return `<p class="small" style="margin:10px 0">⏳ ${esc(t.title)}<span class="muted">（${S.labq[t.id]+t.days-S.phase} 天後出結果）</span></p>`;
-      return `<button class="btn" ${S.done||tl<=0?"disabled":""} onclick="submitTest('${t.id}')">🧪 ${esc(t.title)} <span class="tag">${t.days} 天</span>${t.until!==undefined&&t.until===S.phase?' <span class="tag cost">今天過後就送不了</span>':""}${t.desc?`<div class="muted small">${esc(t.desc)}</div>`:""}</button>`;
+      if (S.labq[t.id]!==undefined) return `<p class="small" style="margin:10px 0">⏳ ${esc(t.title)}<span class="muted">（${S.labq[t.id]+t.days-S.phase} ${PW.unit}後出結果）</span></p>`;
+      return `<button class="btn" ${S.done||tl<=0?"disabled":""} onclick="submitTest('${t.id}')">🧪 ${esc(t.title)} <span class="tag">${t.days} ${PW.unit}</span>${t.until!==undefined&&t.until===S.phase?pw(' <span class="tag cost">今天過後就送不了</span>'):""}${t.desc?`<div class="muted small">${esc(t.desc)}</div>`:""}</button>`;
     }).join("")}
     ${lockedTests?`<p class="muted small">🔒 還有 ${lockedTests} 項化驗，要先找到相關的東西才能送。</p>`:""}</div>`;
 }
 function worldTalk(s){
-  const qs = s.questions.filter(unlocked), notAsked = qs.filter(canAsk);
-  const left = qLeft(s), off = left<=0 || S.done, lockedN = s.questions.length - qs.length;
+  const qs = qsOf(s).filter(unlocked), notAsked = qs.filter(canAsk);
+  const left = qLeft(s), off = left<=0 || S.done, lockedN = qsOf(s).length - qs.length;
   const said = lastSaid && lastSaid.sid===s.id ? s.questions.find(q=>q.id===lastSaid.qid) : null;
   return `<div class="card" style="padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center"><b>${s.av} ${esc(s.name)}</b><button class="back" style="margin:0" onclick="wTalk=null;lastSaid=null;if(talkFrom){wRoom=talkFrom;talkFrom=null;}render()">${talkFrom ? "‹ 結束對話" : "結束對話 ✕"}</button></div>
-    <div class="muted small">${esc(s.role)}・<span style="color:${left?"var(--accent)":"var(--red)"}">${left?`還願意回答 ${left} 題`:"今天不肯再回答了"}</span></div>
+    <div class="muted small">${esc(s.role)}・<span style="color:${left?"var(--accent)":"var(--red)"}">${left?`還願意回答 ${left} 題`:pw("今天不肯再回答了")}</span></div>
     ${said && said.note ? `<div class="note" style="margin-top:6px">${esc(said.note)}</div>` : ""}
     ${!off && !wChat ? `<button class="wq" style="border-color:var(--accent);text-align:center" onclick="wChat=true;render()">🗣️ 開始問話${CLK() ? `（每題約 ${costAsk()} 分鐘）` : ""}</button>${CLK() ? `<p class="muted small" style="margin:4px 0 0">${timeTag()}。</p>` : ""}` : ""}
     ${off || !wChat ? "" : notAsked.map(q=>`<button class="wq" onclick="askById('${s.id}','${q.id}')">${reAsk(q)||/^（出示/.test(textOf(q).q)?'<span class="tag new">質問</span>':(q.requires||q.requiresAll)?'<span class="tag new">追問</span>':''}${esc(askText(q))}</button>`).join("")}
-    ${lockedN && !off && wChat ? `<p class="muted small" style="margin:6px 0 0">${lockNote(s.questions, lockedN, "要先得到相關線索才能問。")}</p>` : ""}</div>`;
+    ${lockedN && !off && wChat ? `<p class="muted small" style="margin:6px 0 0">${lockNote(qsOf(s), lockedN, "要先得到相關線索才能問。")}</p>` : ""}</div>`;
 }
 function worldView(l, def){
   if (fsMode()) return worldViewFS(l, def);
@@ -828,10 +841,10 @@ function buddyMenu(l){
     ${B("📓", "翻筆記", "openSheet('notes')", "問過的話、看過的證物、時間線都記在這裡")}
     ${seenHere.length ? B("🧾", `重看這裡查到的東西（${seenHere.length}）`, "wBuddy='items';render()") : ""}
     ${l && l.perVisit ? B(labW(l).ic, `${labW(l).nm}（這次還能${labW(l).v} ${testsLeftAt(l)} 件）`, "wBuddy=false;wSay=null;peek={kind:'lab'};render()") : ""}
-    ${pending.length ? `<p class="small muted" style="margin:6px 2px">⏳ 化驗中：${pending.map(t=>`${esc(t.title)}（${S.labq[t.id]+t.days-S.phase} 天後）`).join("、")}</p>` : ""}
+    ${pending.length ? `<p class="small muted" style="margin:6px 2px">⏳ 化驗中：${pending.map(t=>`${esc(t.title)}（${S.labq[t.id]+t.days-S.phase} ${PW.unit}後）`).join("、")}</p>` : ""}
     ${B("📁", "案情・玩法", "openSheet('brief')")}
     ${travel() && l ? B("🗺️", "回地圖，開車去別的地方", "wBuddy=false;leaveWorld()") : ""}
-    ${nx ? B("🌙", `結束今天，進入「${esc(nx.short)}」`, "nextPhase()") : ""}
+    ${nx ? B(PW.icon, `${PW.end}，進入「${esc(nx.short)}」`, "nextPhase()") : ""}
     ${B("❓", "操作說明", "wBuddy='help';render()")}
     ${B("⚖️", S.done ? "看結案結果" : SOLO() ? "我知道真相了！結案" : `我知道真相了！跟${esc(BUD().name)}結案`, "openSheet('accuse')", S.done ? "" : "隨時都可以結案；推理錯了不會公布真相，可以繼續查。不過第一次就全對才有 S", "accent")}
   </div>`;
@@ -955,7 +968,7 @@ function roomList(l, def){
     : `<button class="wq" style="border-color:var(--accent)" ${S.done?"disabled":""} onclick="wAct={ids:['${it.id}']};render()">${it.icon||"🔍"} ${esc(it.title)} <span class="tag cost">${cost(it)}</span></button>`;
   const ppl = peopleIn(def, wRoom), bid = buddyId();
   const pRow = q => { const sx = C.suspects.find(x=>x.id===q.id), nm = curHooks.nameOf(q.id);
-    const st = sx ? (qLeft(sx) && !S.done ? `還肯回答 ${qLeft(sx)} 題` : "今天不肯再說了") : "問話不花時間";
+    const st = sx ? (qLeft(sx) && !S.done ? `還肯回答 ${qLeft(sx)} 題` : pw("今天不肯再說了")) : "問話不花時間";
     return `<button class="wq" ${sx && qLeft(sx) && !S.done ? 'style="border-color:#ffd04a"' : ""} onclick="talkTo('${q.id}')">🗣️ 跟${esc(nm)}說話 <span class="tag">${st}</span></button>`; };
   return `<div class="card" style="padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center"><b>📍 ${esc(areaName(def, wRoom))}</b><button class="back" style="margin:0" onclick="closePanel()">✕</button></div>
     <div class="muted small" style="margin:2px 0 6px">${CLK() ? timeTag() + "。" : `${travel() ? "這裡這次" : ""}還能查 ${sl} 項。`}要做什麼？點了會先問你，確定了才算數。</div>
@@ -1038,7 +1051,7 @@ function worldHooks(l, def){
     bubble: () => {
       if (wSay) return wSay;
       if (wTalk){ const s = sus(wTalk); const q = lastSaid && lastSaid.sid===wTalk ? s.questions.find(x=>x.id===lastSaid.qid) : null;
-        return { who:wTalk, text: q ? textOf(q).a : qLeft(s) ? (s.hello || "……你想問什麼？") : "今天就到這裡吧。" }; }
+        return { who:wTalk, text: q ? textOf(q).a : qLeft(s) ? (s.hello || "……你想問什麼？") : pw("今天就到這裡吧。") }; }
       if (peek && peek.kind==="detail"){ const d = allDetails().find(x=>x.id===peek.id); return d ? { who:"you", text:d.text.replace(/\n/g," ") } : null; }
       return null;
     },
@@ -1145,15 +1158,19 @@ function afterSpend(){
   checkEvents(); save(); renderClock();
   const out = CLK() ? timeLeft() < Math.min(costAsk(), CLK().item || 10) : (!travel() && totalQLeft()===0 && searchLeft()===0);
   if (out) setTimeout(()=>toast(
-    multi() && !lastPhase() ? "🌙 今天能做的都做完了，到「案情」進入下一天。" : (C.endToast || "⏰ 律師到了！調查結束，請進行指認。")), 300);
+    multi() && !lastPhase() ? pw("🌙 今天能做的都做完了，到「案情」進入下一天。") : (C.endToast || "⏰ 律師到了！調查結束，請進行指認。")), 300);
 }
 
 // 再質問：一題已經用「一般問法」問過，之後才拿到可以戳破它的東西（alt.when）→ 可以再用質問的問法問一次
 const reAsk = q => !!(q.alt && q.alt.q && q.alt.a && S.asked.includes(q.id) && (S.variant||{})[q.id]==="base" && q.alt.when.some(has));
 const canAsk = q => !S.asked.includes(q.id) || reAsk(q);
+// 問題的 until：q.until = n → 第 n 段（phase，從 0 算）過了以後，還沒問的這一題就收起來（不列出來，也不算「🔒 還有 n 個問題」）；
+// 已經問過的照樣留在筆記裡。跟 phase 一起用就是「只有這幾段可以問」。
+const qLive = q => q.until === undefined || q.until >= S.phase || S.asked.includes(q.id);
+const qsOf = s => s.questions.filter(qLive);
 const askText = q => reAsk(q) ? q.alt.q : textOf(q).q;
 function ask(sus, q){
-  if (!canAsk(q) || qLeft(sus) <= 0 || S.done || !unlocked(q)) return;
+  if (!canAsk(q) || qLeft(sus) <= 0 || S.done || !unlocked(q) || !qLive(q)) return;
   if (CLK() && timeLeft() < costAsk()){ toast("⏰ 沒時間了"); return; }
   const before = availCount();
   spend(costAsk());
@@ -1161,7 +1178,7 @@ function ask(sus, q){
   if (!S.asked.includes(q.id)) S.asked.push(q.id);
   S.qp[q.id] = S.phase; lastSaid = { sid:sus.id, qid:q.id }; afterSpend(); render();
   if (availCount() > before) setTimeout(()=>toast("🔓 聽到新線索，可以拿去問其他人"), 400);
-  if (qLeft(sus)===0) setTimeout(()=>toast(sus.name + (multi() && !lastPhase() ? "：「今天就到這裡吧，我累了。」" : "：「我不會再回答了，等我的律師來。」")), 300);
+  if (qLeft(sus)===0) setTimeout(()=>toast(sus.name + (multi() && !lastPhase() ? pw("：「今天就到這裡吧，我累了。」") : "：「我不會再回答了，等我的律師來。」")), 300);
 }
 function inspect(item){
   if (S.seen.includes(item.id) || S.done || !itemOpen(item) || !unlocked(item)) return;
@@ -1200,7 +1217,7 @@ function phaseBlock(i){
   const labs = tests().filter(t=>S.labq[t.id]!==undefined && S.labq[t.id]+t.days===i);
   const evs = (C.events||[]).filter(e=>S.ev[e.id]===i);
   return `${i===0 ? ARC.recapHTML() : ""}${intro.map(x=>`<p>${x}</p>`).join("")}${(p.reports||[]).map(reportHTML).join("")}${evs.map(e=>`<div class="report" style="border-color:var(--red)"><b>📢 ${esc(e.title)}</b><div class="muted small">${nl(e.text)}</div></div>`).join("")}
-    ${labs.length?`<p style="margin-top:12px"><b>📞 今天收到的化驗結果</b></p>${labs.map(testHTML).join("")}`:""}`;
+    ${labs.length?`<p style="margin-top:12px"><b>📞 ${PW.now}收到的化驗結果</b></p>${labs.map(testHTML).join("")}`:""}`;
 }
 function vBrief(){
   const P = PH(), m = multi();
@@ -1209,28 +1226,28 @@ function vBrief(){
        ${S.phase>0?phasesOf(C).slice(0,S.phase).map((p,i)=>`<details class="past card"><summary>回顧：${esc(p.title)}</summary>${phaseBlock(i)}</details>`).reverse().join(""):""}`
     : `<div class="card intro"><h2>${C.title}</h2>${C.intro.map(p=>`<p>${p}</p>`).join("")}</div>`;
   const rules = travel() && CLK()
-    ? `🕐 時間：每天 ${P.clock.start} 到 ${P.clock.end} 可以調查。<b>走路不花時間</b>；開車去別的地方要花時間（越遠越久），問一題約 ${costAsk()} 分鐘，查一樣證物約 ${P.clock.item||10} 分鐘，看監視器要看錄影長度，送化驗約 ${costTest()} 分鐘。時間用完，今天就結束了。<br>
-       🗣️ 問話：每個人每天最多只肯回答你 ${P.questionLimit} 題。有人會說謊。人每天會在不同的地方。<br>
-       🧪 化驗：把證物送到鑑識中心，<b>要等 1–2 天才有結果</b>，結果會在早上${SOLO() ? "通知你" : `由${BUD().name}告訴你`}。想清楚先送什麼。<br>
-       📅 案件一共 ${phasesOf(C).length} 天，準備好了就「進入下一天」。<br>
+    ? `🕐 時間：${PW.each} ${P.clock.start} 到 ${P.clock.end} 可以調查。<b>走路不花時間</b>；開車去別的地方要花時間（越遠越久），問一題約 ${costAsk()} 分鐘，查一樣證物約 ${P.clock.item||10} 分鐘，看監視器要看錄影長度，送化驗約 ${costTest()} 分鐘。時間用完，${PW.now}就結束了。<br>
+       🗣️ 問話：每個人${PW.each}最多只肯回答你 ${P.questionLimit} 題。有人會說謊。人${PW.each}會在不同的地方。<br>
+       🧪 化驗：把證物送到鑑識中心，<b>要等 1–2 ${PW.unit}才有結果</b>，結果會在早上${SOLO() ? "通知你" : `由${BUD().name}告訴你`}。想清楚先送什麼。<br>
+       📅 案件一共 ${phasesOf(C).length} ${PW.unit}，準備好了就「進入${PW.next}」。<br>
        💡 有些問題、地點要先聽到或看到相關線索才會出現。<br>
        💡 有人說的話對不上？拿到證據以後回去找他，同一題可以再「質問」一次。<br>
        📓 筆記：可以按重點、時間線、人物或證物整理。<br>
        ⚖️ 推理：隨時都可以推理。推理錯了不會公布真相，可以繼續調查再試。推理題一打開就算用掉一次機會，第一次就全對才有 S。`
     : travel()
-    ? `🗺️ 地點：每天有幾個<b>行動點</b>（今天 ${P.actions} 點）。去一個地方要用行動點，到了那裡就可以問在場的人、查那裡的證物。${P.startAt?`今天一開始你在「${esc(LOC(P.startAt).name)}」，不用行動點。`:""}<br>
-       🗣️ 問話：每個人每天只會回答你 ${P.questionLimit} 題。有人會說謊。人每天會在不同的地方。<br>
+    ? `🗺️ 地點：${PW.each}有幾個<b>行動點</b>（${PW.now} ${P.actions} 點）。去一個地方要用行動點，到了那裡就可以問在場的人、查那裡的證物。${P.startAt?`${PW.now}一開始你在「${esc(LOC(P.startAt).name)}」，不用行動點。`:""}<br>
+       🗣️ 問話：每個人${PW.each}只會回答你 ${P.questionLimit} 題。有人會說謊。人${PW.each}會在不同的地方。<br>
        🔍 搜證：每個地點每次能查的證物有限。有些證物過幾天就會消失。<br>
-       🧪 化驗：把證物送到鑑識中心，<b>要等 1–2 天才有結果</b>，結果會在當天早上出現在這一頁。想清楚先送什麼。<br>
-       📅 案件一共 ${phasesOf(C).length} 天，準備好了就到這一頁「進入下一天」。沒用完的行動點不會留到隔天。<br>
+       🧪 化驗：把證物送到鑑識中心，<b>要等 1–2 ${PW.unit}才有結果</b>，結果會在當天早上出現在這一頁。想清楚先送什麼。<br>
+       📅 案件一共 ${phasesOf(C).length} ${PW.unit}，準備好了就到這一頁「進入${PW.next}」。沒用完的行動點不會留到${PW.later}。<br>
        💡 有些問題、地點要先聽到或看到相關線索才會出現。<br>
        💡 有人說的話對不上？拿到證據以後回去找他，同一題可以再「質問」一次。<br>
        📓 筆記：可以按重點、時間線、人物或證物整理。<br>
        ⚖️ 推理：隨時都可以推理。推理錯了不會公布真相，可以繼續調查再試。推理題一打開就算用掉一次機會，第一次就全對才有 S。`
     : m
-    ? `🗣️ 問話：每位嫌疑人<b>每天</b>只會回答你幾題（今天 ${P.questionLimit} 題）。有人會說謊。<br>
-       🔍 搜證：鑑識人員今天能幫你處理 ${P.searchLimit} 項。<b>沒用完的次數不會留到隔天。</b><br>
-       📅 案件分成 ${phasesOf(C).length} 天。準備好了就到這一頁「進入下一天」。<br>
+    ? `🗣️ 問話：每位嫌疑人<b>${PW.each}</b>只會回答你幾題（${PW.now} ${P.questionLimit} 題）。有人會說謊。<br>
+       🔍 搜證：鑑識人員${PW.now}能幫你處理 ${P.searchLimit} 項。<b>沒用完的次數不會留到${PW.later}。</b><br>
+       📅 案件分成 ${phasesOf(C).length} ${PW.unit}。準備好了就到這一頁「進入${PW.next}」。<br>
        💡 有些問題要先從別人口中聽到相關的事、或看過相關證物才問得出來。<br>
        💡 有人說的話對不上？拿到證據以後回去找他，同一題可以再「質問」一次。<br>
        ⚖️ 推理：隨時都可以推理。推理錯了不會公布真相，可以繼續調查再試。推理題一打開就算用掉一次機會，第一次就全對才有 S。`
@@ -1248,10 +1265,10 @@ function vBrief(){
        📓 筆記：自動記錄你問過、看過的內容。<br>
        ⚖️ 推理：隨時都可以推理。判斷發生了什麼事、選出兇手（可以不只一個），再選證據並回答推理題。查到越多線索，能選的可能性和推理題就越多。推理錯了不會公布真相，可以繼續調查再試。`;
   const next = m && !lastPhase() && !S.done
-    ? `<button class="btn" style="text-align:center;border-color:var(--accent);color:var(--accent)" onclick="nextPhase()">🌙 結束今天，進入「${esc(phasesOf(C)[S.phase+1].short)}」 ›</button>` : "";
+    ? `<button class="btn" style="text-align:center;border-color:var(--accent);color:var(--accent)" onclick="nextPhase()">${PW.icon} ${PW.end}，進入「${esc(phasesOf(C)[S.phase+1].short)}」 ›</button>` : "";
   const pending = tests().filter(t=>S.labq[t.id]!==undefined && !testReady(t));
   return `${head}
-  ${pending.length?`<div class="card"><h3>⏳ 化驗中</h3>${pending.map(t=>`<p class="small" style="margin:4px 0">🧪 ${esc(t.title)}<span class="muted">（${S.labq[t.id]+t.days-S.phase} 天後）</span></p>`).join("")}</div>`:""}
+  ${pending.length?`<div class="card"><h3>⏳ 化驗中</h3>${pending.map(t=>`<p class="small" style="margin:4px 0">🧪 ${esc(t.title)}<span class="muted">（${S.labq[t.id]+t.days-S.phase} ${PW.unit}後）</span></p>`).join("")}</div>`:""}
   <div class="card"><h3>🎯 任務</h3><p style="margin:0">${C.goal}</p></div>
   <details class="card"><summary><b>玩法</b></summary><p class="small muted" style="margin:8px 0 0">${rules}</p></details>
   <button class="btn primary" onclick="go('${travel()?"map":art()?"scene":"suspects"}')">${S.asked.length||S.seen.length?"繼續調查":"開始調查"}</button>
@@ -1266,14 +1283,14 @@ async function nextPhase(){
     const due = (C.events||[]).filter(e=>e.atTime && !e.atLoc && (e.phase||0)===S.phase && S.ev[e.id]===undefined && unlocked(e) && (!e.unless || !e.unless.some(has)) && !timeReached(e.atTime))
       .sort((a,b)=>clkAt(CLK(),a.atTime)-clkAt(CLK(),b.atTime))[0];
     if (due){
-      if (!await uiConfirm(`今天 ${due.atTime} 還有事情要發生。\n要直接等到 ${due.atTime} 嗎？`)) return;
+      if (!await uiConfirm(`${PW.now} ${due.atTime} 還有事情要發生。\n要直接等到 ${due.atTime} 嗎？`)) return;
       (S.used = S.used || {})[S.phase] = clkAt(CLK(), due.atTime) - toMin(CLK().start);
       save(); render(); checkEvents(); return;
     }
   }
-  const left = CLK() ? (timeLeft() > 0 ? `\n今天還有 ${minLabel(timeLeft())}，進入下一天就不能再用了。` : "")
-    : travel() ? (apLeft() ? `\n今天還有 ${apLeft()} 個行動點，進入下一天就不能再用了。` : "")
-    : ((totalQLeft()+searchLeft()) ? `\n今天還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查，進入下一天就不能再用了。` : "");
+  const left = CLK() ? (timeLeft() > 0 ? `\n${PW.now}還有 ${minLabel(timeLeft())}，進入${PW.next}就不能再用了。` : "")
+    : travel() ? (apLeft() ? `\n${PW.now}還有 ${apLeft()} 個行動點，進入${PW.next}就不能再用了。` : "")
+    : ((totalQLeft()+searchLeft()) ? `\n${PW.now}還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查，進入${PW.next}就不能再用了。` : "");
   if (!await uiConfirm(`進入「${nx.title}」？${left}`)) return;
   S.phase++; checkEvents(); save(); openSuspect = null; openLoc = null; wRoom = null; wGo = false; tab = "brief"; wTalk = null; wSay = null; peek = null;
   if (art()){ tab = travel() ? "map" : "scene"; if (travel()){ mapFrom = null; openLoc = PH().startAt || null; } }
@@ -1323,15 +1340,15 @@ function mapView(){
     return `<button class="mlab ${side||"d"}${isOpen?"":" off"}${here(l.id)?" here":""}" style="left:${(x/2.4).toFixed(1)}%;top:${(y/1.35).toFixed(1)}%" ${isOpen?`onclick="visit('${l.id}')"`:`onclick="toast('${esc(l.closedText||"現在去不了")}')"`}>${l.icon} ${esc(l.name.replace(/（.*?）|・.*/g,""))}<i>${tag}${n&&isOpen?`・👤${n}`:""}</i></button>`;
   }).join("");
   const pending = tests().filter(t=>S.labq[t.id]!==undefined && !testReady(t));
-  const next = multi() && !lastPhase() && !S.done ? `<button class="btn" style="text-align:center;border-color:var(--accent);color:var(--accent)" onclick="nextPhase()">🌙 結束今天，進入「${esc(phasesOf(C)[S.phase+1].short)}」 ›</button>` : "";
+  const next = multi() && !lastPhase() && !S.done ? `<button class="btn" style="text-align:center;border-color:var(--accent);color:var(--accent)" onclick="nextPhase()">${PW.icon} ${PW.end}，進入「${esc(phasesOf(C)[S.phase+1].short)}」 ›</button>` : "";
   if (fsMode()){
-    const nxBtn = multi() && !lastPhase() && !S.done ? `<button class="hb go" onclick="nextPhase()">🌙 下一天</button>` : "";
+    const nxBtn = multi() && !lastPhase() && !S.done ? `<button class="hb go" onclick="nextPhase()">${PW.icon} ${PW.next}</button>` : "";
     return fsFrame(null, `<div class="world wmap"><canvas id="mapcv"></canvas>${labels}</div>`, wBuddy ? buddyMenu(null) : "", nxBtn);
   }
   return `<div class="wtop"><b>${esc(P.title||C.title)}</b>${CLK()?`<span>🕐 ${nowStr()}・剩 <b style="color:var(--accent)">${minLabel(timeLeft())}</b></span>`:`<span>🚗 行動點 <b style="color:var(--accent)">${apLeft()}</b>／${P.actions||0}</span>`}</div>
   <div class="world wmap"><canvas id="mapcv"></canvas>${labels}</div>
-  <p class="hint" style="margin:0 2px 10px">${CLK() ? "點地點，會先問你要不要開車過去。開車要花時間，越遠越久。" : "點地點，開車過去（用行動點）。📍 今天已經去過的地方，可以免費回去。"}${hidden?`<br>🔒 還有 ${hidden} 個地方，要先查到相關線索才會出現在地圖上。`:""}</p>
-  ${pending.length?`<div class="card"><h3>⏳ 化驗中</h3>${pending.map(t=>`<p class="small" style="margin:4px 0">🧪 ${esc(t.title)}<span class="muted">（${S.labq[t.id]+t.days-S.phase} 天後）</span></p>`).join("")}</div>`:""}
+  <p class="hint" style="margin:0 2px 10px">${CLK() ? "點地點，會先問你要不要開車過去。開車要花時間，越遠越久。" : pw("點地點，開車過去（用行動點）。📍 今天已經去過的地方，可以免費回去。")}${hidden?`<br>🔒 還有 ${hidden} 個地方，要先查到相關線索才會出現在地圖上。`:""}</p>
+  ${pending.length?`<div class="card"><h3>⏳ 化驗中</h3>${pending.map(t=>`<p class="small" style="margin:4px 0">🧪 ${esc(t.title)}<span class="muted">（${S.labq[t.id]+t.days-S.phase} ${PW.unit}後）</span></p>`).join("")}</div>`:""}
   ${next}`;
 }
 function vMap(){
@@ -1341,15 +1358,15 @@ function vMap(){
   const open = C.locations.filter(locOpen);
   const hidden = C.locations.filter(l=>(l.phase||0)<=S.phase && !unlocked(l)).length;
   const closed = C.locations.filter(l=>unlocked(l) && !locOpen(l));
-  return `<p class="muted small">今天還有 <b style="color:var(--accent)">${apLeft()}</b> 個行動點。去一個地方要用行動點，今天已經去過的地方可以隨時回去。</p>
+  return `<p class="muted small">${PW.now}還有 <b style="color:var(--accent)">${apLeft()}</b> 個行動點。去一個地方要用行動點，${PW.now}已經去過的地方可以隨時回去。</p>
   ${open.map(l=>{
     const ppl = C.suspects.filter(s=>!isGone(s) && whereOf(s)===l.id);
     const isHere = here(l.id), cost = l.cost||1;
-    const status = isHere ? `<span class="tag cost">📍 今天在這裡</span>` : `<span class="tag">🚗 ${cost} 點</span>`;
+    const status = isHere ? `<span class="tag cost">📍 ${PW.now}在這裡</span>` : `<span class="tag">🚗 ${cost} 點</span>`;
     return `<div class="sus" style="text-align:left;margin-bottom:12px" onclick="visit('${l.id}')">
       <div style="display:flex;gap:12px;align-items:center"><div class="av" style="font-size:34px">${l.icon}</div>
       <div style="min-width:0"><div class="nm" style="margin:0">${esc(l.name)}</div><div class="rl">${esc(l.desc||"")}</div>
-      <div class="small" style="margin-top:4px">${status}${ppl.length?`<span class="muted">在場：${ppl.map(s=>s.name.replace(/（.*）/,"")).join("、")}</span>`:`<span class="muted">今天沒有可以問話的人</span>`}</div></div></div></div>`;
+      <div class="small" style="margin-top:4px">${status}${ppl.length?`<span class="muted">在場：${ppl.map(s=>s.name.replace(/（.*）/,"")).join("、")}</span>`:`<span class="muted">${PW.now}沒有可以問話的人</span>`}</div></div></div></div>`;
   }).join("")}
   ${closed.map(l=>`<div class="sus" style="text-align:left;margin-bottom:12px;opacity:.45"><div style="display:flex;gap:12px;align-items:center"><div class="av" style="font-size:34px">${l.icon}</div><div><div class="nm" style="margin:0">${esc(l.name)}</div><div class="rl">${esc(l.closedText||"現在去不了")}</div></div></div></div>`).join("")}
   ${hidden?`<p class="muted small">🔒 還有 ${hidden} 個地方，要先查到相關線索才會知道。</p>`:""}`;
@@ -1373,17 +1390,17 @@ function vLocation(l){
   ${ppl.length?`<div class="card"><h3>🗣️ 在場的人</h3><div class="suspects">${ppl.map(s=>{
       const left = qLeft(s);
       return `<div class="sus" onclick="openSuspect='${s.id}';render();scrollTo(0,0)"><div class="av">${s.av}</div><div class="nm">${s.name}</div><div class="rl">${s.role}</div>
-      <div class="ct" style="${left?"":"color:var(--red)"}">${left?`今天還能問 ${left} 題`:"今天不答了"}</div></div>`;}).join("")}</div></div>`:""}
-  ${shownItems.length||lockedItems?`<div class="card"><h3>🔍 可以查的東西</h3><p class="muted small" style="margin:0">${sl>0?`這次還能查 <b style="color:var(--accent)">${sl}</b> 項。`:"這裡今天已經查不了更多了。"}</p>
+      <div class="ct" style="${left?"":"color:var(--red)"}">${left?`${PW.now}還能問 ${left} 題`:pw("今天不答了")}</div></div>`;}).join("")}</div></div>`:""}
+  ${shownItems.length||lockedItems?`<div class="card"><h3>🔍 可以查的東西</h3><p class="muted small" style="margin:0">${sl>0?`這次還能查 <b style="color:var(--accent)">${sl}</b> 項。`:pw("這裡今天已經查不了更多了。")}</p>
     ${shownItems.map(it=>S.seen.includes(it.id)
       ? `<div style="margin:12px 0"><div style="font-weight:700"><span class="tag">${esc(phasesOf(C)[S.sp[it.id]||0].short)}</span>${esc(it.title)}</div>${itemBody(it, false)}</div>`
-      : `<button class="btn" ${off?"disabled":""} onclick="inspectById('${it.id}')">${it.cctv?"📹":"🧾"} ${esc(it.title)}${it.until!==undefined&&it.until===S.phase?' <span class="tag cost">今天過後就查不到了</span>':""}${(it.phase||0)===S.phase&&S.phase>0?' <span class="tag new">新</span>':""}</button>`).join("")}
+      : `<button class="btn" ${off?"disabled":""} onclick="inspectById('${it.id}')">${it.cctv?"📹":"🧾"} ${esc(it.title)}${it.until!==undefined&&it.until===S.phase?pw(' <span class="tag cost">今天過後就查不到了</span>'):""}${(it.phase||0)===S.phase&&S.phase>0?' <span class="tag new">新</span>':""}</button>`).join("")}
     ${lockedItems?`<p class="muted small">🔒 還有 ${lockedItems} 項，要先發現相關線索才會知道可以查。</p>`:""}</div>`:""}
-  ${l.perVisit?`<div class="card"><h3>🧪 化驗</h3><p class="muted small" style="margin:0">${tl>0?`這次還能送 <b style="color:var(--accent)">${tl}</b> 件。`:"這次能送的件數已經滿了。"}結果要等幾天，會在早上出現在「案情」頁。</p>
+  ${l.perVisit?`<div class="card"><h3>🧪 化驗</h3><p class="muted small" style="margin:0">${tl>0?`這次還能送 <b style="color:var(--accent)">${tl}</b> 件。`:"這次能送的件數已經滿了。"}結果要等幾${PW.unit}，會在早上出現在「案情」頁。</p>
     ${ts.map(t=>{
       if (testReady(t)) return `<div style="margin:12px 0"><div style="font-weight:700">✅ ${esc(t.title)}</div><div class="muted">${nl(t.text)}</div>${docHTML(t)}</div>`;
-      if (S.labq[t.id]!==undefined) return `<p class="small" style="margin:10px 0">⏳ ${esc(t.title)}<span class="muted">（${S.labq[t.id]+t.days-S.phase} 天後出結果）</span></p>`;
-      return `<button class="btn" ${S.done||tl<=0?"disabled":""} onclick="submitTest('${t.id}')">🧪 ${esc(t.title)} <span class="tag">${t.days} 天</span>${t.until!==undefined&&t.until===S.phase?' <span class="tag cost">今天過後就送不了</span>':""}${t.desc?`<div class="muted small">${esc(t.desc)}</div>`:""}</button>`;
+      if (S.labq[t.id]!==undefined) return `<p class="small" style="margin:10px 0">⏳ ${esc(t.title)}<span class="muted">（${S.labq[t.id]+t.days-S.phase} ${PW.unit}後出結果）</span></p>`;
+      return `<button class="btn" ${S.done||tl<=0?"disabled":""} onclick="submitTest('${t.id}')">🧪 ${esc(t.title)} <span class="tag">${t.days} ${PW.unit}</span>${t.until!==undefined&&t.until===S.phase?pw(' <span class="tag cost">今天過後就送不了</span>'):""}${t.desc?`<div class="muted small">${esc(t.desc)}</div>`:""}</button>`;
     }).join("")}
     ${lockedTests?`<p class="muted small">🔒 還有 ${lockedTests} 項化驗，要先找到相關的東西才能送。</p>`:""}</div>`:""}`;
 }
@@ -1393,17 +1410,17 @@ function vSuspects(){
   if (openSuspect){
     const s = C.suspects.find(x=>x.id===openSuspect);
     const gone = isGone(s);
-    const qs = s.questions.filter(unlocked);
-    const lockedN = s.questions.length - qs.length;
+    const qs = qsOf(s).filter(unlocked);
+    const lockedN = qsOf(s).length - qs.length;
     const askedHere = s.questions.filter(q=>S.asked.includes(q.id));
     const notAsked = qs.filter(canAsk);
     const left = qLeft(s), off = left<=0||S.done;
     const status = gone ? `<div class="small" style="color:var(--red)">🕯️ ${esc(s.goneNote||"已經不在了")}</div>`
-      : `<div class="small" style="color:${left?"var(--accent)":"var(--red)"}">${left?`${multi()?"今天":""}還願意回答 ${left} 題`:travel()&&!reachable(s)?"今天不在這裡":multi()&&!lastPhase()?"今天不肯再回答了":"拒絕再回答"}</div>`;
+      : `<div class="small" style="color:${left?"var(--accent)":"var(--red)"}">${left?`${multi()?PW.now:""}還願意回答 ${left} 題`:travel()&&!reachable(s)?pw("今天不在這裡"):multi()&&!lastPhase()?pw("今天不肯再回答了"):"拒絕再回答"}</div>`;
     let talk = "";
     if (art() && lookOf(s)){
       const said = lastSaid && lastSaid.sid===s.id ? s.questions.find(q=>q.id===lastSaid.qid) : null;
-      const line = said ? textOf(said).a : gone ? "……" : left ? (s.hello||"……你想問什麼？") : "今天就到這裡吧。";
+      const line = said ? textOf(said).a : gone ? "……" : left ? (s.hello||"……你想問什麼？") : pw("今天就到這裡吧。");
       const rlist = C.rooms ? (travel() ? C.rooms[whereOf(s)] : C.rooms._) || [] : [];
       const rr = rlist.find(r=>r.id===dailyOf(s).room) || (travel() ? rlist[0] : null);
       const where = rr ? rr.scene : (travel() && whereOf(s)) ? (LOC(whereOf(s)).scene||whereOf(s)) : (C.defaultScene||"farm");
@@ -1420,17 +1437,17 @@ function vSuspects(){
       ${notAsked.length?notAsked.map(q=>`<button class="btn" onclick="askById('${s.id}','${q.id}')">
         ${reAsk(q)||/^（出示/.test(textOf(q).q)?'<span class="tag new">質問</span>':(q.requires||q.requiresAll)?'<span class="tag new">追問</span>':''}${esc(askText(q))}</button>`).join("")
       :`<p class="muted small">暫時沒有其他問題。</p>`}
-      ${lockedN?`<p class="muted small">${lockNote(s.questions, lockedN, "要先從其他人口中或證物裡得到相關線索才能問。")}</p>`:""}
+      ${lockedN?`<p class="muted small">${lockNote(qsOf(s), lockedN, "要先從其他人口中或證物裡得到相關線索才能問。")}</p>`:""}
     </div>`}
     ${askedHere.length?`<div class="card"><h3>已問</h3>${askedHere.map(q=>qaHTML(q)).join("")}</div>`:""}`;
   }
   const P = PH();
-  return `<p class="muted small">選一位嫌疑人問話。每人${multi()?"今天":""}只會回答 ${P.questionLimit} 題，先想清楚要問什麼。</p>
+  return `<p class="muted small">選一位嫌疑人問話。每人${multi()?PW.now:""}只會回答 ${P.questionLimit} 題，先想清楚要問什麼。</p>
   <div class="suspects">${C.suspects.map(s=>{
     const left = qLeft(s), gone = isGone(s);
     return `<div class="sus ${gone?"gone":""}" onclick="openSuspect='${s.id}';render();scrollTo(0,0)">
       <div class="av">${s.av}</div><div class="nm">${s.name}</div><div class="rl">${s.role}</div>
-      <div class="ct" style="${left&&!gone?"":"color:var(--red)"}">${gone?"🕯️ 已身亡":left?`還能問 ${left} 題`:multi()&&!lastPhase()?"今天不答了":"已拒答"}</div></div>`;}).join("")}</div>`;
+      <div class="ct" style="${left&&!gone?"":"color:var(--red)"}">${gone?"🕯️ 已身亡":left?`還能問 ${left} 題`:multi()&&!lastPhase()?pw("今天不答了"):"已拒答"}</div></div>`;}).join("")}</div>`;
 }
 function qaHTML(q){
   const t = textOf(q), silent = t.a === "……";
@@ -1450,12 +1467,12 @@ function vSearch(){
     return `<div class="card"><h3>${title}</h3>${shown.map(it=>{
       if (S.seen.includes(it.id)) return `<div style="margin:12px 0"><div style="font-weight:700">${multi()?`<span class="tag">${esc(phasesOf(C)[S.sp[it.id]||0].short)}</span>`:""}${esc(it.title)}</div>
         ${art() ? itemBody(it, false) : kind==="cctv"?`<div class="cctv"><span class="rec">● REC</span>\n${esc(it.text)}</div>`:`<div class="muted">${nl(it.text)}</div>`}</div>`;
-      return `<button class="btn" ${off?"disabled":""} onclick="inspectById('${it.id}')">${kind==="cctv"?"📹":"🧾"} ${esc(it.title)}${it.until!==undefined&&it.until===S.phase?' <span class="tag cost">今天過後就查不到了</span>':""}${(it.phase||0)===S.phase&&S.phase>0?' <span class="tag new">新</span>':""}</button>`;
+      return `<button class="btn" ${off?"disabled":""} onclick="inspectById('${it.id}')">${kind==="cctv"?"📹":"🧾"} ${esc(it.title)}${it.until!==undefined&&it.until===S.phase?pw(' <span class="tag cost">今天過後就查不到了</span>'):""}${(it.phase||0)===S.phase&&S.phase>0?' <span class="tag new">新</span>':""}</button>`;
     }).join("")}</div>`;
   };
   const open = allItems().filter(it=>!S.seen.includes(it.id) && itemOpen(it) && unlocked(it)).length;
   const html = block("📹 監視器", C.cctv, "cctv") + block("🧾 證物", C.evidence, "ev");
-  return `${art() && C.rooms ? roomBlock(HOME) : ""}<p class="muted small">${searchLeft()>0?`鑑識人員${multi()?"今天":""}還能幫你處理 <b style="color:var(--accent)">${searchLeft()}</b> 項（目前可查 ${open} 項）。`:multi()&&!lastPhase()?"鑑識人員今天已經沒時間了，明天再來。":"鑑識人員已經沒時間了。"}</p>
+  return `${art() && C.rooms ? roomBlock(HOME) : ""}<p class="muted small">${searchLeft()>0?`鑑識人員${multi()?PW.now:""}還能幫你處理 <b style="color:var(--accent)">${searchLeft()}</b> 項（目前可查 ${open} 項）。`:multi()&&!lastPhase()?pw("鑑識人員今天已經沒時間了，明天再來。"):"鑑識人員已經沒時間了。"}</p>
   ${html}${lockedAll?`<p class="muted small">🔒 還有 ${lockedAll} 項，要先發現相關線索才會知道可以查。</p>`:""}`;
 }
 function inspectById(id){ inspect(allItems().find(x=>x.id===id)); }
@@ -1527,7 +1544,7 @@ function docPending(qs){
   return qs.filter(q=>!unlocked(q) && (q.phase===undefined || q.phase <= S.phase) && reqOK(q, h2)).length;
 }
 const lockNote = (qs, n, tail) => { const d = docPending(qs); return `🔒 還有 ${n} 個問題，${tail}` + (d ? `<br>📌 其中 ${d} 個的線索已經在你手上的文件裡：把可疑的那一行圈起來，就能問了。` : ""); };
-const availCount = () => C.suspects.filter(s=>!isGone(s)).flatMap(s=>s.questions).filter(unlocked).length
+const availCount = () => C.suspects.filter(s=>!isGone(s)).flatMap(qsOf).filter(unlocked).length
   + allItems().filter(it=>itemOpen(it) && unlocked(it)).length + tests().filter(testOpen).length
   + (travel() ? C.locations.filter(locOpen).length : 0);
 // 問題的問法與回答：問的當下決定用哪個版本，之後筆記裡不會變
@@ -1607,8 +1624,8 @@ function vAccuse(){
   const lockedR = C.reasoning.filter(r=>!unlocked(r) && (!r.kinds || r.kinds.includes(P.kind))).length;
   const rqN = C.reasoning.filter(r=>reasonFor(r, P.kind)).length;   // 這個結論要回答的推理題（已解鎖的）
   let n = 1;
-  const leftTxt = travel() ? (apLeft()?`你今天還有 ${apLeft()} 個行動點。`:"") : (totalQLeft()+searchLeft()>0?`你${multi()?"今天":""}還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查。`:"");
-  return `<div class="card"><h2>⚖️ 推理真相</h2><p class="muted small" style="margin:0">隨時都可以來這裡推理。推理錯了不會直接公布真相，可以回去繼續調查再推理一次。推理題一打開就算一次機會。${leftTxt}${multi()&&!lastPhase()?`案件還有 ${phasesOf(C).length-1-S.phase} 天可以調查。`:""}<br>你查到越多線索，能選的可能性就越多。</p></div>
+  const leftTxt = travel() ? (apLeft()?`你${PW.now}還有 ${apLeft()} 個行動點。`:"") : (totalQLeft()+searchLeft()>0?`你${multi()?PW.now:""}還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查。`:"");
+  return `<div class="card"><h2>⚖️ 推理真相</h2><p class="muted small" style="margin:0">隨時都可以來這裡推理。推理錯了不會直接公布真相，可以回去繼續調查再推理一次。推理題一打開就算一次機會。${leftTxt}${multi()&&!lastPhase()?`案件還有 ${phasesOf(C).length-1-S.phase} ${PW.unit}可以調查。`:""}<br>你查到越多線索，能選的可能性就越多。</p></div>
   <div class="card"><h3>${n++}. ${esc(C.kindQuestion || "到底發生了什麼事？")}</h3>
     ${kinds.map(k=>`<div class="pick ${P.kind===k.id?"on":""}" onclick="pickKind('${k.id}')"><span class="box">${P.kind===k.id?"✓":""}</span>${esc(k.label)}</div>`).join("")}
     ${lockedKinds?`<p class="muted small">🔒 還有 ${lockedKinds} 種可能性，要先發現相關線索才會出現。</p>`:""}
@@ -1702,8 +1719,8 @@ function vResult(){
     return `<p style="margin:6px 0">${ok?"✅":"❌"} ${esc(q.q)}<br><span class="muted small">答案：${esc(q.options[q.answer])}${ok?"":`（${mine===undefined?"你沒有作答":"你選："+esc(q.options[mine])}）`}</span></p>`;}).join("")}</div>`;
   const dig = canDig();
   const digText = travel() ? (apLeft()||!lastPhase() ? "你還有時間，可以回去繼續調查，" : "調查的時間已經用完，但你可以重新整理筆記，")
-    : totalQLeft()+searchLeft()>0 ? `你${multi()?"今天":""}還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查，可以回去繼續調查，`
-    : multi() && !lastPhase() ? "今天的次數用完了，但你可以進入下一天繼續調查，"
+    : totalQLeft()+searchLeft()>0 ? `你${multi()?PW.now:""}還有 ${totalQLeft()} 題可問、${searchLeft()} 項可查，可以回去繼續調查，`
+    : multi() && !lastPhase() ? pw("今天的次數用完了，但你可以進入下一天繼續調查，")
     : "調查的機會已經用完，但你可以重新整理筆記，";
   const tail = shown ? `${answers}
   <div class="card"><h3>📜 真相</h3>${sol.truth.map(p=>`<p>${p}</p>`).join("")}</div>
