@@ -2,6 +2,7 @@
 // 1) EPn.phaseWord：一個 phase 的叫法（今天／下一天／結束今天…）  2) phases[n].tip：早上簡報最後一句提示（字＝換掉，false＝不說）
 // 3) EPn.world[地點].street = false：只有室內，走不到街上；band:false／"sign"：上面那條外牆換成天花板           4) 問題的 until：過了那一段，還沒問的問題收起來
 // 5) 每次打開案件，走動畫面的狀態都重新開始（上一集站的位置、還沒講完的開場，不會跑到有同名地點的下一集）
+// 6) 外牆：EPn.world[地點].facadeDark = true（停電：窗和門燈都是暗的）；band 有寫＝平房，街上看只有一層；沒有街道、頭尾是戶外場景時外面是黑的
 // 最後要印出 PHASE OPTS PASS。
 const {chromium}=require('playwright'); const shot=process.argv[2]; const PORT=process.env.PORT||8765;
 (async()=>{ const b=await chromium.launch(); const p=await b.newPage({viewport:{width:1180,height:820}}); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
@@ -49,5 +50,26 @@ console.log(JSON.stringify({W0:{menu:W0.menu,mapBtn:W0.mapBtn}, W1:{menu:W1.menu
 const R=await p.evaluate(async()=>{ const l=curLoc(), a=WORLD.state(l.id, worldDef(l)); a.px=worldDef(l).w-40; a.mark=1; goHome(); await openCase(5); for (let i=0;i<30&&inter;i++) closeSheet(); if (SHEETS.includes(tab)) closeSheet();
   const b=WORLD.state(l.id, worldDef(l)); return { fresh:a!==b && !b.mark, px:Math.round(b.px) }; });
 const ok5 = R.fresh;
-console.log(JSON.stringify({ok1, ok1b, ok2, ok3, ok4, ok5, R}));
-console.log(ok1 && ok1b && ok2 && ok3 && ok4 && ok5 && !errs.length ? "PHASE OPTS PASS" : "PHASE OPTS FAIL", errs); await b.close(); })();
+// 6) 外牆：facadeDark（停電）、band 有寫＝平房（外面只畫一層）、band:false＝外面也沒有招牌；沒有街道而且頭尾是戶外場景：場景外面是黑的
+const F=await p.evaluate(lid=>{ const l=LOC(lid), w=(C.world=C.world||{}), w0=w[lid]; const B=o=>{ w[lid]={ ...(w0||{}), ...o }; const b=worldDef(l).buildings[0]; return { y0:b.y0, rows:b.rows.length, dark:b.dark, sign:typeof b.sign, labels:(b.labels||[]).length }; };
+  const r={ def:B({}), dark:B({ facadeDark:true }), sign:B({ band:"sign" }), none:B({ band:false }) }; if (w0===undefined) delete w[lid]; else w[lid]=w0; return r; }, lid);
+const ok6a = F.def.y0===4 && F.def.rows===2 && F.def.dark===false && F.def.sign==="function" && F.dark.dark===true && F.dark.rows===2
+  && F.sign.y0===24 && F.sign.rows===1 && F.sign.sign==="function" && F.sign.labels>0 && F.none.y0===24 && F.none.rows===1 && F.none.sign!=="function" && F.none.labels===0;
+// 平房在街上看：屋頂上面是天空，不是裡面的天花板（#3b3b40）；走進去才看得到天花板
+const roofPx=async inside=>{ await p.evaluate(([lid,inside])=>{ const w=(C.world=C.world||{}); window.__old=w[lid]; w[lid]={ ...(w[lid]||{}), band:"sign" }; WORLD.reset(lid); openLoc=lid; wArrive=null; render(); },[lid,inside]);
+  await p.waitForTimeout(500); await p.evaluate(inside=>{ WORLD.skip(); if (inside){ const d=worldDef(curLoc()); WORLD.goTo(d.buildings[0].x0+60, 124); } }, inside); await p.waitForTimeout(inside?3500:900);
+  if (shot) await p.screenshot({path:`${shot}/flat-${inside?'in':'out'}.png`});
+  return p.evaluate(lid=>{ const d=worldDef(LOC(lid)), s=WORLD.state(lid, d), b=d.buildings[0], cv=document.getElementById("worldcv"), x=Math.round(Math.max(b.x0+40, s.cam+4)-s.cam);
+    const px=[...cv.getContext("2d").getImageData(x, 10, 1, 1).data].slice(0,3).join(); const w=C.world; if (window.__old===undefined) delete w[lid]; else w[lid]=window.__old; WORLD.reset(lid); return px; }, lid); };
+const slab="59,59,64", pxOut=await roofPx(false), pxIn=await roofPx(true); const ok6b = pxOut!==slab && pxIn===slab;
+// 頭一個房間是戶外場景的地點（第 5 集的 school）：關掉街道以後，畫面最左邊那幾格要是黑的
+await p.evaluate(async()=>{ await openCase(4); for (let i=0;i<30&&inter;i++) closeSheet(); if (SHEETS.includes(tab)) closeSheet(); WORLD.skip();
+  const lid="school", w=(C.world=C.world||{}); window.__old=w[lid]; w[lid]={ ...(w[lid]||{}), street:false }; WORLD.reset(lid); openLoc=lid; wArrive=null; render(); });
+await p.waitForTimeout(500); await p.evaluate(()=>{ WORLD.skip(); WORLD.goTo(0, 124); }); await p.waitForTimeout(3000); if (shot) await p.screenshot({path:`${shot}/edge.png`});
+const E=await p.evaluate(()=>{ const lid="school", d=worldDef(LOC(lid)), s=WORLD.state(lid, d), cv=document.getElementById("worldcv"), g=cv.getContext("2d"), r={ cam:Math.round(s.cam), minX:d.minX, out:roomsOf(LOC(lid))[0].scene, px:[] };
+  [20, 60, 100].forEach(y=>[1, 4].forEach(x=>r.px.push([...g.getImageData(x, y, 1, 1).data].slice(0,3).join())));
+  const w=C.world; if (window.__old===undefined) delete w[lid]; else w[lid]=window.__old; WORLD.reset(lid); return r; });
+const ok6c = E.cam===E.minX && E.px.every(c=>c==="12,10,8");
+const ok6 = ok6a && ok6b && ok6c;
+console.log(JSON.stringify({ok1, ok1b, ok2, ok3, ok4, ok5, ok6, R, F, pxOut, pxIn, E}));
+console.log(ok1 && ok1b && ok2 && ok3 && ok4 && ok5 && ok6 && !errs.length ? "PHASE OPTS PASS" : "PHASE OPTS FAIL", errs); await b.close(); })();

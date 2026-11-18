@@ -524,10 +524,11 @@ const WORLD = (() => {
       R(b.x0 - 4, top - 5, b.x1 - b.x0 + 8, 6, b.roof || shade(wall, -.5)); R(b.x0 - 4, top + 1, b.x1 - b.x0 + 8, 1, shade(wall, -.35));
       (b.rows || []).forEach(y => { R(b.x0, y + 17, b.x1 - b.x0, 2, shade(wall, -.25)); R(b.x0, y + 17, b.x1 - b.x0, 1, shade(wall, .12));
         for (let x = b.x0 + 18; x < b.x1 - 20; x += 30) {
-          const lit = night && (x/30|0)%3, glass = night ? (lit ? "#ffd98a" : "#1a2030") : "#8fb0c4";
+          // b.dark（停電／全暗）：窗一律是暗的，沒有白天的反光，也沒有亮燈的窗
+          const lit = !b.dark && night && (x/30|0)%3, glass = b.dark ? "#1a2030" : night ? (lit ? "#ffd98a" : "#1a2030") : "#8fb0c4";
           R(x - 3, y - 3, 18, 2, shade(wall, -.3)); R(x - 2, y - 2, 16, 1, shade(wall, .18));
           windowBox(x, y, 12, 13, glass);
-          if (!night){ R(x + 1, y + 1, 4, 1, "#d8ecf6"); R(x + 7, y + 8, 3, 1, "#d8ecf6"); } else if (lit){ R(x + 1, y + 1, 5, 5, "#ffe8b0"); p.dither(x - 4, y + 14, 20, 6, "#ffd98a", 4); }
+          if (b.dark){} else if (!night){ R(x + 1, y + 1, 4, 1, "#d8ecf6"); R(x + 7, y + 8, 3, 1, "#d8ecf6"); } else if (lit){ R(x + 1, y + 1, 5, 5, "#ffe8b0"); p.dither(x - 4, y + 14, 20, 6, "#ffd98a", 4); }
           if ((x/30|0)%2){ R(x - 4, y, 3, 13, shade(b.shutter || "#5a6a5a", 0)); R(x + 13, y, 3, 13, shade(b.shutter || "#5a6a5a", 0)); for (let k = 1; k < 13; k += 2){ R(x - 4, y + k, 3, 1, shade(b.shutter || "#5a6a5a", -.25)); R(x + 13, y + k, 3, 1, shade(b.shutter || "#5a6a5a", -.25)); } }
           R(x - 2, y + 14, 16, 2, shade(wall, .15)); R(x - 2, y + 16, 16, 1, shade(wall, -.35));
         } });
@@ -535,8 +536,8 @@ const WORLD = (() => {
       R(b.x1 - 7, top, 2, GROUND - top, shade(wall, -.4)); R(b.x1 - 8, GROUND - 3, 4, 3, shade(wall, -.45));
       (b.rows || []).slice(0, 1).forEach(y => { const ax = b.x0 + Math.floor((b.x1 - b.x0) * 0.62); R(ax, y + 3, 12, 8, "#c9cdd0"); R(ax, y + 3, 12, 1, "#e9eef0"); for (let k = 0; k < 3; k++) R(ax + 2, y + 5 + k*2, 8, 1, "#8a9094"); R(ax + 5, y + 11, 1, 6, "#6a7074"); });
       R(b.x0, GROUND - 6, b.x1 - b.x0, 6, shade(wall, -.18)); dither(b.x0, GROUND - 10, b.x1 - b.x0, 4, shade(wall, -.18), 3);
-      const lampOn = night;
-      R(b.x0 + 13, GROUND - 33, 3, 4, "#2a2a2e"); R(b.x0 + 13, GROUND - 30, 3, 2, lampOn ? "#ffe8a0" : "#c9cdd0"); if (lampOn) dither(b.x0 + 7, GROUND - 31, 16, 18, "#ffe8a0", 4);   // 門燈貼著門框，不要壓到旁邊的窗
+      const lampOn = night && !b.dark;
+      R(b.x0 + 13, GROUND - 33, 3, 4, "#2a2a2e"); R(b.x0 + 13, GROUND - 30, 3, 2, lampOn ? "#ffe8a0" : b.dark ? "#4a4e54" : "#c9cdd0"); if (lampOn) dither(b.x0 + 7, GROUND - 31, 16, 18, "#ffe8a0", 4);   // 門燈貼著門框，不要壓到旁邊的窗
       if (b.sign) b.sign(p, t, b);
     }
     // 門（前門在左、後門在右）
@@ -560,7 +561,7 @@ const WORLD = (() => {
     g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,VW,VH);
     const cam = Math.round(s.cam);
     g.translate(-cam, 0);
-    def.draw(p, s.t, hooks.opt(), cam, g);
+    def.draw(p, s.t, hooks.opt(), cam, g, x => { const i = bldAt(x); return i < 0 ? 1 : lvVis(s, i, 0); });   // 最後一個參數：x 那裡的建築「打開」了多少（0＝在外面看、1＝人在裡面）
     if (!def.noGroundFx) groundFx(p, g, cam);
     // 還沒查的證物：閃光（在外面看不到建築裡面的）
     if (!hooks.noSpark) hooks.spots().forEach(q => { const cx = q.r[0]+q.r[2]/2; if (q.k==="item" && q.fresh && !hiddenAt(s, cx, q.r[1]+q.r[3]/2) && Math.floor(s.t*2 + q.r[0]) % 3 !== 0) p.spark(cx, q.r[1]+2); });

@@ -191,7 +191,7 @@ const WK = (() => {
       let px = pos[room] + (d.x !== undefined ? d.x : 60);
       return { x:px, pose:d.pose, facing:d.facing };
     };
-    function draw(p, t, op, cam, g){
+    function draw(p, t, op, cam, g, vis){
       const { R, shade, windowBox } = p, ph = op.phase || 0, night = skyOf(ph)[5];
       let seaY = 0, seaCol = null; const bluer = c => { const n = parseInt(c.slice(1), 16); return (n & 255) - (n >> 16); };
       if (setting === "coast") rooms.forEach(r => { if (!OUT.has(r.scene)) return; const ns = noSky(roomImg(r.scene, { ...roomOpt(r), ...((o.ropt || {})[r.id] || {}) }), (C.skyTo || {})[r.scene]); seaY = Math.max(seaY, OY + ns._end); if (ns._sea && (!seaCol || bluer(ns._sea) > bluer(seaCol))) seaCol = ns._sea; });   // 幾個場景都有海：用最藍的那個（不會挑到偏藍的白牆）
@@ -210,12 +210,15 @@ const WK = (() => {
           [ox - 3, ox + RW - 4].forEach(hx => { R(hx, 66, 7, G - 66, shade(sk[3], -.25)); R(hx - 1, 62, 9, 6, shade(sk[3], -.1)); for (let y = 70; y < G; y += 7) R(hx + 1 + (y % 3), y, 2, 2, shade(sk[3], .15)); });
           return;
         }
+        let bandA = 1;
         // 外牆（二樓）＋屋頂。band（EPn.world[地點].band）：不寫＝照畫；"sign"＝沒有二樓（地下室、平房裡面）：不畫窗和屋頂，改成一條水泥天花板，招牌留著；
         // false＝只有天花板，招牌和招牌上的字也不要
         if (o.band === undefined){
           R(ox - GAP, 3, RW + GAP * 2, OY - 3, fac[0]); R(ox - GAP - 3, 0, RW + GAP * 2 + 6, 4, shade(fac[0], -.45));
-          for (let k = 0; k < 6; k++) if (!(i === 0 && (k === 2 || k === 3))) windowBox(ox + 10 + k * 31, 9, 14, 11, night ? ((k + i) % 3 ? "#ffd98a" : "#1a2030") : "#9cc5e6");
+          for (let k = 0; k < 6; k++) if (!(i === 0 && (k === 2 || k === 3))) windowBox(ox + 10 + k * 31, 9, 14, 11, o.facadeDark ? "#1a2030" : night ? ((k + i) % 3 ? "#ffd98a" : "#1a2030") : "#9cc5e6");
         } else {
+          // 平房：外牆只到一樓屋頂（y0＝24），樓板和裡面的招牌只有人在裡面才看得到；在街上看，屋頂上面是天空
+          bandA = !vis || (noStreet && rooms.every(q => !OUT.has(q.scene))) ? 1 : vis(ox + RW / 2); if (bandA < 1){ g.save(); g.globalAlpha = bandA; }   // 整個地點都在室內（走不出去）就一直畫
           const cc = "#3b3b40";   // 水泥樓板：上面暗、下緣一條亮線，每隔一段有一道接縫
           R(ox - GAP, 0, RW + GAP * 2, OY, cc); R(ox - GAP, 0, RW + GAP * 2, 6, shade(cc, -.35)); R(ox - GAP, OY - 3, RW + GAP * 2, 2, shade(cc, .22)); R(ox - GAP, OY - 1, RW + GAP * 2, 1, shade(cc, -.45));
           for (let k = 0; k < 4; k++) R(ox + 24 + k * 48, 6, 1, OY - 9, shade(cc, -.18));
@@ -225,6 +228,7 @@ const WK = (() => {
           if (l.id === "hospital"){ R(ox + 72, 9, 8, 2, "#e04a3a"); R(ox + 75, 7, 2, 6, "#e04a3a"); }
           if (l.id === "police"){ R(ox + 72, 8, 6, 6, "#f2d03b"); R(ox + 74, 7, 2, 8, "#f2d03b"); }
         }
+        if (bandA < 1) g.restore();
         g.drawImage(img, ox, OY);
         // 房間之間的牆（下面是門口）
         const wall = shade(fac[0], -.3);
@@ -236,7 +240,9 @@ const WK = (() => {
         const a = pos[ins[0].id] - GAP, b = pos[ins[ins.length - 1].id] + RW;
         R(a - 2, OY, 4, 98 - 32, shade(fac[0], -.5)); R(b + GAP - 2, OY, 4, 98 - 32, shade(fac[0], -.5));
       }
-      if (noStreet){ R(SX - GAP - 400, 0, 400, 135, "#0c0a08"); R(w, 0, 400, 135, "#0c0a08"); }   // 建築外面全部塗黑
+      if (noStreet){   // 建築外面全部塗黑（第一個／最後一個房間是戶外場景的話，塗到場景的邊，不留一條遠景）
+        const r0 = rooms[0], r1 = rooms[rooms.length - 1], lx = OUT.has(r0.scene) ? pos[r0.id] : SX - GAP, rx = OUT.has(r1.scene) ? pos[r1.id] + RW : w;
+        R(lx - 400, 0, 400, 135, "#0c0a08"); R(rx, 0, 400, 135, "#0c0a08"); }
       if (o.drawAfter) o.drawAfter(p, t, op, cam);
     }
     function front(p, t, op, cam){
@@ -250,9 +256,9 @@ const WK = (() => {
     const signText = l.sign || l.name.replace(/（.*?）|\(.*?\)/g, "").replace(/・.*/, "");
     const fs = Math.min(7, 60 / Math.max(3, signText.length));
     buildings.forEach((b, i) => Object.assign(b, {
-      labels: i || o.band === false ? [] : [ { x: b.x0 + GAP + 100, y: 38.5, text: signText, size: fs, when:"out" }, { x: b.x0 + GAP + 101, y: 13.5, text: signText, size: Math.min(6.5, fs), when:"in" } ], y0:4, wall:fac[0], roof:shade(fac[0], -.5), brick: setting !== "city", rows:[8, 88], door:"#5a3e24",
+      labels: i || o.band === false ? [] : [ { x: b.x0 + GAP + 100, y: 38.5, text: signText, size: fs, when:"out" }, { x: b.x0 + GAP + 101, y: 13.5, text: signText, size: Math.min(6.5, fs), when:"in" } ], y0: o.band === undefined ? 4 : 24, wall:fac[0], roof:shade(fac[0], -.5), brick: setting !== "city", rows: o.band === undefined ? [8, 88] : [88], door:"#5a3e24", dark: !!o.facadeDark,   // band 有寫＝平房：外面看只有一層；facadeDark＝停電，窗和門燈都是暗的
       night: op => skyOf(op.phase||0)[5],
-      sign: i ? null : (p) => { const { R, shade } = p, ox = b.x0 + GAP; R(ox + 60, 30, 72, 16, fac[1]); R(ox + 60, 30, 72, 1, shade(fac[1], .3)); R(ox + 60, 45, 72, 1, shade(fac[1], -.4));
+      sign: i || o.band === false ? null : (p) => { const { R, shade } = p, ox = b.x0 + GAP; R(ox + 60, 30, 72, 16, fac[1]); R(ox + 60, 30, 72, 1, shade(fac[1], .3)); R(ox + 60, 45, 72, 1, shade(fac[1], -.4));
         if (l.id === "hospital"){ R(ox + 66, 35, 8, 2, "#e04a3a"); R(ox + 69, 32, 2, 8, "#e04a3a"); }
         if (l.id === "police"){ R(ox + 66, 33, 6, 6, "#f2d03b"); R(ox + 68, 32, 2, 8, "#f2d03b"); }
         // 一樓頭兩扇窗下面的花台（以前是一條橫跨兩扇窗的條紋，擋住半扇窗，看起來像畫錯）
