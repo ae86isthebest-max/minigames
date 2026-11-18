@@ -89,8 +89,8 @@ const EP25 = {
   ],
   kinds: [
     { id:"misfire", label:"跟當年的結論一樣：他在組長室擦槍，自己的槍走火", reason:true },
-    { id:"suicide", label:"他自己開的槍", reason:true },
-    { id:"shot", label:"有人開槍打死了他", reason:true }
+    { id:"shot", label:"有人開槍打死了他", reason:true },
+    { id:"suicide", label:"他自己開的槍", reason:true }
   ],
   extraPeople: [],
   reasoning: [

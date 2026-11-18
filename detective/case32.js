@@ -69,8 +69,8 @@ const EP32 = {
   kinds: [
     { id:"acc", label:"意外：喝醉了，自己掉進運河裡" },
     { id:"sui", label:"自殺：自己跳進運河裡" },
-    { id:"push", label:"他殺：在運河邊被推下去", who:"是誰做的？（可以複選）", whoLine:"動手的，是", requires:["h32_wrists","h32_neck","test32_bottle","o32_shoes","o32_shoes2"] },
-    { id:"drown", label:"他殺：在別的地方被壓進水裡，再進了運河", who:"是誰做的？（可以複選）", whoLine:"動手的，是", requires:["test32_lung","test32_water","cctv32_alley","c7"] }
+    { id:"drown", label:"他殺：在別的地方被壓進水裡，再進了運河", who:"是誰做的？（可以複選）", whoLine:"動手的，是", requires:["test32_lung","test32_water","cctv32_alley","c7"] },
+    { id:"push", label:"他殺：在運河邊被推下去", who:"是誰做的？（可以複選）", whoLine:"動手的，是", requires:["h32_wrists","h32_neck","test32_bottle","o32_shoes","o32_shoes2"] }
   ],
   extraPeople: [],
   reasoning: [

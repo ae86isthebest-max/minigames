@@ -57,8 +57,8 @@ const EP22 = {
   ],
   events: [],
   kinds: [
-    { id:"inside", label:"合作社裡面的人，用正常的方法打開了金庫", who:"是誰？（可以複選）", whoLine:"打開金庫的，是" },
     { id:"outside", label:"外面的人趁停電闖進金庫", reason:true },
+    { id:"inside", label:"合作社裡面的人，用正常的方法打開了金庫", who:"是誰？（可以複選）", whoLine:"打開金庫的，是" },
     { id:"fraud", label:"保險箱的主人自導自演，騙保險", who:"是誰？（可以複選）", whoLine:"自導自演的，是", requires:["yu2"] }
   ],
   extraPeople: [],

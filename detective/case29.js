@@ -91,8 +91,8 @@ const EP29 = {
   ],
   kinds: [
     { id:"illness", label:"急病：她的身體自己出了狀況", reason:true },
-    { id:"accident", label:"意外：她自己吃到、喝到了會過敏的東西", reason:true, requires:["e29_cause","o29_pouch","h29_allergy"] },
-    { id:"murder", label:"有人故意讓她碰到會過敏的東西", who:"是誰？（可以複選）", whoLine:"做這件事的，是", requires:["e29_cause","o29_pouch","h29_allergy"] }
+    { id:"murder", label:"有人故意讓她碰到會過敏的東西", who:"是誰？（可以複選）", whoLine:"做這件事的，是", requires:["e29_cause","o29_pouch","h29_allergy"] },
+    { id:"accident", label:"意外：她自己吃到、喝到了會過敏的東西", reason:true, requires:["e29_cause","o29_pouch","h29_allergy"] }
   ],
   extraPeople: [],
   reasoning: [

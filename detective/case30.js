@@ -105,9 +105,9 @@ const EP30 = {
     { id:"wait", label:"還不能確定：照對方說的，06:00 帶碎片去交換", reason:true },
     { id:"shark", label:"是討債的人：她在宏發當鋪的人手上", reason:true, requires:["w6@alt","w6L","m5","o30_receipt"] },
     { id:"freezer", label:"她在阿珠冰店裡面：冷凍庫，或是放製冰機的那一間", reason:true, requires:["o30_freezer","o30_machine"] },
+    { id:"wh", label:"她在冰店後面的舊漁會倉庫裡", reason:true, requires:["a6","yt3","o30_meter","o30_lock","o30_vent","o30_shutter","o30_wall","h30_power"] },
     { id:"plant", label:"她在新港製冰廠", reason:true, requires:["k4","a7","e30_plant","z9","h30_plant"] },
-    { id:"boat", label:"她在舊碼頭：船上，或是船塢裡", reason:true, requires:["cctv30_tide","o30_yardseal"] },
-    { id:"wh", label:"她在冰店後面的舊漁會倉庫裡", reason:true, requires:["a6","yt3","o30_meter","o30_lock","o30_vent","o30_shutter","o30_wall","h30_power"] }
+    { id:"boat", label:"她在舊碼頭：船上，或是船塢裡", reason:true, requires:["cctv30_tide","o30_yardseal"] }
   ],
   extraPeople: [],
   reasoning: [

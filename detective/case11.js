@@ -93,8 +93,8 @@ const EP11 = {
       tl:[["08/25–26","搜索邱俊傑的家"]] }
   ],
   kinds: [
-    { id:"inside", label:"搶案：店裡有人當內應，告訴搶匪什麼時候下手", who:"參與這起搶案的有誰？（可以複選，包括內應）", whoLine:"參與這起搶案的，就是" },
     { id:"outside", label:"搶案：外面的人自己踩點下手，店裡沒有內應", who:"搶匪是誰？（可以複選）", whoLine:"搶匪就是" },
+    { id:"inside", label:"搶案：店裡有人當內應，告訴搶匪什麼時候下手", who:"參與這起搶案的有誰？（可以複選，包括內應）", whoLine:"參與這起搶案的，就是" },
     { id:"fake", label:"假搶案：店家自導自演，想詐領保險", requires:["doc_losslist"], who:"是誰安排的？（可以複選）", whoLine:"安排這場假搶案的，就是" }
   ],
   extraPeople: [],

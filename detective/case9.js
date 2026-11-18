@@ -72,9 +72,9 @@ const EP9 = {
       ] } }
   ],
   kinds: [
-    { id:"accident", label:"意外：一氧化碳中毒", requires:["test_co"], who:"誰隱瞞了真相？（可以複選）", whoLine:"事後把證據藏起來的，是" },
     { id:"murder", label:"他殺：有人害死了羅文昌", who:"兇手是誰？（可以複選）", whoLine:"害死羅文昌的，就是" },
-    { id:"illness", label:"病死：喝了酒泡溫泉，心臟病發", requires:["ev_body"] }
+    { id:"illness", label:"病死：喝了酒泡溫泉，心臟病發", requires:["ev_body"] },
+    { id:"accident", label:"意外：一氧化碳中毒", requires:["test_co"], who:"誰隱瞞了真相？（可以複選）", whoLine:"事後把證據藏起來的，是" }
   ],
   extraPeople: [],
   reasoning: [

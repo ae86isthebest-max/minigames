@@ -75,9 +75,9 @@ const EP33 = {
       ] } }
   ],
   kinds: [
-    { id:"lost", label:"沒有人拿：是登記或擺放出了錯" },
+    { id:"day", label:"3 月 8 日下午，被人從 A-2 的櫃子裡拿走", who:"是誰拿的？", whoLine:"拿走的，是", requires:["h33_w","o33_box","o33_photo"] },
     { id:"old", label:"3 月 8 日以前就被拿走了，今天只是被發現", who:"是誰拿的？", whoLine:"拿走的，是" },
-    { id:"day", label:"3 月 8 日下午，被人從 A-2 的櫃子裡拿走", who:"是誰拿的？", whoLine:"拿走的，是", requires:["h33_w","o33_box","o33_photo"] }
+    { id:"lost", label:"沒有人拿：是登記或擺放出了錯" }
   ],
   extraPeople: [],
   reasoning: [

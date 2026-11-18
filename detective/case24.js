@@ -73,8 +73,8 @@ const EP24 = {
   kinds: [
     { id:"natural", label:"漸凍症末期，自然的呼吸衰竭", reason:true },
     { id:"error", label:"給藥出錯：護理人員多給了藥", reason:true },
-    { id:"murder", label:"有人違反他的意思，害死了他", who:"是誰？（可以複選）", whoLine:"害死他的，是" },
-    { id:"assist", label:"他自己想走，有人照他的意思幫了他", who:"是誰幫了他？（可以複選）", whoLine:"照他的意思幫了他的，是", requires:["o24_tablet","o24_notes","son7"] }
+    { id:"assist", label:"他自己想走，有人照他的意思幫了他", who:"是誰幫了他？（可以複選）", whoLine:"照他的意思幫了他的，是", requires:["o24_tablet","o24_notes","son7"] },
+    { id:"murder", label:"有人違反他的意思，害死了他", who:"是誰？（可以複選）", whoLine:"害死他的，是" }
   ],
   extraPeople: [],
   reasoning: [

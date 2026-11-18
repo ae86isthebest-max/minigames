@@ -95,8 +95,8 @@ const EP14 = {
       ] } }
   ],
   kinds: [
-    { id:"accident", label:"意外：鐵架自己倒下來，壓住了他", reason:true },
     { id:"murder", label:"他殺：有人讓鐵架倒在他身上", who:"是誰？（可以複選）", whoLine:"讓老鄭死的，就是" },
+    { id:"accident", label:"意外：鐵架自己倒下來，壓住了他", reason:true },
     { id:"suicide", label:"自殺：他自己把鐵架拉倒", requires:["o14_pills"] }
   ],
   extraPeople: [],

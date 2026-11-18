@@ -68,9 +68,9 @@ const EP27 = {
       clue:"（15:00 開始下雨，開車要多花五分鐘）" }
   ],
   kinds: [
+    { id:"murder", label:"有人讓這場火燒起來", who:"是誰？（可以複選）", whoLine:"讓這場火燒起來的，是" },
     { id:"accident", label:"意外：準備室裡的東西自己燒了起來", reason:true },
-    { id:"suicide", label:"她把自己關在裡面，自己放的火", reason:true },
-    { id:"murder", label:"有人讓這場火燒起來", who:"是誰？（可以複選）", whoLine:"讓這場火燒起來的，是" }
+    { id:"suicide", label:"她把自己關在裡面，自己放的火", reason:true }
   ],
   extraPeople: [],
   reasoning: [

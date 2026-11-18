@@ -79,9 +79,9 @@ const EP31 = {
   kinds: [
     { id:"p3", label:"她會被帶到 3 號碼頭：照對方說的，06:00 去交換", who:"是誰把她帶走的？（可以複選）", whoLine:"把她帶走的，是" },
     { id:"cabin", label:"她已經在 3 號碼頭：亮著燈的那一間貨櫃屋裡", who:"是誰把她帶走的？（可以複選）", whoLine:"把她帶走的，是", requires:["o31_cabin","p2"] },
+    { id:"boat7", label:"她在 7 號碼頭，一艘漁船上", who:"是誰把她帶走的？（可以複選）", whoLine:"把她帶走的，是", requires:["h31_gps","s2","s3","e31_cat","o31_hatch","o31_boat7","h31_dep","z6","cctv31_gate","o31_hatcam"] },
     { id:"truck", label:"她還在冰店的小貨車上", who:"是誰把她帶走的？（可以複選）", whoLine:"把她帶走的，是", requires:["a2","k2","test31_call4","e31_truck","h31_g0241","s2","o31_bed"] },
-    { id:"sea", label:"她已經被船載出海了", who:"是誰把她帶走的？（可以複選）", whoLine:"把她帶走的，是", requires:["e31_port","h31_dep","s4","test31_call5","k5"] },
-    { id:"boat7", label:"她在 7 號碼頭，一艘漁船上", who:"是誰把她帶走的？（可以複選）", whoLine:"把她帶走的，是", requires:["h31_gps","s2","s3","e31_cat","o31_hatch","o31_boat7","h31_dep","z6","cctv31_gate","o31_hatcam"] }
+    { id:"sea", label:"她已經被船載出海了", who:"是誰把她帶走的？（可以複選）", whoLine:"把她帶走的，是", requires:["e31_port","h31_dep","s4","test31_call5","k5"] }
   ],
   extraPeople: [],
   reasoning: [

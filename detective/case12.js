@@ -92,10 +92,10 @@ const EP12 = {
       ] } }
   ],
   kinds: [
-    { id:"hide", label:"他自己躲起來了，有人幫他", who:"幫他躲起來的有誰？（可以複選）", whoLine:"幫他躲起來的，就是" },
-    { id:"taken", label:"他被人帶走（或滅口）了", who:"帶走他的是誰？（可以複選）", whoLine:"帶走他的，就是" },
     { id:"sea", label:"他在觀海台跳海（或掉下海）了" },
-    { id:"flee", label:"他帶著錢，一個人逃走了" }
+    { id:"flee", label:"他帶著錢，一個人逃走了" },
+    { id:"hide", label:"他自己躲起來了，有人幫他", who:"幫他躲起來的有誰？（可以複選）", whoLine:"幫他躲起來的，就是" },
+    { id:"taken", label:"他被人帶走（或滅口）了", who:"帶走他的是誰？（可以複選）", whoLine:"帶走他的，就是" }
   ],
   extraPeople: [],
   reasoning: [

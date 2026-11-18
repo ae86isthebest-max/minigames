@@ -94,9 +94,9 @@ const EP28 = {
   ],
   kinds: [
     { id:"accident", label:"海難：船在外海出事了", reason:true },
+    { id:"murder", label:"有人把阿成推下海", who:"是誰？（可以複選）", whoLine:"把阿成推下海的，是", phase:1 },
     { id:"fraud", label:"船東把船藏起來，想領保險金", reason:true, requires:["e28_buoy","o28_buoy"] },
-    { id:"suicide", label:"阿成自己跳下海", reason:true, phase:1 },
-    { id:"murder", label:"有人把阿成推下海", who:"是誰？（可以複選）", whoLine:"把阿成推下海的，是", phase:1 }
+    { id:"suicide", label:"阿成自己跳下海", reason:true, phase:1 }
   ],
   extraPeople: [],
   reasoning: [

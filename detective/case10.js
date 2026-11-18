@@ -103,9 +103,9 @@ const EP10 = {
       ] } }
   ],
   kinds: [
-    { id:"swap", label:"交換殺人：兩個人替對方殺了自己的仇人", requires:["cctv_train","o_chess_k","o_chess_s"], who:"交換殺人的是誰？（可以複選）", whoLine:"替對方動手的，是" },
+    { id:"robbery", label:"馮志遠被搶匪打死；方國良是喝醉自己摔死的", requires:["ev_body"] },
     { id:"each", label:"各自報仇：馮志遠和方國良，各自死在自己的仇人手上", requires:["ev_frame"], who:"兇手是誰？（可以複選）", whoLine:"動手的，是" },
-    { id:"robbery", label:"馮志遠被搶匪打死；方國良是喝醉自己摔死的", requires:["ev_body"] }
+    { id:"swap", label:"交換殺人：兩個人替對方殺了自己的仇人", requires:["cctv_train","o_chess_k","o_chess_s"], who:"交換殺人的是誰？（可以複選）", whoLine:"替對方動手的，是" }
   ],
   extraPeople: [],
   reasoning: [

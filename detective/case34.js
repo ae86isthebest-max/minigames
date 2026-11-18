@@ -74,9 +74,9 @@ const EP34 = {
       clue:"何沛恩把那些匿名簡訊的原始檔案交給了你：一共五則" }
   ],
   kinds: [
-    { id:"zero", label:"一個都刪不掉：三個人都還有可能" },
+    { id:"one", label:"刪得掉兩個：只剩一個人", who:"剩下的，是誰？", whoLine:"剩下的那一個，是" },
     { id:"two", label:"只刪得掉一個：還剩兩個人", who:"剩下的，是哪兩個？", whoLine:"剩下的，是" },
-    { id:"one", label:"刪得掉兩個：只剩一個人", who:"剩下的，是誰？", whoLine:"剩下的那一個，是" }
+    { id:"zero", label:"一個都刪不掉：三個人都還有可能" }
   ],
   extraPeople: [],
   reasoning: [

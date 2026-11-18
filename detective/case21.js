@@ -57,9 +57,9 @@ const EP21 = {
   ],
   events: [],
   kinds: [
-    { id:"accident", label:"意外：他自己在山上出了事，沒有人害他", reason:true },
     { id:"murder", label:"他殺：有人讓他掉下去", who:"是誰？（可以複選）", whoLine:"讓鄭子安掉下去的，就是" },
-    { id:"suicide", label:"自殺：他自己跳下去", requires:["yt1"] }
+    { id:"suicide", label:"自殺：他自己跳下去", requires:["yt1"] },
+    { id:"accident", label:"意外：他自己在山上出了事，沒有人害他", reason:true }
   ],
   extraPeople: [],
   reasoning: [
