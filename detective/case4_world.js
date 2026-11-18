@@ -82,7 +82,7 @@
   EP4.mapRoads = [["hotel","auction"],["hotel","police"],["police","lab"],["police","market"],["lab","qiu"],["lab","yehome"],["auction","haoapt"],
     ["market","suhome"],["qiu","ice"],["qiu","suhome"]];
   EP4.mapDraw = (p, t) => {
-    const { R, dither } = p;
+    const { R, P, dither } = p;
     R(0, 0, 240, 135, "#8a9a86"); dither(0, 0, 240, 135, "#96a692", 3);
     const blocks = (x0, y0, x1, y1, c, c2) => { for (let x = x0; x < x1; x += 8) for (let y = y0; y < y1; y += 7) { R(x, y, 6, 5, c); if ((x + y) % 3 === 0) R(x + 1, y + 1, 2, 2, c2); } };
     blocks(60, 50, 200, 110, "#c8c0b0", "#b0a898");   // 台北市區
