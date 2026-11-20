@@ -188,6 +188,32 @@ const TOPSCENE = (() => {
     return { room, custom:true, SEAT:[70, 214] };
   };
 
+  // 老公寓五樓走廊（安全屋）：樓梯間在左、5B 的木門、一扇灰色鐵門、滅火器、折疊桌椅；之後那一集畫了自己的房間就用那一間
+  STAGES.hall5 = (o) => {
+    const room = { w:288, h:150, wall:60,
+      floor(p, g, t){
+        T.backWall(p, 0, 288, 60, "#e0dccc", "plain", { base:"#5a6a5a" }); p.R(0, 34, 288, 22, "#9ac0a0"); for (let i = 0; i < 288; i += 8) p.R(i, 34, 1, 22, "#88ae8e"); for (let j = 40; j < 56; j += 6) p.R(0, j, 288, 1, "#88ae8e");
+        // 樓梯間（往頂樓）
+        STAIR10.up(p, O, sh, 8, 2, 50, 7, "#a8a49c"); STAIR10.rail(p, O, 6, 4, 56, "#4a4a4a"); p.R(10, 6, 22, 6, O); p.R(11, 7, 20, 4, "#f4f0e0"); p.R(13, 8, 6, 2, "#3a3a3a"); p.R(21, 8, 6, 2, "#3a3a3a");
+        // 5B 的木門＋門牌
+        T.backDoor(p, 84, 16, 28, 44, 0, "#8a5a32", { frame:"#5a3a22" }); p.R(88, 6, 20, 8, O); p.R(89, 7, 18, 6, "#f4f0e0"); p.R(92, 9, 4, 2, "#3a3a3a"); p.R(98, 9, 6, 2, "#3a3a3a"); p.R(97, 32, 4, 4, "#1a1a1a");
+        // 灰色鐵門、窗（夜）、監視器
+        T.backDoor(p, 176, 16, 30, 44, 0, "#6a6e74", { frame:"#3a3e44" });
+        p.R(240, 10, 38, 34, O); p.R(241, 11, 36, 32, "#5a5e64"); p.R(243, 13, 15, 28, "#141a2a"); p.R(260, 13, 15, 28, "#141a2a"); p.R(248, 20, 1, 1, "#e9c43a"); p.R(267, 28, 1, 1, "#e84a3a");
+        p.R(212, 4, 12, 6, O); p.R(213, 5, 10, 4, "#2a2a2e"); p.R(220, 6, 1, 1, "#e84a3a");
+        T.tiles(p, 0, 60, 288, 90, "#b8b4a8", "#b0aca0", 18);
+        T.sides(p, this, "#5a6a5a", []);
+      },
+      props:[
+        { y:72, draw(p){ p.R(226, 48, 8, 16, O); p.R(227, 49, 6, 14, "#c83a2a"); p.R(228, 45, 4, 4, O); } },
+        // 折疊桌（一台熱水壺、一疊卷宗）＋一張椅子
+        { y:96, draw(p){ T.box(p, 120, 76, 36, 12, 8, "#c8ccd0", "#8a8e94"); p.R(124, 70, 8, 8, O); p.R(125, 71, 6, 6, "#3a6a8a"); p.R(138, 78, 12, 7, O); p.R(139, 79, 10, 5, "#e8d8a8"); } },
+        { y:104, draw(p){ T.chair(p, 112, 104, "#3a3a3e", "right"); } }
+      ],
+      front(p, g, t){ p.R(144, 0, 1, 6, O); p.R(140, 6, 9, 3, O); p.R(141, 7, 7, 1, "#f4f0c0"); T.glow(g, 144, 10, 60, "255,240,200", .12); } };
+    return { room, row:[40, 260, 124], seats:[[112, 104, 1]] };
+  };
+
   /* ---------- 地點裡的房間 ---------- */
   const ALIAS = { pol6:"interrog" };
   function resolve(name, opt){
@@ -195,7 +221,9 @@ const TOPSCENE = (() => {
     if (ALIAS[name]) return STAGES[ALIAS[name]](opt);
     if (STAGES[name]) return STAGES[name](opt);
     const R = findRoom(name);
-    return R ? { room:R } : null;
+    if (R) return { room:R };
+    if (name === "s15_hall") return STAGES.hall5(opt);
+    return null;
   }
   function findRoom(name){
     try {
