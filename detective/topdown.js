@@ -273,8 +273,9 @@ const TOPW = (() => {
   // 人的樣子：走路用 8 格；站著的人照 pose（sit／lie／kneel……之後再加），先用待機呼吸
   function body(g, q, t){
     const L = q.L || {}, moving = q.moving;
-    const view = q.dir === "up" ? "back" : q.dir === "down" ? "front" : "side";
     const act = moving ? "walk" : (SP.ACTS[q.act] ? q.act : "idle");
+    // 做動作（查證、倒地……）一律用側面，才看得清楚手腳；只有走路和站著才分正面／背面
+    const view = act !== "walk" && act !== "idle" ? "side" : q.dir === "up" ? "back" : q.dir === "down" ? "front" : "side";
     const f = moving ? Math.floor(q.walkD / 3.2) % 8 : Math.floor(t * 2 + (q.x % 7)) % SP.frames(act);
     return SP.draw(g, q.x, q.y, L, { view, facing:q.face || 1, act, f });
   }
