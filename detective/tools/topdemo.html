@@ -1,0 +1,59 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>俯視引擎測試</title>
+<style>body{background:#111;margin:0;color:#eee;font:14px sans-serif}.world{position:relative;max-width:900px;margin:0 auto}
+canvas{width:100%;image-rendering:pixelated;display:block}.wbubble{position:absolute;background:#fff8e8;color:#222;padding:4px 8px;border-radius:6px;font-size:13px}
+.wbubble[hidden]{display:none}.wexit{position:absolute;transform:translate(-50%,-50%);background:rgba(26,22,18,.82);color:#f4ead2;border:1px solid #6a5a44;border-radius:4px;font-size:12px;padding:1px 6px;cursor:pointer}.wexit[hidden]{display:none}#log{max-width:900px;margin:6px auto;font-size:12px;opacity:.8}</style>
+<div class="world"><canvas id="worldcv"></canvas><div class="wbubble" hidden><b></b>：<span></span></div><div class="wtip"></div><button class="wskip" hidden>跳過</button></div>
+<div id="log"></div>
+<script src="../pixel.js"></script><script src="../sprite2.js"></script><script src="../topdown.js"></script>
+<script>
+const OUTC = "#1a1410";
+// 有外框的方塊（家具用）：top 面、front 面
+function block(p, x, y, w, h, d, top, front){ p.R(x-1, y-1, w+2, h+d+2, OUTC); p.R(x, y, w, h, top); p.R(x, y+h, w, d, front); p.R(x, y+h, w, 1, OUTC); p.R(x, y, w, 1, PX.prim.shade ? top : top); }
+function rug(p,x,y,w,h){ p.R(x,y,w,h,"#c9a45a"); p.R(x+2,y+2,w-4,h-4,"#6e2f36"); for(let i=x+6;i<x+w-6;i+=10) for(let j=y+6;j<y+h-6;j+=8) p.R(i,j,4,3,"#8e4a4a"); }
+function planks(p,x0,y0,w,h){ p.R(x0,y0,w,h,"#8a6440"); for(let x=x0;x<x0+w;x+=12){ p.R(x,y0,1,h,"#6e4e30"); for(let y=y0+((x/12)%3)*14;y<y0+h;y+=40) p.R(x,y,12,1,"#6e4e30"); } for(let x=x0+3;x<x0+w;x+=12) for(let y=y0;y<y0+h;y+=7) if(((x*7+y*13)%11)===0) p.R(x,y,3,1,"#9a7450"); }
+function wallFace(p,w,h,col){ p.R(0,0,w,h,col); for(let x=0;x<w;x+=28) p.R(x,0,1,h-4,"#b8a37e"); p.R(0,h-4,w,4,"#5a3e28"); p.R(0,h-4,w,1,OUTC); }
+const study = { name:"書房", w:256, h:192, wall:58,
+  floor(p,g,t){ wallFace(p,256,58,"#cbb894"); planks(p,0,58,256,134);
+    // 窗
+    p.R(96,10,48,34,OUTC); p.R(98,12,44,30,"#3a2a1c"); p.R(100,14,40,26,"#24345a"); p.R(119,14,2,26,"#3a2a1c"); p.R(100,26,40,2,"#3a2a1c"); p.R(128,17,5,5,"#f2ecd0"); p.R(101,15,8,1,"#3c5488"); p.R(94,44,52,3,"#7a5232");
+    // 門（左牆，打開）
+    p.R(14,14,30,44,OUTC); p.R(16,16,26,42,"#1a1410"); p.R(16,16,8,42,"#6a4428");
+    rug(p,60,112,120,52);
+    // 樓梯口（右下）
+    p.R(200,150,52,40,"#140f0b"); for(let i=0;i<6;i++){ const c=110-i*16; p.R(202,150+i*6,48,5,`rgb(${c+20},${c-8},${c-40})`); }
+    p.R(198,146,2,44,"#3a2414"); p.R(198,146,54,2,"#3a2414");
+  },
+  props:[
+    { y:58, draw(p){ // 書櫃（靠牆）
+      p.R(176,4,44,58,OUTC); p.R(178,6,40,54,"#4a3020"); for(let r=0;r<4;r++){ p.R(180,9+r*12,36,9,"#33200f"); ["#8a3a3a","#3a5a8a","#c9a45a","#3e7a52","#7a4a8a","#a8662a","#8a3a3a","#3a5a8a"].forEach((c,b)=>p.R(181+b*4+(b>3?2:0),10+r*12+(b%3===1?1:0),3,8-(b%3===1?1:0),c)); } } },
+    { y:104, draw(p,g,t){ // 書桌
+      block(p,64,78,72,18,10,"#7a5232","#5a3a22"); p.R(70,98,22,6,"#3e2716"); p.R(79,100,4,1,"#e8c45a");
+      p.R(70,72,10,8,OUTC); p.R(71,73,8,6,"#3e7a52"); p.R(73,79,4,1,"#f7e39a"); p.R(74,80,2,4,"#3e2716");
+      p.R(88,82,18,10,"#efeadf"); p.R(90,84,12,1,"#b8b0a0"); p.R(90,86,10,1,"#b8b0a0"); p.R(90,88,12,1,"#b8b0a0");
+      p.R(118,80,9,9,OUTC); p.R(119,81,7,7,"#ece6da"); p.R(120,82,5,4,"#3a2416"); p.R(127,83,2,3,"#ece6da"); } },
+    { y:118, draw(p){ p.R(86,104,24,14,OUTC); p.R(87,105,22,9,"#5a3a22"); p.R(88,114,3,4,"#3e2716"); p.R(105,114,3,4,"#3e2716"); } },   // 椅
+    { y:104, draw(p){ p.R(150,90,14,14,OUTC); p.R(151,91,12,12,"#70727a"); p.R(153,93,8,8,"#4e5058"); p.R(154,94,5,3,"#efeadf"); } },  // 廢紙箱
+    { y:66, draw(p){ p.R(232,54,16,12,OUTC); p.R(233,55,14,10,"#a0583a"); p.R(229,36,24,20,"#2a6430"); p.R(231,38,20,16,"#3c8a44"); p.R(236,34,10,6,"#3c8a44"); } }
+  ],
+  solid:[[64,78,72,26],[86,104,24,14],[150,92,14,12],[176,40,44,22],[232,54,16,12]],
+  exits:[ { r:[16,58,26,8], to:"hall", at:[230,150], label:"走廊", kind:"door" }, { r:[204,172,44,16], to:"up", at:[60,170], label:"地下室", kind:"down", lab:156 } ] };
+const hall = { name:"走廊", w:320, h:192, wall:58,
+  floor(p){ wallFace(p,320,58,"#b9c4b0"); planks(p,0,58,320,134); p.R(246,14,30,44,OUTC); p.R(248,16,26,42,"#1a1410"); p.R(248,16,8,42,"#6a4428"); p.R(40,20,40,26,"#3a2a1c"); p.R(42,22,36,22,"#7a8a5a"); },
+  props:[], solid:[], exits:[ { r:[248,58,26,8], to:"study", at:[29,72], label:"書房", kind:"door" } ] };
+const up = { name:"地下室", w:256, h:192, wall:50,
+  floor(p){ wallFace(p,256,50,"#8a8a86"); p.R(0,50,256,142,"#6a6a66"); for(let x=0;x<256;x+=16) for(let y=50;y<192;y+=16) p.R(x,y,16,1,"#5a5a56"), p.R(x,y,1,16,"#5a5a56"); p.R(30,150,52,40,"#3a3a36"); for(let i=0;i<6;i++) p.R(32,186-i*6,48,5,"#7a7a76"); },
+  props:[], solid:[], exits:[ { r:[34,176,44,14], to:"study", at:[226,166], label:"書房", kind:"up", lab:140 } ] };
+const def = { top:{ start:"study", spawn:[29,80], rooms:{ study, hall, up } }, areas:[{id:"study",name:"書房"},{id:"hall",name:"走廊"},{id:"up",name:"地下室"}] };
+const DET = { skin:"#ecc29c", hair:"#2a1d16", coat:"#9a7a52", top:"#e9e4da", bottom:"#2e3340", shoes:"#1c1a18", hat:"#4a3424" };
+const WU = { skin:"#e8c09a", hair:"#2a2a2a", coat:"#f4f6f6", top:"#8ab4d8", bottom:"#3a4152", shoes:"#2a2320" };
+const MAID = { skin:"#f0c8a0", hair:"#5a3a22", coat:"#4a4a6a", top:"#4a4a6a", bottom:"#2a2a3a", shoes:"#1a1a1a" };
+const seen = new Set(); const log = m => { document.getElementById("log").textContent = m; window._log = (window._log||[]).concat(m); };
+let say = null;
+const hooks = { you:DET, buddy:()=>({ id:"_wu", L:WU }), people:()=>[{ id:"maid", x:40, y:150, room:"study", facing:1, L:MAID, arrow:"#ffd04a" }],
+  spots:()=>[{ k:"item", ids:["mug"], r:[118,80,11,9], fresh:!seen.has("mug"), room:"study" }, { k:"detail", id:"bin", r:[150,90,14,14], fresh:!seen.has("bin"), room:"study" }],
+  onSpot:q=>{ seen.add(q.ids?q.ids[0]:q.id); log("spot "+(q.ids?q.ids[0]:q.id)); say={who:"you",text:"杯裡還有半杯咖啡。"}; setTimeout(()=>say=null,1500); },
+  onPerson:id=>log("person "+id), onBuddy:id=>log("buddy"), onGround:()=>{}, bubble:()=>say, nameOf:id=>id, opt:()=>({}),
+  script:null, scriptDone:()=>true, refresh:()=>{}, areaNow:a=>log("area "+a), nearNow:l=>{ window._near=l.map(TOPW.spotKey); } };
+TOPW.mount(document.getElementById("worldcv"), def, "demo", hooks);
+</script>
