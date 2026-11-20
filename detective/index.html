@@ -240,6 +240,7 @@ body.fs .toast{bottom:calc(14px + env(safe-area-inset-bottom))}
 <script src="sprite2.js"></script>
 <script src="topdown.js"></script>
 <script src="topkit.js"></script>
+<script src="topplay.js"></script>
 <script src="worldkit.js"></script>
 <script src="case2_world.js"></script>
 <script src="case1_world.js"></script>
@@ -581,7 +582,9 @@ function drawScenes(){
   document.querySelectorAll("canvas[data-anim]").forEach(cv=>{
     const it = cv.dataset.anim==="__replay" ? { anim:(C.court||{}).replay } : [...allItems(), ...tests()].find(x=>x.id===cv.dataset.anim); if (!it || !it.anim) return;
     const cap = cv.parentNode.querySelector(".cap");
-    cv._ctl = PX.play(cv, it.anim, looksFor, (t,end)=>{ cap.textContent = t || (end ? "（播放結束）" : "…"); }, cv.dataset.auto==="1");
+    // 真相動畫：這一集有俯視版（world._.top.replay）就用新的逐格版本播
+    const topR = cv.dataset.anim==="__replay" && typeof TOPPLAY !== "undefined" && C.world && C.world._ && TOP(C.world._) && C.world._.top.replay;
+    cv._ctl = (topR ? TOPPLAY : PX).play(cv, topR || it.anim, looksFor, (t,end)=>{ cap.textContent = t || (end ? "（播放結束）" : "…"); }, cv.dataset.auto==="1");
     cv.onclick = ()=>cv._ctl.toggle();
   });
   const b = document.querySelector(".bubble[data-type]");

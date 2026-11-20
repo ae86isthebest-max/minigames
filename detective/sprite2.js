@@ -218,6 +218,11 @@ const SP = (() => {
     cross: () => [{ sF: 30, eF: 100, sB: 34, eB: 96 }, { sF: 30, eF: 100, sB: 34, eB: 96, breathe: 1 }],
     hold: () => [{ sF: 24, eF: 70, sB: 20, eB: 74, hand: "tray" }, { sF: 24, eF: 72, sB: 20, eB: 74, hand: "tray", breathe: 1 }],
     wipe: () => [{ sF: 90, eF: 10, hand: "cloth" }, { sF: 100, eF: 4, hand: "cloth" }, { sF: 112, eF: 0, hand: "cloth" }, { sF: 100, eF: 4, hand: "cloth" }],
+    // ---- 坐著做的事（真相動畫的近鏡用）----
+    sitPour: () => [{ hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sitting: 1, sF: 56, eF: 44, hand: "bottle" }, { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sitting: 1, sF: 78, eF: 22, hand: "bottleT" }, { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sitting: 1, sF: 82, eF: 18, hand: "bottleT", lean: 4 }, { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sitting: 1, sF: 60, eF: 40, hand: "bottle" }],
+    sitIce: () => [{ hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sitting: 1, sF: 66, eF: 24, hand: "tongs" }, { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sitting: 1, sF: 80, eF: 12, hand: "tongs", lean: 4 }, { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sitting: 1, sF: 70, eF: 30, hand: "tongs" }],
+    sitDrink: () => [{ hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sitting: 1, sF: 50, eF: 60, hand: "cup" }, { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sitting: 1, sF: 52, eF: 108, hand: "cup" }, { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sitting: 1, sF: 60, eF: 120, hand: "cup", lean: -4 }, { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sitting: 1, sF: 52, eF: 108, hand: "cup" }],
+    sitClutch: () => [{ hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sitting: 1, sF: 20, eF: 110, lean: 8, mouth: 1 }, { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sitting: 1, sF: 24, eF: 116, lean: 16, mouth: 1, eyes: "shut" }, { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sitting: 1, sF: 20, eF: 110, lean: 12, sB: 30, eB: 60, eyes: "shut" }],
     lie: () => [{ lift: -4, sF: 10, eF: 10, sB: 6, eB: 10, hF: 0, kF: 4, hB: -2, kB: 6, rot: -90, eyes: "shut" }, { lift: -4, sF: 12, eF: 10, sB: 6, eB: 10, hF: 0, kF: 4, hB: -2, kB: 6, rot: -90, eyes: "shut", breathe: 1 }],
     // ---- 意外、自殺類（真相動畫用） ----
     drinkFall: () => [
@@ -241,7 +246,9 @@ const SP = (() => {
       { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sF: 20, eF: 50, sB: 16, eB: 50, sitting: 1 },
       { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sF: 10, eF: 30, sB: 6, eB: 30, sitting: 1, lean: 12, eyes: "shut" },
       { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sF: 0, eF: 10, sB: -4, eB: 10, sitting: 1, lean: 30, eyes: "shut" },
-      { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sF: -6, eF: 4, sB: -8, eB: 6, sitting: 1, lean: 40, eyes: "shut" }],
+      { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sF: -6, eF: 4, sB: -8, eB: 6, sitting: 1, lean: 40, eyes: "shut" },
+      { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sF: 60, eF: 30, sB: 50, eB: 30, sitting: 1, lean: 54, eyes: "shut" },     // 伏到桌上，手攤在桌面
+      { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sF: 76, eF: 14, sB: 66, eB: 20, sitting: 1, lean: 62, eyes: "shut" }],
     // 向後跌（正面中彈那一種的動作節奏）：仰、退一步、膝軟、坐低、倒下、彈一下、躺定
     fallBack: () => [
       { lean: -8, sF: 30, eF: 60, sB: -40, eB: 20, hF: 10, hB: -6, eyes: "shut" },
@@ -285,7 +292,7 @@ const SP = (() => {
       hairStyle: L.hood ? "hood" : (L.hairStyle || "short"), glasses: !!L.glasses, mask: L.mask ? flat(hex(L.mask)) : null,
       hat, hatB: hat ? mul(hat, 0.6) : null, eye: flat(OUT), white: flat([240, 236, 226]), brow: flat(mul(hex(L.hair || "#2a1d16"), 0.7)), mouth: flat([150, 70, 60]), lens: flat([200, 222, 236]), lensR: flat([90, 70, 50]),
       glass: flat([40, 34, 30]), glassL: flat([190, 214, 230]),
-      cup: flat([236, 230, 218]), drink: flat([90, 50, 30]), cam: flat([40, 40, 46]), paper: flat([238, 232, 214]), ink: flat([70, 70, 90]), boxc: [176, 136, 86] };
+      cup: flat([236, 230, 218]), drink: flat([90, 50, 30]), cam: flat([40, 40, 46]), paper: flat([238, 232, 214]), ink: flat([70, 70, 90]), boxc: [176, 136, 86], bottle: flat([122, 58, 26]) };
   }
   // 頭髮款式、眼鏡、口罩：畫在頭那一層（x0, y0＝頭格子左上角；view：side 面向右／front／back）
   function decorHead(Ly, view, x0, y0, P){
@@ -349,6 +356,9 @@ const SP = (() => {
       else if (hand === "tray"){ rect(Ly, hx - 3, hy - 1, 9, 1, P.cam); rect(Ly, hx - 1, hy - 4, 2, 3, P.cup); rect(Ly, hx + 2, hy - 4, 2, 3, P.cup); }
       else if (hand === "cloth"){ rect(Ly, hx - 1, hy - 2, 4, 3, P.paper); rect(Ly, hx, hy + 1, 2, 1, P.ink); }
       else if (hand === "grip"){ rect(Ly, hx - 1, hy - 1, 3, 3, P.hand); }
+      else if (hand === "bottle"){ rect(Ly, hx - 1, hy - 7, 3, 8, P.bottle); rect(Ly, hx, hy - 9, 1, 2, P.bottle); rect(Ly, hx - 1, hy - 5, 3, 2, P.paper); }
+      else if (hand === "bottleT"){ const n = step(hd, s + e + 60, 7, dir); seg(Ly, [hx, hy], n, 3, P.bottle); const m = step(n, s + e + 60, 2, dir); seg(Ly, n, m, 1, P.bottle); }
+      else if (hand === "tongs"){ const n = step(hd, s + e, 4, dir); seg(Ly, [hx, hy], n, 1, P.lens); rect(Ly, Math.round(n[0]), Math.round(n[1]), 2, 2, P.white); }
       else if (hand === "box"){ rect(Ly, hx - 2, hy - 4, 6, 5, P.boxc); rect(Ly, hx - 2, hy - 4, 6, 1, mul(P.boxc, 1.2)); } };
     arm(backL, q.sB, q.eB, true);
     leg(legs, q.hB, q.kB, true);
