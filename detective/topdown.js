@@ -17,7 +17,7 @@
    - 存檔不記任何走動的位置（跟橫向一樣），換畫面不影響存檔
    ========================================================= */
 const TOPW = (() => {
-  const VW = 256, VH = 192, SPEED = 58, CELL = 4, FOOT_W = 7, FOOT_H = 3;
+  const VW = 224, VH = 126, SPEED = 58, CELL = 4, FOOT_W = 7, FOOT_H = 3;
   const st = {};
   let cur = null;
   const P = () => PX.prim;
@@ -33,7 +33,7 @@ const TOPW = (() => {
     const room = firstRoom(def), R = def.top.rooms[room], sp = def.top.spawn || [R.w / 2, R.h - 20];
     return st[lid] = { room, px:sp[0], py:sp[1], path:[], dir:"up", face:1, walkD:0, walking:false,
       bx:sp[0] - 14, by:sp[1] + 6, broom:room, bdir:"up", bface:1, bwalkD:0, bmove:false, trail:[], cam:[0, 0], t:0,
-      script:null, si:0, sT:0, typed:"", typeKey:"", fade:0, fadeTo:null, after:null, door:{} };
+      script:null, si:0, sT:0, typed:"", typeKey:"", fade:0, fadeTo:null, after:null, door:{}, doorT:{}, use:null };
   }
 
   /* ---------- 走得到哪裡：格子地圖（4 格一格） ---------- */
@@ -106,6 +106,19 @@ const TOPW = (() => {
     return out;
   }
 
+  /* ---------- 同物件互動：主角做一個動作（開櫃、坐低、打電話……） ---------- */
+  // q.act：動作名；q.actT：做幾耐（秒，冇寫＝做完一輪）；q.hold：做完停喺最後一格（例如坐低），點其他地方先郁；q.useAt：做動作時企喺邊（例如坐上椅）
+  function useSpot(q, done){
+    const s = cur.s; faceTo(q.r);
+    if (q.face) { s.dir = "side"; s.face = q.face; }
+    if (q.act && SP.ACTS[q.act]){ const n = SP.frames(q.act), rate = q.rate || 5;
+      if (q.useAt){ s.back = [s.px, s.py]; s.px = q.useAt[0]; s.py = q.useAt[1]; }
+      s.use = { act:q.act, t:0, rate, n, dur:q.actT || n / rate, hold:!!q.hold, loop:!!(q.loop || q.actT), forever:!!q.loop && !q.actT }; }
+    done && done();
+  }
+  function endUse(){ const s = cur.s; if (!s.use) return; if (s.back){ s.px = s.back[0]; s.py = s.back[1]; s.back = null; } s.use = null; }
+  const doorKey = (room, e) => room + ">" + e.to;
+
   /* ---------- 走路 ---------- */
   // 走到 (x, y)（可以在別的房間），到了再做 cb
   function goThen(x, y, cb, room){
@@ -147,7 +160,7 @@ const TOPW = (() => {
     if (Math.abs(dx) > Math.abs(dy) * 0.8){ s.dir = "side"; s.face = dx > 0 ? 1 : -1; } else s.dir = dy < 0 ? "up" : "down";
     if (d <= stp){ s.px = tx; s.py = ty; s.walkD += d; s.path.shift();
       if (!s.path.length){ s.walking = false; const leg = s.leg; s.leg = null;
-        if (leg && leg.exit) useExit(leg.exit); else nextLeg(); } }
+        if (leg && leg.exit){ if (leg.exit.kind === "door"){ s.dir = "up"; s.doorT[doorKey(s.room, leg.exit)] = s.t; s.use = { act:"openDoor", t:0, rate:9, n:4, dur:0.45, then:leg.exit }; } else useExit(leg.exit); } else nextLeg(); } }
     else { s.px += dx / d * stp; s.py += dy / d * stp; s.walkD += stp; }
     const last = s.trail[s.trail.length - 1]; if (!last || Math.hypot(last[0] - s.px, last[1] - s.py) > 3) s.trail.push([s.px, s.py]);
     if (s.trail.length > 200) s.trail.shift();
@@ -182,6 +195,7 @@ const TOPW = (() => {
   function update(dt){
     const s = cur.s, R = roomOf(s.room); s.t += dt;
     if (s.fade){ s.fade += dt * 5; if (s.fade >= 1 && s.fadeTo){ const e = s.fadeTo; s.fadeTo = null; arriveRoom(e); } if (s.fade >= 2) s.fade = 0; }
+    else if (s.use && !s.walking){ const u = s.use; u.t += dt; if (!u.hold && !u.forever && u.t >= u.dur){ s.use = null; if (u.then) useExit(u.then); } }
     else moveAlong(dt);
     follow(dt);
     // 按住拖著：一路跟著手指走（只在這個房間裡）
@@ -207,6 +221,8 @@ const TOPW = (() => {
   const onBody = (b, x, y) => Math.abs(x - b.x) <= 9 && y >= b.y - 40 && y <= b.y + 2;
   function tap(e){
     const { s, hooks } = cur, [x, y] = toWorld(e.clientX, e.clientY);
+    if (s.use && s.use.then) return;
+    if (s.use && !s.script) endUse();
     if (s.script){ s.lastTap = "script"; const k = step(); if (k && k.say){ if (s.typed.length < k.say[1].length) s.typed = k.say[1]; else next(); } return; }
     if (s.fade) return;
     const r = cur.canvas.getBoundingClientRect(), FING = Math.min(22, Math.max(10, 44 * VW / r.width));
@@ -220,7 +236,7 @@ const TOPW = (() => {
     // 1. 還沒看過的東西（被人擋住時：點在人身上＝找人）
     const fresh = spots.filter(q => q.fresh && (onSomeone ? inBox(...q.r) && !glintAt(q.r, [...bodies, { x:s.px, y:s.py }]).free : q.k === "item" ? inBox(q.r[0] - 5, q.r[1] - 5, q.r[2] + 10, q.r[3] + 10) : inBox(...q.r)))
       .sort((a, c) => dist(a.r) - dist(c.r) || a.r[2] * a.r[3] - c.r[2] * c.r[3])[0];
-    if (fresh){ s.lastTap = "spot"; const [tx, ty] = stand(fresh); return goThen(tx, ty, () => { faceTo(fresh.r); hooks.onSpot(fresh); }); }
+    if (fresh){ s.lastTap = "spot"; const [tx, ty] = stand(fresh); return goThen(tx, ty, () => useSpot(fresh, () => hooks.onSpot(fresh))); }
     // 2. 人
     const p = ppl.filter(q => onBody(q, x, y) || inBox(q.x - 12, q.y - 42, 24, 44)).sort((a, c) => Math.abs(a.y - y) - Math.abs(c.y - y))[0];
     if (p){ s.lastTap = "person"; const side = s.px < p.x ? -18 : 18; return goThen(p.x + side, p.y + 1, () => { s.dir = "side"; s.face = side < 0 ? 1 : -1; hooks.onPerson(p.id); }); }
@@ -230,7 +246,7 @@ const TOPW = (() => {
     if (ex && !(ex.when && !ex.when(hooks.opt()))){ s.lastTap = "exit"; s.plan = [{ exit:ex }]; s.after = null; nextLeg(); hooks.onGround && hooks.onGround(); return; }
     // 4. 其他東西（看過的、小細節）
     const h = spots.filter(q => inBox(...q.r)).sort((a, b) => a.r[2] * a.r[3] - b.r[2] * b.r[3])[0] || spots.filter(q => inBox(...big(q.r))).sort((a, c) => dist(a.r) - dist(c.r))[0];
-    if (h){ s.lastTap = "spot"; const [tx, ty] = stand(h); return goThen(tx, ty, () => { faceTo(h.r); hooks.onSpot(h); }); }
+    if (h){ s.lastTap = "spot"; const [tx, ty] = stand(h); return goThen(tx, ty, () => useSpot(h, () => hooks.onSpot(h))); }
     // 5. 地面：走過去（房間裡隨便走不影響任何東西）
     s.lastTap = "ground"; hooks.onGround && hooks.onGround();
     s.plan = []; s.after = null; s.path = findPath(s.room, s.px, s.py, x, y);
@@ -266,7 +282,7 @@ const TOPW = (() => {
     g.globalAlpha = Math.min(1, 0.55 + 0.5 * k); p.R(x, y, 1, 1, "#ffffff"); g.restore();
   }
   function goSpot(key){ if (!cur || cur.s.script) return false; const q = cur.hooks.spots().find(q => spotKey(q) === key); if (!q) return false;
-    const [tx, ty] = standFor(q); goThen(tx, ty, () => { faceTo(q.r); cur.hooks.onSpot(q); }, q.room); return true; }
+    const [tx, ty] = standFor(q); endUse(); goThen(tx, ty, () => useSpot(q, () => cur.hooks.onSpot(q)), q.room); return true; }
 
   /* ---------- 畫 ---------- */
   function shadow(g, x, y, w){ g.save(); g.globalAlpha = 0.28; g.fillStyle = "#000"; g.beginPath(); g.ellipse(Math.round(x), Math.round(y), w / 2, 2.2, 0, 0, 7); g.fill(); g.restore(); }
@@ -276,7 +292,7 @@ const TOPW = (() => {
     const act = moving ? "walk" : (SP.ACTS[q.act] ? q.act : "idle");
     // 做動作（查證、倒地……）一律用側面，才看得清楚手腳；只有走路和站著才分正面／背面
     const view = act !== "walk" && act !== "idle" ? "side" : q.dir === "up" ? "back" : q.dir === "down" ? "front" : "side";
-    const f = moving ? Math.floor(q.walkD / 3.2) % 8 : Math.floor(t * 2 + (q.x % 7)) % SP.frames(act);
+    const n = SP.frames(act), f = moving ? Math.floor(q.walkD / 3.2) % 8 : q.f !== undefined ? Math.max(0, Math.min(n - 1, q.f)) : Math.floor(t * (q.rate || 2) + (q.x % 7)) % n;
     return SP.draw(g, q.x, q.y, L, { view, facing:q.face || 1, act, f });
   }
   function arrow(p, q, t){ if (!q.arrow) return; if (q.blink && Math.floor(t * 3) % 2) return; const y = q.y - 48 + Math.round(Math.sin(t * 4) * 1);
@@ -293,7 +309,7 @@ const TOPW = (() => {
     hooks.people().filter(here).forEach(q => list.push({ ...q, dir:q.view || (q.facing ? "side" : "down"), face:q.facing || 1, kind:"npc" }));
     const buddy = hooks.buddy && hooks.buddy(), hide = s.script && step() && step().hide;
     if (buddy && s.broom === s.room && !hide) list.push({ id:buddy.id, x:s.bx, y:s.by, L:buddy.L, dir:s.bdir, face:s.bface, moving:s.bmove, walkD:s.bwalkD, kind:"buddy", arrow:s.script ? null : "#6fd46f" });
-    if (!hide) list.push({ id:"you", x:s.px, y:s.py, L:hooks.you, dir:s.dir, face:s.face, moving:s.walking, walkD:s.walkD, kind:"you" });
+    if (!hide) list.push({ id:"you", x:s.px, y:s.py, L:hooks.you, dir:s.dir, face:s.face, moving:s.walking, walkD:s.walkD, kind:"you", ...(s.use && !s.walking ? { act:s.use.act, f:s.use.loop ? Math.floor(s.use.t * s.use.rate) % s.use.n : Math.floor(s.use.t * s.use.rate), dir:s.use.act === "openDoor" ? "side" : s.dir } : {}) });
     list.sort((a, c) => a.y - c.y);
     const bl = [];
     list.forEach(q => { if (q.prop){ q.prop.draw(p, g, s.t, opt); return; } shadow(g, q.x, q.y, 14); body(g, q, s.t); bl.push({ x:q.x, y:q.y }); if (q.kind !== "you") arrow(p, q, s.t); });
@@ -333,7 +349,7 @@ const TOPW = (() => {
       let el = cur.lab[key];
       if (!el){ el = cur.lab[key] = document.createElement("button"); el.className = "wexit";
         el.textContent = (e.kind === "up" ? "⬆ " : e.kind === "down" ? "⬇ " : e.kind === "out" ? "" : "🚪 ") + (e.label || (roomOf(e.to) && roomOf(e.to).name) || "") + (e.kind === "out" ? " ➜" : "");
-        el.onpointerdown = ev => { ev.stopPropagation(); }; el.onclick = ev => { ev.stopPropagation(); if (cur.s.script || cur.s.fade) return; cur.s.plan = [{ exit:e }]; cur.s.after = null; nextLeg(); cur.hooks.onGround && cur.hooks.onGround(); };
+        el.onpointerdown = ev => { ev.stopPropagation(); }; el.onclick = ev => { ev.stopPropagation(); if (cur.s.script || cur.s.fade || (cur.s.use && cur.s.use.then)) return; endUse(); cur.s.plan = [{ exit:e }]; cur.s.after = null; nextLeg(); cur.hooks.onGround && cur.hooks.onGround(); };
         wrap.appendChild(el); }
       const hr = exitHit(e), lx = hr[0] + hr[2] / 2, ly = e.lab ?? (hr[1] + hr[3] / 2);   // 字放在門／樓梯那件東西的正中間
       el.style.left = ((lx - cx) / VW * cw) + "px"; el.style.top = ((ly - cy) / VH * ch) + "px"; el.hidden = !!cur.s.script;
@@ -380,6 +396,6 @@ const TOPW = (() => {
 
   return { top:true, carOf, PATROL, mount, state, indoor:() => 1, goTo, standIn, walking:() => !!(cur && (cur.s.path.length || cur.s.fade)),
     levelVis:() => 1, skip:() => cur && cur.s.script && skip(), nearYou:q => !!cur && !cur.s.script && nearYou(cur.s, q), goSpot, spotKey,
-    glintAt:q => cur ? glintAt(q.r, [{ x:cur.s.px, y:cur.s.py }]) : null, VW, VH, GROUND:0, room:() => cur && cur.s.room,
+    you:() => cur && { x:cur.s.px, y:cur.s.py, room:cur.s.room, use:cur.s.use && cur.s.use.act }, doorAmt:(room, to) => { if (!cur) return 0; const t0 = cur.s.doorT[room + ">" + to]; if (t0 === undefined) return 0; const d = cur.s.t - t0; return d < 0.3 ? d / 0.3 : d < 1.4 ? 1 : Math.max(0, 1 - (d - 1.4) / 0.3); }, endUse:() => cur && endUse(), glintAt:q => cur ? glintAt(q.r, [{ x:cur.s.px, y:cur.s.py }]) : null, VW, VH, GROUND:0, room:() => cur && cur.s.room,
     reset:lid => { delete st[lid]; }, resetAll:() => { Object.keys(st).forEach(k => delete st[k]); }, _cur:() => cur };
 })();

@@ -7,25 +7,26 @@ const srv = http.createServer((q, r) => { const f = path.join(root, decodeURICom
   const errs = []; p.on("pageerror", e => errs.push(e.message));
   await p.goto(`http://localhost:${port}/tools/topdemo.html`); await p.waitForTimeout(400);
   const fail = []; const ok = (c, m) => { if (!c) fail.push(m); };
-  const box = await p.locator("#worldcv").boundingBox(), K = box.width / 256;
-  const tapAt = (x, y) => p.mouse.click(box.x + x * K, box.y + y * K);
+  const box = await p.locator("#worldcv").boundingBox(), K = box.width / (await p.evaluate(() => TOPW.VW));
+  // 世界座標 → 畫面（鏡頭會跟住主角郁，先等鏡頭停定）
+  const tapAt = async (x, y) => { await p.waitForTimeout(700); const c = await p.evaluate(() => TOPW.state("demo").cam); await p.mouse.click(box.x + (x - c[0]) * K, box.y + (y - c[1]) * K); };
   const st = () => p.evaluate(() => { const s = TOPW.state("demo"); return { room:s.room, x:s.px, y:s.py, walking:TOPW.walking() }; });
   const until = async (fn, ms = 6000) => { const t0 = Date.now(); while (Date.now() - t0 < ms){ if (await fn()) return true; await p.waitForTimeout(100); } return false; };
   if (out){ fs.mkdirSync(out, { recursive:true }); await p.locator("#worldcv").screenshot({ path: out + "/0-start.png" }); }
   // 1. 點地面：走過去，不會穿過書桌（路線每一點都在空地）
-  await tapAt(100, 140); ok(await until(async () => !(await st()).walking), "walk to ground never stopped");
-  let s = await st(); ok(Math.hypot(s.x - 100, s.y - 140) < 6, "ground walk ended at " + s.x + "," + s.y);
+  await tapAt(100, 120); ok(await until(async () => !(await st()).walking), "walk to ground never stopped");
+  let s = await st(); ok(Math.hypot(s.x - 100, s.y - 120) < 6, "ground walk ended at " + s.x + "," + s.y);
   // 2. 點杯（在書桌後面）：走到旁邊、觸發 onSpot
   await tapAt(122, 84); ok(await until(async () => (await p.evaluate(() => (window._log||[]).includes("spot mug")))), "mug not inspected");
   s = await st(); ok(!(s.x > 64 - 4 && s.x < 136 + 4 && s.y > 78 && s.y < 104), "stood inside the desk at " + s.x + "," + s.y);
   if (out) await p.locator("#worldcv").screenshot({ path: out + "/1-mug.png" });
   // 3. 點門：換到走廊
-  await tapAt(29, 40); ok(await until(async () => (await st()).room === "hall"), "door did not lead to hall");
+  await tapAt(29, 60); ok(await until(async () => (await st()).room === "hall"), "door did not lead to hall");
   await p.waitForTimeout(500); if (out) await p.locator("#worldcv").screenshot({ path: out + "/2-hall.png" });
   // 4. 從走廊用 goSpot 去書房的廢紙箱：自己穿門走過去
   await p.evaluate(() => TOPW.goSpot("bin")); ok(await until(async () => (await p.evaluate(() => (window._log||[]).includes("spot bin"))), 9000), "goSpot across rooms failed");
   // 5. 樓梯：下去再上來
-  await tapAt(226, 180); ok(await until(async () => (await st()).room === "up"), "stairs down failed");
+  await tapAt(226, 160); ok(await until(async () => (await st()).room === "up"), "stairs down failed " + JSON.stringify(await p.evaluate(() => { const s = TOPW.state("demo"); return [s.room, s.px, s.py, s.cam, s.lastTap, s.path, s.plan, s.leg, s.use, s.fade]; })));
   await p.waitForTimeout(500); if (out) await p.locator("#worldcv").screenshot({ path: out + "/3-down.png" });
   // 6. 走去街上（地下室→書房→走廊→街）
   await p.evaluate(() => TOPW.goTo(260, 92, null, "street")); ok(await until(async () => (await st()).room === "street", 15000), "could not reach street");

@@ -198,6 +198,26 @@ const SP = (() => {
                    { lean: 10, hF: 20, kF: 30, hB: 10, kB: 30, sF: 40, eF: 60, hand: "box" }, { lean: 0, sF: 40, eF: 70, hand: "box" }],
     sit: () => [{ hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sF: 20, eF: 50, sB: 16, eB: 50, sitting: 1 }],
     talk: () => [{ sF: 30, eF: 40, mouth: 1 }, { sF: 40, eF: 50 }, { sF: 34, eF: 46, mouth: 1 }, { sF: 20, eF: 30 }],
+    // ---- 同物件互動 ----
+    openDoor: () => [{ lean: 4, sF: 70, eF: 30 }, { lean: 6, sF: 84, eF: 10, hand: "grip" }, { lean: -4, hF: -6, kF: 4, hB: -16, kB: 8, sF: 60, eF: 40, hand: "grip" },
+                     { lean: -6, hF: -10, kF: 6, hB: -20, kB: 10, sF: 46, eF: 50, hand: "grip" }],
+    drawer: () => [{ lean: 18, hF: 30, kF: 40, hB: 10, kB: 40, lift: -2, sF: 60, eF: 20 }, { lean: 18, hF: 30, kF: 40, hB: 10, kB: 40, lift: -2, sF: 66, eF: 10, hand: "grip" },
+                   { lean: 10, hF: 26, kF: 40, hB: 6, kB: 40, lift: -2, sF: 34, eF: 44, hand: "grip" }, { lean: 22, hF: 30, kF: 40, hB: 10, kB: 40, lift: -2, sF: 50, eF: 30, sB: 40, eB: 30 }],
+    rummage: () => [{ lean: 40, hF: 40, kF: 50, hB: 20, kB: 50, lift: -2, sF: 20, eF: 10, sB: 30, eB: 10 }, { lean: 42, hF: 40, kF: 50, hB: 20, kB: 50, lift: -2, sF: 34, eF: 4, sB: 14, eB: 20 },
+                    { lean: 40, hF: 40, kF: 50, hB: 20, kB: 50, lift: -2, sF: 14, eF: 20, sB: 36, eB: 6, hand: "note" }],
+    switch: () => [{ sF: 104, eF: 6 }, { sF: 110, eF: 0, hand: "grip" }],
+    phone: () => [{ sF: 60, eF: 112, hand: "phone", mouth: 1 }, { sF: 60, eF: 112, hand: "phone" }, { sF: 58, eF: 114, hand: "phone", mouth: 1 }, { sF: 60, eF: 112, hand: "phone", sB: 30, eB: 40 }],
+    read: () => [{ lean: 4, sF: 56, eF: 56, sB: 50, eB: 62, hand: "paper" }, { lean: 6, sF: 54, eF: 60, sB: 48, eB: 66, hand: "paper" }],
+    text: () => [{ lean: 6, sF: 30, eF: 84, sB: 26, eB: 90, hand: "phone2" }, { lean: 6, sF: 30, eF: 88, sB: 26, eB: 90, hand: "phone2" }],
+    sitText: () => [{ hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, lean: 6, sF: 30, eF: 80, sB: 26, eB: 86, hand: "phone2", sitting: 1 },
+                    { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, lean: 6, sF: 30, eF: 84, sB: 26, eB: 86, hand: "phone2", sitting: 1 }],
+    type: () => [{ hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, lean: 8, sF: 56, eF: 30, sB: 50, eB: 34, sitting: 1 }, { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, lean: 8, sF: 50, eF: 36, sB: 56, eB: 28, sitting: 1 }],
+    drink: () => [{ sF: 30, eF: 70, hand: "cup" }, { sF: 50, eF: 110, hand: "cup" }, { sF: 60, eF: 120, hand: "cup", lean: -4 }, { sF: 50, eF: 110, hand: "cup" }],
+    give: () => [{ sF: 40, eF: 40, hand: "note" }, { sF: 74, eF: 10, hand: "note" }, { sF: 80, eF: 6, hand: "note" }],
+    cross: () => [{ sF: 30, eF: 100, sB: 34, eB: 96 }, { sF: 30, eF: 100, sB: 34, eB: 96, breathe: 1 }],
+    hold: () => [{ sF: 24, eF: 70, sB: 20, eB: 74, hand: "tray" }, { sF: 24, eF: 72, sB: 20, eB: 74, hand: "tray", breathe: 1 }],
+    wipe: () => [{ sF: 90, eF: 10, hand: "cloth" }, { sF: 100, eF: 4, hand: "cloth" }, { sF: 112, eF: 0, hand: "cloth" }, { sF: 100, eF: 4, hand: "cloth" }],
+    lie: () => [{ lift: -4, sF: 10, eF: 10, sB: 6, eB: 10, hF: 0, kF: 4, hB: -2, kB: 6, rot: -90, eyes: "shut" }, { lift: -4, sF: 12, eF: 10, sB: 6, eB: 10, hF: 0, kF: 4, hB: -2, kB: 6, rot: -90, eyes: "shut", breathe: 1 }],
     // ---- 意外、自殺類（真相動畫用） ----
     drinkFall: () => [
       { sF: 50, eF: 110, hand: "cup" }, { sF: 60, eF: 118, hand: "cup", lean: -4 }, { sF: 40, eF: 80, hand: "cup" },
@@ -322,6 +342,12 @@ const SP = (() => {
       else if (hand === "cup"){ rect(Ly, hx, hy - 3, 3, 4, P.cup); rect(Ly, hx, hy - 3, 3, 1, P.drink); }
       else if (hand === "camera"){ rect(Ly, hx - 1, hy - 3, 5, 4, P.cam); rect(Ly, hx + 3, hy - 2, 2, 2, P.lensR); rect(Ly, hx, hy - 4, 2, 1, P.cam); }
       else if (hand === "note"){ rect(Ly, hx - 1, hy - 4, 4, 5, P.paper); rect(Ly, hx, hy - 3, 2, 1, P.ink); rect(Ly, hx, hy - 1, 2, 1, P.ink); }
+      else if (hand === "phone"){ rect(Ly, hx - 1, hy - 6, 2, 6, P.cam); rect(Ly, hx - 1, hy - 6, 1, 1, P.lens); }
+      else if (hand === "phone2"){ rect(Ly, hx - 1, hy - 3, 4, 3, P.cam); rect(Ly, hx, hy - 3, 2, 1, P.lens); }
+      else if (hand === "paper"){ rect(Ly, hx - 1, hy - 8, 3, 9, P.paper); rect(Ly, hx, hy - 6, 1, 5, P.ink); }
+      else if (hand === "tray"){ rect(Ly, hx - 3, hy - 1, 9, 1, P.cam); rect(Ly, hx - 1, hy - 4, 2, 3, P.cup); rect(Ly, hx + 2, hy - 4, 2, 3, P.cup); }
+      else if (hand === "cloth"){ rect(Ly, hx - 1, hy - 2, 4, 3, P.paper); rect(Ly, hx, hy + 1, 2, 1, P.ink); }
+      else if (hand === "grip"){ rect(Ly, hx - 1, hy - 1, 3, 3, P.hand); }
       else if (hand === "box"){ rect(Ly, hx - 2, hy - 4, 6, 5, P.boxc); rect(Ly, hx - 2, hy - 4, 6, 1, mul(P.boxc, 1.2)); } };
     arm(backL, q.sB, q.eB, true);
     leg(legs, q.hB, q.kB, true);
