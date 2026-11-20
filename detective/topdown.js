@@ -267,8 +267,8 @@ const TOPW = (() => {
   // 查東西時站哪裡：寫了 walk/wy 就照寫的；沒寫就站在東西正下方（前面）走得到的地方
   function standFor(q){
     if (q.walk !== undefined && q.wy !== undefined) return [q.walk, q.wy];
-    const G = gridOf(cur.s.room), cx = q.walk ?? q.r[0] + q.r[2] / 2, below = q.r[1] + q.r[3] + 6;
-    const c = nearestFree(G, ...cellOf(G, cx, Math.min(roomOf(cur.s.room).h - 6, below)));
+    const rid = q.room || cur.s.room, G = gridOf(rid), cx = q.walk ?? q.r[0] + q.r[2] / 2, below = q.r[1] + q.r[3] + 6;
+    const c = nearestFree(G, ...cellOf(G, cx, Math.min(roomOf(rid).h - 6, below)));
     return [c[0] * CELL + CELL / 2, c[1] * CELL + CELL / 2];
   }
   function faceTo(r){ const s = cur.s, cx = r[0] + r[2] / 2, cy = r[1] + r[3] / 2, dx = cx - s.px, dy = cy - s.py;
@@ -286,8 +286,9 @@ const TOPW = (() => {
     return { x:Math.round(r[0] + (r[2] - 1) * first[0]), y:Math.round(r[1] + (r[3] - 1) * first[1]), free:false };
   }
   function glint(p, g, s, q, i, bl){
-    const T = 3.2, ph = ((s.t + T - 0.25 - (i % 6) * 0.35) % T + T) % T; if (ph > 0.55) return;
-    const k = Math.sin(Math.PI * ph / 0.55), { x, y } = glintAt(q.r, bl);
+    const T = 3.2, ph = ((s.t + T - 0.25 - (i % 6) * 0.35) % T + T) % T, { x, y } = glintAt(q.r, bl);
+    if (ph > 0.55){ g.save(); g.globalAlpha = 0.5 + 0.2 * Math.sin(s.t * 3 + i); p.R(x - 1, y, 3, 1, "#ffc93a"); p.R(x, y - 1, 1, 3, "#ffc93a"); p.R(x, y, 1, 1, "#fff6d0"); g.restore(); return; }   // 平時：小星星一直亮著
+    const k = Math.sin(Math.PI * ph / 0.55);
     g.save();
     if (k > 0.75){ g.globalAlpha = 0.22; [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([dx, dy]) => p.R(x + dx, y + dy, 1, 1, "#2a1c0c")); }
     g.globalAlpha = 0.45 + 0.5 * k;
@@ -331,7 +332,8 @@ const TOPW = (() => {
     exitLabels(R, opt, cx, cy);
     // 閃光、附近
     let nearL = [];
-    if (!s.script && !hooks.noGlint){ nearL = hooks.spots().filter(q => q.fresh && nearYou(s, q)); nearL.forEach((q, i) => glint(p, g, s, q, i, bl)); }
+    // 星星：這個房間裡每一樣還沒看過的東西都會閃（走近的那幾樣算「附近」）
+    if (!s.script && !hooks.noGlint){ nearL = hooks.spots().filter(q => q.fresh && nearYou(s, q)); if (!s.fade) hooks.spots().filter(q => q.fresh && here(q)).forEach((q, i) => glint(p, g, s, q, i, bl)); }
     if (hooks.nearNow){ const sig = nearL.map(spotKey).join("|"); if (sig !== s.nearSig){ s.nearSig = sig; hooks.nearNow(nearL.slice().sort((a, c) => a.r[0] - c.r[0])); } }
     g.setTransform(1, 0, 0, 1, 0, 0);
     if (s.fade){ g.globalAlpha = Math.max(0, 1 - Math.abs(1 - s.fade)); g.fillStyle = "#000"; g.fillRect(0, 0, VW, VH); g.globalAlpha = 1; }
@@ -394,6 +396,55 @@ const TOPW = (() => {
     requestAnimationFrame(loop);
   }
 
+  /* ---------- 平面圖：def.top.plan = [{ name:"一樓", w, h, rooms:{ 房間 id:[x, y, w, h] } }, …]
+     每個房間畫成一格，還沒看過的東西用星星標出來；點星星＝走過去看，點房間＝走過去 ---------- */
+  function plan(canvas, onPick){
+    if (!cur || !cur.def.top.plan) return;
+    const s = cur.s, floors = cur.def.top.plan, dpr = Math.min(3, window.devicePixelRatio || 1);
+    const cw = canvas.clientWidth || 300, pad = 6, head = 18, sc = (cw - pad * 2) / Math.max(...floors.map(f => f.w));
+    const hs = floors.map(f => head + f.h * sc + 8), ch = hs.reduce((a, c) => a + c, 0);
+    canvas.width = Math.round(cw * dpr); canvas.height = Math.round(ch * dpr); canvas.style.height = ch + "px";
+    const g = canvas.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, cw, ch);
+    const fresh = cur.hooks.spots().filter(q => q.fresh), ppl = cur.hooks.people(), hits = [], boxes = [];
+    let y0 = 0;
+    floors.forEach((f, fi) => {
+      g.fillStyle = "#cfc6b8"; g.font = "bold 12px sans-serif"; g.textBaseline = "top"; g.fillText(f.name, pad, y0 + 2);
+      const oy = y0 + head;
+      Object.entries(f.rooms).forEach(([rid, b]) => {
+        const R = rooms()[rid]; if (!R) return;
+        const x = pad + b[0] * sc, y = oy + b[1] * sc, w = b[2] * sc, h = b[3] * sc, mine = rid === s.room, out = b[4] === "out";
+        g.fillStyle = out ? "#1d2a20" : "#2a221b"; g.fillRect(x, y, w, h);
+        g.strokeStyle = mine ? "#6fd46f" : "#7a6a58"; g.lineWidth = mine ? 2.5 : 1.2; g.strokeRect(x + .5, y + .5, w - 1, h - 1);
+        const nm = R.name.replace(/（.*?）/g, ""); g.fillStyle = mine ? "#bff0bf" : "#e9e1d2"; g.font = (w < 48 ? "10px" : "11px") + " sans-serif";
+        g.fillText(nm, x + 3, y + 3, w - 6);
+        boxes.push({ rid, x, y, w, h });
+        ppl.filter(q => q.room === rid).forEach(q => { const px = x + q.x / R.w * w, py = y + Math.max(.25, Math.min(.95, q.y / R.h)) * h;
+          g.fillStyle = "#1b1512"; g.beginPath(); g.arc(px, py, 4, 0, 7); g.fill(); g.fillStyle = q.arrow || "#c9c0b0"; g.beginPath(); g.arc(px, py, 3, 0, 7); g.fill(); });
+        fresh.filter(q => q.room === rid).forEach((q, i) => {
+          const sx = x + Math.max(.06, Math.min(.94, (q.r[0] + q.r[2] / 2) / R.w)) * w, sy = y + Math.max(.3, Math.min(.92, (q.r[1] + q.r[3] / 2) / R.h)) * h;
+          star(g, sx, sy, 5.5); hits.push({ q, x:sx, y:sy });
+        });
+        if (mine){ const px = x + s.px / R.w * w, py = y + Math.max(.25, Math.min(.95, s.py / R.h)) * h;
+          g.fillStyle = "#1b1512"; g.beginPath(); g.arc(px, py, 5, 0, 7); g.fill(); g.fillStyle = "#6fd46f"; g.beginPath(); g.arc(px, py, 3.6, 0, 7); g.fill(); }
+      });
+      y0 += hs[fi];
+    });
+    canvas.onclick = e => {
+      const r = canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+      const st = hits.map(h => ({ h, d:Math.hypot(h.x - x, h.y - y) })).sort((a, c) => a.d - c.d)[0];
+      if (st && st.d < 20) return onPick && onPick({ spot:spotKey(st.h.q) });
+      const b = boxes.find(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h);
+      if (b) onPick && onPick({ room:b.rid });
+    };
+    return { stars:hits.length, pts:hits.map(h => ({ key:spotKey(h.q), room:h.q.room, x:h.x, y:h.y })) };
+  }
+  function star(g, x, y, r){
+    g.save(); g.translate(x, y); g.beginPath();
+    for (let k = 0; k < 8; k++){ const a = k * Math.PI / 4 - Math.PI / 2, rr = k % 2 ? r * .38 : r; g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+    g.closePath(); g.fillStyle = "#ffd04a"; g.strokeStyle = "#1b1512"; g.lineWidth = 1.5; g.stroke(); g.fill();
+    g.fillStyle = "#fff"; g.fillRect(-1, -1, 2, 2); g.restore();
+  }
+
   // 走進一個區域（房間）要站哪裡：房間中間附近、沒有人的地方。回傳 [x, y, 房間]
   function standIn(a){
     const rid = a.id, R = roomOf(rid); if (!R) return [cur.s.px, cur.s.py, cur.s.room];
@@ -408,7 +459,7 @@ const TOPW = (() => {
   function goTo(x, y, cb, room){ if (!cur || cur.s.script) return false; goThen(x, y, cb, room); return true; }
 
   return { top:true, carOf, PATROL, mount, state, indoor:() => 1, goTo, standIn, walking:() => !!(cur && (cur.s.path.length || cur.s.fade)),
-    levelVis:() => 1, skip:() => cur && cur.s.script && skip(), nearYou:q => !!cur && !cur.s.script && nearYou(cur.s, q), goSpot, spotKey,
+    levelVis:() => 1, plan, skip:() => cur && cur.s.script && skip(), nearYou:q => !!cur && !cur.s.script && nearYou(cur.s, q), goSpot, spotKey,
     you:() => cur && { x:cur.s.px, y:cur.s.py, room:cur.s.room, use:cur.s.use && cur.s.use.act }, doorAmt:(room, to) => { if (!cur) return 0; const t0 = cur.s.doorT[room + ">" + to]; if (t0 === undefined) return 0; const d = cur.s.t - t0; return d < 0.3 ? d / 0.3 : d < 1.4 ? 1 : Math.max(0, 1 - (d - 1.4) / 0.3); }, endUse:() => cur && endUse(), glintAt:q => { if (!cur) return null; const s = cur.s, bl = [{ x:s.px, y:s.py }, ...cur.hooks.people().filter(here).map(b => ({ x:b.x, y:b.y }))]; if (s.broom === s.room && cur.hooks.buddy && cur.hooks.buddy()) bl.push({ x:s.bx, y:s.by }); return glintAt(q.r, bl); }, VW, VH, GROUND:0, room:() => cur && cur.s.room,
     reset:lid => { delete st[lid]; }, resetAll:() => { Object.keys(st).forEach(k => delete st[k]); }, _cur:() => cur };
 })();

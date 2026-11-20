@@ -2,7 +2,7 @@
 // 1) 還沒看過的東西只有在主角附近（同一個房間、56 格內）才算「附近」；看過就不閃；劇情進行中不閃
 // 2) iPad、手機大小：手指點在小東西外面一點點也算點中；離很遠不算；點人還是點到人
 // 3) 人擋在東西前面：閃光會移到沒被擋住的位置；點在人身上＝找人；整個被擋住的東西，點它閃的位置先看東西，看過之後才輪到人
-// 4) 畫面下面的「附近」清單：列的就是會閃的那幾樣，點名字＝點那樣東西
+// 4) 沒有左上角／下面的提示；🧭 平面圖列出全部星星，點別的房間的星星＝走過去看
 const { chromium } = require('playwright');
 (async () => {
   const b = await chromium.launch(); const errs = []; const r = {};
@@ -41,18 +41,18 @@ const { chromium } = require('playwright');
     await tapAt(o.cover.x, o.cover.y); o.covered = await ui(); await close();        // 整個被擋住的東西，點它閃的位置 → 先看東西
     await tapAt(o.cover.x, o.cover.y); o.coveredAgain = await ui(); await close();   // 看過之後再點同一個位置 → 才輪到人
     await p.evaluate(() => { C.world._.top.place.chow = C.world._.top.place._chow; delete C.world._.top.place._chow; render(); });
-    // 「附近」清單：列的就是會閃的那幾樣；點名字＝點那樣東西（小細節直接看；證物先問、還沒花時間）；看過就從清單消失
-    await put("study", 40, 110); await p.waitForTimeout(700);
-    const chips = () => p.evaluate(() => [...document.querySelectorAll('.wnear .nb')].map(e => e.textContent));
-    const keys = () => p.evaluate(() => [...document.querySelectorAll('.wnear .nb')].map(e => e.getAttribute('onclick').match(/'(.*)'/)[1]).sort().join());
-    o.listIsNear = (await keys()) === (await p.evaluate(() => curHooks.spots().filter(q => q.fresh && TOPW.nearYou(q)).map(q => TOPW.spotKey(q)).sort().join()));
-    const n0 = (await chips()).length;
-    await p.click('.wnear .nb:has-text("書架")'); await settle(); o.chipDetail = [await ui(), (await chips()).length === n0 - 1];
-    await close(); await put("study", 262, 112); await p.waitForTimeout(700);
+    // 平面圖（🧭）：星星＝所有還沒看過的東西；點別的房間的星星＝走過去看（小細節直接看；證物先問、還沒花時間）
+    await close(); await put("hall", 110, 150); await p.waitForTimeout(400);
+    o.noHints = await p.evaluate(() => !document.querySelector('.wnear') && !document.querySelector('.wroom'));
+    await p.click('text=平面圖'); await p.waitForTimeout(400);
+    o.planAll = await p.evaluate(() => window._plan.stars === curHooks.spots().filter(q => q.fresh).length);
+    const tapStar = async key => { await p.evaluate(k => { const cv = document.getElementById('plancv'), q = window._plan.pts.find(q => q.key === k); cv.scrollIntoView({ block:'center' }); const c = cv.getBoundingClientRect(); const pan = document.querySelector('.fs-panel'); pan.scrollTop += c.top + q.y - pan.getBoundingClientRect().top - pan.clientHeight / 2; }, key); await p.waitForTimeout(150); const pt = await p.evaluate(k => { const c = document.getElementById('plancv').getBoundingClientRect(), q = window._plan.pts.find(q => q.key === k); return [c.left + q.x, c.top + q.y]; }, key); await p.mouse.click(pt[0], pt[1]); await settle(); await settle(); };
+    await tapStar('v_shelf'); o.planDetail = [await ui(), await p.evaluate(() => TOPW.room())];
+    await close(); await put("hall", 110, 150); await p.click('text=平面圖'); await p.waitForTimeout(400);
     const used0 = await p.evaluate(() => usedNow());
-    await p.click('.wnear .nb:has-text("遺書")'); await settle();
-    o.chipItem = await p.evaluate(u => [!!wAct && wAct.ids.join(), S.seen.includes('ev_note'), usedNow() === u], used0);
-    o.fits = await p.evaluate(() => { const n = document.querySelector('.wnear').getBoundingClientRect(), b = document.querySelector('.wnear .nb').getBoundingClientRect(); return n.bottom <= innerHeight + 1 && b.height >= 36 && document.documentElement.scrollWidth <= innerWidth + 1; });
+    await tapStar("ev_note");
+    o.planItem = await p.evaluate(u => [!!wAct && wAct.ids.join(), S.seen.includes('ev_note'), usedNow() === u, TOPW.room()], used0);
+    o.fits = await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
     await ctx.close();
   }
   console.log(JSON.stringify(r));
@@ -61,6 +61,6 @@ const { chromium } = require('playwright');
       && o.study.includes('v_keypad') && o.study.includes('v_shelf') && !o.study.includes('v_snow') && !o.study.includes('v_fridge')
       && o.tapNear === 'v_keypad' && !o.afterFound && o.tapFar === 'v_keypad'
       && o.pts[0].free && !o.cover.free && o.body.startsWith('chow|') && o.covered.includes('detail:v_log') && o.covered.endsWith('v_keypad,v_log') && o.coveredAgain.startsWith('chow|')
-      && o.listIsNear && o.chipDetail[0].includes('detail:v_shelf') && o.chipDetail[1] && o.chipItem[0] === 'ev_note' && !o.chipItem[1] && o.chipItem[2] && o.fits; }) && !errs.length;
+      && o.noHints && o.planAll && o.planDetail[0].includes('detail:v_shelf') && o.planDetail[1] === 'study' && o.planItem[0] === 'ev_note' && !o.planItem[1] && o.planItem[2] && o.planItem[3] === 'study' && o.fits; }) && !errs.length;
   console.log(ok ? 'GLINT TEST PASS' : 'GLINT TEST FAIL', errs); await b.close();
 })();

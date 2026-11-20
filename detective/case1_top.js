@@ -587,7 +587,13 @@
   const intro = [ { set:{ room:"road", px:20, py:118 }, hide:true }, { wait:0.3, hide:true }, { set:{ room:"road", px:56, py:118 } },
     ...(W.intro || []).filter(k => k.say || (k.wait && !k.hide)) ];
 
-  W.top = { start:"road", spawn:[56,118], rooms:{ road, yard, hall, security, dining, kitchen, backdoor, garden, landing, mroom, horoom, study, terrace },
+  // 平面圖（🧭）：北＝畫面上方（房間的後牆那邊）；第 5 格 "out"＝室外
+  const plan = [
+    { name:"一樓・外面", w:100, h:78, rooms:{ garden:[4,0,92,18,"out"], security:[4,20,14,22], hall:[18,20,30,24], dining:[48,20,18,22], kitchen:[66,20,18,22], backdoor:[84,20,12,22],
+      yard:[18,46,30,14,"out"], road:[0,62,100,14,"out"] } },
+    { name:"二樓", w:100, h:44, rooms:{ mroom:[18,0,20,18], horoom:[38,0,20,18], landing:[18,18,44,14], study:[62,10,24,32], terrace:[64,0,20,10,"out"] } }
+  ];
+  W.top = { start:"road", spawn:[56,118], plan, rooms:{ road, yard, hall, security, dining, kitchen, backdoor, garden, landing, mroom, horoom, study, terrace },
     spots, details, place, extras, intro };
   /* ---------- 真相動畫（俯視版；破案後才播，字幕跟原本一樣） ---------- */
   // 近鏡：書桌側面（畫面放大兩倍，座標 144×81）

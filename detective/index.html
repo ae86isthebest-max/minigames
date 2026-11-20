@@ -577,6 +577,7 @@ function drawScenes(){
   });
   const wc = document.getElementById("worldcv");
   if (wc){ const l = curLoc(), def = worldDef(l); if (def){ WE = TOP(def) ? TOPW : WORLD; WE.mount(wc, def, l.id, curHooks = worldHooks(l, def)); } }
+  drawPlan();
   const mc = document.getElementById("mapcv");
   if (mc){ mapCtl = WK.drawMap(mc, mapFrom || PH().startAt || C.locations[0].id); fitMapLabels(); requestAnimationFrame(fitMapLabels); }
   document.querySelectorAll("canvas[data-anim]").forEach(cv=>{
@@ -732,6 +733,8 @@ function buddyHint(l){
   const s = C.suspects.find(x=>x.id===BUD().id);
   const tail = (detailsLeft(l) ? "清單不是全部：這裡還藏著小細節，走到附近會微微閃一下，畫面下面的「🔎 附近」也會列出來，點名字就能看（不花時間）。" : "") + (s && !reachable(s) ? "要問我問題，就到鑑識中心找我。" : "");
   if (S.done) return "案子已經結了，辛苦了。";
+  const starT = "畫面上閃著星星的，就是還沒看過的東西；按上面的「🧭 平面圖」可以看到哪裡還有星星，點星星就會走過去。" + (s && !reachable(s) ? "要問我問題，就到鑑識中心找我。" : "");
+  if (WE && WE.top) return CLK() ? `${timeTag()}。${starT}看錄影、查證物、問話都要花時間，挑重要的做。` : sl <= 0 ? pw("這裡今天查不了更多了，去問問人吧。") : `這裡還可以查 ${sl} 樣東西。${starT}`;
   if (CLK()) return `${timeTag()}。${fresh ? `點${pinWhere()}的「📍」看這裡有什麼可以查，點畫面上的箭嘴換地方。` : "這裡看得到的東西都查過了。"}看錄影、查證物、問話都要花時間，挑重要的做。` + tail;
   if (sl <= 0) return pw("這裡今天查不了更多了，去問問人吧。") + tail;
   return `這裡還可以查 ${sl} 樣東西。${fresh ? `點${pinWhere()}的「📍」看這裡有什麼可以查，點畫面上的箭嘴換地方。` : "看得到的東西都查過了，換個地方吧。"}${tail}`;
@@ -785,6 +788,8 @@ function labCard(l){
     ${lockedTests?`<p class="muted small">🔒 還有 ${lockedTests} 項化驗，要先找到相關的東西才能送。</p>`:""}</div>`;
 }
 function worldTalk(s){
+  const direct = WE && WE.top;   // 俯視畫面：走到人旁邊，右上角直接列出可以問的問題（不用再按「開始問話」）
+  if (direct) wChat = true;
   const qs = qsOf(s).filter(unlocked), notAsked = qs.filter(canAsk);
   const left = qLeft(s), off = left<=0 || S.done, lockedN = qsOf(s).length - qs.length;
   const said = lastSaid && lastSaid.sid===s.id ? s.questions.find(q=>q.id===lastSaid.qid) : null;
@@ -793,6 +798,8 @@ function worldTalk(s){
     ${said && said.note ? `<div class="note" style="margin-top:6px">${esc(said.note)}</div>` : ""}
     ${!off && !wChat ? `<button class="wq" style="border-color:var(--accent);text-align:center" onclick="wChat=true;render()">🗣️ 開始問話${CLK() ? `（每題約 ${costAsk()} 分鐘）` : ""}</button>${CLK() ? `<p class="muted small" style="margin:4px 0 0">${timeTag()}。</p>` : ""}` : ""}
     ${off || !wChat ? "" : notAsked.map(q=>`<button class="wq" onclick="askById('${s.id}','${q.id}')">${reAsk(q)||/^（出示/.test(textOf(q).q)?'<span class="tag new">質問</span>':(q.requires||q.requiresAll)?'<span class="tag new">追問</span>':''}${esc(askText(q))}</button>`).join("")}
+    ${direct && said && !off ? `<div class="muted small" style="margin:6px 2px 2px">還想問什麼？${CLK() ? `（每題約 ${costAsk()} 分鐘・${timeTag()}）` : ""}</div>` : direct && !off && CLK() ? `<div class="muted small" style="margin:6px 2px 2px">每題約 ${costAsk()} 分鐘・${timeTag()}。</div>` : ""}
+    ${direct && !off && !notAsked.length ? `<p class="muted small" style="margin:6px 2px 0">現在沒有想問的了。</p>` : ""}
     ${lockedN && !off && wChat ? `<p class="muted small" style="margin:6px 0 0">${lockNote(qsOf(s), lockedN, "要先得到相關線索才能問。")}</p>` : ""}</div>`;
 }
 function worldView(l, def){
@@ -845,6 +852,7 @@ function hudHTML(l, extra){
   const name = l ? (travel() ? l.name.replace(/（.*?）/g,"") : "案發現場") : (PH().title || C.title);
   return `<div class="fs-hud"><button class="hb" onclick="goHome()" aria-label="回到案件列表">‹</button>
     ${travel() && l ? `<button class="hb" onclick="leaveWorld()">🗺️ 地圖</button>` : ""}
+    ${l && hasPlan(l) ? `<button class="hb go" onclick="togglePlan()">🧭 平面圖</button>` : ""}
     <b class="hn">${esc(name)}</b>
     ${CLK() ? `<span>🕐 ${nowStr()}・剩 <b style="color:${timeLeft() <= 30 ? "var(--red)" : "var(--accent)"}">${minLabel(timeLeft())}</b></span>` : travel() ? `<span>🚗 ${apLeft()} 點</span>` : `<span>🔍 ${searchLeft()}</span>`}
     ${l && nd ? `<span class="found">🔎 ${(S.found||[]).length}／${nd}</span>` : ""}
@@ -862,6 +870,24 @@ function calcCover(){
   if (cr.width) fsCover = Math.max(0, Math.min(.6, (cr.right - pr.left + 6) / cr.width));
 }
 addEventListener("resize", ()=>{ if (fsMode()) calcCover(); fitMapLabels(); });
+// 俯視畫面的平面圖：每個房間一格，星星＝還沒看過的東西；點星星走過去看，點房間走過去
+const hasPlan = l => { const d = l && worldDef(l); return !!(d && TOP(d) && d.top.plan); };
+function togglePlan(){ const on = !wGo; closePanel(); if (on){ wGo = true; render(); } }
+function planCard(){
+  return `<div class="card" style="padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center"><b>🧭 平面圖</b><button class="back" style="margin:0" onclick="closePanel()">✕</button></div>
+    <div class="muted small" style="margin:2px 0 6px">⭐ 是還沒看過的東西，點星星你會自己走過去看；點房間就走到那裡。<span style="color:#6fd46f">●</span> 是你。走路不花時間。</div>
+    <canvas id="plancv" style="width:100%;display:block;touch-action:manipulation"></canvas><p class="muted small plann" style="margin:6px 2px 0"></p></div>`;
+}
+function drawPlan(){
+  const pc = document.getElementById("plancv"); if (!pc || !WE || !WE.plan) return;
+  const r = WE.plan(pc, pick => {
+    wGo = false; render();
+    if (pick.spot) WE.goSpot(pick.spot);
+    else if (pick.room){ const def = worldDef(curLoc()), a = (def.areas||[]).find(x=>x.id===pick.room) || { id:pick.room }; const sp = WE.standIn(a); WE.goTo(sp[0], sp[1], null, sp[2]); }
+  });
+  window._plan = r;
+  const n = pc.parentNode.querySelector(".plann"); if (n && r) n.textContent = r.stars ? `還有 ${r.stars} 樣東西沒看過。` : "看得到的東西都看過了。";
+}
 function fsFrame(l, stage, panel, extra){
   return `<div class="fs-root">${hudHTML(l, extra)}<div class="fs-body"><div class="fs-stage">${stage}</div>${panel ? `<div class="fs-panel">${panel}</div>` : `<div class="fs-panel fs-empty"><p class="hint" style="margin:6px 2px">📱 把手機打橫，畫面會更大。<br>點人、點東西會先問你要不要做；${buddyId() ? `點${BUD().name}（<b style="color:#6fd46f">綠色箭嘴</b>）或右上角「💬 ${BUD().name}」` : "點右上角「☰ 選單」"}，可以翻筆記、看案情、結案。</p></div>`}</div></div>`;
 }
@@ -1037,9 +1063,10 @@ function worldViewFS(l, def){
   else if (wTalk){ const s = C.suspects.find(x=>x.id===wTalk); panel = worldTalk(s); }
   else if (peek && peek.kind==="item"){ const it = allItems().find(x=>x.id===peek.id); const back = peek.from ? `wAct={ids:peek.from};peek=null;render()` : wRoom ? `peek=null;render()` : "";
     panel = `<div class="look"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:6px">${back ? `<button class="back" style="margin:0;white-space:nowrap" onclick="${back}">‹ ${peek.from ? "監視器列表" : "返回"}</button>` : ""}<b style="margin:0;flex:1">${it.cctv?"📹":it.icon||"🧾"} ${esc(it.title)}</b><button class="back" style="margin:0" onclick="closePanel()">✕</button></div>${itemBody(it, true)}${peek.from ? `<button class="back" onclick="wAct={ids:peek.from};peek=null;render()">‹ 回到監視器列表</button>` : wRoom ? `<button class="back" onclick="peek=null;render()">‹ 回到${esc(areaName(def, wRoom))}</button>` : ""}</div>`; }
-  else if (wGo) panel = goList(l, def);
+  else if (wGo) panel = TOP(def) ? planCard() : goList(l, def);
   else if (wRoom) panel = roomList(l, def);
-  const stage = `<div class="world"><canvas id="worldcv"></canvas><div class="wbtns"><button class="wroom" hidden onclick="openRoomList()"></button></div><div class="wnear"></div><div class="wbubble" hidden><b></b><span></span></div><div class="wtip"></div><button class="wskip" hidden>跳過 ⏭</button></div>`;
+  // 俯視畫面不放左上角的「在這裡做什麼？」和下面的「附近」清單：看星星、開平面圖
+  const stage = `<div class="world"><canvas id="worldcv"></canvas>${TOP(def) ? "" : `<div class="wbtns"><button class="wroom" hidden onclick="openRoomList()"></button></div><div class="wnear"></div>`}<div class="wbubble" hidden><b></b><span></span></div><div class="wtip"></div><button class="wskip" hidden>跳過 ⏭</button></div>`;
   const extra = l.perVisit ? `<button class="hb go" onclick="wTalk=null;wBuddy=false;wSay=null;peek=peek&&peek.kind==='lab'?null:{kind:'lab'};render()">${labW(l).ic} ${labW(l).nm.slice(0,2)}</button>` : "";
   return fsFrame(l, stage, panel, extra);
 }
