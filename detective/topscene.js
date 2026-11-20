@@ -233,6 +233,33 @@ const TOPSCENE = (() => {
     return { room, row:[30, 200, 104] };
   };
 
+  // 告別式會場外：白色帳篷、「追思」的看板、花籃、簽到桌；豆花趴在地上
+  STAGES.funeralOut = (o) => {
+    o = o || {};
+    const room = { w:288, h:150, wall:60,
+      floor(p, g, t){
+        T.backWall(p, 0, 288, 60, "#d8dcd8", "plain", { base:"#5a5e5a" });
+        // 會館的入口：黑白布幔
+        p.R(104, 14, 80, 46, O); p.R(105, 15, 78, 45, "#1e1e22"); for (let i = 105; i < 183; i += 8) p.R(i, 15, 4, 45, "#f4f4f0"); p.R(104, 14, 80, 4, "#2a2a2e");
+        // 「追思」的看板
+        p.R(20, 10, 60, 36, O); p.R(21, 11, 58, 34, "#f4f4f0"); p.R(21, 11, 58, 5, "#3a3a44"); p.R(38, 20, 24, 10, "#2a2a3a"); p.R(42, 23, 6, 4, "#f4f4f0"); p.R(52, 23, 6, 4, "#f4f4f0"); for (let k = 0; k < 3; k++) p.R(28, 34 + k * 3, 44, 1, "#8a8a92");
+        // 白色帳篷的邊（一格一格垂下來）
+        p.R(0, 0, 288, 6, "#f4f4f0"); for (let x = 0; x < 288; x += 16){ p.R(x, 6, 8, 4, "#f4f4f0"); p.R(x, 10, 8, 1, "#c8c8c4"); }
+        T.paving(p, 0, 60, 288, 90, "#9a9a94", 16);
+        T.sides(p, this, "#5a5e5a", []);
+      },
+      props:[
+        // 花籃（白、黃菊花）
+        { y:76, draw(p){ for (const [x, c] of [[90, "#f4f4f0"], [192, "#e8e8ff"], [222, "#f4f4f0"], [252, "#e8e8ff"]]){ p.R(x + 6, 48, 2, 28, O); p.R(x - 1, 34, 16, 16, O); for (let k = 0; k < 9; k++) p.R(x + (k % 3) * 5, 35 + Math.floor(k / 3) * 5, 4, 4, k % 2 ? c : "#f4e8a0"); p.R(x + 2, 50, 10, 6, "#f4f4f0"); p.R(x + 4, 52, 6, 1, "#3a3a44"); } } },
+        // 簽到桌（白布、簽名簿、一盒白色的花）
+        { y:100, draw(p){ T.box(p, 116, 80, 56, 12, 10, "#f4f4f0", "#e0e0dc"); p.R(124, 82, 16, 8, O); p.R(125, 83, 14, 6, "#f8f4e8"); p.R(131, 83, 1, 6, "#c8c4b8"); p.R(148, 82, 16, 7, O); p.R(149, 83, 14, 5, "#f4f4f0"); for (let k = 0; k < 4; k++) p.R(150 + k * 3, 84, 2, 2, "#f4e8a0"); } },
+        // 豆花（趴著）
+        { y:118, draw(p){ if (o.dog === false) return; const x = 50, y = 118; p.R(x - 4, y - 7, 22, 8, O); p.R(x - 3, y - 6, 20, 6, "#d8b888"); p.R(x + 14, y - 10, 9, 8, O); p.R(x + 15, y - 9, 7, 6, "#d8b888"); p.R(x + 20, y - 7, 2, 2, "#2a1a14"); p.R(x + 15, y - 11, 2, 2, "#a88858"); p.R(x + 4, y - 6, 6, 2, "#c8302a"); } }
+      ],
+      front(p, g, t){ T.glow(g, 144, 30, 70, "255,250,235", .08); } };
+    return { room, row:[70, 250, 120] };
+  };
+
   /* ---------- 地點裡的房間 ---------- */
   const ALIAS = { pol6:"interrog" };
   function resolve(name, opt){
@@ -243,6 +270,7 @@ const TOPSCENE = (() => {
     if (R) return { room:R };
     if (name === "s15_hall") return STAGES.hall5(opt);
     if (name === "hospital") return STAGES.hospHall(opt);
+    if (name === "funeral") return STAGES.funeralOut(opt);
     return null;
   }
   function findRoom(name){
