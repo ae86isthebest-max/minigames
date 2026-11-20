@@ -47,7 +47,7 @@ await enter(null);
 // 5) 戶外場景、晚上
 await open(16);
 const N=await p.evaluate(()=>{ const l=C.locations.find(l=>(C.outScenes||[]).includes(roomsOf(l)[0].scene)), w=(C.world=C.world||{}), w0=w[l.id], sky=C.worldSky; const r={ lid:l.id };
-  w[l.id]={ ...(w0||{}), labels:[{ x:10, y:60, text:"廟口", color:"#ffffff" }, { x:10, y:80, text:"不變", color:"#ffffff", tint:false }, { x:10, y:10, text:"上面", color:"#ffffff" }] };
+  w[l.id]={ ...(w0||{}), auto:true, top:undefined, labels:[{ x:10, y:60, text:"廟口", color:"#ffffff" }, { x:10, y:80, text:"不變", color:"#ffffff", tint:false }, { x:10, y:10, text:"上面", color:"#ffffff" }] };
   C.worldSky=()=>["#0b0f1c","#27324a","#18241f","#1d2c25",0,1]; r.night=worldDef(l).texts({ phase:0 }).map(t=>[t.color, t.y]);
   C.worldSky=()=>["#6fa0d0","#cfe3ee","#4f7a4a","#5f8a5a",0,0]; r.day=worldDef(l).texts({ phase:0 }).map(t=>t.color);
   C.worldSky=sky; if (w0===undefined) delete w[l.id]; else w[l.id]=w0; return r; });
