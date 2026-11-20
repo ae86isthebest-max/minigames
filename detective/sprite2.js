@@ -168,7 +168,7 @@ const SP = (() => {
   /* ---------- 姿勢：骨架角度（度；0＝直直向下，正＝往面向的那邊） ---------- */
   // 側面：lean 身體前傾、hF/kF 前腳大腿／膝、hB/kB 後腳、sF/eF 近鏡頭的手（肩／手肘）、sB/eB 遠的手、rot 整個人轉（跌倒）、lift 整個人離地、
   //       hand：near 那隻手拿什麼（"lens" 放大鏡）、mouth、eyes:"shut"
-  const LEN = { thigh: 6, shin: 6, torso: 9, arm1: 5, arm2: 5 };   // 大頭比例：頭大約佔全身四成
+  const LEN = { thigh: 6, shin: 7, torso: 9, arm1: 5, arm2: 5 };   // 大頭比例：頭大約佔全身四成
   function walkSide(f, n){
     const p = f / n * Math.PI * 2, s = Math.sin(p), c = Math.cos(p);
     // 腳往前時膝蓋伸直落地，往後擺回來的那一半膝蓋彎起（抬腳）
@@ -290,10 +290,11 @@ const SP = (() => {
     const fl = leg(legs, q.hF, q.kF, false);
     // 身體＋大衣（下擺蓋到大腿一半）
     const tw = 6;
-    const nb = [neck[0] - tw, neck[1] + 1], nf = [neck[0] + tw - 1, neck[1] + 1];
+    // 企直的身形：背是一條直線、胸口微微挺出、肩膀由頸向兩邊斜落（不是一條平肩頂住下巴＝縮頸駝背的感覺）
+    const nb = [neck[0] - tw + 1, neck[1] + 1], nf = [neck[0] + tw - 3, neck[1] + 1], chest = [neck[0] + tw, neck[1] + 5], backTop = [neck[0] - tw, neck[1] + 3];
     const hb = [hip[0] - tw, hip[1]], hf = [hip[0] + tw - 1, hip[1]];
-    const kneeB = step(hip, q.hB, LEN.thigh * 0.75, dir), kneeF = step(hip, q.hF, LEN.thigh * 0.75, dir);
-    poly(body, [nb, nf, [hf[0] + 0.5, hf[1]], [Math.max(kneeF[0], hip[0]) + 3, kneeF[1] + 1], [Math.min(kneeB[0], hip[0]) - 3, kneeB[1] + 1], [hb[0] - 0.5, hb[1]]], P.coat);
+    const kneeB = step(hip, q.hB, LEN.thigh * 0.6, dir), kneeF = step(hip, q.hF, LEN.thigh * 0.6, dir);
+    poly(body, [nb, nf, chest, [hf[0] + 0.5, hf[1]], [Math.max(kneeF[0], hip[0]) + 3, kneeF[1] + 1], [Math.min(kneeB[0], hip[0]) - 3, kneeB[1] + 1], [hb[0] - 0.5, hb[1]], backTop], P.coat);
     // 腰帶、領口、扣
     const belt = step(hip, 180 + q.lean, 3, -1); rect(body, Math.round(belt[0]) - tw, Math.round(belt[1]), tw * 2, 1, mul(P.coat, 0.62));
     rect(body, Math.round(neck[0]) + 1, Math.round(neck[1]) + 1, 3, 3, mul(P.coat, 1.25));
@@ -301,7 +302,8 @@ const SP = (() => {
     const hasHat = !!P.hat;
     const rows = HEAD[hasHat ? "side_hat" : "side"].map(r => q.eyes === "shut" ? r.replace("we", "bb") : r).map(r => q.mouth ? r.replace("mk", "mm") : r);
     const hp = { h: P.hat, H: P.hatB, r: P.hair, k: P.skin, K: P.skinD, e: P.eye, w: P.white, b: P.brow, m: P.mouth };
-    const hx = Math.round(neck[0]) - 9, hy = Math.round(neck[1]) - 13;   // 頭擺正在身體上面，不向前伸
+    const hx = Math.round(neck[0]) - 9, hy = Math.round(neck[1]) - 15;   // 頭擺正在身體上面，不向前伸；下面露出一截頸
+    rect(body, Math.round(neck[0]) - 1, Math.round(neck[1]) - 2, 4, 4, P.skinD);
     grid(headL, rows, hx, hy, hp, false);
     arm(front, q.sF, q.eF, false, q.hand);
     if (q.flash){ const c = step(shoulder, q.sF, 12, dir); for (let k = -3; k <= 3; k++){ put(front, c[0] + 3 + k, c[1] - 2, [255, 250, 220]); put(front, c[0] + 3, c[1] - 2 + k, [255, 250, 220]); } }
@@ -324,7 +326,8 @@ const SP = (() => {
     rect(legs, RX - 7, hipY + 10 - Math.round(up1), 6, 3, P.shoe); rect(legs, RX + 1, hipY + 10 - Math.round(up2), 6, 3, P.shoe);
     // 大衣
     const top = hipY - 10 + breathe;
-    poly(body, [[RX - 7, top], [RX + 7, top], [RX + 8, hipY + 6], [RX - 8, hipY + 6]], P.coat);
+    poly(body, [[RX - 4, top], [RX + 4, top], [RX + 7, top + 2], [RX + 8, hipY + 6], [RX - 8, hipY + 6], [RX - 7, top + 2]], P.coat);   // 斜肩
+    rect(body, RX - 2, top - 2, 4, 3, P.skinD);   // 頸
     if (!backView){ rect(body, RX - 1, top, 2, 17, mul(P.coat, 0.7)); rect(body, RX - 3, top, 2, 4, mul(P.coat, 1.25)); rect(body, RX + 1, top, 2, 4, mul(P.coat, 1.25));
       rect(body, RX - 2, top, 4, 2, P.top); }
     else rect(body, RX, top + 2, 1, 15, mul(P.coat, 0.75));
@@ -332,11 +335,11 @@ const SP = (() => {
     // 手：前後擺＝上下移一點
     const sw = Math.round(s * 2);
     const la = backView ? sw : -sw, ra = backView ? -sw : sw;
-    rect(arms, RX - 10, top + 1 + la, 4, 9, P.coat); rect(arms, RX - 10, top + 10 + la, 4, 3, P.skin);
-    rect(arms, RX + 7, top + 1 + ra, 4, 9, P.coat); rect(arms, RX + 7, top + 10 + ra, 4, 3, P.skin);
+    rect(arms, RX - 10, top + 2 + la, 4, 8, P.coat); rect(arms, RX - 10, top + 10 + la, 4, 3, P.skin);
+    rect(arms, RX + 7, top + 2 + ra, 4, 8, P.coat); rect(arms, RX + 7, top + 10 + ra, 4, 3, P.skin);
     const hasHat = !!P.hat, rows = HEAD[(backView ? "back" : "front") + (hasHat ? "_hat" : "")];
     const hp = { h: P.hat, H: P.hatB, r: P.hair, k: P.skin, K: P.skinD, e: P.eye, w: P.white, b: P.brow, m: P.mouth };
-    grid(headL, rows, RX - 8, top - 13, hp, false);
+    grid(headL, rows, RX - 8, top - 15, hp, false);
     [legs, body, arms].forEach(Ly => shade(Ly, -1));
     [legs, body, arms, headL].forEach(Ly => stack(out, Ly));
     return out;
