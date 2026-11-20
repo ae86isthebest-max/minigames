@@ -1255,8 +1255,10 @@ function uiConfirm(msg){
 }
 function toast(msg){
   const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show");
-  document.body.classList.toggle("toast-top", !!(typeof inter !== "undefined" && inter) || !!document.querySelector(".inter-scene, .wskip:not([hidden])"));
-  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 2600);
+  // 有對話框、過場或「跳過」的時候提示放上面（不遮住按鈕）；對話框一關（不管是跳過、最後一句還是返回）就回到下面，提示收起來時一定清掉
+  const top = () => document.body.classList.toggle("toast-top", !!(typeof inter !== "undefined" && inter) || !!document.querySelector(".inter-scene, .wskip:not([hidden])"));
+  top(); clearInterval(t._w); t._w = setInterval(top, 200);
+  clearTimeout(t._h); t._h = setTimeout(()=>{ t.classList.remove("show"); clearInterval(t._w); setTimeout(()=>{ if (!t.classList.contains("show")) document.body.classList.remove("toast-top"); }, 400); }, 2600);
 }
 function afterSpend(){
   checkEvents(); save(); renderClock();
