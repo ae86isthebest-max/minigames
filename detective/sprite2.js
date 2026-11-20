@@ -165,6 +165,10 @@ const SP = (() => {
       "......kkkk......"]
   };
 
+  // 鴨舌帽／警帽：帽頂矮一點，帽簷只在前面
+  HEAD.side_cap = HEAD.side_hat.map((r, j) => j < 2 ? "................" : j === 4 ? "...hhhhhhhhhhhhh" : r);
+  HEAD.front_cap = HEAD.front_hat.map((r, j) => j < 2 ? "................" : j === 4 ? "..hhhhhhhhhhhh.." : r);
+  HEAD.back_cap = HEAD.back_hat.map((r, j) => j < 2 ? "................" : j === 4 ? "...hhhhhhhhhh..." : r);
   /* ---------- 姿勢：骨架角度（度；0＝直直向下，正＝往面向的那邊） ---------- */
   // 側面：lean 身體前傾、hF/kF 前腳大腿／膝、hB/kB 後腳、sF/eF 近鏡頭的手（肩／手肘）、sB/eB 遠的手、rot 整個人轉（跌倒）、lift 整個人離地、
   //       hand：near 那隻手拿什麼（"lens" 放大鏡）、mouth、eyes:"shut"
@@ -249,12 +253,46 @@ const SP = (() => {
   // 從一個點往某個角度（0＝向下，正＝向前）走 len 格
   const step = (p, deg, len, dir) => [p[0] + Math.sin(deg * D2R) * len * dir, p[1] + Math.cos(deg * D2R) * len];
 
+  // 舊的造型寫法也接受：hat:"fedora"/"police"/"cap"（顏色 hatColor／capColor）、hood、skirt、coat（有＝長大衣，沒有＝襯衫）、gloves
   function pal(L){
-    const skin = hex(L.skin || "#e8b98f"), hair = hex(L.hair || "#2a1d16"), coat = hex(L.coat || L.top || "#5577aa"), hat = L.hat ? hex(L.hat) : null;
+    const skin = hex(L.skin || "#e8b98f"), hair = hex(L.hood || L.hair || "#2a1d16"), coat = hex(L.coat || L.top || "#5577aa");
+    const hatC = !L.hat ? null : /^#/.test(L.hat) ? L.hat : L.hat === "police" ? "#24324e" : L.hat === "cap" ? (L.capColor || "#2a2a2a") : (L.hatColor || "#4a3a2a");
+    const hat = hatC ? hex(hatC) : null;
     const flat = c => { const o = c.slice(); o.flat = 1; return o; };
-    return { skin, skinD: mul(skin, 0.8), hair, coat, top: hex(L.top || L.coat || "#5577aa"), pants: hex(L.bottom || "#333a44"), shoe: hex(L.shoes || "#2a2320"),
-      hat, hatB: hat ? mul(hat, 0.6) : null, eye: flat(OUT), white: flat([240, 236, 226]), brow: flat(mul(hair, 0.7)), mouth: flat([150, 70, 60]), lens: flat([200, 222, 236]), lensR: flat([90, 70, 50]),
+    return { skin, skinD: mul(skin, 0.8), hair, coat, top: hex(L.top || L.coat || "#5577aa"), pants: hex(L.skirt ? (L.legs || L.skin || "#e8b98f") : (L.bottom || "#333a44")), skirt: L.skirt ? hex(L.bottom || "#3a3a4a") : null,
+      shoe: hex(L.shoes || "#2a2320"), hand: hex(L.gloves || L.skin || "#e8b98f"), long: !!L.coat, tie: L.tie ? hex(L.tie) : null, capHat: L.hat === "police" || L.hat === "cap",
+      hairStyle: L.hood ? "hood" : (L.hairStyle || "short"), glasses: !!L.glasses, mask: L.mask ? flat(hex(L.mask)) : null,
+      hat, hatB: hat ? mul(hat, 0.6) : null, eye: flat(OUT), white: flat([240, 236, 226]), brow: flat(mul(hex(L.hair || "#2a1d16"), 0.7)), mouth: flat([150, 70, 60]), lens: flat([200, 222, 236]), lensR: flat([90, 70, 50]),
+      glass: flat([40, 34, 30]), glassL: flat([190, 214, 230]),
       cup: flat([236, 230, 218]), drink: flat([90, 50, 30]), cam: flat([40, 40, 46]), paper: flat([238, 232, 214]), ink: flat([70, 70, 90]), boxc: [176, 136, 86] };
+  }
+  // 頭髮款式、眼鏡、口罩：畫在頭那一層（x0, y0＝頭格子左上角；view：side 面向右／front／back）
+  function decorHead(Ly, view, x0, y0, P){
+    const H = (x, y, w, h) => rect(Ly, x0 + x, y0 + y, w, h, P.hair), st = P.hat ? "hat" : P.hairStyle;
+    if (view === "side"){
+      if (st === "spiky"){ [5, 7, 9, 11].forEach((x, i) => { H(x, 0, 1, 1); if (i % 2) H(x, -1, 1, 1); }); }
+      if (st === "bob" || st === "long"){ H(3, 4, 4, st === "long" ? 13 : 9); H(6, 4, 7, 2); }
+      if (st === "pony"){ H(0, 5, 4, 3); H(1, 8, 3, 6); H(6, 4, 7, 1); }
+      if (st === "bun"){ H(1, 1, 4, 4); H(6, 4, 6, 1); }
+      if (st === "hood"){ H(3, 4, 3, 10); H(5, 1, 9, 4); H(12, 4, 2, 8); }
+      if (P.glasses){ rect(Ly, x0 + 9, y0 + 8, 5, 1, P.glass); rect(Ly, x0 + 10, y0 + 9, 3, 1, P.glass); put(Ly, x0 + 11, y0 + 8, P.glassL); rect(Ly, x0 + 6, y0 + 8, 3, 1, P.glass); }
+      if (P.mask) rect(Ly, x0 + 8, y0 + 10, 7, 3, P.mask);
+    } else if (view === "front"){
+      if (st === "spiky"){ [3, 6, 9, 12].forEach((x, i) => { H(x, 0, 1, 1); if (i % 2) H(x, -1, 1, 1); }); }
+      if (st === "bob" || st === "long"){ H(1, 4, 3, st === "long" ? 13 : 9); H(12, 4, 3, st === "long" ? 13 : 9); H(4, 4, 8, 2); }
+      if (st === "pony"){ H(3, 4, 10, 1); H(1, 5, 2, 4); H(13, 5, 2, 4); }
+      if (st === "bun"){ H(6, -2, 4, 3); H(3, 4, 10, 1); }
+      if (st === "hood"){ H(1, 1, 14, 4); H(1, 4, 2, 10); H(13, 4, 2, 10); }
+      if (P.glasses){ rect(Ly, x0 + 3, y0 + 7, 4, 3, P.glass); rect(Ly, x0 + 9, y0 + 7, 4, 3, P.glass); rect(Ly, x0 + 4, y0 + 8, 2, 1, P.glassL); rect(Ly, x0 + 10, y0 + 8, 2, 1, P.glassL); rect(Ly, x0 + 7, y0 + 8, 2, 1, P.glass); }
+      if (P.mask) rect(Ly, x0 + 3, y0 + 10, 10, 3, P.mask);
+    } else {
+      if (st === "spiky"){ [3, 6, 9, 12].forEach((x, i) => { H(x, 0, 1, 1); if (i % 2) H(x, -1, 1, 1); }); }
+      if (st === "bob") H(2, 4, 12, 9);
+      if (st === "long") H(2, 4, 12, 14);
+      if (st === "pony"){ H(6, 11, 4, 6); }
+      if (st === "bun") H(5, -1, 6, 4);
+      if (st === "hood") H(1, 1, 14, 13);
+    }
   }
 
   /* ---------- 畫一格（側面） ---------- */
@@ -278,7 +316,7 @@ const SP = (() => {
       seg(Ly, [ank[0], ank[1] + 1], [toe[0] + dir, toe[1] + 1], 3, dark ? back(P.shoe) : P.shoe); return { knee, ank }; };
     const arm = (Ly, s, e, dark, hand) => { const el = step(shoulder, s, LEN.arm1, dir), wr = step(el, s + e, LEN.arm2, dir);
       seg(Ly, shoulder, el, 4, dark ? back(P.coat) : P.coat); seg(Ly, el, wr, 3, dark ? back(P.coat) : P.coat);
-      const hd = step(wr, s + e, 1.5, dir); rect(Ly, Math.round(hd[0]) - 1, Math.round(hd[1]) - 1, 2, 2, dark ? P.skinD : P.skin);
+      const hd = step(wr, s + e, 1.5, dir); rect(Ly, Math.round(hd[0]) - 1, Math.round(hd[1]) - 1, 2, 2, dark ? mul(P.hand, 0.8) : P.hand);
       const hx = Math.round(hd[0]), hy = Math.round(hd[1]);
       if (hand === "lens"){ const c = step(hd, s + e, 3, dir); rect(Ly, Math.round(c[0]) - 1, Math.round(c[1]) - 2, 4, 4, P.lensR); rect(Ly, Math.round(c[0]), Math.round(c[1]) - 1, 2, 2, P.lens); }
       else if (hand === "cup"){ rect(Ly, hx, hy - 3, 3, 4, P.cup); rect(Ly, hx, hy - 3, 3, 1, P.drink); }
@@ -294,17 +332,22 @@ const SP = (() => {
     const nb = [neck[0] - tw + 1, neck[1] + 1], nf = [neck[0] + tw - 3, neck[1] + 1], chest = [neck[0] + tw, neck[1] + 5], backTop = [neck[0] - tw, neck[1] + 3];
     const hb = [hip[0] - tw, hip[1]], hf = [hip[0] + tw - 1, hip[1]];
     const kneeB = step(hip, q.hB, LEN.thigh * 0.6, dir), kneeF = step(hip, q.hF, LEN.thigh * 0.6, dir);
-    poly(body, [nb, nf, chest, [hf[0] + 0.5, hf[1]], [Math.max(kneeF[0], hip[0]) + 3, kneeF[1] + 1], [Math.min(kneeB[0], hip[0]) - 3, kneeB[1] + 1], [hb[0] - 0.5, hb[1]], backTop], P.coat);
+    if (P.long) poly(body, [nb, nf, chest, [hf[0] + 0.5, hf[1]], [Math.max(kneeF[0], hip[0]) + 3, kneeF[1] + 1], [Math.min(kneeB[0], hip[0]) - 3, kneeB[1] + 1], [hb[0] - 0.5, hb[1]], backTop], P.coat);
+    else {   // 沒有大衣：上衣到屁股；裙子由腰到膝頭
+      poly(body, [nb, nf, chest, [hf[0] + 0.5, hf[1] + 1], [hb[0] - 0.5, hb[1] + 1], backTop], P.coat);
+      if (P.skirt){ const kF2 = step(hip, q.hF, LEN.thigh * 0.95, dir), kB2 = step(hip, q.hB, LEN.thigh * 0.95, dir);
+        poly(body, [[hb[0], hip[1]], [hf[0] + 1, hip[1]], [Math.max(kF2[0], hip[0]) + 3, kF2[1] + 1], [Math.min(kB2[0], hip[0]) - 3, kB2[1] + 1]], P.skirt); } }
     // 腰帶、領口、扣
-    const belt = step(hip, 180 + q.lean, 3, -1); rect(body, Math.round(belt[0]) - tw, Math.round(belt[1]), tw * 2, 1, mul(P.coat, 0.62));
-    rect(body, Math.round(neck[0]) + 1, Math.round(neck[1]) + 1, 3, 3, mul(P.coat, 1.25));
+    const belt = step(hip, 180 + q.lean, P.long ? 3 : 1, -1); rect(body, Math.round(belt[0]) - tw, Math.round(belt[1]), tw * 2, 1, P.long ? mul(P.coat, 0.62) : (P.skirt ? mul(P.skirt, 0.7) : mul(P.pants, 0.8)));
+    rect(body, Math.round(neck[0]) + 1, Math.round(neck[1]) + 1, 3, 3, P.long ? mul(P.coat, 1.25) : mul(P.coat, 1.12));
     // 頭
     const hasHat = !!P.hat;
-    const rows = HEAD[hasHat ? "side_hat" : "side"].map(r => q.eyes === "shut" ? r.replace("we", "bb") : r).map(r => q.mouth ? r.replace("mk", "mm") : r);
+    const rows = HEAD[hasHat ? (P.capHat ? "side_cap" : "side_hat") : "side"].map(r => q.eyes === "shut" ? r.replace("we", "bb") : r).map(r => q.mouth ? r.replace("mk", "mm") : r);
     const hp = { h: P.hat, H: P.hatB, r: P.hair, k: P.skin, K: P.skinD, e: P.eye, w: P.white, b: P.brow, m: P.mouth };
     const hx = Math.round(neck[0]) - 9, hy = Math.round(neck[1]) - 15;   // 頭擺正在身體上面，不向前伸；下面露出一截頸
     rect(body, Math.round(neck[0]) - 1, Math.round(neck[1]) - 2, 4, 4, P.skinD);
     grid(headL, rows, hx, hy, hp, false);
+    decorHead(headL, "side", hx, hy, P);
     arm(front, q.sF, q.eF, false, q.hand);
     if (q.flash){ const c = step(shoulder, q.sF, 12, dir); for (let k = -3; k <= 3; k++){ put(front, c[0] + 3 + k, c[1] - 2, [255, 250, 220]); put(front, c[0] + 3, c[1] - 2 + k, [255, 250, 220]); } }
     [backL, legs, body, front].forEach(Ly => shade(Ly, -dir));
@@ -326,20 +369,25 @@ const SP = (() => {
     rect(legs, RX - 7, hipY + 10 - Math.round(up1), 6, 3, P.shoe); rect(legs, RX + 1, hipY + 10 - Math.round(up2), 6, 3, P.shoe);
     // 大衣
     const top = hipY - 10 + breathe;
-    poly(body, [[RX - 4, top], [RX + 4, top], [RX + 7, top + 2], [RX + 8, hipY + 6], [RX - 8, hipY + 6], [RX - 7, top + 2]], P.coat);   // 斜肩
+    const low = P.long ? hipY + 6 : hipY + 1;
+    poly(body, [[RX - 4, top], [RX + 4, top], [RX + 7, top + 2], [RX + 8, low], [RX - 8, low], [RX - 7, top + 2]], P.coat);   // 斜肩
+    if (P.skirt) poly(body, [[RX - 7, hipY], [RX + 7, hipY], [RX + 9, hipY + 7], [RX - 9, hipY + 7]], P.skirt);
     rect(body, RX - 2, top - 2, 4, 3, P.skinD);   // 頸
-    if (!backView){ rect(body, RX - 1, top, 2, 17, mul(P.coat, 0.7)); rect(body, RX - 3, top, 2, 4, mul(P.coat, 1.25)); rect(body, RX + 1, top, 2, 4, mul(P.coat, 1.25));
-      rect(body, RX - 2, top, 4, 2, P.top); }
-    else rect(body, RX, top + 2, 1, 15, mul(P.coat, 0.75));
-    rect(body, RX - 6, hipY - 3, 13, 1, mul(P.coat, 0.62));
+    if (!backView){
+      if (P.long){ rect(body, RX - 1, top, 2, 17, mul(P.coat, 0.7)); rect(body, RX - 3, top, 2, 4, mul(P.coat, 1.25)); rect(body, RX + 1, top, 2, 4, mul(P.coat, 1.25)); rect(body, RX - 2, top, 4, 2, P.top); }
+      else { rect(body, RX - 2, top, 4, 2, mul(P.coat, 1.15)); }
+      if (P.tie) rect(body, RX - 1, top + 1, 2, 7, P.tie); }
+    else rect(body, RX, top + 2, 1, P.long ? 15 : 9, mul(P.coat, 0.75));
+    rect(body, RX - 6, P.long ? hipY - 3 : hipY, 13, 1, P.long ? mul(P.coat, 0.62) : mul(P.pants, 0.8));
     // 手：前後擺＝上下移一點
     const sw = Math.round(s * 2);
     const la = backView ? sw : -sw, ra = backView ? -sw : sw;
-    rect(arms, RX - 10, top + 2 + la, 4, 8, P.coat); rect(arms, RX - 10, top + 10 + la, 4, 3, P.skin);
-    rect(arms, RX + 7, top + 2 + ra, 4, 8, P.coat); rect(arms, RX + 7, top + 10 + ra, 4, 3, P.skin);
-    const hasHat = !!P.hat, rows = HEAD[(backView ? "back" : "front") + (hasHat ? "_hat" : "")];
+    rect(arms, RX - 10, top + 2 + la, 4, 8, P.coat); rect(arms, RX - 10, top + 10 + la, 4, 3, P.hand);
+    rect(arms, RX + 7, top + 2 + ra, 4, 8, P.coat); rect(arms, RX + 7, top + 10 + ra, 4, 3, P.hand);
+    const hasHat = !!P.hat, rows = HEAD[(backView ? "back" : "front") + (hasHat ? (P.capHat ? "_cap" : "_hat") : "")];
     const hp = { h: P.hat, H: P.hatB, r: P.hair, k: P.skin, K: P.skinD, e: P.eye, w: P.white, b: P.brow, m: P.mouth };
     grid(headL, rows, RX - 8, top - 15, hp, false);
+    decorHead(headL, backView ? "back" : "front", RX - 8, top - 15, P);
     [legs, body, arms].forEach(Ly => shade(Ly, -1));
     [legs, body, arms, headL].forEach(Ly => stack(out, Ly));
     return out;
