@@ -162,27 +162,30 @@ const DEF = Object.fromEntries(DEFS.map((d) => [d.id, d]));
 
 const lv = (n, base, k) => Array.from({ length: n }, (_, i) => Math.round(base * Math.pow(k, i) / 10) * 10);
 const UPS = {
-  cap: { tab: 0, name: '背包容量', ic: 'hay', vals: [6, 12, 20, 30, 40, 52], cost: [30, 100, 690, 1510, 2750], fmt: (v) => v + ' 個' },
-  speed: { tab: 0, name: '移動速度', ic: 'run', vals: [5.8, 6.6, 7.4, 8.2, 8.8, 9.4], cost: [40, 120, 770, 1510, 2480], fmt: (v) => v.toFixed(1) },
-  wcap: { tab: 1, name: '員工一次拿多少', ic: 'egg', vals: [4, 7, 11, 16, 21, 26], cost: [90, 250, 1510, 2750, 4950], fmt: (v) => v + ' 個' },
-  wspeed: { tab: 1, name: '員工速度', ic: 'run', vals: [4, 4.8, 5.6, 6.4, 7, 7.6], cost: [90, 250, 1510, 2750, 4950], fmt: (v) => v.toFixed(1) },
-  coop: { tab: 2, name: '雞生蛋速度', ic: 'egg', need: 'coop', vals: [3, 2.5, 2, 1.6, 1.3, 1.0], cost: [50, 130, 770, 1510, 2750], fmt: (v) => v + ' 秒一顆' },
-  barn: { tab: 2, name: '牛奶速度', ic: 'milk', need: 'barn', vals: [5, 4.2, 3.4, 2.7, 2.1, 1.6], cost: [330, 770, 1510, 2750, 4950], fmt: (v) => v + ' 秒一瓶' },
-  grow: { tab: 2, name: '作物生長速度', ic: 'tomato', need: 'tomato', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [100, 250, 1430, 2610, 4680], fmt: (v) => '×' + v },
-  dogR: { tab: 2, name: '小狗吸錢範圍', noLv: false, ic: 'money', need: 'dog', vals: [3, 5, 7, 9], cost: [150, 1100, 2480], fmt: (v) => v + ' 格' },
-  price: { tab: 3, name: '商品售價', ic: 'money', need: 'cashier', vals: [1, 1.2, 1.45, 1.75, 2.05, 2.4], cost: [200, 500, 3030, 6050, 11000], fmt: (v) => '×' + v },
-  shelfCap: { tab: 3, name: '貨架容量', ic: 'egg', need: 'cashier', vals: [8, 14, 20, 30, 40, 50], cost: [120, 320, 1930, 3850, 9000], fmt: (v) => v + ' 個' + (v >= 30 ? '，疊得高高的' : '') },
-  storeCap: { tab: 3, name: '倉庫容量', ic: 'hay', need: 'warehouse', vals: [500, 1000, 2000, 3500, 5000, 8000], cost: [5000, 15000, 35000, 80000, 150000], fmt: (v) => '每座倉庫放 ' + v + ' 個' },
-  cust: { tab: 3, name: '客人數量', ic: 'run', need: 'cashier', vals: [1, 1.2, 1.4, 1.6, 1.8, 2], cost: [250, 550, 3030, 5500, 9630], fmt: (v) => '×' + v },
-  mach: { tab: 2, name: '所有機器一起加速', ic: 'juice', need: 'juicer', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [960, 2060, 4130, 7150, 12100], fmt: (v) => '×' + v },
-  stockCap: { tab: 2, name: '動物棚和機器存貨量', ic: 'hay', need: 'juicer', vals: [12, 16, 20, 25, 30], cost: [4000, 12000, 30000, 70000], fmt: (v) => '每盤放 ' + v + ' 個' + (v >= 25 ? '，堆成小山' : '') },
+  cap: { tab: 0, name: '背包容量', ic: 'hay', vals: [6, 12, 20, 30, 40, 52, 64, 76], cost: [30, 100, 690, 1510, 2750, 4500, 7500], fmt: (v) => v + ' 個' },
+  speed: { tab: 0, name: '移動速度', ic: 'run', vals: [5.8, 6.6, 7.4, 8.2, 8.8, 9.4, 10, 10.6, 11.2], cost: [40, 120, 770, 1510, 2480, 4000, 7000, 11000], fmt: (v) => v.toFixed(1) },
+  wcap: { tab: 1, name: '員工一次拿多少', ic: 'egg', vals: [4, 7, 11, 16, 21, 26, 30, 34, 38], cost: [90, 250, 1510, 2750, 4950, 8000, 14000, 24000], fmt: (v) => v + ' 個' },
+  wspeed: { tab: 1, name: '員工速度', ic: 'run', vals: [4, 4.8, 5.6, 6.4, 7, 7.6, 8.2, 8.8, 9.4, 10], cost: [90, 250, 1510, 2750, 4950, 8000, 14000, 24000, 40000], fmt: (v) => v.toFixed(1) },
+  coop: { tab: 2, name: '雞生蛋速度', ic: 'egg', need: 'coop', vals: [3, 2.5, 2, 1.6, 1.3, 1.0, 0.8, 0.65, 0.5], cost: [50, 130, 770, 1510, 2750, 5000, 9000, 16000], fmt: (v) => v + ' 秒一顆' },
+  barn: { tab: 2, name: '牛奶速度', ic: 'milk', need: 'barn', vals: [5, 4.2, 3.4, 2.7, 2.1, 1.6, 1.3, 1.05, 0.85, 0.7], cost: [330, 770, 1510, 2750, 4950, 8000, 14000, 24000, 40000], fmt: (v) => v + ' 秒一瓶' },
+  grow: { tab: 2, name: '作物生長速度', ic: 'tomato', need: 'tomato', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6, 3, 3.5, 4, 4.6], cost: [100, 250, 1430, 2610, 4680, 8000, 14000, 24000, 40000], fmt: (v) => '×' + v },
+  dogR: { tab: 2, name: '小狗吸錢範圍', noLv: false, ic: 'money', need: 'dog', vals: [3, 5, 7, 9, 11, 13], cost: [150, 1100, 2480, 5000, 9000], fmt: (v) => v + ' 格' },
+  price: { tab: 3, name: '商品售價', ic: 'money', need: 'cashier', vals: [1, 1.2, 1.45, 1.75, 2.05, 2.4, 2.8, 3.2, 3.7, 4.2, 4.8], cost: [200, 500, 3030, 6050, 11000, 18000, 30000, 50000, 80000, 130000], fmt: (v) => '×' + v },
+  shelfCap: { tab: 3, name: '貨架容量', ic: 'egg', need: 'cashier', vals: [8, 14, 20, 30, 40, 50, 60, 70, 80], cost: [120, 320, 1930, 3850, 9000, 15000, 25000, 40000], fmt: (v) => v + ' 個' + (v >= 30 ? '，疊得高高的' : '') },
+  storeCap: { tab: 3, name: '倉庫容量', ic: 'hay', need: 'warehouse', vals: [500, 1000, 2000, 3500, 5000, 8000, 12000, 18000, 25000], cost: [5000, 15000, 35000, 80000, 150000, 250000, 400000, 650000], fmt: (v) => '每座倉庫放 ' + v + ' 個' },
+  cust: { tab: 3, name: '客人數量', ic: 'run', need: 'cashier', vals: [1, 1.2, 1.4, 1.6, 1.8, 2, 2.3, 2.6, 3], cost: [250, 550, 3030, 5500, 9630, 16000, 28000, 48000], fmt: (v) => '×' + v },
+  mach: { tab: 2, name: '所有機器一起加速', ic: 'juice', need: 'juicer', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6, 3, 3.5, 4, 4.6], cost: [960, 2060, 4130, 7150, 12100, 20000, 35000, 60000, 100000], fmt: (v) => '×' + v },
+  stockCap: { tab: 2, name: '動物棚和機器存貨量', ic: 'hay', need: 'juicer', vals: [12, 16, 20, 25, 30, 36, 42, 50], cost: [4000, 12000, 30000, 70000, 120000, 200000, 320000], fmt: (v) => '每盤放 ' + v + ' 個' + (v >= 25 ? '，堆成小山' : '') },
   mgrShop: { tab: 1, name: '店長', noLv: true, ic: 'mgr', emo: '👔', need: 'cashier', vals: [0, 1, 2, 3], cost: [3300, 11000, 33000], fmt: (v) => ['還沒請店長', '店長：結帳更快、客人給小費', '資深店長：小費更多、客人更有耐心', '金牌店長：小費最多、錢自動入袋'][v] },
   mgrFarm: { tab: 1, name: '農場主管', noLv: true, ic: 'mgr', emo: '🧢', need: 'keeper', vals: [0, 1, 2, 3], cost: [2750, 9630, 27500], fmt: (v) => ['還沒請農場主管', '主管：飼養員和農夫走更快', '資深主管：一次拿更多', '金牌主管：又快又能拿'][v] },
   floor: { tab: 3, name: '地板翻新', ic: 'shop', need: 'counter', vals: [0, 1, 2, 3], cost: [1650, 6600, 19250], fmt: (v) => ['原本的地板', '溫暖木地板', '奶油格子磚', '大理石＋金邊'][v] + (v ? '，客人更多' : '') },
   ad: { tab: 3, name: '路邊廣告牌', ic: 'shop', need: 'cashier', vals: [0, 1, 2, 3], cost: [1380, 5500, 17880], fmt: (v) => ['沒有廣告', '木頭立牌', '大型看板', '發光看板'][v] + (v ? '，路過的人更多' : '') },
   look: { tab: 3, name: '商店外觀', ic: 'shop', need: 'counter', vals: [0, 1, 2, 3], cost: [2200, 8250, 24750], fmt: (v) => LOOKS[v].name + ['', '・雨棚花台', '・燈串路燈', '・紅地毯旗幟'][v] + (v ? '，客人更多、賣更貴' : '') },
   basket: { tab: 3, name: '購物籃架', ic: 'bk', emo: '🧺', need: 'cashier', noLv: true, vals: [1, 1.35, 1.7], cost: [2200, 6880], fmt: (v) => ['還沒有購物籃', '購物籃：客人提著籃子，走更快、拿更快', '購物車：客人推著車，又快又順'][v === 1 ? 0 : v < 1.5 ? 1 : 2] },
-  autoCash: { tab: 3, name: '自動收款', ic: 'money', need: 'cashier2', vals: [0, 1], cost: [16500], fmt: (v) => v ? '錢自動入袋' : '要自己收錢' },
+  autoCash: { tab: 3, name: '自助結帳機', ic: 'money', need: 'cashier2', vals: [0, 1], cost: [16500], fmt: (v) => v ? '客人自己在機器結帳，錢直接入袋，不用收銀員' : '還是收銀員結帳、要自己收錢' },
+  hayGrow: { tab: 2, name: '牧草長得更快', ic: 'hay', need: 'barn', vals: [1, 1.3, 1.6, 2, 2.5, 3], cost: [3000, 7000, 14000, 26000, 45000], fmt: (v) => '×' + v },
+  buyMore: { tab: 3, name: '客人買更多', ic: 'bk', emo: '🛒', need: 'market', vals: [1, 1.2, 1.4, 1.6, 1.8, 2], cost: [12000, 25000, 45000, 75000, 120000], fmt: (v) => '每位客人拿 ×' + v },
+  bonus: { tab: 3, name: '大訂單獎金', ic: 'money', need: 'market', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [10000, 22000, 40000, 70000, 110000], fmt: (v) => '貨車、直升機、特別客人付 ×' + v },
 };
 const upVal = (k) => UPS[k].vals[Math.min(state.up[k] || 0, UPS[k].vals.length - 1)];
 // extra staff bought from the 員工 tab (on top of the ones unlocked on the map)
@@ -214,7 +217,7 @@ const zoneDef = (def) => (def.kind === 'hire' && HIRE_BASE[def.role] ? { ...def,
 const GROW = {
   coop: { start: 2, max: 8, cost: [30, 70, 140, 660, 1050, 1540], what: '＋1 隻雞' },
   coop2: { start: 2, max: 8, cost: [690, 1240, 2060, 3030, 4400, 6050], what: '＋1 隻雞' },
-  barn: { start: 1, max: 3, cost: [1100, 2610], what: '＋1 頭牛' },
+  barn: { start: 1, max: 10, cost: [1100, 2610, 4500, 7000, 10000, 14000, 19000, 25000, 32000], what: '＋1 頭牛' },
   tomato: { start: 2, max: 8, cost: [25, 55, 120, 550, 880, 1320], what: '＋1 棵番茄' },
   juicer: { start: 1, max: 4, cost: [1380, 3030, 6050], what: '果汁機做更快' },
   soyMachine: { start: 1, max: 4, cost: [2480, 4950, 9630], what: '磨豆漿機做更快' },
@@ -231,7 +234,7 @@ const GROW = {
   pumpkin: { start: 3, max: 6, cost: [9000, 13000, 18000], what: '＋1 顆南瓜' },
   flowers: { start: 4, max: 8, cost: [20000, 28000, 38000, 50000], what: '＋1 叢花' },
   sheep: { start: 2, max: 6, cost: [16000, 24000, 34000, 48000], what: '＋1 隻羊' },
-  barn2: { start: 1, max: 3, cost: [9000, 16000], what: '＋1 頭牛' },
+  barn2: { start: 1, max: 10, cost: [9000, 16000, 24000, 34000, 46000, 60000, 78000, 100000, 125000], what: '＋1 頭牛' },
   coop3: { start: 2, max: 8, cost: [8000, 11000, 15000, 20000, 26000, 34000], what: '＋1 隻雞' },
   jam: { start: 1, max: 4, cost: [14000, 26000, 45000], what: '果醬機做更快' },
   pie: { start: 1, max: 4, cost: [24000, 45000, 80000], what: '南瓜派烤爐做更快' },
@@ -245,6 +248,7 @@ const GROW = {
   ketchup: { start: 1, max: 4, cost: [10000, 19000, 33000], what: '番茄醬機做更快' },
   cider: { start: 1, max: 4, cost: [20000, 38000, 65000], what: '蘋果汁機做更快' },
 };
+for (const k in GROW) { const g = GROW[k]; if (g.what.endsWith('做更快') && g.max === 4) { const c = g.cost[g.cost.length - 1]; g.cost.push(Math.round(c * 1.7 / 1000) * 1000, Math.round(c * 2.8 / 1000) * 1000); g.max = 6; } }
 const lvlOf = (id) => state.lvl[id] || GROW[id].start;
 // machine level 1–4: each level makes that one machine 40% faster
 const machK = (id) => (GROW[id] ? 1 + 0.4 * (lvlOf(id) - 1) : 1);
@@ -895,7 +899,7 @@ function buildCounter(i, instant) {
   const c = COUNTERS[i]; c.on = true;
   const g = P.counter(); g.position.set(c.x, 0.12, c.z); scene.add(g); K.bakeStatic(g);
   box(c.x - 1.45, c.z - 0.55, c.x + 1.45, c.z + 0.55);
-  K.add(scene, K.mesh(G.rbox(1.3, 0.04, 1.3, 0.1), '#c9f0c2', false, true), c.pile.x, 0.14, c.pile.z);
+  c.pile.mat = K.add(scene, K.mesh(G.rbox(1.3, 0.04, 1.3, 0.1), '#c9f0c2', false, true), c.pile.x, 0.14, c.pile.z);
   c.pile.grp = K.add(scene, new THREE.Group(), c.pile.x, 0.16, c.pile.z);
   c.pile.vis = [];
   for (let k = 0; k < 40; k++) {
@@ -906,6 +910,43 @@ function buildCounter(i, instant) {
   c.pile.label = label('badge money', '', (o) => o.set(c.pile.x, 1.2, c.pile.z));
   c.pile.value = state.piles[i] || 0; setPile(c);
   if (!instant) popIn(g);
+}
+const kioskOn = () => (state.up.autoCash || 0) > 0;
+// the self-checkout machine sitting on the customer side of a counter
+function kioskModel() {
+  const g = new THREE.Group();
+  K.add(g, K.mesh(G.rbox(0.62, 0.16, 0.5, 0.05), '#3d4452'), 0, 0.08, 0);
+  K.add(g, K.mesh(G.rbox(0.16, 0.42, 0.16, 0.05), '#5b6474'), 0, 0.37, -0.08);
+  const head = K.add(g, new THREE.Group(), 0, 0.66, -0.02); head.rotation.x = 0.45;
+  K.add(head, K.mesh(G.rbox(0.62, 0.44, 0.1, 0.05), '#2c3340'), 0, 0, 0);
+  const scr = K.add(head, K.mesh(G.rbox(0.52, 0.34, 0.02, 0.02), '#7ff0c8', false), 0, 0.01, 0.055);
+  K.add(head, K.mesh(G.rbox(0.2, 0.05, 0.02, 0.01), '#ffffff', false), 0, 0.06, 0.068);
+  K.add(head, K.mesh(G.rbox(0.12, 0.04, 0.02, 0.01), '#ffd34a', false), 0, -0.07, 0.068);
+  K.add(g, K.mesh(G.rbox(0.26, 0.06, 0.18, 0.02), '#ffd34a'), 0.2, 0.19, 0.14);
+  const lamp = K.add(g, K.mesh(G.sphere(0.07, 8, 6), '#59e07a', false), -0.24, 0.98, -0.08);
+  K.add(g, K.mesh(G.cyl(0.02, 0.02, 0.3, 6), '#5b6474'), -0.24, 0.82, -0.08);
+  return { g, scr, lamp };
+}
+function applyKiosk(anim) {
+  if (!kioskOn()) return;
+  // cashiers go home: the machines take over
+  for (let i = workers.length - 1; i >= 0; i--) if (workers[i].role === 'cashier') { scene.remove(workers[i].p.root); workers.splice(i, 1); }
+  COUNTERS.forEach((c) => {
+    if (!c.on) return;
+    if (c.pile.value > 0) { addMoney(c.pile.value); c.pile.value = 0; setPile(c); }
+    if (c.pile.mat) c.pile.mat.visible = false;
+    if (c.kiosk) return;
+    const k = kioskModel(); k.g.position.set(c.x + 0.55, 1.17, c.z + 0.12); scene.add(k.g);
+    c.kiosk = { ...k, flash: 0 };
+    c.kiosk.tag = label('mtag', '<b>自助結帳</b>', (o) => o.set(c.x + 0.55, 2.55, c.z + 0.1)); c.kiosk.tag.near = 7;
+    if (anim) popIn(k.g);
+  });
+}
+function updateKiosks(dt) {
+  for (const c of COUNTERS) {
+    const k = c.kiosk; if (!k) continue;
+    if (k.flash > 0) { k.flash -= dt; k.lamp.scale.setScalar(1 + k.flash * 1.5); if (k.flash <= 0) k.lamp.scale.setScalar(1); }
+  }
 }
 function setPile(c) {
   const p = c.pile, n = p.value > 0 ? Math.min(40, Math.ceil(p.value / 6)) : 0;
@@ -973,7 +1014,7 @@ function updateBumps(dt) {
 const stockMax = () => upVal('stockCap');
 function applyStockCap(s) { const v = stockMax(); s.outMax = v; s.inMax = s.kind === 'producer' && v === 12 ? 10 : v; }
 // shelves show up to 50 goods, ten per layer: the number badge sits above the top layer
-function shelfTop(def) { return (def.fridge ? 1.6 : 1.95) + Math.max(0, Math.ceil(upVal('shelfCap') / 10) - 2) * ITEMS[def.item].h * 0.95; }
+function shelfTop(def) { return (def.fridge ? 1.6 : 1.95) + Math.max(0, Math.ceil(Math.min(SHELF_VIS, upVal('shelfCap')) / 10) - 2) * ITEMS[def.item].h * 0.95; }
 const PLANTS = { tomato: P.tomatoPlant, corn: P.cornPlant, soy: P2.soyPlant, wheat: P2.wheatPlant, apple: P2.appleTree, carrot: P2.carrotPlant, strawberry: P2.strawberryPlant, pumpkin: P2.pumpkinPlant, flower: P2.flowerPlant };
 const CROP_LAYOUT = {
   // left half first (the original 2 x 2 bed), the right half appears from the 5th plant
@@ -1007,7 +1048,7 @@ function build(def, instant) {
     for (let i = 0; i < STOCK_VIS; i++) outSl.push({ x: -0.3 + (i % 4) * 0.2, y: 0.22 + Math.floor(i / 8) * (def.out === 'wool' ? 0.2 : 0.22), z: -0.18 + (Math.floor(i / 4) % 2) * 0.3, s: 0.85 });
     s.inStack = itemStack(b.trough, 'hay', inSl); s.outStack = itemStack(b.nest, def.out, outSl);
     if (isBarn) {
-      for (let i = 0; i < 3; i++) { const c = P.cow(); c.g.position.set(pos[0] - 0.9 + i * 0.9, 0, pos[1] + 0.9); c.g.scale.setScalar(0.85); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.9], rx: 1.0, rz: 0.4, t: Math.random() * 5, tx: 0, tz: 0 }); }
+      for (let i = 0; i < 10; i++) { const c = P.cow(); c.g.position.set(pos[0], 0, pos[1] + 0.9); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.9], rx: 0.06, rz: 0.05, t: Math.random() * 5, tx: 0, tz: 0, cow: true }); }
       box(pos[0] - 1.5, pos[1] - 2, pos[0] + 1.5, pos[1] + 0.2); penBoxes(pos[0], pos[1] + 0.9, 3.0, 1.8);
     } else if (isFold) {
       for (let i = 0; i < 6; i++) { const c = P.sheep(); c.g.position.set(pos[0] - 0.9 + (i % 3) * 0.9, 0, pos[1] + 0.5 + Math.floor(i / 3) * 0.75); c.g.scale.setScalar(0.8); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.9], rx: 1.0, rz: 0.45, t: Math.random() * 5, tx: 0, tz: 0 }); }
@@ -1073,7 +1114,7 @@ function build(def, instant) {
     box(pos[0] - 0.85, pos[1] - 0.5, pos[0] + 0.85, pos[1] + 0.5);
     if (!instant) popIn(sh.g);
   } else if (def.kind === 'hire') {
-    s.worker = makeWorker(def.role, def.zone, def.counter || 0, !instant);
+    if (!(def.role === 'cashier' && kioskOn())) s.worker = makeWorker(def.role, def.zone, def.counter || 0, !instant);
   } else if (def.kind === 'pet') {
     if (id === 'dog') { const d = P.dog(); d.g.position.set(pos[0], 0, pos[1]); scene.add(d.g); pets.dog = { ...d, ph: 0 }; if (!instant) popIn(d.g); }
     else { const c = P.cat(); c.g.position.set(5.6, 1.12, -10.1); c.g.rotation.y = -0.6; scene.add(c.g); pets.cat = { ...c, ph: 0 }; if (!instant) popIn(c.g); }
@@ -1126,6 +1167,7 @@ function build(def, instant) {
   if (s.g && s.g.isObject3D) K.bakeStatic(s.g);
   if (!instant) { confetti(pos[0], pos[1]); sfx('unlock'); toast('🎉 ' + def.name + ' 完成！'); }
   refreshZones();
+  if (kioskOn()) applyKiosk(!instant);
   save();
 }
 // the three fenced sides of an animal pen are solid
@@ -1148,6 +1190,7 @@ function applyGrow(s) {
   const id = s.id; if (!GROW[id]) return;
   const n = lvlOf(id);
   if (s.yard2) setYard(s, n > 4, s.animals.some((a) => a.g.visible));
+  if (s.animals && s.def.out === 'milk') layoutCows(s, n);
   if (s.animals) s.animals.forEach((a, i) => { const on = i < n; if (on && !a.g.visible) popIn(a.g); a.g.visible = on; });
   const fresh = s.plants && !s.plants.some((q) => q.active);
   if (s.plot2) { const on = n > 4; if (on && !s.plot2.visible && s.plants.some((q) => q.active)) popIn(s.plot2); s.plot2.visible = on; }
@@ -1157,6 +1200,20 @@ function applyGrow(s) {
     if (on && !pl.active) { pl.g.visible = true; pl.ripe = fresh; pl.t = 0; pl.fruit.visible = fresh; pl.fruit.scale.setScalar(1); if (!fresh) popIn(pl.g); }
     if (!on) { pl.g.visible = false; pl.ripe = false; }
     pl.active = on;
+  });
+}
+// cows stand side by side in the pen, all facing the front: one row up to 3, then two rows
+function layoutCows(s, n) {
+  const [px, pz] = s.def.pos;
+  const rows = n <= 3 ? 1 : 2, cols = Math.ceil(n / rows);
+  const sc = n <= 3 ? 0.85 : n <= 6 ? 0.68 : 0.56, gx = Math.min(0.9, 2.6 / cols);
+  s.animals.forEach((a, i) => {
+    if (i >= n) return;
+    const r = Math.floor(i / cols), c = i % cols, inRow = Math.min(cols, n - r * cols);
+    const x = px + (c - (inRow - 1) / 2) * gx, z = pz + (rows === 1 ? 0.9 : 0.55 + r * 0.8);
+    a.home = [x, z]; a.tx = x; a.tz = z;
+    a.g.position.set(x, 0, z); a.g.rotation.y = 0;
+    a.b.scale.setScalar(sc); a.g.children[0].scale.setScalar(sc);
   });
 }
 function machTag(s) {
@@ -1329,6 +1386,7 @@ function refreshZones() {
     if (def.alt && isBuilt(def.alt) && !isBuilt('cashier')) open = false;
     if (!open && zones[def.id]) { killZone(def.id); continue; }
     if (!open) continue;
+    if (def.kind === 'hire' && def.role === 'cashier' && kioskOn()) { if (zones[def.id]) killZone(def.id); delete state.paid[def.id]; state.built.push(def.id); i = -1; continue; }
     const zd = zoneDef(def);
     if (zones[def.id] && zones[def.id].def.cost.money !== zd.cost.money) killZone(def.id); // price moved after a hire
     if (!zones[def.id]) makeZone(zd);
@@ -1860,7 +1918,9 @@ function spawnCustomer(from) {
   if (!shelves.length) return null;
   const kinds = [...new Set(shelves.map((q) => q.item))];
   // ~55% pick up 2–3 things, ~30% 8–12, ~15% fill a trolley with 18–28, spread over their list
-  const r = Math.random(), total = r < 0.55 ? 2 + Math.floor(Math.random() * 2) : r < 0.85 ? 8 + Math.floor(Math.random() * 5) : 18 + Math.floor(Math.random() * 11);
+  const r = Math.random();
+  let total = r < 0.55 ? 2 + Math.floor(Math.random() * 2) : r < 0.85 ? 8 + Math.floor(Math.random() * 5) : 18 + Math.floor(Math.random() * 11);
+  total = Math.round(total * upVal('buyMore'));
   const nK = Math.max(1, Math.min(kinds.length, total <= 3 ? 1 + Math.floor(Math.random() * 2) : total <= 12 ? 2 + Math.floor(Math.random() * 2) : 3 + Math.floor(Math.random() * 2)));
   const items = kinds.sort(() => Math.random() - 0.5).slice(0, nK);
   const needs = items.map(() => 1); for (let k = nK; k < total; k++) needs[Math.floor(Math.random() * nK)]++;
@@ -1942,7 +2002,7 @@ function updateCustomers(dt) {
       spawnT = Math.max(1.6, 7 - shelfN * 0.7) * (0.7 + Math.random() * 0.6);
     }
   }
-  const served = COUNTERS.map((c, i) => c.on && (workers.some((w) => w.role === 'cashier' && w.counter === i && dist2(w.p.root.position, c.serve.x, c.serve.z) < 0.6) || dist2(player.p.root.position, c.serve.x, c.serve.z) < 1.3));
+  const served = COUNTERS.map((c, i) => c.on && (kioskOn() || workers.some((w) => w.role === 'cashier' && w.counter === i && dist2(w.p.root.position, c.serve.x, c.serve.z) < 0.6) || dist2(player.p.root.position, c.serve.x, c.serve.z) < 1.3));
   for (let ci = 0; ci < COUNTERS.length; ci++) {
     customers.filter((c) => c.ci === ci && (c.st === 'queue' || c.st === 'toQueue')).sort((a, b) => a.qi - b.qi).forEach((c, i) => { c.qi = i; });
   }
@@ -2025,8 +2085,8 @@ function pay(c) {
   const goods = c.list ? c.list.reduce((a, e) => a + e.got * ITEMS[e.item].price, 0) : c.got * ITEMS[c.item].price;
   const v = Math.round(goods * upVal('price') * (1 + 0.05 * (state.up.look || 0)) * MGR_TIP[mShop()]) + (pets.cat ? 1 : 0);
   const k = COUNTERS[c.ci];
-  k.pile.value += v; setPile(k); sfx('coin');
-  floatText('+' + v, V3(k.pile.x, 1.6, k.pile.z), 'money');
+  if (kioskOn()) { addMoney(v); sfx('coin'); floatText('+' + v, V3(k.x + 0.55, 2.1, k.z), 'money'); if (k.kiosk) k.kiosk.flash = 0.4; }
+  else { k.pile.value += v; setPile(k); sfx('coin'); floatText('+' + v, V3(k.pile.x, 1.6, k.pile.z), 'money'); }
   const bag = new THREE.Group(); K.add(bag, K.mesh(G.rbox(0.36, 0.38, 0.24, 0.06), '#f5d9a8'), 0, 0.1, 0); c.p.front.add(bag);
   c.paid = true; leaveShop(c);
 }
@@ -2119,7 +2179,8 @@ function feedOrder(order, dropFn, dt, st) {
   }
 }
 function payBonus(v, at) {
-  const k = COUNTERS[0]; k.pile.value += v; setPile(k);
+  v = Math.round(v * upVal('bonus'));
+  const k = COUNTERS[0]; if (kioskOn()) addMoney(v); else { k.pile.value += v; setPile(k); }
   floatText('+' + fmtMoney(v), at, 'money big'); sfx('vip');
 }
 
@@ -2336,7 +2397,7 @@ function openPanel(kind) {
       if (ti === 1 && !workers.length) { body.innerHTML = '<div class="empty">解鎖第一位員工後開放</div>'; return; }
       if (ti === 1) {
         const n = (r) => workers.filter((w) => w.role === r).length;
-        body.insertAdjacentHTML('beforeend', '<div class="chips staff"><span class="chip">收銀員 ×' + n('cashier') + '</span><span class="chip">飼養員 ×' + n('keeper') + '</span><span class="chip">農夫 ×' + n('farmer') + '</span><span class="chip">理貨員 ×' + n('shelver') + '</span>' + (n('orderer') ? '<span class="chip">訂單專員 ×' + n('orderer') + '</span>' : '') + '</div>');
+        body.insertAdjacentHTML('beforeend', '<div class="chips staff"><span class="chip">' + (kioskOn() ? '自助結帳機 ×' + COUNTERS.filter((k) => k.on).length : '收銀員 ×' + n('cashier')) + '</span><span class="chip">飼養員 ×' + n('keeper') + '</span><span class="chip">農夫 ×' + n('farmer') + '</span><span class="chip">理貨員 ×' + n('shelver') + '</span>' + (n('orderer') ? '<span class="chip">訂單專員 ×' + n('orderer') + '</span>' : '') + '</div>');
         for (const role in EXTRA) {
           const ex = EXTRA[role]; if (!(ex.ok ? ex.ok() : isBuilt(ex.need))) continue;
           const have = state.extra[role] || 0, max = have >= EXTRA_MAX, cost = extraCost(role);
@@ -2352,9 +2413,12 @@ function openPanel(kind) {
         }
         // a counter without a cashier: hire one here too (same price as its zone on the map)
         const CASH_IDS = ['cashier', 'cashier2', 'cashier3', 'cashier4'], CNAMES = ['收銀台', '第二收銀台', '第三收銀台', '第四收銀台'];
-        const ci = COUNTERS.findIndex((k, i) => k.on && !isBuilt(CASH_IDS[i]));
+        const ci = kioskOn() ? -2 : COUNTERS.findIndex((k, i) => k.on && !isBuilt(CASH_IDS[i]));
         const crow = document.createElement('div'); crow.className = 'row';
-        if (ci < 0) {
+        if (ci === -2) {
+          crow.classList.add('locked');
+          crow.innerHTML = '<span class="ricon"><span class="ic">🧾</span></span><div class="rmid"><b>自助結帳機</b><small>客人自己結帳，不用請收銀員</small></div>';
+        } else if (ci < 0) {
           crow.classList.add('locked');
           crow.innerHTML = '<span class="ricon"><span class="ic">🧾</span></span><div class="rmid"><b>多請一位收銀員</b><small>每個收銀台都有收銀員了，多開一個收銀台就能再請</small></div>';
         } else {
@@ -2382,7 +2446,7 @@ function openPanel(kind) {
         b.innerHTML = max ? '已滿級' : ICON.money + fmtMoney(u.cost[lvl]);
         b.onclick = () => {
           if (max || state.money < u.cost[lvl]) { sfx('drop'); b.classList.add('shake'); setTimeout(() => b.classList.remove('shake'), 300); return; }
-          state.money -= u.cost[lvl]; state.up[k]++; if (k === 'basket') applyBasket(true); if ((k === 'mgrShop' || k === 'mgrFarm') && state.up[k] === 1) spawnManager(k); if (k === 'look') { applyShopLook(true); applyAd(false); } if (k === 'floor') applyFloor(true); if (k === 'ad') applyAd(true); if (k === 'stockCap') for (const s of Object.values(stations)) if (s.kind === 'producer' || s.kind === 'machine') applyStockCap(s); sfx('buy'); updateMoney(); save(); show(ti);
+          state.money -= u.cost[lvl]; state.up[k]++; if (k === 'autoCash') { applyKiosk(true); refreshZones(); } if (k === 'basket') applyBasket(true); if ((k === 'mgrShop' || k === 'mgrFarm') && state.up[k] === 1) spawnManager(k); if (k === 'look') { applyShopLook(true); applyAd(false); } if (k === 'floor') applyFloor(true); if (k === 'ad') applyAd(true); if (k === 'stockCap') for (const s of Object.values(stations)) if (s.kind === 'producer' || s.kind === 'machine') applyStockCap(s); sfx('buy'); updateMoney(); save(); show(ti);
         };
         row.appendChild(b); body.appendChild(row);
       }
@@ -2516,7 +2580,7 @@ function playerInteract(dt) {
 function updateWorld(dt, t) {
   for (const tf of tufts) if (tf.active && !tf.grown) {
     tf.t += dt;
-    if (tf.t > 4) { tf.grown = true; tf.tall.visible = true; tf.tall.scale.setScalar(0.01); pops.push({ obj: tf.tall, t: 0 }); }
+    if (tf.t > 4 / upVal('hayGrow')) { tf.grown = true; tf.tall.visible = true; tf.tall.scale.setScalar(0.01); pops.push({ obj: tf.tall, t: 0 }); }
   }
   for (const tr of trees) {
     if (tr.shake > 0) { tr.shake = Math.max(0, tr.shake - dt * 4); tr.crown.rotation.z = Math.sin(tr.shake * 20) * 0.08 * tr.shake; }
@@ -2541,7 +2605,7 @@ function updateWorld(dt, t) {
         if (a.t <= 0) { a.t = 1.5 + Math.random() * 3; a.tx = a.home[0] + (Math.random() - 0.5) * 2 * a.rx; a.tz = a.home[1] + (Math.random() - 0.5) * 2 * a.rz; }
         const dx = a.tx - a.g.position.x, dz = a.tz - a.g.position.z, d = Math.hypot(dx, dz);
         if (d > 0.05) { const st = Math.min(d, 0.7 * dt); a.g.position.x += dx / d * st; a.g.position.z += dz / d * st; a.g.rotation.y = Math.atan2(dx, dz); a.b.position.y = Math.abs(Math.sin(t * 12)) * 0.04; }
-        else { a.b.rotation.x = s.inN > 0 ? Math.max(0, Math.sin(t * 3 + a.home[0])) * 0.3 : 0; a.b.position.y = 0; }
+        else { a.b.rotation.x = s.inN > 0 ? Math.max(0, Math.sin(t * 3 + a.home[0])) * 0.3 : 0; a.b.position.y = 0; if (a.cow) a.g.rotation.y *= 0.9; }
       }
     } else if (s.kind === 'crop') {
       for (const pl of s.plants) {
@@ -2654,6 +2718,7 @@ if (linesMoved) setTimeout(() => toast('專屬工人已合併成飼養員、農�
 if (tomatoMerged) setTimeout(() => toast('第二番茄田已併入原本的番茄田（2×4）'), 3000);
 if (keeperRefund) setTimeout(() => toast('升級改版，退還 $' + keeperRefund), linesMoved ? 4500 : 1500);
 refreshZones();
+applyKiosk(false);
 resize(); updateCamera(0, true); updateMoney();
 
 let last = performance.now(), saveT = 0, T = 0;
@@ -2704,6 +2769,7 @@ function step(dt) {
     if (p.t >= 1) { p.obj.scale.setScalar(1); pops.splice(i, 1); }
   }
   updateBumps(dt);
+  updateKiosks(dt);
   dashMat.opacity = 0.75 + Math.sin(T * 4) * 0.25;
   updateDoorsAndLights(dt);
   const gts = guideTargets(), gt = gts[0] || null, pp = player.p.root.position;
