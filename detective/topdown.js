@@ -108,12 +108,13 @@ const TOPW = (() => {
 
   /* ---------- 同物件互動：主角做一個動作（開櫃、坐低、打電話……） ---------- */
   // q.act：動作名；q.actT：做幾耐（秒，冇寫＝做完一輪）；q.hold：做完停喺最後一格（例如坐低），點其他地方先郁；q.useAt：做動作時企喺邊（例如坐上椅）
+  const ONCE = new Set(["openDoor", "drawer", "switch", "pickup", "reach", "give", "knock", "point"]);   // 做一次就停在最後一格（開門、拉櫃桶）
   function useSpot(q, done){
     const s = cur.s; faceTo(q.r);
     if (q.face) { s.dir = "side"; s.face = q.face; }
     if (q.act && SP.ACTS[q.act]){ const n = SP.frames(q.act), rate = q.rate || 5;
       if (q.useAt){ s.back = [s.px, s.py]; s.px = q.useAt[0]; s.py = q.useAt[1]; }
-      s.use = { act:q.act, t:0, rate, n, dur:q.actT || n / rate, hold:!!q.hold, loop:!!(q.loop || q.actT), forever:!!q.loop && !q.actT }; }
+      s.use = { act:q.act, t:0, rate, n, dur:q.actT || n / rate, hold:!!q.hold, loop:!!(q.loop || (q.actT && !ONCE.has(q.act))), forever:!!q.loop && !q.actT }; }
     done && done();
   }
   function endUse(){ const s = cur.s; if (!s.use) return; if (s.back){ s.px = s.back[0]; s.py = s.back[1]; s.back = null; } s.use = null; }
@@ -150,7 +151,12 @@ const TOPW = (() => {
   const camFor = (R, x, y) => [Math.max(0, Math.min(Math.max(0, R.w - VW), x - VW / 2)) - (R.w < VW ? (VW - R.w) / 2 : 0),
                                Math.max(0, Math.min(Math.max(0, R.h - VH), y - VH * 0.55)) - (R.h < VH ? (VH - R.h) / 2 : 0)];
   function announce(){ const s = cur.s; if (cur.hooks.areaNow) cur.hooks.areaNow(s.script ? null : s.room, !!s.script);
-    if (!s.script && cur.hooks.onArea && cur.hooks.areaSeen && !cur.hooks.areaSeen(s.room)) cur.hooks.onArea(s.room); }
+    // 第一次走進一個地方：主角自己說一句（跟 world.js 一樣，用 def.areas 的 text）
+    if (!s.script && cur.hooks.onArea && cur.hooks.areaSeen && !cur.hooks.areaSeen(s.room)){
+      const ar = (cur.def.areas || []).find(a => a.id === s.room), ph = (cur.hooks.opt() || {}).phase || 0;
+      const text = !ar ? "" : typeof ar.text === "function" ? ar.text(ph) : Array.isArray(ar.text) ? ar.text[Math.min(ph, ar.text.length - 1)] : ar.text;
+      if (text) s.areaSay = { text, until:s.t + 2 + text.length / 7 };
+      cur.hooks.onArea(s.room); } }
 
   function moveAlong(dt){
     const s = cur.s;
@@ -212,7 +218,10 @@ const TOPW = (() => {
   function bubbleNow(){
     const s = cur.s;
     if (s.script){ const k = step(); return k && k.say ? { who:k.say[0], text:k.say[1], name:k.name } : null; }
-    return cur.hooks.bubble ? cur.hooks.bubble() : null;
+    const hb = cur.hooks.bubble ? cur.hooks.bubble() : null;
+    if (hb) return hb;
+    if (s.flavor && s.t < s.flavor.until) return { who:"you", text:s.flavor.text };
+    return s.areaSay && s.t < s.areaSay.until ? { who:"you", text:s.areaSay.text } : null;
   }
 
   /* ---------- 點擊 ---------- */
@@ -223,6 +232,7 @@ const TOPW = (() => {
     const { s, hooks } = cur, [x, y] = toWorld(e.clientX, e.clientY);
     if (s.use && s.use.then) return;
     if (s.use && !s.script) endUse();
+    s.flavor = null;
     if (s.script){ s.lastTap = "script"; const k = step(); if (k && k.say){ if (s.typed.length < k.say[1].length) s.typed = k.say[1]; else next(); } return; }
     if (s.fade) return;
     const r = cur.canvas.getBoundingClientRect(), FING = Math.min(22, Math.max(10, 44 * VW / r.width));
@@ -247,6 +257,9 @@ const TOPW = (() => {
     // 4. 其他東西（看過的、小細節）
     const h = spots.filter(q => inBox(...q.r)).sort((a, b) => a.r[2] * a.r[3] - b.r[2] * b.r[3])[0] || spots.filter(q => inBox(...big(q.r))).sort((a, c) => dist(a.r) - dist(c.r))[0];
     if (h){ s.lastTap = "spot"; const [tx, ty] = stand(h); return goThen(tx, ty, () => useSpot(h, () => hooks.onSpot(h))); }
+    // 4b. 房間裡純粹好玩的東西（坐低、開燈、拉窗簾……）：R.use = [{ r, walk, wy, act, face, actT, hold, useAt, say, on }]，不花時間、不記錄
+    const fl = (roomOf(s.room).use || []).filter(u => !(u.when && !u.when(hooks.opt()))).find(u => inBox(...u.r));
+    if (fl){ s.lastTap = "use"; hooks.onGround && hooks.onGround(); const [tx, ty] = stand(fl); return goThen(tx, ty, () => useSpot(fl, () => { if (fl.on) setTimeout(() => fl.on(), fl.delay ?? 250); if (fl.say){ s.flavor = { text:typeof fl.say === "function" ? fl.say() : fl.say, until:s.t + 2.4 }; } })); }
     // 5. 地面：走過去（房間裡隨便走不影響任何東西）
     s.lastTap = "ground"; hooks.onGround && hooks.onGround();
     s.plan = []; s.after = null; s.path = findPath(s.room, s.px, s.py, x, y);
@@ -347,7 +360,7 @@ const TOPW = (() => {
     const want = new Set();
     (R.exits || []).forEach((e, i) => { if (e.when && !e.when(opt)) return; const key = cur.s.room + ":" + i; want.add(key);
       let el = cur.lab[key];
-      if (!el){ el = cur.lab[key] = document.createElement("button"); el.className = "wexit";
+      if (!el){ el = cur.lab[key] = document.createElement("button"); el.className = "wnav go wexit";
         el.textContent = (e.kind === "up" ? "⬆ " : e.kind === "down" ? "⬇ " : e.kind === "out" ? "" : "🚪 ") + (e.label || (roomOf(e.to) && roomOf(e.to).name) || "") + (e.kind === "out" ? " ➜" : "");
         el.onpointerdown = ev => { ev.stopPropagation(); }; el.onclick = ev => { ev.stopPropagation(); if (cur.s.script || cur.s.fade || (cur.s.use && cur.s.use.then)) return; endUse(); cur.s.plan = [{ exit:e }]; cur.s.after = null; nextLeg(); cur.hooks.onGround && cur.hooks.onGround(); };
         wrap.appendChild(el); }

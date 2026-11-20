@@ -214,6 +214,7 @@ const SP = (() => {
     type: () => [{ hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, lean: 8, sF: 56, eF: 30, sB: 50, eB: 34, sitting: 1 }, { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, lean: 8, sF: 50, eF: 36, sB: 56, eB: 28, sitting: 1 }],
     drink: () => [{ sF: 30, eF: 70, hand: "cup" }, { sF: 50, eF: 110, hand: "cup" }, { sF: 60, eF: 120, hand: "cup", lean: -4 }, { sF: 50, eF: 110, hand: "cup" }],
     give: () => [{ sF: 40, eF: 40, hand: "note" }, { sF: 74, eF: 10, hand: "note" }, { sF: 80, eF: 6, hand: "note" }],
+    clasp: () => [{ sF: 22, eF: 72, sB: 18, eB: 76 }, { sF: 22, eF: 74, sB: 18, eB: 76, breathe: 1 }],
     cross: () => [{ sF: 30, eF: 100, sB: 34, eB: 96 }, { sF: 30, eF: 100, sB: 34, eB: 96, breathe: 1 }],
     hold: () => [{ sF: 24, eF: 70, sB: 20, eB: 74, hand: "tray" }, { sF: 24, eF: 72, sB: 20, eB: 74, hand: "tray", breathe: 1 }],
     wipe: () => [{ sF: 90, eF: 10, hand: "cloth" }, { sF: 100, eF: 4, hand: "cloth" }, { sF: 112, eF: 0, hand: "cloth" }, { sF: 100, eF: 4, hand: "cloth" }],
