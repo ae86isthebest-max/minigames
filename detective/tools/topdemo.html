@@ -100,20 +100,20 @@ const MAID = { skin:"#f0c8a0", hair:"#5a3a22", coat:"#4a4a6a", top:"#4a4a6a", bo
 const seen = new Set(); const log = m => { const el = document.getElementById("log"); if (el) el.textContent = m; window._log = (window._log||[]).concat(m); };
 let say = null, sayT = 0; const talk = (who, text, ms) => { say = { who, text }; clearTimeout(sayT); sayT = setTimeout(() => say = null, ms || 2200); };
 const later = (ms, fn) => setTimeout(fn, ms);
-// 每件可以郁嘅嘢：點佢 → 行埋去、做動作、件嘢有反應
+// 每件可以互動的東西：點它 → 走過去、做動作、東西有反應
 const USE = {
-  mug:    { r:[118,80,11,9], act:"drink", rate:4, k:"item", go(){ talk("you","杯裡還有半杯咖啡，已經凍咗。"); } },
-  letter: { r:[88,82,18,10], walk:118, wy:112, act:"read", actT:2.6, face:-1, go(){ talk("you","「今晚十點，老地方見。」冇署名。",2800); } },
-  drawer: { r:[70,96,22,10], walk:81, wy:112, act:"drawer", rate:6, face:1, go(){ later(260,()=>{ GOAL.drawer = GOAL.drawer ? 0 : 1; if (GOAL.drawer) talk("you","櫃桶入面有條鎖匙同一張單據。"); }); } },
+  mug:    { r:[118,80,11,9], act:"drink", rate:4, k:"item", go(){ talk("you","杯裡還有半杯咖啡，已經涼了。"); } },
+  letter: { r:[88,82,18,10], walk:118, wy:112, act:"read", actT:2.6, face:-1, go(){ talk("you","「今晚十點，老地方見。」沒有署名。",2800); } },
+  drawer: { r:[70,96,22,10], walk:81, wy:112, act:"drawer", rate:6, face:1, go(){ later(260,()=>{ GOAL.drawer = GOAL.drawer ? 0 : 1; if (GOAL.drawer) talk("you","抽屜裡有一把鑰匙和一張收據。"); }); } },
   lamp:   { r:[70,72,10,10], walk:52, wy:92, act:"switch", rate:5, face:1, go(){ later(180,()=>GOAL.lamp = GOAL.lamp ? 0 : 1); } },
   switch: { r:[49,28,6,8], walk:52, wy:66, act:"switch", rate:5, face:1, go(){ later(180,()=>GOAL.light = GOAL.light ? 0 : 1); } },
   curtain:{ r:[94,8,52,40], walk:120, wy:66, act:"reach", rate:3, face:1, go(){ later(250,()=>GOAL.curtain = GOAL.curtain ? 0 : 1); } },
-  book:   { r:[176,4,44,58], walk:198, wy:70, act:"reach", rate:3, face:1, go(){ later(300,()=>{ GOAL.book = GOAL.book ? 0 : 1; if (GOAL.book) talk("you","呢本書後面夾住張相。"); }); } },
-  bin:    { r:[150,90,14,14], walk:168, wy:110, act:"rummage", actT:1.8, rate:5, face:-1, go(){ later(1500,()=>{ GOAL.paper = 1; talk("you","揾到團紙，寫住一個電話號碼。"); }); } },
-  chair:  { r:[19,91,22,32], walk:48, wy:124, act:"sit", hold:true, useAt:[30,122], face:1, go(){ talk("you","（坐低諗一諗……）",1600); } },
-  phone:  { r:[22,126,14,9], walk:46, wy:146, act:"phone", actT:2.8, rate:4, face:-1, go(){ talk("you","喂？我係沈岳，幫我查一個號碼。",2800); } }
+  book:   { r:[176,4,44,58], walk:198, wy:70, act:"reach", rate:3, face:1, go(){ later(300,()=>{ GOAL.book = GOAL.book ? 0 : 1; if (GOAL.book) talk("you","這本書後面夾著一張照片。"); }); } },
+  bin:    { r:[150,90,14,14], walk:168, wy:110, act:"rummage", actT:1.8, rate:5, face:-1, go(){ later(1500,()=>{ GOAL.paper = 1; talk("you","找到一團紙，上面寫著一個電話號碼。"); }); } },
+  chair:  { r:[19,91,22,32], walk:48, wy:124, act:"sit", hold:true, useAt:[30,122], face:1, go(){ talk("you","（坐下來想一想……）",1600); } },
+  phone:  { r:[22,126,14,9], walk:46, wy:146, act:"phone", actT:2.8, rate:4, face:-1, go(){ talk("you","喂？我是沈岳，幫我查一個號碼。",2800); } }
 };
-const NAME = { mug:"杯", letter:"信", drawer:"櫃桶", lamp:"枱燈", switch:"燈掣", curtain:"窗簾", book:"書櫃", bin:"廢紙箱", chair:"梳化椅", phone:"電話" };
+const NAME = { mug:"杯", letter:"信", drawer:"抽屜", lamp:"枱燈", switch:"燈掣", curtain:"窗簾", book:"書櫃", bin:"廢紙箱", chair:"沙發椅", phone:"電話" };
 // 女傭：自己喺度抹嘢；你行近佢就停手望住你；同佢講嘢就講返
 let maidTalk = 0;
 const maid = () => { const y = TOPW.you && TOPW.you(), M = { id:"maid", x:224, y:80, room:"study", L:MAID, arrow:"#ffd04a" };
@@ -124,7 +124,7 @@ const maid = () => { const y = TOPW.you && TOPW.you(), M = { id:"maid", x:224, y
 const hooks = { you:DET, buddy:()=>({ id:"_wu", L:WU }), people:()=>[maid()],
   spots:()=>Object.entries(USE).map(([id,u]) => ({ k:u.k || "detail", ...(u.k === "item" ? { ids:[id] } : { id }), r:u.r, walk:u.walk, wy:u.wy, act:u.act, actT:u.actT, rate:u.rate, hold:u.hold, useAt:u.useAt, face:u.face, fresh:!seen.has(id), room:"study" })),
   onSpot:q=>{ const id = q.ids ? q.ids[0] : q.id; seen.add(id); log("spot " + id); USE[id].go(); },
-  onPerson:id=>{ log("person "+id); maidTalk = performance.now() + 2600; talk("maid","先生，我只係嚟執下書房咋。",2600); },
+  onPerson:id=>{ log("person "+id); maidTalk = performance.now() + 2600; talk("maid","先生，我只是來整理書房而已。",2600); },
   onBuddy:id=>log("buddy"), onGround:()=>{}, bubble:()=>say, nameOf:id=>id==="maid"?"女傭":id==="_wu"?"小吳":"你", opt:()=>({}),
   script:null, scriptDone:()=>true, refresh:()=>{}, areaNow:a=>log("area "+a), nearNow:l=>{ window._near=l.map(TOPW.spotKey); } };
 TOPW.mount(document.getElementById("worldcv"), def, "demo", hooks);

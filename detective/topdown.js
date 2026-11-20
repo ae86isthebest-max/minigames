@@ -17,7 +17,7 @@
    - 存檔不記任何走動的位置（跟橫向一樣），換畫面不影響存檔
    ========================================================= */
 const TOPW = (() => {
-  const VW = 224, VH = 126, SPEED = 58, CELL = 4, FOOT_W = 7, FOOT_H = 3;
+  const VW = 288, VH = 162, SPEED = 58, CELL = 4, FOOT_W = 7, FOOT_H = 3;
   const st = {};
   let cur = null;
   const P = () => PX.prim;
