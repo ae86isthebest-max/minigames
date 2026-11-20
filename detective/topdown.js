@@ -409,6 +409,6 @@ const TOPW = (() => {
 
   return { top:true, carOf, PATROL, mount, state, indoor:() => 1, goTo, standIn, walking:() => !!(cur && (cur.s.path.length || cur.s.fade)),
     levelVis:() => 1, skip:() => cur && cur.s.script && skip(), nearYou:q => !!cur && !cur.s.script && nearYou(cur.s, q), goSpot, spotKey,
-    you:() => cur && { x:cur.s.px, y:cur.s.py, room:cur.s.room, use:cur.s.use && cur.s.use.act }, doorAmt:(room, to) => { if (!cur) return 0; const t0 = cur.s.doorT[room + ">" + to]; if (t0 === undefined) return 0; const d = cur.s.t - t0; return d < 0.3 ? d / 0.3 : d < 1.4 ? 1 : Math.max(0, 1 - (d - 1.4) / 0.3); }, endUse:() => cur && endUse(), glintAt:q => cur ? glintAt(q.r, [{ x:cur.s.px, y:cur.s.py }]) : null, VW, VH, GROUND:0, room:() => cur && cur.s.room,
+    you:() => cur && { x:cur.s.px, y:cur.s.py, room:cur.s.room, use:cur.s.use && cur.s.use.act }, doorAmt:(room, to) => { if (!cur) return 0; const t0 = cur.s.doorT[room + ">" + to]; if (t0 === undefined) return 0; const d = cur.s.t - t0; return d < 0.3 ? d / 0.3 : d < 1.4 ? 1 : Math.max(0, 1 - (d - 1.4) / 0.3); }, endUse:() => cur && endUse(), glintAt:q => { if (!cur) return null; const s = cur.s, bl = [{ x:s.px, y:s.py }, ...cur.hooks.people().filter(here).map(b => ({ x:b.x, y:b.y }))]; if (s.broom === s.room && cur.hooks.buddy && cur.hooks.buddy()) bl.push({ x:s.bx, y:s.by }); return glintAt(q.r, bl); }, VW, VH, GROUND:0, room:() => cur && cur.s.room,
     reset:lid => { delete st[lid]; }, resetAll:() => { Object.keys(st).forEach(k => delete st[k]); }, _cur:() => cur };
 })();
