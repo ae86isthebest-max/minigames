@@ -168,6 +168,8 @@ details.past summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6p
 body.fs{padding:0;overflow:hidden;overscroll-behavior:none}
 body.fs header, body.fs #nav{display:none}
 body.fs .toast{bottom:calc(14px + env(safe-area-inset-bottom))}
+/* 幕間、劇情對話開著的時候，提示移到最上面，才不會蓋住「下一句」「跳過」 */
+body:has(.inter-scene) .toast, body:has(.wskip:not([hidden])) .toast, body.toast-top .toast{bottom:auto;top:calc(10px + env(safe-area-inset-top))}
 .fs-root{position:fixed;inset:0;z-index:4;display:flex;flex-direction:column;background:#000}
 .fs-hud{flex:none;display:flex;gap:6px;align-items:center;padding:4px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left));padding-top:max(4px,env(safe-area-inset-top));background:#14100c;color:#cfc6b8;font-size:12px;line-height:1.2;min-height:34px;white-space:nowrap;overflow:hidden;border-bottom:1px solid #2a221b}
 .fs-hud .hn{color:var(--text);font-size:13px;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
@@ -264,6 +266,7 @@ body.fs .toast{bottom:calc(14px + env(safe-area-inset-bottom))}
 <script src="case4_records.js"></script>
 <script src="case4_art.js"></script>
 <script src="case4_world.js"></script>
+<script src="case4_top.js"></script>
 <script src="case5.js"></script>
 <script src="case5_items.js"></script>
 <script src="case5_art.js"></script>
@@ -1250,6 +1253,7 @@ function uiConfirm(msg){
 }
 function toast(msg){
   const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show");
+  document.body.classList.toggle("toast-top", !!(typeof inter !== "undefined" && inter) || !!document.querySelector(".inter-scene, .wskip:not([hidden])"));
   clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 2600);
 }
 function afterSpend(){
