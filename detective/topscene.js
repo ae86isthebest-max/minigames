@@ -214,6 +214,25 @@ const TOPSCENE = (() => {
     return { room, row:[40, 260, 124], seats:[[112, 104, 1]] };
   };
 
+  // 醫院走廊：病房的門、扶手、候診椅、護理站；地上的導引線
+  STAGES.hospHall = (o) => {
+    const room = { w:288, h:150, wall:60,
+      floor(p, g, t){
+        T.backWall(p, 0, 288, 60, "#e4ece8", "plain", { base:"#5a7a6a" }); p.R(0, 40, 288, 3, "#9ac0a8"); p.R(0, 43, 288, 1, "#7aa088");
+        for (const [x, n] of [[20, 3], [96, 5], [172, 7]]){ T.backDoor(p, x, 16, 30, 44, 0, "#d8e4e0", { frame:"#7a9a8a" }); p.R(x + 33, 18, 10, 8, O); p.R(x + 34, 19, 8, 6, "#f4f4f0"); p.R(x + 36, 21, 1 + n % 3, 2, "#3a3a3a"); p.R(x + 4, 22, 22, 10, "#a8c8d8"); }
+        p.R(60, 6, 28, 10, O); p.R(61, 7, 26, 8, "#3a7a5a"); p.R(65, 9, 18, 4, "#f4f4f0");   // 指示牌
+        p.R(146, 24, 8, 14, O); p.R(147, 25, 6, 12, "#f4f8f8"); p.R(148, 26, 4, 3, "#3a8ad8");   // 乾洗手
+        p.R(0, 60, 288, 90, "#cfdcd4"); for (let x = 0; x < 288; x += 16) p.R(x, 60, 1, 90, "#c0cec6"); for (let y = 76; y < 150; y += 16) p.R(0, y, 288, 1, "#c0cec6"); p.R(0, 112, 288, 3, "#3a8ad8"); p.R(0, 118, 288, 3, "#e9c46a");
+        T.sides(p, this, "#5a7a6a", []);
+      },
+      props:[
+        { y:84, draw(p){ for (let k = 0; k < 4; k++){ p.R(56 + k * 13, 70, 11, 8, O); p.R(57 + k * 13, 71, 9, 6, "#3a7aa8"); } p.R(54, 78, 56, 3, O); p.R(55, 79, 54, 1, "#5a9ac8"); p.R(56, 81, 2, 4, O); p.R(106, 81, 2, 4, O); } },
+        { y:96, draw(p){ T.box(p, 220, 66, 60, 16, 12, "#e8eeea", "#9ab8a8"); p.R(226, 58, 18, 10, O); p.R(227, 59, 16, 7, "#2a2a2e"); p.R(228, 60, 14, 4, "#3a6aa8"); p.R(250, 62, 14, 8, O); p.R(251, 63, 12, 6, "#f4f0e6"); p.R(268, 60, 8, 8, O); p.R(269, 61, 6, 6, "#e9a0b0"); } }
+      ],
+      front(p, g, t){ for (const x of [50, 150, 250]){ p.R(x - 20, 1, 40, 3, O); p.R(x - 19, 2, 38, 1, "#f4f8f4"); } } };
+    return { room, row:[30, 200, 104] };
+  };
+
   /* ---------- 地點裡的房間 ---------- */
   const ALIAS = { pol6:"interrog" };
   function resolve(name, opt){
@@ -223,6 +242,7 @@ const TOPSCENE = (() => {
     const R = findRoom(name);
     if (R) return { room:R };
     if (name === "s15_hall") return STAGES.hall5(opt);
+    if (name === "hospital") return STAGES.hospHall(opt);
     return null;
   }
   function findRoom(name){
