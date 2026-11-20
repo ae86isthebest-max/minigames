@@ -183,6 +183,40 @@ const SP = (() => {
     crouch: () => [{ lean: 26, hF: 70, kF: 120, hB: -20, kB: 110, lift: -7, sF: 50, eF: 40, sB: 20, eB: 30, hand: "lens" },
                    { lean: 28, hF: 70, kF: 120, hB: -20, kB: 110, lift: -7, sF: 56, eF: 34, sB: 20, eB: 30, hand: "lens" }],
     point: () => [{ lean: 2, sF: 88, eF: 2 }],
+    // ---- 調查 ----
+    kneel: () => [{ lean: 16, hF: 84, kF: 84, hB: -10, kB: 100, lift: -8, sF: 40, eF: 20, sB: 10, eB: 20 },        // 單膝跪低，手伸去摸地
+                  { lean: 20, hF: 84, kF: 84, hB: -10, kB: 100, lift: -8, sF: 30, eF: 10, sB: 10, eB: 20 }],
+    reach: () => [{ lean: -2, sF: 105, eF: 6, sB: 0, eB: 10 }, { lean: -3, sF: 118, eF: 2, sB: 0, eB: 10 }],   // 伸手去高處／開櫃
+    photo: () => [{ sF: 70, eF: 80, sB: 60, eB: 90, hand: "camera" }, { sF: 70, eF: 80, sB: 60, eB: 90, hand: "camera", flash: 1 }],
+    write: () => [{ sF: 30, eF: 90, sB: 20, eB: 70, hand: "note" }, { sF: 30, eF: 96, sB: 22, eB: 66, hand: "note" }],
+    knock: () => [{ sF: 80, eF: 60 }, { sF: 70, eF: 80 }],
+    pickup: () => [{ lean: 34, hF: 50, kF: 70, hB: 30, kB: 70, lift: -3, sF: 10, eF: 10 }, { lean: 30, hF: 50, kF: 70, hB: 30, kB: 70, lift: -3, sF: 16, eF: 20, hand: "box" },
+                   { lean: 10, hF: 20, kF: 30, hB: 10, kB: 30, sF: 40, eF: 60, hand: "box" }, { lean: 0, sF: 40, eF: 70, hand: "box" }],
+    sit: () => [{ hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sF: 20, eF: 50, sB: 16, eB: 50, sitting: 1 }],
+    talk: () => [{ sF: 30, eF: 40, mouth: 1 }, { sF: 40, eF: 50 }, { sF: 34, eF: 46, mouth: 1 }, { sF: 20, eF: 30 }],
+    // ---- 意外、自殺類（真相動畫用） ----
+    drinkFall: () => [
+      { sF: 50, eF: 110, hand: "cup" }, { sF: 60, eF: 118, hand: "cup", lean: -4 }, { sF: 40, eF: 80, hand: "cup" },
+      { sF: 20, eF: 110, lean: 10, mouth: 1 }, { sF: 24, eF: 116, lean: 20, hF: 14, kF: 16, mouth: 1, eyes: "shut" },     // 手按心口
+      { sF: 10, eF: 100, lean: 26, hF: 30, kF: 60, hB: 10, kB: 60, lift: -3, eyes: "shut" },
+      { lean: 30, sF: 30, eF: 20, sB: 20, eB: 20, hF: 60, kF: 110, hB: 50, kB: 110, lift: -8, eyes: "shut" },
+      { lean: 30, sF: 80, eF: 40, sB: 70, eB: 40, hF: 40, kF: 70, hB: 30, kB: 70, lift: -6, rot: 55, eyes: "shut" },
+      { lean: 0, sF: 150, eF: 20, sB: 140, eB: 20, hF: 10, kF: 30, hB: 0, kB: 30, lift: -4, rot: 86, eyes: "shut" },
+      { lean: 0, sF: 168, eF: 6, sB: 160, eB: 10, hF: 4, kF: 10, hB: -4, kB: 14, lift: -4, rot: 90, eyes: "shut" }],
+    fallHigh: () => [
+      { air: 34, sF: 160, eF: 20, sB: 150, eB: 30, hF: 20, kF: 30, hB: -20, kB: 40, rot: -10, mouth: 1 },
+      { air: 28, sF: 120, eF: 50, sB: 170, eB: 20, hF: -10, kF: 50, hB: 30, kB: 20, rot: -25, mouth: 1 },
+      { air: 20, sF: 170, eF: 10, sB: 110, eB: 60, hF: 30, kF: 20, hB: -20, kB: 60, rot: -45, mouth: 1 },
+      { air: 11, sF: 130, eF: 40, sB: 160, eB: 20, hF: 10, kF: 40, hB: 20, kB: 30, rot: -65, eyes: "shut" },
+      { air: 3, sF: 150, eF: 30, sB: 140, eB: 30, hF: 20, kF: 30, hB: 10, kB: 40, rot: -82, eyes: "shut" },
+      { lift: -4, sF: 100, eF: 50, sB: 120, eB: 30, hF: 40, kF: 60, hB: 30, kB: 50, rot: -90, eyes: "shut" },
+      { lift: -4, sF: 150, eF: 20, sB: 160, eB: 20, hF: 20, kF: 30, hB: 10, kB: 40, rot: -90, eyes: "shut" },
+      { lift: -4, sF: 165, eF: 8, sB: 160, eB: 10, hF: 10, kF: 16, hB: 4, kB: 24, rot: -90, eyes: "shut" }],
+    slump: () => [
+      { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sF: 20, eF: 50, sB: 16, eB: 50, sitting: 1 },
+      { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sF: 10, eF: 30, sB: 6, eB: 30, sitting: 1, lean: 12, eyes: "shut" },
+      { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sF: 0, eF: 10, sB: -4, eB: 10, sitting: 1, lean: 30, eyes: "shut" },
+      { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sF: -6, eF: 4, sB: -8, eB: 6, sitting: 1, lean: 40, eyes: "shut" }],
     // 向後跌（正面中彈那一種的動作節奏）：仰、退一步、膝軟、坐低、倒下、彈一下、躺定
     fallBack: () => [
       { lean: -8, sF: 30, eF: 60, sB: -40, eB: 20, hF: 10, hB: -6, eyes: "shut" },
@@ -219,7 +253,8 @@ const SP = (() => {
     const skin = hex(L.skin || "#e8b98f"), hair = hex(L.hair || "#2a1d16"), coat = hex(L.coat || L.top || "#5577aa"), hat = L.hat ? hex(L.hat) : null;
     const flat = c => { const o = c.slice(); o.flat = 1; return o; };
     return { skin, skinD: mul(skin, 0.8), hair, coat, top: hex(L.top || L.coat || "#5577aa"), pants: hex(L.bottom || "#333a44"), shoe: hex(L.shoes || "#2a2320"),
-      hat, hatB: hat ? mul(hat, 0.6) : null, eye: flat(OUT), white: flat([240, 236, 226]), brow: flat(mul(hair, 0.7)), mouth: flat([150, 70, 60]), lens: flat([200, 222, 236]), lensR: flat([90, 70, 50]) };
+      hat, hatB: hat ? mul(hat, 0.6) : null, eye: flat(OUT), white: flat([240, 236, 226]), brow: flat(mul(hair, 0.7)), mouth: flat([150, 70, 60]), lens: flat([200, 222, 236]), lensR: flat([90, 70, 50]),
+      cup: flat([236, 230, 218]), drink: flat([90, 50, 30]), cam: flat([40, 40, 46]), paper: flat([238, 232, 214]), ink: flat([70, 70, 90]), boxc: [176, 136, 86] };
   }
 
   /* ---------- 畫一格（側面） ---------- */
@@ -231,6 +266,7 @@ const SP = (() => {
     const breathe = q.breathe || 0;
     const hip = [RX, RY - 1 - drop - (q.lift || 0) * 0];
     if (q.lift) hip[1] = RY - 1 - Math.max(drop + q.lift, 4);
+    if (q.sitting) hip[1] = RY - 1 - 9;   // 坐著：屁股在椅面（離地 9 格），腳自然垂下
     const neck = step(hip, 180 + q.lean, LEN.torso - breathe * 0, -1);   // 往上
     const shoulder = [neck[0] + 0.5, neck[1] + 3 + breathe];   // 肩膀在身體中間，手往後擺也不會在背上凸起一舊（駝背）
     const legs = layer(), backL = layer(), body = layer(), front = layer(), headL = layer();
@@ -243,7 +279,12 @@ const SP = (() => {
     const arm = (Ly, s, e, dark, hand) => { const el = step(shoulder, s, LEN.arm1, dir), wr = step(el, s + e, LEN.arm2, dir);
       seg(Ly, shoulder, el, 4, dark ? back(P.coat) : P.coat); seg(Ly, el, wr, 3, dark ? back(P.coat) : P.coat);
       const hd = step(wr, s + e, 1.5, dir); rect(Ly, Math.round(hd[0]) - 1, Math.round(hd[1]) - 1, 2, 2, dark ? P.skinD : P.skin);
-      if (hand === "lens"){ const c = step(hd, s + e, 3, dir); rect(Ly, Math.round(c[0]) - 1, Math.round(c[1]) - 2, 4, 4, P.lensR); rect(Ly, Math.round(c[0]), Math.round(c[1]) - 1, 2, 2, P.lens); } };
+      const hx = Math.round(hd[0]), hy = Math.round(hd[1]);
+      if (hand === "lens"){ const c = step(hd, s + e, 3, dir); rect(Ly, Math.round(c[0]) - 1, Math.round(c[1]) - 2, 4, 4, P.lensR); rect(Ly, Math.round(c[0]), Math.round(c[1]) - 1, 2, 2, P.lens); }
+      else if (hand === "cup"){ rect(Ly, hx, hy - 3, 3, 4, P.cup); rect(Ly, hx, hy - 3, 3, 1, P.drink); }
+      else if (hand === "camera"){ rect(Ly, hx - 1, hy - 3, 5, 4, P.cam); rect(Ly, hx + 3, hy - 2, 2, 2, P.lensR); rect(Ly, hx, hy - 4, 2, 1, P.cam); }
+      else if (hand === "note"){ rect(Ly, hx - 1, hy - 4, 4, 5, P.paper); rect(Ly, hx, hy - 3, 2, 1, P.ink); rect(Ly, hx, hy - 1, 2, 1, P.ink); }
+      else if (hand === "box"){ rect(Ly, hx - 2, hy - 4, 6, 5, P.boxc); rect(Ly, hx - 2, hy - 4, 6, 1, mul(P.boxc, 1.2)); } };
     arm(backL, q.sB, q.eB, true);
     leg(legs, q.hB, q.kB, true);
     const fl = leg(legs, q.hF, q.kF, false);
@@ -263,6 +304,7 @@ const SP = (() => {
     const hx = Math.round(neck[0]) - 9, hy = Math.round(neck[1]) - 13;   // 頭擺正在身體上面，不向前伸
     grid(headL, rows, hx, hy, hp, false);
     arm(front, q.sF, q.eF, false, q.hand);
+    if (q.flash){ const c = step(shoulder, q.sF, 12, dir); for (let k = -3; k <= 3; k++){ put(front, c[0] + 3 + k, c[1] - 2, [255, 250, 220]); put(front, c[0] + 3, c[1] - 2 + k, [255, 250, 220]); } }
     [backL, legs, body, front].forEach(Ly => shade(Ly, -dir));
     const out = layer();
     const rot = q.rot || 0, piv = [RX, RY];
@@ -300,6 +342,47 @@ const SP = (() => {
     return out;
   }
 
+
+  /* ---------- 車（側面行駛，看得到車頂；72×56 一格，車底中央＝腳底位置） ----------
+     SP.car(g, x, y, { col, patrol, f, facing, door })   f：輪子轉到第幾格（0–3），door：司機位車門打開 */
+  function carFrame(o){
+    const col = hex(o.col || "#7a8a9a"), dark = mul(col, 0.62), top = mul(col, 1.18), glass = [52, 70, 98], glassL = [96, 124, 160];
+    const back = layer(), bodyL = layer(), det = layer(), wh = layer();
+    const f = ((o.f || 0) % 4 + 4) % 4;
+    // 車身側面
+    poly(bodyL, [[5, 34], [66, 34], [68, 40], [67, 47], [4, 47], [3, 40]], col);
+    rect(bodyL, 4, 45, 64, 2, dark);
+    // 車頂那一面（3/4 俯視看得到）：車尾、車頂、車頭蓋
+    poly(bodyL, [[6, 28], [20, 26], [21, 34], [5, 34]], top);           // 車尾箱
+    poly(bodyL, [[46, 27], [64, 29], [66, 34], [47, 34]], top);         // 車頭蓋
+    poly(bodyL, [[21, 17], [44, 17], [50, 26], [52, 34], [19, 34], [20, 26]], col);   // 車廂
+    rect(bodyL, 23, 17, 20, 7, top);                                    // 車頂
+    // 窗
+    poly(det, [[22, 25], [33, 25], [33, 33], [21, 33]], glass); poly(det, [[35, 25], [45, 25], [49, 33], [35, 33]], glass);
+    put(det, 24, 26, glassL); put(det, 25, 26, glassL); put(det, 37, 26, glassL); put(det, 38, 26, glassL);
+    poly(det, [[44, 18], [46, 18], [51, 26], [49, 26]], glass);         // 擋風玻璃（斜）
+    // 門縫、門柄、輪拱
+    rect(det, 34, 34, 1, 11, dark); rect(det, 20, 34, 1, 11, dark); rect(det, 29, 37, 3, 1, mul(col, 1.35)); rect(det, 43, 37, 3, 1, mul(col, 1.35));
+    // 燈
+    rect(det, 65, 36, 3, 3, [250, 236, 170]); rect(det, 3, 36, 2, 3, [200, 50, 40]);
+    if (o.patrol){ rect(det, 6, 39, 61, 2, [40, 70, 160]); const on = f % 2; rect(det, 27, 15, 5, 2, on ? [230, 60, 50] : [60, 90, 230]); rect(det, 33, 15, 5, 2, on ? [60, 90, 230] : [230, 60, 50]); }
+    if (o.door){ poly(det, [[35, 34], [48, 34], [53, 25], [40, 25]], mul(col, 0.9)); rect(det, 36, 34, 12, 11, [30, 26, 24]); }
+    // 輪：轉的時候輪轂上那一點跟著轉
+    [[17, 48], [55, 48]].forEach(([cx, cy]) => {
+      for (let y = -5; y <= 5; y++) for (let x = -5; x <= 5; x++) if (x * x + y * y <= 26) put(wh, cx + x, cy + y, [28, 28, 30]);
+      for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) if (x * x + y * y <= 5) put(wh, cx + x, cy + y, [150, 150, 156]);
+      const a = f * Math.PI / 2; put(wh, cx + Math.round(Math.cos(a) * 2), cy + Math.round(Math.sin(a) * 2), [60, 60, 64]); });
+    shade(bodyL, -1);
+    const out = layer(); [back, bodyL, det, wh].forEach(Ly => stack(out, Ly)); return out;
+  }
+  function car(g, x, y, o = {}){
+    const key = "car|" + JSON.stringify(o); let cv = cache.get(key);
+    if (!cv){ const Ly = carFrame(o); cv = document.createElement("canvas"); cv.width = W; cv.height = H; const c = cv.getContext("2d"), id = c.createImageData(W, H);
+      Ly.px.forEach((p, i) => { if (!p) return; id.data[i * 4] = p[0]; id.data[i * 4 + 1] = p[1]; id.data[i * 4 + 2] = p[2]; id.data[i * 4 + 3] = 255; }); c.putImageData(id, 0, 0); cache.set(key, cv); }
+    g.save(); g.globalAlpha = 0.3; g.fillStyle = "#000"; g.beginPath(); g.ellipse(Math.round(x), Math.round(y) - 1, 34, 4, 0, 0, 7); g.fill(); g.restore();
+    g.save(); g.translate(Math.round(x), Math.round(y)); if ((o.facing || 1) < 0) g.scale(-1, 1); g.imageSmoothingEnabled = false; g.drawImage(cv, -RX, -RY); g.restore();
+  }
+
   /* ---------- 快取＋畫到畫布 ---------- */
   const cache = new Map();
   function render(L, o){
@@ -315,12 +398,15 @@ const SP = (() => {
     Ly.px.forEach((c, i) => { if (!c) return; id.data[i * 4] = c[0]; id.data[i * 4 + 1] = c[1]; id.data[i * 4 + 2] = c[2]; id.data[i * 4 + 3] = 255; });
     g.putImageData(id, 0, 0); cache.set(key, cv); return cv;
   }
+  // 這一格離地多高（高處墮下：人在半空，畫的時候整個往上移）
+  const airOf = o => { const A = ACTS[o.act]; if (!A || o.act === "walk") return 0; const fr = A(), n = fr.length; return fr[((o.f || 0) % n + n) % n].air || 0; };
   function draw(g, x, y, L, o = {}){
+    y -= airOf(o) * (o.s || 1);
     const cv = render(L, o), flip = (o.view || "side") === "side" && (o.facing || 1) < 0, s = o.s || 1;
     g.save(); g.translate(Math.round(x), Math.round(y)); if (flip) g.scale(-1, 1);
     g.imageSmoothingEnabled = false; g.drawImage(cv, -RX * s, -RY * s, W * s, H * s); g.restore();
     return { x: x - 12 * s, y: y - 42 * s, w: 24 * s, h: 42 * s };
   }
-  return { draw, render, frames, ACTS, W, H, RX, RY };
+  return { draw, render, frames, airOf, car, ACTS, W, H, RX, RY };
 })();
 if (typeof module !== "undefined") module.exports = SP;

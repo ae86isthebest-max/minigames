@@ -27,6 +27,9 @@ const srv = http.createServer((q, r) => { const f = path.join(root, decodeURICom
   // 5. 樓梯：下去再上來
   await tapAt(226, 180); ok(await until(async () => (await st()).room === "up"), "stairs down failed");
   await p.waitForTimeout(500); if (out) await p.locator("#worldcv").screenshot({ path: out + "/3-down.png" });
+  // 6. 走去街上（地下室→書房→走廊→街）
+  await p.evaluate(() => TOPW.goTo(260, 92, null, "street")); ok(await until(async () => (await st()).room === "street", 15000), "could not reach street");
+  await until(async () => !(await st()).walking, 8000); await p.waitForTimeout(600); if (out) await p.locator("#worldcv").screenshot({ path: out + "/4-street.png" });
   ok(errs.length === 0, "page errors: " + errs.join(" | "));
   console.log(fail.length ? "FAIL\n- " + fail.join("\n- ") : "TOPDOWN TEST PASS");
   await b.close(); srv.close();

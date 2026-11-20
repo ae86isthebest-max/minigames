@@ -334,7 +334,7 @@ const TOPW = (() => {
         el.textContent = (e.kind === "up" ? "⬆ " : e.kind === "down" ? "⬇ " : e.kind === "out" ? "" : "🚪 ") + (e.label || (roomOf(e.to) && roomOf(e.to).name) || "") + (e.kind === "out" ? " ➜" : "");
         el.onpointerdown = ev => { ev.stopPropagation(); }; el.onclick = ev => { ev.stopPropagation(); if (cur.s.script || cur.s.fade) return; cur.s.plan = [{ exit:e }]; cur.s.after = null; nextLeg(); cur.hooks.onGround && cur.hooks.onGround(); };
         wrap.appendChild(el); }
-      const lx = e.r[0] + e.r[2] / 2, ly = e.lab ?? (e.r[1] + e.r[3] / 2);
+      const hr = exitHit(e), lx = hr[0] + hr[2] / 2, ly = e.lab ?? (hr[1] + hr[3] / 2);   // 字放在門／樓梯那件東西的正中間
       el.style.left = ((lx - cx) / VW * cw) + "px"; el.style.top = ((ly - cy) / VH * ch) + "px"; el.hidden = !!cur.s.script;
     });
     Object.keys(cur.lab).forEach(k => { if (!want.has(k)){ cur.lab[k].remove(); delete cur.lab[k]; } });

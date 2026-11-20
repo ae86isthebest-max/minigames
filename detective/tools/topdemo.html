@@ -37,14 +37,35 @@ const study = { name:"書房", w:256, h:192, wall:58,
     { y:66, draw(p){ p.R(232,54,16,12,OUTC); p.R(233,55,14,10,"#a0583a"); p.R(229,36,24,20,"#2a6430"); p.R(231,38,20,16,"#3c8a44"); p.R(236,34,10,6,"#3c8a44"); } }
   ],
   solid:[[64,78,72,26],[86,104,24,14],[150,92,14,12],[176,40,44,22],[232,54,16,12]],
-  exits:[ { r:[16,58,26,8], to:"hall", at:[230,150], label:"走廊", kind:"door" }, { r:[204,172,44,16], to:"up", at:[60,170], label:"地下室", kind:"down", lab:156 } ] };
+  exits:[ { r:[16,58,26,8], to:"hall", at:[230,150], label:"走廊", kind:"door" }, { r:[204,172,44,16], to:"up", at:[60,170], label:"地下室", kind:"down", art:[200,150,52,40] } ] };
 const hall = { name:"走廊", w:320, h:192, wall:58,
-  floor(p){ wallFace(p,320,58,"#b9c4b0"); planks(p,0,58,320,134); p.R(246,14,30,44,OUTC); p.R(248,16,26,42,"#1a1410"); p.R(248,16,8,42,"#6a4428"); p.R(40,20,40,26,"#3a2a1c"); p.R(42,22,36,22,"#7a8a5a"); },
-  props:[], solid:[], exits:[ { r:[248,58,26,8], to:"study", at:[29,72], label:"書房", kind:"door" } ] };
+  floor(p){ wallFace(p,320,58,"#b9c4b0"); planks(p,0,58,320,134); p.R(0,110,6,60,"#1a1410"); p.R(0,112,4,56,"#3a2c22"); p.R(246,14,30,44,OUTC); p.R(248,16,26,42,"#1a1410"); p.R(248,16,8,42,"#6a4428"); p.R(40,20,40,26,"#3a2a1c"); p.R(42,22,36,22,"#7a8a5a"); },
+  props:[], solid:[], exits:[ { r:[248,58,26,8], to:"study", at:[29,72], label:"書房", kind:"door" }, { r:[4,120,8,40], to:"street", at:[150,92], label:"出去", kind:"out", art:[0,110,16,60] } ] };
 const up = { name:"地下室", w:256, h:192, wall:50,
   floor(p){ wallFace(p,256,50,"#8a8a86"); p.R(0,50,256,142,"#6a6a66"); for(let x=0;x<256;x+=16) for(let y=50;y<192;y+=16) p.R(x,y,16,1,"#5a5a56"), p.R(x,y,1,16,"#5a5a56"); p.R(30,150,52,40,"#3a3a36"); for(let i=0;i<6;i++) p.R(32,186-i*6,48,5,"#7a7a76"); },
-  props:[], solid:[], exits:[ { r:[34,176,44,14], to:"study", at:[226,166], label:"書房", kind:"up", lab:140 } ] };
-const def = { top:{ start:"study", spawn:[29,80], rooms:{ study, hall, up } }, areas:[{id:"study",name:"書房"},{id:"hall",name:"走廊"},{id:"up",name:"地下室"}] };
+  props:[], solid:[], exits:[ { r:[34,176,44,14], to:"study", at:[226,166], label:"書房", kind:"up", art:[30,150,52,40] } ] };
+
+// 街：上面是大廈外牆（入口）、行人路、馬路（斑馬線、中線）、對面行人路；有泊著的巡邏車和駛過的車
+function paving(p,x0,y0,w,h){ p.R(x0,y0,w,h,"#b8b2a4"); for(let x=x0;x<x0+w;x+=16) p.R(x,y0,1,h,"#9e988a"); for(let y=y0;y<y0+h;y+=10) p.R(x0,y,w,1,"#9e988a"); }
+const street = { name:"街上", w:512, h:200, wall:70,
+  floor(p,g,t){ p.R(0,0,512,70,"#8a7a6a"); for(let x=0;x<512;x+=4) p.R(x,0,1,70,"#7e6e5e");
+    for(let i=0;i<6;i++){ const x=24+i*80; if(i===1) continue; p.R(x,12,36,26,"#1a1410"); p.R(x+2,14,32,22,"#34465e"); p.R(x+17,14,2,22,"#1a1410"); p.R(x+3,15,6,1,"#5a7088"); p.R(x-2,38,40,3,"#5a4a3a"); }
+    p.R(126,18,48,52,"#1a1410"); p.R(128,20,44,50,"#2a2420"); p.R(130,22,40,46,"#6a5a48"); p.R(149,22,2,46,"#2a2420"); p.R(132,24,16,20,"#8aa0b0"); p.R(152,24,16,20,"#8aa0b0");
+    p.R(120,6,60,10,"#1a1410"); p.R(122,8,56,6,"#c94a3a");
+    paving(p,0,70,512,32); p.R(0,102,512,3,"#6a665e"); p.R(0,102,512,1,"#1a1410");
+    p.R(0,105,512,66,"#3a3c40"); for(let x=0;x<512;x+=3) for(let y=106;y<170;y+=5) if(((x*13+y*7)%17)===0) p.R(x,y,1,1,"#45474c");
+    for(let x=0;x<512;x+=32) p.R(x,137,18,2,"#e8dca0");
+    for(let y=107;y<169;y+=0){ p.R(330,y,40,5,"#e8e4dc"); y+=9; }
+    p.R(0,171,512,3,"#6a665e"); paving(p,0,174,512,26); },
+  props:[
+    ...[60,300,460].map(x=>({ y:102, draw(p){ p.R(x-2,40,5,62,"#1a1410"); p.R(x-1,41,3,61,"#4a4e56"); p.R(x-8,36,16,6,"#1a1410"); p.R(x-7,37,14,4,"#4a4e56"); p.R(x-5,41,10,2,"#ffe9a0"); } })),
+    { y:130, draw(p,g,t){ SP.car(g,232,130,{ col:"#e9e4da", patrol:true, f:Math.floor(t*4)%4 }); } },
+    { y:162, draw(p,g,t){ const x=((t*70)%760)-120; SP.car(g,x,162,{ col:"#a83a32", f:Math.floor(t*12)%4 }); } },
+    { y:188, draw(p,g,t){ const x=520-((t*22)%600); SP.draw(g,x,188,{ skin:"#e8c09a", hair:"#5a3a22", coat:"#6a7a4a", bottom:"#3a3a44", shoes:"#2a2320" },{ view:"side", facing:-1, act:"walk", f:Math.floor(t*22/3.2)%8 }); } }
+  ],
+  solid:[[198,118,70,14],[56,98,8,4],[296,98,8,4],[456,98,8,4]],
+  exits:[ { r:[136,70,28,8], to:"hall", at:[24,140], label:"大廈", kind:"door", art:[128,20,44,50] } ] };
+const def = { top:{ start:"study", spawn:[29,80], rooms:{ study, hall, up, street } }, areas:[{id:"study",name:"書房"},{id:"hall",name:"走廊"},{id:"up",name:"地下室"},{id:"street",name:"街上"}] };
 const DET = { skin:"#ecc29c", hair:"#2a1d16", coat:"#9a7a52", top:"#e9e4da", bottom:"#2e3340", shoes:"#1c1a18", hat:"#4a3424" };
 const WU = { skin:"#e8c09a", hair:"#2a2a2a", coat:"#f4f6f6", top:"#8ab4d8", bottom:"#3a4152", shoes:"#2a2320" };
 const MAID = { skin:"#f0c8a0", hair:"#5a3a22", coat:"#4a4a6a", top:"#4a4a6a", bottom:"#2a2a3a", shoes:"#1a1a1a" };
