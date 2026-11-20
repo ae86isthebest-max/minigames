@@ -100,7 +100,7 @@ const TOPW = (() => {
   function roomRoute(from, to){
     if (from === to) return [];
     const prev = { [from]: null }, q = [from];
-    while (q.length){ const r = q.shift(); for (const e of (roomOf(r).exits || [])){ if (!rooms()[e.to] || prev[e.to] !== undefined) continue; prev[e.to] = { r, e }; if (e.to === to){ q.length = 0; break; } q.push(e.to); } }
+    while (q.length){ const r = q.shift(); for (const e of (roomOf(r).exits || [])){ if (!rooms()[e.to] || prev[e.to] !== undefined || (e.when && !e.when(cur.hooks.opt ? cur.hooks.opt() : {}))) continue; prev[e.to] = { r, e }; if (e.to === to){ q.length = 0; break; } q.push(e.to); } }
     if (prev[to] === undefined) return null;
     const out = []; let r = to; while (prev[r]){ out.unshift(prev[r].e); r = prev[r].r; }
     return out;
@@ -411,7 +411,7 @@ const TOPW = (() => {
       g.fillStyle = "#cfc6b8"; g.font = "bold 12px sans-serif"; g.textBaseline = "top"; g.fillText(f.name, pad, y0 + 2);
       const oy = y0 + head;
       Object.entries(f.rooms).forEach(([rid, b]) => {
-        const R = rooms()[rid]; if (!R) return;
+        const R = rooms()[rid]; if (!R || (cur.hooks.planRoom && !cur.hooks.planRoom(rid))) return;
         const x = pad + b[0] * sc, y = oy + b[1] * sc, w = b[2] * sc, h = b[3] * sc, mine = rid === s.room, out = b[4] === "out";
         g.fillStyle = out ? "#1d2a20" : "#2a221b"; g.fillRect(x, y, w, h);
         g.strokeStyle = mine ? "#6fd46f" : "#7a6a58"; g.lineWidth = mine ? 2.5 : 1.2; g.strokeRect(x + .5, y + .5, w - 1, h - 1);

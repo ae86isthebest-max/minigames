@@ -214,6 +214,13 @@ const SP = (() => {
     type: () => [{ hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, lean: 8, sF: 56, eF: 30, sB: 50, eB: 34, sitting: 1 }, { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, lean: 8, sF: 50, eF: 36, sB: 56, eB: 28, sitting: 1 }],
     drink: () => [{ sF: 30, eF: 70, hand: "cup" }, { sF: 50, eF: 110, hand: "cup" }, { sF: 60, eF: 120, hand: "cup", lean: -4 }, { sF: 50, eF: 110, hand: "cup" }],
     give: () => [{ sF: 40, eF: 40, hand: "note" }, { sF: 74, eF: 10, hand: "note" }, { sF: 80, eF: 6, hand: "note" }],
+    // 抽菸：夾著菸在腰邊，舉到嘴邊吸一口，再放下來
+    smoke: () => [{ sF: 30, eF: 70, hand: "cig" }, { sF: 30, eF: 72, hand: "cig", breathe: 1 }, { sF: 56, eF: 116, hand: "cigM" }, { sF: 56, eF: 118, hand: "cigM", mouth: 1 }, { sF: 34, eF: 76, hand: "cig", puff: 1 }, { sF: 30, eF: 70, hand: "cig", puff: 2 }],
+    // 哭：雙手掩面，肩膀一抽一抽
+    cry: () => [{ lean: 10, sF: 66, eF: 104, sB: 62, eB: 108, eyes: "shut" }, { lean: 13, sF: 68, eF: 100, sB: 64, eB: 104, eyes: "shut", breathe: 1 }],
+    sitCry: () => [{ hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sitting: 1, lean: 14, sF: 66, eF: 104, sB: 62, eB: 108, eyes: "shut" }, { hF: 90, kF: 90, hB: 88, kB: 88, lift: -1, sitting: 1, lean: 17, sF: 68, eF: 100, sB: 64, eB: 104, eyes: "shut", breathe: 1 }],
+    // 掃地：雙手拿掃把，左右掃
+    sweep: () => [{ lean: 10, sF: 30, eF: 30, sB: 20, eB: 40, hand: "broom" }, { lean: 12, sF: 14, eF: 30, sB: 6, eB: 44, hand: "broom" }, { lean: 10, sF: 30, eF: 30, sB: 20, eB: 40, hand: "broom" }, { lean: 8, sF: 44, eF: 26, sB: 34, eB: 36, hand: "broom" }],
     clasp: () => [{ sF: 22, eF: 72, sB: 18, eB: 76 }, { sF: 22, eF: 74, sB: 18, eB: 76, breathe: 1 }],
     cross: () => [{ sF: 30, eF: 100, sB: 34, eB: 96 }, { sF: 30, eF: 100, sB: 34, eB: 96, breathe: 1 }],
     hold: () => [{ sF: 24, eF: 70, sB: 20, eB: 74, hand: "tray" }, { sF: 24, eF: 72, sB: 20, eB: 74, hand: "tray", breathe: 1 }],
@@ -292,7 +299,7 @@ const SP = (() => {
       hairStyle: L.hood ? "hood" : (L.hairStyle || "short"), glasses: !!L.glasses, mask: L.mask ? flat(hex(L.mask)) : null,
       hat, hatB: hat ? mul(hat, 0.6) : null, eye: flat(OUT), white: flat([240, 236, 226]), brow: flat(mul(hex(L.hair || "#2a1d16"), 0.7)), mouth: flat([150, 70, 60]), lens: flat([200, 222, 236]), lensR: flat([90, 70, 50]),
       glass: flat([40, 34, 30]), glassL: flat([190, 214, 230]),
-      cup: flat([236, 230, 218]), drink: flat([90, 50, 30]), cam: flat([40, 40, 46]), paper: flat([238, 232, 214]), ink: flat([70, 70, 90]), boxc: [176, 136, 86], bottle: flat([122, 58, 26]) };
+      cup: flat([236, 230, 218]), drink: flat([90, 50, 30]), cam: flat([40, 40, 46]), paper: flat([238, 232, 214]), ink: flat([70, 70, 90]), boxc: [176, 136, 86], bottle: flat([122, 58, 26]), ember: [255, 120, 40], stick: [140, 100, 60], straw: [200, 170, 90] };
   }
   // 頭髮款式、眼鏡、口罩：畫在頭那一層（x0, y0＝頭格子左上角；view：side 面向右／front／back）
   function decorHead(Ly, view, x0, y0, P){
@@ -359,6 +366,9 @@ const SP = (() => {
       else if (hand === "bottle"){ rect(Ly, hx - 1, hy - 7, 3, 8, P.bottle); rect(Ly, hx, hy - 9, 1, 2, P.bottle); rect(Ly, hx - 1, hy - 5, 3, 2, P.paper); }
       else if (hand === "bottleT"){ const n = step(hd, s + e + 60, 7, dir); seg(Ly, [hx, hy], n, 3, P.bottle); const m = step(n, s + e + 60, 2, dir); seg(Ly, n, m, 1, P.bottle); }
       else if (hand === "tongs"){ const n = step(hd, s + e, 4, dir); seg(Ly, [hx, hy], n, 1, P.lens); rect(Ly, Math.round(n[0]), Math.round(n[1]), 2, 2, P.white); }
+      else if (hand === "cig"){ const n = step(hd, s + e, 3, dir); seg(Ly, [hx, hy], n, 1, P.white); rect(Ly, Math.round(n[0]), Math.round(n[1]), 1, 1, P.ember); }
+      else if (hand === "cigM"){ rect(Ly, hx + dir, hy - 1, 2, 1, P.white); rect(Ly, hx + dir * 3, hy - 1, 1, 1, P.ember); }
+      else if (hand === "broom"){ const n = step(hd, s + e - 10, 22, dir); seg(Ly, [hx, hy - 6], n, 1, P.stick); const m = step(n, 90, 4, dir); seg(Ly, [n[0] - 3, n[1]], [m[0] + 3, m[1]], 3, P.straw); }
       else if (hand === "box"){ rect(Ly, hx - 2, hy - 4, 6, 5, P.boxc); rect(Ly, hx - 2, hy - 4, 6, 1, mul(P.boxc, 1.2)); } };
     arm(backL, q.sB, q.eB, true);
     leg(legs, q.hB, q.kB, true);
@@ -386,6 +396,7 @@ const SP = (() => {
     grid(headL, rows, hx, hy, hp, false);
     decorHead(headL, "side", hx, hy, P);
     arm(front, q.sF, q.eF, false, q.hand);
+    if (q.puff){ const k = q.puff, sx = hx + (dir > 0 ? 18 : -2), sy = hy + 4 - k * 3; for (let i = 0; i < 3 + k; i++) put(front, sx + dir * (i % 3) + (k > 1 ? dir : 0), sy - Math.floor(i / 2), [214, 214, 210]); }   // 吐出來的煙
     if (q.flash){ const c = step(shoulder, q.sF, 12, dir); for (let k = -3; k <= 3; k++){ put(front, c[0] + 3 + k, c[1] - 2, [255, 250, 220]); put(front, c[0] + 3, c[1] - 2 + k, [255, 250, 220]); } }
     [backL, legs, body, front].forEach(Ly => shade(Ly, -dir));
     const out = layer();
