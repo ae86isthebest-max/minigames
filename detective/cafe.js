@@ -98,12 +98,16 @@
     if (name === "cafe" && (opt.people || []).some(p => /^sit/.test(p.pose || ""))){ const night = opt.time === "night", ch = night ? "#8a8a90" : "#3a3a3e";
       [50, 104, 158].forEach(x => { R(x - 10, 80, 20, 3, "#e8e8e4"); R(x - 10, 82, 20, 1, "#b8b8b4"); R(x - 1, 83, 2, 14, "#5a5a5e"); R(x - 5, 97, 10, 2, "#5a5a5e"); R(x - 4, 76, 4, 4, "#f4f4f0"); R(x - 3, 75, 2, 1, "#6a4a32"); R(x + 2, 77, 3, 3, "#f4f4f0");
         [-1, 1].forEach(d => { const cx = x + d * 15; if ((opt.people || []).some(p => Math.abs(p.x - cx) < 3 && /^sit/.test(p.pose || ""))){ R(cx - 4, 90, 9, 2, ch); R(cx - 4, 92, 1, 6, ch); R(cx + 4, 92, 1, 6, ch); } }); }); }
+    // 台詞裡說到有人帶行李箱：畫在那個人座位外側的地上
+    if (name === "cafe" && opt.bag){ const who = (opt.people || []).find(p => p.id === opt.bag); if (who){ const f = who.facing || 1, bx = Math.round(who.x - f * 13);
+      R(bx - 6, 82, 12, 16, "#14141a"); R(bx - 5, 83, 10, 14, "#3a4a6a"); R(bx - 5, 83, 10, 1, "#5a6a8a"); R(bx - 1, 84, 2, 12, "#2a3a5a"); R(bx - 2, 77, 4, 1, "#14141a"); R(bx - 2, 77, 1, 6, "#14141a"); R(bx + 1, 77, 1, 6, "#14141a"); R(bx - 5, 97, 2, 2, "#14141a"); R(bx + 3, 97, 2, 2, "#14141a"); } }
     return hits; };
 
   // 從標題、內容猜時間和天氣
   const guess = d => { const s = (d.title || "") + JSON.stringify(d.lines || []);
     const time = /早上|早餐|上班前/.test(d.title || "") ? "morning" : /中午|午休/.test(d.title || "") ? "noon" : /傍晚|黃昏|下班/.test(d.title || "") ? "dusk" : /晚上|深夜|夜/.test(d.title || "") ? "night" : "noon";
-    return { time, rain: /下雨|雨夜|雨傘|撐傘|雨棚|雨聲/.test(s) }; };
+    const bagWho = /(小吳|許知夏|葉晴|錢文德)[^。]{0,6}(登機箱|行李箱)/.exec(s);
+    return { time, rain: /下雨|雨夜|雨傘|撐傘|雨棚|雨聲/.test(s), bag: bagWho ? { 小吳:"wu", 許知夏:"xu", 葉晴:"ye", 錢文德:"qian" }[bagWho[1]] : undefined }; };
   // 咖啡店裡的打扮（下班或休息時的便服；老闆有圍裙）。只用在咖啡店的場景，案件裡照原來的工作服。
   const CAFE_LOOK = {
     _you:{ skin:"#e8c09a", hair:"#2a2220", hairStyle:"short", top:"#e9e4da", coat:"#3a4250", bottom:"#2a2f3a" },
