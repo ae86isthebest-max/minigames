@@ -190,13 +190,14 @@ C5T && (() => {
 })();
 
 /* ================= 澄港市刑大（之後幾集也在這裡上班）：共用的辦公室，每一集換白板、桌上的東西 =================
-   CG_DESK(kit, { board(p,o,t), clutter(p,o,t), meet:"門通往的房間 id", meetOk() })：回傳 pdesk 房間 */
+   CG_DESK(kit, { board(p,o,t), clutter(p,o,t), props:[], solid:[], meet:"門通往的房間 id", meetOk() 或 false })：回傳 pdesk 房間
+   CG_LAB(kit, { props:[], solid:[] })：澄港鑑識中心（小吳的地盤），回傳 lab 房間 */
 function CG_DESK(K, opt){
   opt = opt || {};
   const { T, O, sh, dA, ph, tone, window2, fluo } = K;
   const sea = o => (p => (x, y, w, h) => { const S0 = K.SKY(ph(o)); p.R(x, y, w, h, S0[0]); p.R(x, y + h * .6, w, h * .4, K.night(o) ? "#0a1a2a" : "#4a7aa0");
     for (let i = 0; i < w; i += 7){ const bh = 3 + ((i * 5) % 7); p.R(x + i, y + h * .6 - bh, 6, bh, K.night(o) ? "#1a2232" : "#7a8a9a"); } p.R(x + w * .3, y + h * .6 - 6, 1, 6, "#3a3a3a"); p.R(x + w * .3 - 5, y + h * .6 - 2, 12, 2, K.night(o) ? "#2a2a3a" : "#c84a3a"); });
-  const meet = opt.meet || "pmeet", ok = opt.meetOk || (() => true);
+  const meet = opt.meet || "pmeet", noMeet = opt.meetOk === false, ok = noMeet ? () => false : opt.meetOk || (() => true);   // meetOk:false＝這一集沒有會議室（門關著、不能進）
   return { name:"刑大辦公室", w:336, h:168, wall:62,
     floor(p, g, t, o){
       // 老公家機關：上半截淡綠漆、下半截深綠
@@ -229,13 +230,42 @@ function CG_DESK(K, opt){
       { y:84, draw(p){ for (let k = 0; k < 2; k++){ T.box(p, 250 + k * 18, 52, 16, 10, 22, "#8a9088", "#6a7068"); for (let r = 0; r < 3; r++) p.R(254 + k * 18, 66 + r * 6, 8, 1, O); } } },
       // 茶水角：熱水瓶、一疊紙杯
       { y:150, draw(p){ T.box(p, 290, 128, 36, 12, 10, "#8a6a4a", "#6a4a2a"); p.R(296, 120, 8, 12, O); p.R(297, 121, 6, 10, "#c84a3a"); p.R(310, 124, 6, 8, O); p.R(311, 125, 4, 6, "#f4f4f0"); } }
-    ],
+    ].concat(opt.props || []),
     front(p, g, t, o){ fluo(p, 40, 2, 50); fluo(p, 150, 2, 50); fluo(p, 260, 2, 50);
       p.R(166, 0, 2, 8, O); const a = t * 6; for (let k = 0; k < 3; k++){ const c = Math.cos(a + k * 2.1), s2 = Math.sin(a + k * 2.1); p.R(167 + Math.round(c * 9) - 1, 9 + Math.round(s2 * 3), 3, 2, "#5a5e5a"); } p.R(164, 8, 6, 3, O);   // 吊扇
       tone(g, this, o, .4); },
-    solid:[[12,64,74,36],[110,78,128,30],[248,48,38,32],[288,118,40,26]],
-    exits:[ { r:[288,62,26,8], to:meet, at:[144,140], label:"會議室", kind:"door", art:[288,18,26,44], when:() => ok() } ]
+    solid:[[12,64,74,36],[110,78,128,30],[248,48,38,32],[288,118,40,26]].concat(opt.solid || []),
+    exits:noMeet ? [] : [ { r:[288,62,26,8], to:meet, at:[144,140], label:"會議室", kind:"door", art:[288,18,26,44], when:() => ok() } ]
   };
+}
+
+function CG_LAB(K, opt){
+  opt = opt || {};
+  const { T, O, sh, ph, tone, fluo, vinyl } = K;
+  return { name:"澄港鑑識中心", w:288, h:152, wall:60,
+      floor(p, g, t, o){
+        T.backWall(p, 0, 288, 60, "#e4e0d4", "plain", { base:"#4a5a6a" });
+        // 一排藍色鐵櫃（證物袋、採證工具）
+        for (let k = 0; k < 5; k++){ p.R(8 + k * 22, 6, 20, 50, O); p.R(9 + k * 22, 7, 18, 48, "#3a6a9a"); p.R(10 + k * 22, 9, 16, 4, "#f4f4f0"); p.R(24 + k * 22, 28, 1, 6, "#c8ccd0"); }
+        // 證物冰箱
+        p.R(124, 6, 34, 50, O); p.R(125, 7, 32, 48, "#e8ecec"); p.R(127, 9, 28, 30, "#b8d0d8"); p.R(152, 26, 2, 10, "#8a9aa0"); p.R(128, 42, 12, 4, "#e84a3a");
+        // 小吳的牆：基地台位置圖
+        p.R(176, 8, 50, 34, O); p.R(177, 9, 48, 32, "#f4f0e6"); for (let k = 0; k < 6; k++){ p.R(182 + (k * 13) % 40, 13 + (k * 7) % 24, 3, 3, "#3a6ad8"); } p.R(196, 22, 8, 8, "rgba(200,48,42,.3)");
+        vinyl(p, 0, 60, 288, 92, "#b8c0c4", "#b0b8bc", 18);
+        T.sides(p, this, "#4a5a6a", [["B", 128, 32]]);
+      },
+      props:[
+        // 採證台（指紋粉、刷子）
+        { y:104, draw(p){ T.box(p, 30, 84, 80, 14, 8, "#c8ccd0", "#8a9094"); for (let k = 0; k < 4; k++){ p.R(36 + k * 10, 86, 6, 8, O); p.R(37 + k * 10, 87, 4, 6, ["#2a2a2a", "#c8c8c8", "#e8b83a", "#3a3a8a"][k]); } p.R(80, 88, 20, 2, "#8a6a4a"); p.R(98, 86, 4, 6, "#2a2a2a"); } },
+        // 小吳的 L 型桌：三台螢幕、攤開的地圖
+        { y:100, draw(p, g, t){ T.box(p, 180, 70, 96, 14, 10, "#d8d4c8", "#a8a498"); T.box(p, 256, 84, 20, 26, 6, "#d8d4c8", "#a8a498");
+            for (let k = 0; k < 3; k++){ p.R(186 + k * 22, 58, 20, 14, O); p.R(187 + k * 22, 59, 18, 11, "#1e2226"); p.R(188 + k * 22, 60, 16, 9, ["#2a5a7a", "#2a6a4a", "#3a3a6a"][k]); p.R(190 + k * 22, 62 + (Math.floor(t * 2 + k) % 4), 8, 1, "#d8e8f0"); }
+            p.R(228, 72, 24, 10, O); p.R(229, 73, 22, 8, "#e8e4d0"); p.R(232, 75, 6, 1, "#c8302a"); p.R(240, 77, 6, 1, "#c8302a"); p.R(234, 76, 2, 2, "#c8302a"); } },
+        { y:104, draw(p){ T.chair(p, 210, 104, "#2a2a30", "right"); } }
+      ].concat(opt.props || []),
+      front(p, g, t, o){ fluo(p, 50, 2, 60); fluo(p, 190, 2, 60); tone(g, this, o, .3); },
+      solid:[[6,4,112,54],[122,4,38,54],[28,82,84,24],[178,56,100,30],[254,82,24,34]].concat(opt.solid || []),
+      exits:[] };
 }
 
 /* ================= 小太陽安親班、澄港市刑大、澄港鑑識中心 ================= */
@@ -362,30 +392,7 @@ C5T && (() => {
 
   /* ---------- 澄港鑑識中心：藍色鐵櫃、三台螢幕的小吳座位 ---------- */
   setLoc("lab", { start:"lab", spawn:[144,140],
-    rooms:{ lab:{ name:"澄港鑑識中心", w:288, h:152, wall:60,
-      floor(p, g, t, o){
-        T.backWall(p, 0, 288, 60, "#e4e0d4", "plain", { base:"#4a5a6a" });
-        // 一排藍色鐵櫃（證物袋、採證工具）
-        for (let k = 0; k < 5; k++){ p.R(8 + k * 22, 6, 20, 50, O); p.R(9 + k * 22, 7, 18, 48, "#3a6a9a"); p.R(10 + k * 22, 9, 16, 4, "#f4f4f0"); p.R(24 + k * 22, 28, 1, 6, "#c8ccd0"); }
-        // 證物冰箱
-        p.R(124, 6, 34, 50, O); p.R(125, 7, 32, 48, "#e8ecec"); p.R(127, 9, 28, 30, "#b8d0d8"); p.R(152, 26, 2, 10, "#8a9aa0"); p.R(128, 42, 12, 4, "#e84a3a");
-        // 小吳的牆：基地台位置圖
-        p.R(176, 8, 50, 34, O); p.R(177, 9, 48, 32, "#f4f0e6"); for (let k = 0; k < 6; k++){ p.R(182 + (k * 13) % 40, 13 + (k * 7) % 24, 3, 3, "#3a6ad8"); } p.R(196, 22, 8, 8, "rgba(200,48,42,.3)");
-        vinyl(p, 0, 60, 288, 92, "#b8c0c4", "#b0b8bc", 18);
-        T.sides(p, this, "#4a5a6a", [["B", 128, 32]]);
-      },
-      props:[
-        // 採證台（指紋粉、刷子）
-        { y:104, draw(p){ T.box(p, 30, 84, 80, 14, 8, "#c8ccd0", "#8a9094"); for (let k = 0; k < 4; k++){ p.R(36 + k * 10, 86, 6, 8, O); p.R(37 + k * 10, 87, 4, 6, ["#2a2a2a", "#c8c8c8", "#e8b83a", "#3a3a8a"][k]); } p.R(80, 88, 20, 2, "#8a6a4a"); p.R(98, 86, 4, 6, "#2a2a2a"); } },
-        // 小吳的 L 型桌：三台螢幕、攤開的地圖
-        { y:100, draw(p, g, t){ T.box(p, 180, 70, 96, 14, 10, "#d8d4c8", "#a8a498"); T.box(p, 256, 84, 20, 26, 6, "#d8d4c8", "#a8a498");
-            for (let k = 0; k < 3; k++){ p.R(186 + k * 22, 58, 20, 14, O); p.R(187 + k * 22, 59, 18, 11, "#1e2226"); p.R(188 + k * 22, 60, 16, 9, ["#2a5a7a", "#2a6a4a", "#3a3a6a"][k]); p.R(190 + k * 22, 62 + (Math.floor(t * 2 + k) % 4), 8, 1, "#d8e8f0"); }
-            p.R(228, 72, 24, 10, O); p.R(229, 73, 22, 8, "#e8e4d0"); p.R(232, 75, 6, 1, "#c8302a"); p.R(240, 77, 6, 1, "#c8302a"); p.R(234, 76, 2, 2, "#c8302a"); } },
-        { y:104, draw(p){ T.chair(p, 210, 104, "#2a2a30", "right"); } }
-      ],
-      front(p, g, t, o){ fluo(p, 50, 2, 60); fluo(p, 190, 2, 60); tone(g, this, o, .3); },
-      solid:[[6,4,112,54],[122,4,38,54],[28,82,84,24],[178,56,100,30],[254,82,24,34]],
-      exits:[] } },
+    rooms:{ lab:CG_LAB(C5T) },
     spots:{ o5_wudesk:[228,72,24,10,240,96,"lab",A("look")] },
     details:{ d5_screen:[186,58,64,14,196,96,"lab",A("look")] },
     place:{ wu:[null, { room:"lab", x:210, y:100, act:"sit", facing:1, view:"side" }] },

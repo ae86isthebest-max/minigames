@@ -7,8 +7,11 @@
 const {chromium}=require('playwright'); const shot=process.argv[2]; const PORT=process.env.PORT||8765;
 (async()=>{ const b=await chromium.launch(); const p=await b.newPage({viewport:{width:1180,height:820}}); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
 await p.goto(`http://localhost:${PORT}/index.html`); await p.waitForTimeout(500);
-const open=()=>p.evaluate(async()=>{ localStorage.clear(); try{ ARC.reset(); }catch(e){} window.uiConfirm=async()=>true; window.toast=()=>{}; CASES[5].locations.forEach(l=>WORLD.reset(l.id));
-  await openCase(5); for (let i=0;i<30&&inter;i++) closeSheet(); if (SHEETS.includes(tab)) closeSheet(); WORLD.skip(); render(); });
+const open=()=>p.evaluate(async()=>{ localStorage.clear(); try{ ARC.reset(); }catch(e){} window.uiConfirm=async()=>true; window.toast=()=>{}; // 用哪一集：從最後一集往前找，整集還是橫向畫面（沒有俯視版）、而且開頭就有另一個「只有一棟、房間全在室內」的地點可以去（第 3 項要用）
+  window.okLoc=l=>locOpen(l) && l.id!==curLoc().id && roomsOf(l).every(r=>!(C.outScenes||[]).includes(r.scene)) && (worldDef(l).buildings||[]).length===1;
+  for (let i=CASES.length-1;i>=0;i--){ const c=CASES[i]; if (Object.values(c.world||{}).some(w=>w&&w.top)) continue; c.locations.forEach(l=>WORLD.reset(l.id)); await openCase(i); for (let k=0;k<30&&inter;k++) closeSheet(); if (SHEETS.includes(tab)) closeSheet();
+    if (C.locations.some(okLoc)){ window.CI=i; break; } }
+  await openCase(CI); for (let i=0;i<30&&inter;i++) closeSheet(); if (SHEETS.includes(tab)) closeSheet(); WORLD.skip(); render(); });
 await open();
 // 1) 叫法
 const words=w=>p.evaluate(w=>{ delete C.phaseWord; if (w) C.phaseWord=w; const txt=()=>document.body.innerText, r={};
@@ -28,7 +31,7 @@ const T=await p.evaluate(()=>{ const l=curLoc(), def=worldDef(l), P=PH(), keep=P
   if (keep===undefined) delete P.tip; else P.tip=keep; return r; });
 const ok2 = T.def.includes("可以調查") && T.txt==="這一段只能待在這裡。" && T.n1===T.n0 && !T.off.includes("可以調查") && T.n2===T.n0-1;
 // 3) 沒有街道
-const lid=await p.evaluate(()=>C.locations.find(l=>locOpen(l) && l.id!==curLoc().id && roomsOf(l).some(r=>!(C.outScenes||[]).includes(r.scene))).id);
+const lid=await p.evaluate(()=>C.locations.find(okLoc).id);   // 只有一棟建築、房間全在室內的地點（下面的 x0／x1 是那一棟）   // 只有一棟建築的地點（下面的 x0／x1 是那一棟）
 const street=async off=>{ await p.evaluate(([lid,off])=>{ const w=(C.world=C.world||{}); window.__old=w[lid]; if (off) w[lid]={ ...(w[lid]||{}), street:false }; WORLD.reset(lid); openLoc=lid; wArrive=null; render(); },[lid,off]);
   await p.waitForTimeout(500); await p.evaluate(()=>{ WORLD.skip(); WORLD.goTo(0, 124); }); await p.waitForTimeout(3500);
   if (shot) await p.screenshot({path:`${shot}/street-${off?'off':'on'}.png`});
@@ -47,7 +50,7 @@ const Q=await p.evaluate(()=>{ const s=C.suspects.find(s=>!isGone(s) && s.questi
 const ok4 = Q.n1===Q.n0 && Q.n2===Q.n0-1 && Q.live.join()==="false,true" && Q.askBlocked && Q.n3===Q.n0;
 console.log(JSON.stringify({W0:{menu:W0.menu,mapBtn:W0.mapBtn}, W1:{menu:W1.menu,mapBtn:W1.mapBtn,pw:W1.pw}, W2:{mapBtn:W2.mapBtn}, help1:help1.slice(0,400), T, S0, S1, Q}));
 // 5) 換案件：狀態重新開始
-const R=await p.evaluate(async()=>{ const l=curLoc(), a=WORLD.state(l.id, worldDef(l)); a.px=worldDef(l).w-40; a.mark=1; goHome(); await openCase(5); for (let i=0;i<30&&inter;i++) closeSheet(); if (SHEETS.includes(tab)) closeSheet();
+const R=await p.evaluate(async()=>{ const l=curLoc(), a=WORLD.state(l.id, worldDef(l)); a.px=worldDef(l).w-40; a.mark=1; goHome(); await openCase(CI); for (let i=0;i<30&&inter;i++) closeSheet(); if (SHEETS.includes(tab)) closeSheet();
   const b=WORLD.state(l.id, worldDef(l)); return { fresh:a!==b && !b.mark, px:Math.round(b.px) }; });
 const ok5 = R.fresh;
 // 6) 外牆：facadeDark（停電）、band 有寫＝平房（外面只畫一層）、band:false＝外面也沒有招牌；沒有街道而且頭尾是戶外場景：場景外面是黑的
@@ -57,19 +60,26 @@ const ok6a = F.def.y0===4 && F.def.rows===2 && F.def.dark===false && F.def.sign=
   && F.sign.y0===24 && F.sign.rows===1 && F.sign.sign==="function" && F.sign.labels>0 && F.none.y0===24 && F.none.rows===1 && F.none.sign!=="function" && F.none.labels===0;
 // 平房在街上看：屋頂上面是天空，不是裡面的天花板（#3b3b40）；走進去才看得到天花板
 const roofPx=async inside=>{ await p.evaluate(([lid,inside])=>{ const w=(C.world=C.world||{}); window.__old=w[lid]; w[lid]={ ...(w[lid]||{}), band:"sign" }; WORLD.reset(lid); openLoc=lid; wArrive=null; render(); },[lid,inside]);
-  await p.waitForTimeout(500); await p.evaluate(inside=>{ WORLD.skip(); if (inside){ const d=worldDef(curLoc()); WORLD.goTo(d.buildings[0].x0+60, 124); } }, inside); await p.waitForTimeout(inside?3500:900);
+  await p.waitForTimeout(500); await p.evaluate(inside=>{ WORLD.skip(); const d=worldDef(curLoc()); WORLD.goTo(inside ? d.buildings[0].x0+60 : Math.max(8, d.buildings[0].x0-30), 124); }, inside); await p.waitForTimeout(3500);   // 外面：先走到門口外的街上（有的地點一進來就站在店裡）
   if (shot) await p.screenshot({path:`${shot}/flat-${inside?'in':'out'}.png`});
   return p.evaluate(lid=>{ const d=worldDef(LOC(lid)), s=WORLD.state(lid, d), b=d.buildings[0], cv=document.getElementById("worldcv"), x=Math.round(Math.max(b.x0+40, s.cam+4)-s.cam);
     const px=[...cv.getContext("2d").getImageData(x, 10, 1, 1).data].slice(0,3).join(); const w=C.world; if (window.__old===undefined) delete w[lid]; else w[lid]=window.__old; WORLD.reset(lid); return px; }, lid); };
 const slab="59,59,64", pxOut=await roofPx(false), pxIn=await roofPx(true); const ok6b = pxOut!==slab && pxIn===slab;
 // 頭一個房間是戶外場景的地點（第 5 集的 school）：關掉街道以後，畫面最左邊那幾格要是黑的
-await p.evaluate(async()=>{ await openCase(4); for (let i=0;i<30&&inter;i++) closeSheet(); if (SHEETS.includes(tab)) closeSheet(); WORLD.skip();
-  const lid="school", w=(C.world=C.world||{}); window.__old=w[lid]; w[lid]={ ...(w[lid]||{}), street:false }; WORLD.reset(lid); openLoc=lid; wArrive=null; render(); });
-await p.waitForTimeout(500); await p.evaluate(()=>{ WORLD.skip(); WORLD.goTo(0, 124); }); await p.waitForTimeout(3000); if (shot) await p.screenshot({path:`${shot}/edge.png`});
-const E=await p.evaluate(()=>{ const lid="school", d=worldDef(LOC(lid)), s=WORLD.state(lid, d), cv=document.getElementById("worldcv"), g=cv.getContext("2d"), r={ cam:Math.round(s.cam), minX:d.minX, out:roomsOf(LOC(lid))[0].scene, px:[] };
+// 第 5 集改成俯視畫面（TOPW）以後，這一項改成自己找：從最後一集往前找，第一個還是橫向畫面、頭一個房間是戶外（門口、巷子、校門、院子……）的地點
+const EDGE=await p.evaluate(async()=>{ 
+  for (let i=CASES.length-1;i>=0;i--){ const c=CASES[i], cand=(c.locations||[]).filter(l=>{ const r=(c.rooms&&c.rooms[l.id]); return r && r[0] && (c.outScenes||[]).includes(r[0].scene); }); if (!cand.length) continue;
+    await openCase(i); for (let k=0;k<30&&inter;k++) closeSheet(); if (SHEETS.includes(tab)) closeSheet();
+    const l=cand.find(l=>{ const d=worldDef(LOC(l.id)); return d && !TOP(d); }); if (l) return { ci:i, lid:l.id }; }
+  return null; });
+if (EDGE) await p.evaluate(async EDGE=>{ WORLD.skip();
+  const lid=EDGE.lid, w=(C.world=C.world||{}); window.__old=w[lid]; w[lid]={ ...(w[lid]||{}), street:false }; WORLD.reset(lid); openLoc=lid; wArrive=null; render(); }, EDGE);
+if (EDGE){ await p.waitForTimeout(500); await p.evaluate(()=>{ WORLD.skip(); WORLD.goTo(0, 124); }); await p.waitForTimeout(3000); if (shot) await p.screenshot({path:`${shot}/edge.png`}); }
+const E=!EDGE ? { skipped:true } : await p.evaluate(lid=>{ const lid0=lid, d=worldDef(LOC(lid)), s=WORLD.state(lid, d), cv=document.getElementById("worldcv"), g=cv.getContext("2d"), r={ cam:Math.round(s.cam), minX:d.minX, out:roomsOf(LOC(lid))[0].scene, px:[] };
   [20, 60, 100].forEach(y=>[1, 4].forEach(x=>r.px.push([...g.getImageData(x, y, 1, 1).data].slice(0,3).join())));
-  const w=C.world; if (window.__old===undefined) delete w[lid]; else w[lid]=window.__old; WORLD.reset(lid); return r; });
-const ok6c = E.cam===E.minX && E.px.every(c=>c==="12,10,8");
+  const w=C.world; if (window.__old===undefined) delete w[lid]; else w[lid]=window.__old; WORLD.reset(lid); return { ...r, at:lid0 }; }, EDGE.lid);
+const ok6c = !EDGE || (E.cam===E.minX && E.px.every(c=>c==="12,10,8"));
+if (EDGE) E.ep=EDGE.ci+1; else console.log("ok6c：沒有還是橫向畫面、頭一個房間在戶外的地點，略過");
 const ok6 = ok6a && ok6b && ok6c;
 console.log(JSON.stringify({ok1, ok1b, ok2, ok3, ok4, ok5, ok6, R, F, pxOut, pxIn, E}));
 console.log(ok1 && ok1b && ok2 && ok3 && ok4 && ok5 && ok6 && !errs.length ? "PHASE OPTS PASS" : "PHASE OPTS FAIL", errs); await b.close(); })();

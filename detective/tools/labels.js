@@ -1,4 +1,4 @@
-// 場景裡的字（EPn.world[地點].labels）的檢查，在第 6 集、第 17 集上臨時加幾個字來試，試完還原。
+// 場景裡的字（EPn.world[地點].labels）的檢查，在一集還是橫向畫面的案子（從最後一集往前找）、第 17 集上臨時加幾個字來試，試完還原。
 // 用法：node tools/labels.js [截圖資料夾]（要先在 detective/ 開 python3 -m http.server 8765）。最後要印出 SCENE LABELS PASS。
 // 1) 沒寫 labels：走動畫面沒有多出任何東西  2) 走動畫面：在街上看不到、走進去才出現；位置（左邊、基線）對得上；when 是 false 的不出現
 // 3) 人走到字前面：被擋住的那幾個字收起來，走開又出現  4) 放大的場景：字直接畫在畫布上；走動畫面的小畫布不畫（PX.inWorld）
@@ -7,8 +7,11 @@ const {chromium}=require('playwright'); const shot=process.argv[2]; const PORT=p
 (async()=>{ const b=await chromium.launch(); const p=await b.newPage({viewport:{width:1180,height:820}}); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
 await p.goto(`http://localhost:${PORT}/index.html`); await p.waitForTimeout(500);
 const open=ci=>p.evaluate(async ci=>{ localStorage.clear(); try{ ARC.reset(); }catch(e){} window.uiConfirm=async()=>true; window.toast=()=>{}; await openCase(ci); for (let i=0;i<30&&inter;i++) closeSheet(); if (SHEETS.includes(tab)) closeSheet(); WORLD.skip(); render(); }, ci);
-await open(5);
-const lid=await p.evaluate(()=>C.locations.find(l=>locOpen(l) && l.id!==curLoc().id && roomsOf(l).some(r=>!(C.outScenes||[]).includes(r.scene))).id);
+// 原本用第 6 集；第 6 集起陸續改成俯視畫面（TOPW），這裡從最後一集往前找一集還是橫向畫面、開頭就有「一棟、房間全在室內、離街口不遠、沒有人、還沒寫字」的另一個地點
+const OK=`l=>locOpen(l) && l.id!==curLoc().id && !((C.world||{})[l.id]||{}).labels && !C.suspects.some(s=>whereOf(s)===l.id) && roomsOf(l).every(r=>!(C.outScenes||[]).includes(r.scene)) && (worldDef(l).buildings||[]).length===1 && worldDef(l).buildings[0].x0<200 && worldDef(l).buildings[0].x1-worldDef(l).buildings[0].x0>=240`;
+const CI=await p.evaluate(OK=>CASES.map((c,i)=>i).reverse().filter(i=>!Object.values(CASES[i].world||{}).some(w=>w&&w.top)), OK);
+let ci0=-1; for (const i of CI){ await open(i); if (await p.evaluate(OK=>C.locations.some(eval(OK)), OK)){ ci0=i; break; } }
+const lid=await p.evaluate(OK=>C.locations.find(eval(OK)).id, OK);
 const enter=async(labels)=>{ await p.evaluate(([lid,labels])=>{ const w=(C.world=C.world||{}); if (!('__k' in window)) window.__k=w[lid]; w[lid]=labels?{ ...(window.__k||{}), labels:eval(labels) }:window.__k; if (w[lid]===undefined) delete w[lid];
   WORLD.reset(lid); openLoc=lid; wArrive=null; render(); },[lid,labels]); await p.waitForTimeout(500); await p.evaluate(()=>WORLD.skip()); await p.waitForTimeout(700); };
 const walk=async(dx)=>{ await p.evaluate(dx=>{ const d=worldDef(curLoc()); WORLD.goTo(d.buildings[0].x0+6+dx,124); }, dx); await p.waitForTimeout(3800); };
