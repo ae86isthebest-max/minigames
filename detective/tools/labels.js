@@ -6,10 +6,11 @@
 const {chromium}=require('playwright'); const shot=process.argv[2]; const PORT=process.env.PORT||8765;
 (async()=>{ const b=await chromium.launch(); const p=await b.newPage({viewport:{width:1180,height:820}}); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
 await p.goto(`http://localhost:${PORT}/index.html`); await p.waitForTimeout(500);
-const open=ci=>p.evaluate(async ci=>{ localStorage.clear(); try{ ARC.reset(); }catch(e){} window.uiConfirm=async()=>true; window.toast=()=>{}; await openCase(ci); for (let i=0;i<30&&inter;i++) closeSheet(); if (SHEETS.includes(tab)) closeSheet(); WORLD.skip(); render(); }, ci);
+const open=ci=>p.evaluate(async ci=>{ localStorage.clear(); try{ ARC.reset(); }catch(e){} window.uiConfirm=async()=>true; window.toast=()=>{}; await openCase(ci); Object.keys(C.world||{}).forEach(k=>{ const w=C.world[k]; if (w && w.top) C.world[k]=w.prev ? { ...w.prev } : { ...w, top:undefined, auto:true }; }); for (let i=0;i<30&&inter;i++) closeSheet(); if (SHEETS.includes(tab)) closeSheet(); WORLD.skip(); render(); }, ci);
 // 原本用第 6 集；第 6 集起陸續改成俯視畫面（TOPW），這裡從最後一集往前找一集還是橫向畫面、開頭就有「一棟、房間全在室內、離街口不遠、沒有人、還沒寫字」的另一個地點
 const OK=`l=>locOpen(l) && l.id!==curLoc().id && !((C.world||{})[l.id]||{}).labels && !C.suspects.some(s=>whereOf(s)===l.id) && roomsOf(l).every(r=>!(C.outScenes||[]).includes(r.scene)) && (worldDef(l).buildings||[]).length===1 && worldDef(l).buildings[0].x0<200 && worldDef(l).buildings[0].x1-worldDef(l).buildings[0].x0>=240`;
-const CI=await p.evaluate(OK=>CASES.map((c,i)=>i).reverse().filter(i=>!Object.values(CASES[i].world||{}).some(w=>w&&w.top)), OK);
+// 俯視畫面的地點：測試時拿掉 top，用回自動排的橫向畫面（這個測試只測橫向畫面的字）
+const CI=await p.evaluate(OK=>CASES.map((c,i)=>i).reverse(), OK);
 let ci0=-1; for (const i of CI){ await open(i); if (await p.evaluate(OK=>C.locations.some(eval(OK)), OK)){ ci0=i; break; } }
 const lid=await p.evaluate(OK=>C.locations.find(eval(OK)).id, OK);
 const enter=async(labels)=>{ await p.evaluate(([lid,labels])=>{ const w=(C.world=C.world||{}); if (!('__k' in window)) window.__k=w[lid]; w[lid]=labels?{ ...(window.__k||{}), labels:eval(labels) }:window.__k; if (w[lid]===undefined) delete w[lid];

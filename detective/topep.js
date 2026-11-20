@@ -95,6 +95,7 @@ function TOPEP(epId, opt){
       areas: Object.keys(cfg.rooms).map(id => { const r = rms.find(q => q.id === id); return { id, name:(r && r.name) || cfg.rooms[id].name, x0:-9, x1:-9, y:-99, text:(EP3.roomDesc || {})[id] || "", hide: !r }; }),
       top:{ start:cfg.start, spawn:cfg.spawn, rooms:cfg.rooms, spots:cfg.spots, details:cfg.details, placeFor:placer(cfg.place || {}, cfg.rows, cfg.start), extras:cfg.extras || [], intro:cfg.intro || null,
         plan:cfg.plan || [{ name:Object.values(cfg.rooms)[0].name, w:100, h:20, rooms:{ [cfg.start]:[0,0,100,20] } }] } };
+    Object.defineProperty(EP3.world[loc], "prev", { value:old, enumerable:false });   // 原本的橫向設定（測試工具用）
   }
   return { EP:EP3, EP3, T, O, sh, mix, dA, ph, SKY, rain, night, wet, dusk, winCol, A, has, evOn, roomOk, rainFx, tone, window2, cityView, fluo,
     concrete, tin, blocks, mud, vinyl, tileWall, marble, laminate, carpetTiles, wetCement, sidewalk, doorPlate, setLoc };

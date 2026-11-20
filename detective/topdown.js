@@ -368,7 +368,9 @@ const TOPW = (() => {
         el.onpointerdown = ev => { ev.stopPropagation(); }; el.onclick = ev => { ev.stopPropagation(); if (cur.s.script || cur.s.fade || (cur.s.use && cur.s.use.then)) return; endUse(); cur.s.plan = [{ exit:e }]; cur.s.after = null; nextLeg(); cur.hooks.onGround && cur.hooks.onGround(); };
         wrap.appendChild(el); }
       const hr = exitHit(e), lx = hr[0] + hr[2] / 2, ly = e.lab ?? (hr[1] + hr[3] / 2);   // 字放在門／樓梯那件東西的正中間
-      el.style.left = ((lx - cx) / VW * cw) + "px"; el.style.top = ((ly - cy) / VH * ch) + "px"; el.hidden = !!cur.s.script;
+      // 字一律留在畫布裡面（出口在房間邊上時，字不要被切掉一半）
+      const ew = el.offsetWidth || 0, eh = el.offsetHeight || 0, cl = (v, lo, hi) => hi < lo ? (lo + hi) / 2 : Math.max(lo, Math.min(hi, v));
+      el.style.left = cl((lx - cx) / VW * cw, ew / 2 + 2, cw - ew / 2 - 2) + "px"; el.style.top = cl((ly - cy) / VH * ch, eh / 2 + 2, ch - eh / 2 - 2) + "px"; el.hidden = !!cur.s.script;
     });
     Object.keys(cur.lab).forEach(k => { if (!want.has(k)){ cur.lab[k].remove(); delete cur.lab[k]; } });
   }
