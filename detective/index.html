@@ -123,6 +123,8 @@ details.past summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6p
 .wtext i{display:inline-block;width:0;height:0;vertical-align:baseline}
 .wnav{position:absolute;transform:translate(-50%,-100%);font-size:12px;font-family:inherit;line-height:1.2;padding:3px 9px;background:rgba(20,16,12,.8);color:#ffe8a0;border:1.5px solid #ffd04a;border-radius:99px;white-space:nowrap;z-index:1;cursor:pointer;animation:wnavb 1.6s ease-in-out infinite}
 .wnav.go{font-size:14px;font-weight:700;padding:6px 13px;color:#fff;background:rgba(30,60,30,.88);border:2px solid #6fd46f;box-shadow:0 2px 8px rgba(0,0,0,.55);z-index:2}
+.wnav.wexit{transform:translate(-50%,-50%);animation:none;pointer-events:auto}
+.wnav.wexit[hidden]{display:none}
 .wnav.secret{color:#e8d8ff;border-color:#b07aff;background:rgba(40,20,60,.82);letter-spacing:.1em}
 @keyframes wnavb{0%,100%{margin-top:0}50%{margin-top:-3px}}
 .wskip{position:absolute;right:8px;top:8px;z-index:3;background:rgba(20,16,12,.72);color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:99px;padding:4px 12px;font-size:12px;font-family:inherit;cursor:pointer}
@@ -235,9 +237,14 @@ body.fs .toast{bottom:calc(14px + env(safe-area-inset-bottom))}
 <script src="case2_art.js"></script>
 <script src="case1_art.js"></script>
 <script src="world.js"></script>
+<script src="sprite2.js"></script>
+<script src="topdown.js"></script>
+<script src="topkit.js"></script>
+<script src="topplay.js"></script>
 <script src="worldkit.js"></script>
 <script src="case2_world.js"></script>
 <script src="case1_world.js"></script>
+<script src="case1_top.js"></script>
 <script src="case3.js"></script>
 <script src="case3_people.js"></script>
 <script src="case3_people2.js"></script>
@@ -463,6 +470,7 @@ async function openCase(i){
   // 走動畫面的狀態（站在哪裡、播到一半的開場劇本、停著的車）是按地點 id 記的，很多集都有 cafe、police、lab：
   // 每次打開案件都清掉，上一集的位置和還沒講完的話才不會跑到這一集來（跟重新整理網頁以後一樣，從這一集的存檔重新開始）
   if (typeof WORLD !== "undefined" && WORLD.resetAll) WORLD.resetAll();
+  if (typeof TOPW !== "undefined") TOPW.resetAll();
   if (art()){ if (travel()){ tab = "map"; openLoc = PH().startAt || null; } else tab = "scene"; }
   inter = null; if (interMaybe("before")){ sheetFrom = openLoc; tab = "accuse"; }   // 開場前的幕間（arc.js）
   render(); scrollTo(0,0);
@@ -568,13 +576,15 @@ function drawScenes(){
     }
   });
   const wc = document.getElementById("worldcv");
-  if (wc){ const l = curLoc(), def = worldDef(l); if (def) WORLD.mount(wc, def, l.id, curHooks = worldHooks(l, def)); }
+  if (wc){ const l = curLoc(), def = worldDef(l); if (def){ WE = TOP(def) ? TOPW : WORLD; WE.mount(wc, def, l.id, curHooks = worldHooks(l, def)); } }
   const mc = document.getElementById("mapcv");
   if (mc){ mapCtl = WK.drawMap(mc, mapFrom || PH().startAt || C.locations[0].id); fitMapLabels(); requestAnimationFrame(fitMapLabels); }
   document.querySelectorAll("canvas[data-anim]").forEach(cv=>{
     const it = cv.dataset.anim==="__replay" ? { anim:(C.court||{}).replay } : [...allItems(), ...tests()].find(x=>x.id===cv.dataset.anim); if (!it || !it.anim) return;
     const cap = cv.parentNode.querySelector(".cap");
-    cv._ctl = PX.play(cv, it.anim, looksFor, (t,end)=>{ cap.textContent = t || (end ? "（播放結束）" : "…"); }, cv.dataset.auto==="1");
+    // 真相動畫：這一集有俯視版（world._.top.replay）就用新的逐格版本播
+    const topR = cv.dataset.anim==="__replay" && typeof TOPPLAY !== "undefined" && C.world && C.world._ && TOP(C.world._) && C.world._.top.replay;
+    cv._ctl = (topR ? TOPPLAY : PX).play(cv, topR || it.anim, looksFor, (t,end)=>{ cap.textContent = t || (end ? "（播放結束）" : "…"); }, cv.dataset.auto==="1");
     cv.onclick = ()=>cv._ctl.toggle();
   });
   const b = document.querySelector(".bubble[data-type]");
@@ -715,7 +725,7 @@ const soloSteps = steps => SOLO() && steps ? steps.map(k => k.say && k.say[0] ==
 const BUDDY = { id:"_wu", name:"小吳", look:{ skin:"#e8c09a", hair:"#2a2a2a", hairStyle:"spiky", top:"#8ab4d8", coat:"#f4f6f6", bottom:"#3a4152", glasses:true, gloves:"#4a8ad8" } };
 // 這個地方的畫面上還有幾個小細節沒發現（清單裡不會列出來，要自己在畫面上點）
 function detailsLeft(l){ try { const def = worldDef(l); if (!def) return 0;
-  return allDetails().filter(d=>detailOpen(d) && !(S.found||[]).includes(d.id) && (def.auto ? roomsOf(l).some(r=>r.id===d.room) : !!(def.details && def.details[d.id]))).length; } catch(e){ return 0; } }
+  return allDetails().filter(d=>detailOpen(d) && !(S.found||[]).includes(d.id) && (TOP(def) ? !!(def.top.details && def.top.details[d.id]) : def.auto ? roomsOf(l).some(r=>r.id===d.room) : !!(def.details && def.details[d.id]))).length; } catch(e){ return 0; } }
 function buddyHint(l){
   const sl = travel() ? searchLeftAt(l) : searchLeft();
   const fresh = allItems().filter(it=>(it.loc||"_")===l.id && !S.seen.includes(it.id) && itemOpen(it) && unlocked(it)).length;
@@ -727,7 +737,7 @@ function buddyHint(l){
   return `這裡還可以查 ${sl} 樣東西。${fresh ? `點${pinWhere()}的「📍」看這裡有什麼可以查，點畫面上的箭嘴換地方。` : "看得到的東西都查過了，換個地方吧。"}${tail}`;
 }
 // 不是嫌疑人、但在現場可以說幾句話的人（鑑識人員、員警……）：def.extras = [{ id, name, x, y, L, pose, facing, lines, phase, until }]
-const extrasOf = def => (typeof def.extras === "function" ? def.extras(S.phase) : (def.extras || [])).filter(e=>(e.phase===undefined || S.phase>=e.phase) && (e.until===undefined || S.phase<=e.until));
+const extrasOf = def => ((def && def.top && def.top.extras) ? def.top.extras : typeof def.extras === "function" ? def.extras(S.phase) : (def.extras || [])).filter(e=>(e.phase===undefined || S.phase>=e.phase) && (e.until===undefined || S.phase<=e.until));
 // 人物頭上的箭嘴顏色：黃＝可以問話、紅（閃）＝有新的質問可以問、灰＝不肯再回答、藍＝鑑識人員／員警（問話不花時間）、綠＝小吳
 const ARROW = { ask:"#ffd04a", press:"#ff5a4a", done:"#8a8a8a", extra:"#6ac8ff", buddy:"#6fd46f" };
 function arrowOf(s){
@@ -751,7 +761,8 @@ function moodOf(s, pl){
 }
 function pendingScript(l, def){
   const seen = S.introSeen || {};
-  if (S.phase===0 && def.intro && !seen[l.id]) return { key:l.id, steps:def.intro };
+  const intro = TOP(def) && def.top.intro || def.intro;   // 俯視畫面有自己一套開場（站位不同，對白一樣）
+  if (S.phase===0 && intro && !seen[l.id]) return { key:l.id, steps:intro };
   if (S.phase>0 && multi() && l.id===(PH().startAt || (travel() ? null : "_")) && !seen[l.id+"@"+S.phase]) return { key:l.id+"@"+S.phase, steps:WK.morning(def, BUD().name) };
   const news = wNews.flatMap(e=>[{ say:["wu", `出事了：${e.title}`], name:BUD().name }, ...WK.chunks(e.text).map(c=>({ say:["wu", c], name:BUD().name }))]);
   if (wArrive===l.id && def.park!==undefined) return { key:null, steps:[...WK.arrive(def), ...news] };
@@ -892,8 +903,12 @@ function helpText(l){
 /* ---------- 走進一個房間／區域：列出這裡可以查的東西 ---------- */
 let curArea = null, wRoom = null;   // curArea：主角現在站的區域；wRoom：打開了哪個區域的清單
 const FLOOR = 124;
+// 俯視畫面（topdown.js）：這個地點的走動畫面有 def.top 就用 TOPW，其他照舊用橫向的 WORLD。WE＝現在掛著的那一個
+const TOP = def => !!(def && def.top && typeof TOPW !== "undefined");
+let WE = typeof WORLD !== "undefined" ? WORLD : null;
 function areaOf(it, l, def){
   if (it.area) return it.area;
+  if (TOP(def)){ const r = def.top.spots && def.top.spots[it.id]; return r ? r[6] : null; }
   if (def.auto) return it.room || roomsOf(l)[0].id;
   const r = def.spots && def.spots[it.id]; if (!r || !def.areas) return null;
   const cx = r[0] + r[2]/2, cy = r[1] + r[3]/2;
@@ -908,7 +923,7 @@ function areaName(def, aid){
 }
 // 這個區域藏了幾個小細節（畫面上點得到的）
 function areaDetails(l, def, aid){
-  const inA = d => { if (def.auto) return d.room === aid; const r = def.details && def.details[d.id]; if (!r) return false;
+  const inA = d => { if (TOP(def)){ const r = def.top.details && def.top.details[d.id]; return !!r && r[6] === aid; } if (def.auto) return d.room === aid; const r = def.details && def.details[d.id]; if (!r) return false;
     const cx = r[0] + r[2]/2, cy = r[1] + r[3]/2, a = (def.areas||[]).filter(a=>cx>=a.x0 && cx<=a.x1 && (a.y ?? FLOOR) >= cy - 2).sort((a,b)=>(a.y ?? FLOOR)-(b.y ?? FLOOR))[0]; return a && a.id === aid; };
   const all = allDetails().filter(d=>detailOpen(d) && (def.auto ? roomsOf(l).some(r=>r.id===d.room) : true) && inA(d));
   return { n: all.length, found: all.filter(d=>(S.found||[]).includes(d.id)).length };
@@ -924,6 +939,7 @@ const areaY = a => a.y ?? FLOOR;
 const areaList = def => (def.areas || []).filter(a=>!a.hide);
 function peopleIn(def, aid){
   const a = (def.areas||[]).find(x=>x.id===aid); if (!a || !curHooks) return [];
+  if (TOP(def)) return curHooks.people().filter(q=>q.room===aid);
   return curHooks.people().filter(q=>q.x>=a.x0-2 && q.x<=a.x1+2 && Math.abs((q.y ?? FLOOR) - areaY(a)) < 3);
 }
 /* ---------- 「附近」清單：主角身邊（會閃的那幾樣）還沒看過的東西，排成一排名字，點名字就等於點那樣東西 ----------
@@ -940,7 +956,7 @@ function updateNear(){
   const el = document.querySelector(".wnear"); if (!el) return;
   if (curScripting){ el.innerHTML = ""; return; }
   el.innerHTML = curNear.length
-    ? `<span class="nl">🔎 附近</span>` + curNear.map(q=>`<button class="nb" onclick="WORLD.goSpot('${WORLD.spotKey(q)}')">${esc(nearLabel(q))}</button>`).join("")
+    ? `<span class="nl">🔎 附近</span>` + curNear.map(q=>`<button class="nb" onclick="WE.goSpot('${WE.spotKey(q)}')">${esc(nearLabel(q))}</button>`).join("")
     : `<span class="nl nn">🔎 附近沒有還沒看過的東西</span>`;
   el.scrollLeft = 0;                                                  // 清單換了就回到最左邊，「🔎 附近」和第一個名字不會被捲到畫面外
   el.classList.toggle("more", el.scrollWidth > el.clientWidth + 2);   // 一排放不下：右邊淡出，提示可以往左滑
@@ -963,16 +979,17 @@ function openGo(){ wRoom = null; wBuddy = false; wTalk = null; wSay = null; wAct
 function goArea(aid){
   const l = curLoc(), def = l && worldDef(l), a = def && (def.areas||[]).find(x=>x.id===aid); if (!a) return;
   wGo = false; wRoom = null; render();
-  if (aid === curArea && !(WORLD.walking && WORLD.walking())){ openRoomList(aid); return; }
-  WORLD.goTo(WORLD.standIn(a)[0], areaY(a), () => openRoomList(aid));
+  if (aid === curArea && !(WE.walking && WE.walking())){ openRoomList(aid); return; }
+  const sp = WE.standIn(a);
+  if (TOP(def)) WE.goTo(sp[0], sp[1], () => openRoomList(aid), sp[2]); else WE.goTo(sp[0], areaY(a), () => openRoomList(aid));
 }
 // 從清單跟人說話：先走到那個人旁邊
 function talkTo(id){
   const l = curLoc(), def = l && worldDef(l); if (!curHooks) return;
   const q = curHooks.people().find(x=>x.id===id); if (!q) return;
   const from = wRoom; wRoom = null; render();
-  const st = WORLD.state(l.id), side = st.px < q.x ? -16 : 16;
-  WORLD.goTo(q.x + side, q.y ?? FLOOR, () => { st.face = side < 0 ? 1 : -1; curHooks.onPerson(id); talkFrom = from; render(); });
+  const st = WE.state(l.id), side = st.px < q.x ? (TOP(def) ? -18 : -16) : (TOP(def) ? 18 : 16);
+  WE.goTo(q.x + side, q.y ?? FLOOR, () => { st.face = side < 0 ? 1 : -1; st.dir = "side"; curHooks.onPerson(id); talkFrom = from; render(); }, q.room);
 }
 let talkFrom = null;
 function goList(l, def){
@@ -1057,19 +1074,21 @@ function worldHooks(l, def){
     buddy: () => { if (SOLO()) return null; const s = sus(def.buddy || BUD().id); if (s) return isGone(s) ? null : { id:s.id, L:lookOf(s) }; return { id:BUDDY.id, L:BUD().look || (C.looks && C.looks._wu) || BUDDY.look }; },
     people: () => spreadPeople(def, [
       ...C.suspects.filter(s=>!isGone(s) && (!travel() || whereOf(s)===l.id) && (SOLO() || s.id!==(def.buddy || BUD().id))).map(s=>{
-        const pl = (def.placeFor ? def.placeFor(s, S.phase) : (def.place||{})[s.id]) || {};
+        const pl = (TOP(def) ? (def.top.place||{})[s.id] : def.placeFor ? def.placeFor(s, S.phase) : (def.place||{})[s.id]) || {};
         const m = moodOf(s, pl);
-        return { id:s.id, x: pl.x ?? 140, y: pl.y, pose: pl.pose, facing: pl.facing, L: lookOf(s), mark: wTalk===s.id, ...arrowOf(s), ...m };
+        return { id:s.id, x: pl.x ?? 140, y: pl.y, room: pl.room, act: pl.act, view: pl.view, pose: pl.pose, facing: pl.facing, L: lookOf(s), mark: wTalk===s.id, ...arrowOf(s), ...m };
       }),
       ...extrasOf(def).map(e=>({ ...e, mark: wSay && wSay.who===e.id, arrow: ARROW.extra }))
     ]),
     spots: () => {
+      // 俯視畫面：位置寫在 def.top.spots／def.top.details，每項 [x, y, 寬, 高, 站哪裡 x, 站哪裡 y, 房間]（證物、小細節的 id 跟原本一樣，存檔不受影響）
+      const SPT = TOP(def) ? def.top.spots || {} : def.spots, DET = TOP(def) ? def.top.details || {} : def.details;
       const groups = {};
-      allItems().filter(it=>(it.loc||"_")===l.id && def.spots[it.id] && (S.seen.includes(it.id) || (itemOpen(it) && unlocked(it)))).forEach(it=>{
-        const r = def.spots[it.id], k = r.join(","); (groups[k] = groups[k] || { k:"item", r:r.slice(0,4), walk:r[4], ids:[] }).ids.push(it.id); });
+      allItems().filter(it=>(it.loc||"_")===l.id && SPT[it.id] && (S.seen.includes(it.id) || (itemOpen(it) && unlocked(it)))).forEach(it=>{
+        const r = SPT[it.id], k = r.join(","); (groups[k] = groups[k] || { k:"item", r:r.slice(0,4), walk:r[4], wy:r[5], room:r[6], ...(r[7] || {}), ids:[] }).ids.push(it.id); });
       Object.values(groups).forEach(g=>g.fresh = g.ids.some(id=>!S.seen.includes(id) && itemOpen(allItems().find(x=>x.id===id))));
       const roomOk = d => { const rm = roomsOf(l).find(r=>r.id===d.room); return !rm || roomOpen(rm); };
-      const dets = allDetails().filter(d=>def.details[d.id] && detailOpen(d) && roomOk(d)).map(d=>({ k:"detail", id:d.id, r:def.details[d.id].slice(0,4), walk:def.details[d.id][4], fresh:!(S.found||[]).includes(d.id) }));
+      const dets = allDetails().filter(d=>DET[d.id] && detailOpen(d) && roomOk(d)).map(d=>({ k:"detail", id:d.id, r:DET[d.id].slice(0,4), walk:DET[d.id][4], wy:DET[d.id][5], room:DET[d.id][6], ...(DET[d.id][7] || {}), fresh:!(S.found||[]).includes(d.id) }));
       return [...Object.values(groups), ...dets];
     },
     onPerson: id => {
@@ -1780,7 +1799,7 @@ async function reveal(){ if(!await uiConfirm("確定要看真相？看了就沒�
 async function restart(skipConfirm){
   if (!skipConfirm && !await uiConfirm("清除所有進度，重新開始？")) return;
   S = fresh(); accusePick = freshPick(); openSuspect=null; openLoc=null; save();
-  if (art() && typeof WORLD !== "undefined"){ (travel() ? C.locations.map(l=>l.id) : ["_"]).forEach(id=>WORLD.reset(id)); openCase(CASES.indexOf(C)); return; }
+  if (art() && typeof WORLD !== "undefined"){ (travel() ? C.locations.map(l=>l.id) : ["_"]).forEach(id=>{ WORLD.reset(id); if (typeof TOPW !== "undefined") TOPW.reset(id); }); openCase(CASES.indexOf(C)); return; }
   go("brief");
 }
 function go(t){

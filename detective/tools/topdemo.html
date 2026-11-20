@@ -1,0 +1,131 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>俯視引擎測試</title>
+<style>body{background:#111;margin:0;color:#eee;font:14px sans-serif}.world{position:relative;max-width:900px;margin:0 auto}
+canvas{width:100%;image-rendering:pixelated;display:block}.wbubble{position:absolute;background:#fff8e8;color:#222;padding:4px 8px;border-radius:6px;font-size:13px}
+.wbubble[hidden]{display:none}.wexit{position:absolute;transform:translate(-50%,-50%);background:rgba(26,22,18,.82);color:#f4ead2;border:1px solid #6a5a44;border-radius:4px;font-size:12px;padding:1px 6px;cursor:pointer;white-space:nowrap}.wexit[hidden]{display:none}#log{max-width:900px;margin:6px auto;font-size:12px;opacity:.8}</style>
+<div class="world"><canvas id="worldcv"></canvas><div class="wbubble" hidden><b></b>：<span></span></div><div class="wtip"></div><button class="wskip" hidden>跳過</button></div>
+<div id="log"></div>
+<script src="../pixel.js"></script><script src="../sprite2.js"></script><script src="../topdown.js"></script>
+<script>
+const OUTC = "#1a1410";
+// 有外框的方塊（家具用）：top 面、front 面
+function block(p, x, y, w, h, d, top, front){ p.R(x-1, y-1, w+2, h+d+2, OUTC); p.R(x, y, w, h, top); p.R(x, y+h, w, d, front); p.R(x, y+h, w, 1, OUTC); p.R(x, y, w, 1, PX.prim.shade ? top : top); }
+function rug(p,x,y,w,h){ p.R(x,y,w,h,"#c9a45a"); p.R(x+2,y+2,w-4,h-4,"#6e2f36"); for(let i=x+6;i<x+w-6;i+=10) for(let j=y+6;j<y+h-6;j+=8) p.R(i,j,4,3,"#8e4a4a"); }
+function planks(p,x0,y0,w,h){ p.R(x0,y0,w,h,"#8a6440"); for(let x=x0;x<x0+w;x+=12){ p.R(x,y0,1,h,"#6e4e30"); for(let y=y0+((x/12)%3)*14;y<y0+h;y+=40) p.R(x,y,12,1,"#6e4e30"); } for(let x=x0+3;x<x0+w;x+=12) for(let y=y0;y<y0+h;y+=7) if(((x*7+y*13)%11)===0) p.R(x,y,3,1,"#9a7450"); }
+function wallFace(p,w,h,col){ p.R(0,0,w,h,col); for(let x=0;x<w;x+=28) p.R(x,0,1,h-4,"#b8a37e"); p.R(0,h-4,w,4,"#5a3e28"); p.R(0,h-4,w,1,OUTC); }
+// 會郁的物件：目標值 → 每格慢慢追上（開櫃、拉窗簾、開燈）
+const OBJ = { drawer:0, curtain:0, book:0, light:1, lamp:1, paper:0 }, GOAL = { ...OBJ };
+let lastT = 0; function stepObj(t){ const dt = Math.min(0.1, Math.max(0, t - lastT)); lastT = t; for (const k in OBJ){ const d = GOAL[k] - OBJ[k]; OBJ[k] = Math.abs(d) < 0.01 ? GOAL[k] : OBJ[k] + d * Math.min(1, dt * 7); } }
+const using = a => { const y = TOPW.you && TOPW.you(); return y && y.use === a; };
+// 門：開咗幾多（0 閂、1 全開），門板向左邊門鉸收窄
+function doorArt(p, x, y, w, h, amt){ p.R(x-2,y-2,w+4,h+2,OUTC); p.R(x,y,w,h,"#1a1410"); const pw = Math.round(w * (1 - amt * 0.78));
+  p.R(x,y,pw,h,"#7a5232"); p.R(x+1,y+2,pw-2,h/2-4,"#8a6440"); p.R(x+1,y+h/2+1,pw-2,h/2-4,"#8a6440"); if (pw > 6) p.R(x+pw-4,y+h/2,2,3,"#e8c45a"); p.R(x+pw-1,y,1,h,OUTC); }
+const study = { name:"書房", w:256, h:192, wall:58,
+  floor(p,g,t){ stepObj(t); wallFace(p,256,58,"#cbb894"); planks(p,0,58,256,134);
+    // 窗＋窗簾（拉開／拉埋）
+    p.R(96,10,48,34,OUTC); p.R(98,12,44,30,"#3a2a1c"); p.R(100,14,40,26,"#24345a"); p.R(119,14,2,26,"#3a2a1c"); p.R(100,26,40,2,"#3a2a1c"); p.R(128,17,5,5,"#f2ecd0"); p.R(101,15,8,1,"#3c5488");
+    const cw = Math.round(22 - OBJ.curtain * 16); p.R(92,8,56,3,"#3a2414");
+    [[94,1],[146,-1]].forEach(([x0,d]) => { const x = d > 0 ? x0 : x0 - cw; p.R(x,10,cw,36,"#7a2a30"); for (let i = 2; i < cw; i += 4) p.R(x+i,10,1,36,"#5a1a20"); p.R(x,44,cw,2,"#5a1a20"); });
+    p.R(94,46,52,3,"#7a5232");
+    // 門（左牆）：行埋去先推開
+    doorArt(p,16,16,26,42,TOPW.doorAmt ? TOPW.doorAmt("study","hall") : 0);
+    // 燈掣
+    p.R(49,28,6,8,OUTC); p.R(50,29,4,6,"#efeadf"); p.R(51,OBJ.light > 0.5 ? 30 : 32,2,2,"#8a8478");
+    rug(p,60,112,120,52);
+    // 樓梯口（右下）
+    p.R(200,150,52,40,"#140f0b"); for(let i=0;i<6;i++){ const c=110-i*16; p.R(202,150+i*6,48,5,`rgb(${c+20},${c-8},${c-40})`); }
+    p.R(198,146,2,44,"#3a2414"); p.R(198,146,54,2,"#3a2414");
+    // 廢紙團（翻完垃圾桶先有）
+    if (OBJ.paper > 0.5){ p.R(166,104,5,4,OUTC); p.R(167,104,3,3,"#efeadf"); p.R(168,105,1,1,"#b8b0a0"); }
+  },
+  props:[
+    { y:58, draw(p){ // 書櫃（靠牆），抽出嘅書凸出嚟
+      p.R(176,4,44,58,OUTC); p.R(178,6,40,54,"#4a3020"); for(let r=0;r<4;r++){ p.R(180,9+r*12,36,9,"#33200f"); ["#8a3a3a","#3a5a8a","#c9a45a","#3e7a52","#7a4a8a","#a8662a","#8a3a3a","#3a5a8a"].forEach((c,b)=>{ if (r===2 && b===4 && OBJ.book > 0.05) return; p.R(181+b*4+(b>3?2:0),10+r*12+(b%3===1?1:0),3,8-(b%3===1?1:0),c); }); }
+      if (OBJ.book > 0.05){ const d = Math.round(OBJ.book * 5); p.R(196,34+d,5,10,OUTC); p.R(197,35+d,3,8,"#7a4a8a"); p.R(197,35+d,3,1,"#e8c45a"); } } },
+    { y:104, draw(p,g,t){ // 書桌＋櫃桶（拉出嚟見到入面）
+      block(p,64,78,72,18,10,"#7a5232","#5a3a22");
+      const d = Math.round(OBJ.drawer * 7);
+      if (d > 0){ p.R(69,97,24,d+1,OUTC); p.R(70,98,22,d,"#2a1a0e"); if (d > 3){ p.R(76,99,6,2,"#c9a45a"); p.R(82,99,2,1,"#c9a45a"); p.R(85,98,4,d-1,"#efeadf"); } }
+      p.R(70,98+d,22,6,"#3e2716"); p.R(70,98+d,22,1,"#5a3a22"); p.R(79,100+d,4,1,"#e8c45a");
+      // 枱燈（開咗有光）
+      p.R(70,72,10,8,OUTC); p.R(71,73,8,6,"#3e7a52"); p.R(73,79,4,1,OBJ.lamp > 0.5 ? "#fff3b0" : "#6a6250"); p.R(74,80,2,4,"#3e2716");
+      if (!using("read")){ p.R(88,82,18,10,"#efeadf"); p.R(90,84,12,1,"#b8b0a0"); p.R(90,86,10,1,"#b8b0a0"); p.R(90,88,12,1,"#b8b0a0"); }
+      if (!using("drink")){ p.R(118,80,9,9,OUTC); p.R(119,81,7,7,"#ece6da"); p.R(120,82,5,4,"#3a2416"); p.R(127,83,2,3,"#ece6da"); } } },
+    { y:118, draw(p){ p.R(86,104,24,14,OUTC); p.R(87,105,22,9,"#5a3a22"); p.R(88,114,3,4,"#3e2716"); p.R(105,114,3,4,"#3e2716"); } },   // 書桌椅
+    { y:104, draw(p){ p.R(150,90,14,14,OUTC); p.R(151,91,12,12,"#70727a"); p.R(153,93,8,8,"#4e5058"); p.R(154,94,5,3,"#efeadf"); } },  // 廢紙箱
+    { y:66, draw(p){ p.R(232,54,16,12,OUTC); p.R(233,55,14,10,"#a0583a"); p.R(229,36,24,20,"#2a6430"); p.R(231,38,20,16,"#3c8a44"); p.R(236,34,10,6,"#3c8a44"); } },
+    { y:121, draw(p){ // 梳化椅（向右），可以坐
+      p.R(19,91,10,32,OUTC); p.R(20,92,8,30,"#6a2a30"); p.R(21,93,2,28,"#8a3a40");
+      p.R(19,109,22,14,OUTC); p.R(20,110,20,5,"#8a3a40"); p.R(20,115,20,7,"#6a2a30"); p.R(21,122,2,2,"#2a1a12"); p.R(37,122,2,2,"#2a1a12"); } },
+    { y:146, draw(p){ // 茶几＋電話（拎起咗聽筒就只剩底座）
+      block(p,20,134,18,6,6,"#7a5232","#5a3a22"); p.R(23,129,12,6,OUTC); p.R(24,130,10,4,"#2a2a30"); p.R(27,131,4,2,"#efeadf");
+      if (!using("phone")){ p.R(22,127,14,3,OUTC); p.R(23,127,12,2,"#2a2a30"); } } }
+  ],
+  // 暗燈：成間房暗晒，枱燈開咗就有一圈光
+  front(p,g,t){ const dark = 1 - OBJ.light; if (dark < 0.02) return; g.save(); g.globalAlpha = dark * 0.62; g.fillStyle = "#06081a"; g.fillRect(0,0,256,192); g.restore();
+    if (OBJ.lamp > 0.5){ g.save(); g.globalCompositeOperation = "lighter"; const gr = g.createRadialGradient(75,82,2,75,82,46); gr.addColorStop(0,`rgba(255,220,140,${0.42*dark})`); gr.addColorStop(1,"rgba(255,220,140,0)"); g.fillStyle = gr; g.fillRect(25,36,100,96); g.restore(); } },
+  solid:[[64,78,72,26],[86,104,24,14],[150,92,14,12],[176,40,44,22],[232,54,16,12],[19,108,22,15],[20,134,18,12]],
+  exits:[ { r:[16,58,26,8], to:"hall", at:[230,150], label:"走廊", kind:"door" }, { r:[204,172,44,16], to:"up", at:[60,170], label:"地下室", kind:"down", art:[200,150,52,40] } ] };
+const hall = { name:"走廊", w:320, h:192, wall:58,
+  floor(p){ wallFace(p,320,58,"#b9c4b0"); planks(p,0,58,320,134); p.R(0,110,6,60,"#1a1410"); p.R(0,112,4,56,"#3a2c22"); p.R(246,14,30,44,OUTC); p.R(248,16,26,42,"#1a1410"); p.R(248,16,8,42,"#6a4428"); p.R(40,20,40,26,"#3a2a1c"); p.R(42,22,36,22,"#7a8a5a"); },
+  props:[], solid:[], exits:[ { r:[248,58,26,8], to:"study", at:[29,72], label:"書房", kind:"door" }, { r:[4,120,8,40], to:"street", at:[150,92], label:"出去", kind:"out", art:[0,110,16,60] } ] };
+const up = { name:"地下室", w:256, h:192, wall:50,
+  floor(p){ wallFace(p,256,50,"#8a8a86"); p.R(0,50,256,142,"#6a6a66"); for(let x=0;x<256;x+=16) for(let y=50;y<192;y+=16) p.R(x,y,16,1,"#5a5a56"), p.R(x,y,1,16,"#5a5a56"); p.R(30,150,52,40,"#3a3a36"); for(let i=0;i<6;i++) p.R(32,186-i*6,48,5,"#7a7a76"); },
+  props:[], solid:[], exits:[ { r:[34,176,44,14], to:"study", at:[226,166], label:"書房", kind:"up", art:[30,150,52,40] } ] };
+
+// 街：上面是大廈外牆（入口）、行人路、馬路（斑馬線、中線）、對面行人路；有泊著的巡邏車和駛過的車
+function paving(p,x0,y0,w,h){ p.R(x0,y0,w,h,"#b8b2a4"); for(let x=x0;x<x0+w;x+=16) p.R(x,y0,1,h,"#9e988a"); for(let y=y0;y<y0+h;y+=10) p.R(x0,y,w,1,"#9e988a"); }
+const street = { name:"街上", w:512, h:200, wall:70,
+  floor(p,g,t){ p.R(0,0,512,70,"#8a7a6a"); for(let x=0;x<512;x+=4) p.R(x,0,1,70,"#7e6e5e");
+    for(let i=0;i<6;i++){ const x=24+i*80; if(i===1) continue; p.R(x,12,36,26,"#1a1410"); p.R(x+2,14,32,22,"#34465e"); p.R(x+17,14,2,22,"#1a1410"); p.R(x+3,15,6,1,"#5a7088"); p.R(x-2,38,40,3,"#5a4a3a"); }
+    p.R(126,18,48,52,"#1a1410"); p.R(128,20,44,50,"#2a2420"); p.R(130,22,40,46,"#6a5a48"); p.R(149,22,2,46,"#2a2420"); p.R(132,24,16,20,"#8aa0b0"); p.R(152,24,16,20,"#8aa0b0");
+    p.R(120,6,60,10,"#1a1410"); p.R(122,8,56,6,"#c94a3a");
+    paving(p,0,70,512,32); p.R(0,102,512,3,"#6a665e"); p.R(0,102,512,1,"#1a1410");
+    p.R(0,105,512,66,"#3a3c40"); for(let x=0;x<512;x+=3) for(let y=106;y<170;y+=5) if(((x*13+y*7)%17)===0) p.R(x,y,1,1,"#45474c");
+    for(let x=0;x<512;x+=32) p.R(x,137,18,2,"#e8dca0");
+    for(let y=107;y<169;y+=0){ p.R(330,y,40,5,"#e8e4dc"); y+=9; }
+    p.R(0,171,512,3,"#6a665e"); paving(p,0,174,512,26); },
+  props:[
+    ...[60,300,460].map(x=>({ y:102, draw(p){ p.R(x-2,40,5,62,"#1a1410"); p.R(x-1,41,3,61,"#4a4e56"); p.R(x-8,36,16,6,"#1a1410"); p.R(x-7,37,14,4,"#4a4e56"); p.R(x-5,41,10,2,"#ffe9a0"); } })),
+    { y:130, draw(p,g,t){ SP.car(g,232,130,{ col:"#e9e4da", patrol:true, f:Math.floor(t*4)%4 }); } },
+    { y:162, draw(p,g,t){ const x=((t*70)%760)-120; SP.car(g,x,162,{ col:"#a83a32", f:Math.floor(t*12)%4 }); } },
+    { y:188, draw(p,g,t){ const x=520-((t*22)%600); SP.draw(g,x,188,{ skin:"#e8c09a", hair:"#5a3a22", coat:"#6a7a4a", bottom:"#3a3a44", shoes:"#2a2320" },{ view:"side", facing:-1, act:"walk", f:Math.floor(t*22/3.2)%8 }); } }
+  ],
+  solid:[[198,118,70,14],[56,98,8,4],[296,98,8,4],[456,98,8,4]],
+  exits:[ { r:[136,70,28,8], to:"hall", at:[24,140], label:"大廈", kind:"door", art:[128,20,44,50] } ] };
+const def = { top:{ start:"study", spawn:[29,80], rooms:{ study, hall, up, street } }, areas:[{id:"study",name:"書房"},{id:"hall",name:"走廊"},{id:"up",name:"地下室"},{id:"street",name:"街上"}] };
+const DET = { skin:"#ecc29c", hair:"#2a1d16", coat:"#9a7a52", top:"#e9e4da", bottom:"#2e3340", shoes:"#1c1a18", hat:"#4a3424" };
+const WU = { skin:"#e8c09a", hair:"#2a2a2a", coat:"#f4f6f6", top:"#8ab4d8", bottom:"#3a4152", shoes:"#2a2320" };
+const MAID = { skin:"#f0c8a0", hair:"#5a3a22", coat:"#4a4a6a", top:"#4a4a6a", bottom:"#2a2a3a", shoes:"#1a1a1a" };
+const seen = new Set(); const log = m => { const el = document.getElementById("log"); if (el) el.textContent = m; window._log = (window._log||[]).concat(m); };
+let say = null, sayT = 0; const talk = (who, text, ms) => { say = { who, text }; clearTimeout(sayT); sayT = setTimeout(() => say = null, ms || 2200); };
+const later = (ms, fn) => setTimeout(fn, ms);
+// 每件可以互動的東西：點它 → 走過去、做動作、東西有反應
+const USE = {
+  mug:    { r:[118,80,11,9], act:"drink", rate:4, k:"item", go(){ talk("you","杯裡還有半杯咖啡，已經涼了。"); } },
+  letter: { r:[88,82,18,10], walk:118, wy:112, act:"read", actT:2.6, face:-1, go(){ talk("you","「今晚十點，老地方見。」沒有署名。",2800); } },
+  drawer: { r:[70,96,22,10], walk:81, wy:112, act:"drawer", rate:6, face:1, go(){ later(260,()=>{ GOAL.drawer = GOAL.drawer ? 0 : 1; if (GOAL.drawer) talk("you","抽屜裡有一把鑰匙和一張收據。"); }); } },
+  lamp:   { r:[70,72,10,10], walk:52, wy:92, act:"switch", rate:5, face:1, go(){ later(180,()=>GOAL.lamp = GOAL.lamp ? 0 : 1); } },
+  switch: { r:[49,28,6,8], walk:52, wy:66, act:"switch", rate:5, face:1, go(){ later(180,()=>GOAL.light = GOAL.light ? 0 : 1); } },
+  curtain:{ r:[94,8,52,40], walk:120, wy:66, act:"reach", rate:3, face:1, go(){ later(250,()=>GOAL.curtain = GOAL.curtain ? 0 : 1); } },
+  book:   { r:[176,4,44,58], walk:198, wy:70, act:"reach", rate:3, face:1, go(){ later(300,()=>{ GOAL.book = GOAL.book ? 0 : 1; if (GOAL.book) talk("you","這本書後面夾著一張照片。"); }); } },
+  bin:    { r:[150,90,14,14], walk:168, wy:110, act:"rummage", actT:1.8, rate:5, face:-1, go(){ later(1500,()=>{ GOAL.paper = 1; talk("you","找到一團紙，上面寫著一個電話號碼。"); }); } },
+  chair:  { r:[19,91,22,32], walk:48, wy:124, act:"sit", hold:true, useAt:[30,122], face:1, go(){ talk("you","（坐下來想一想……）",1600); } },
+  phone:  { r:[22,126,14,9], walk:46, wy:146, act:"phone", actT:2.8, rate:4, face:-1, go(){ talk("you","喂？我是沈岳，幫我查一個號碼。",2800); } }
+};
+const NAME = { mug:"杯", letter:"信", drawer:"抽屜", lamp:"枱燈", switch:"燈掣", curtain:"窗簾", book:"書櫃", bin:"廢紙箱", chair:"沙發椅", phone:"電話" };
+// 女傭：自己喺度抹嘢；你行近佢就停手望住你；同佢講嘢就講返
+let maidTalk = 0;
+const maid = () => { const y = TOPW.you && TOPW.you(), M = { id:"maid", x:224, y:80, room:"study", L:MAID, arrow:"#ffd04a" };
+  const near = y && y.room === "study" && Math.hypot(y.x - M.x, (y.y - M.y) * 1.2) < 44;
+  if (performance.now() < maidTalk) return { ...M, act:"talk", facing:y && y.x < M.x ? -1 : 1, view:"side", rate:4 };
+  if (near) return { ...M, act:"idle", facing:y.x < M.x ? -1 : 1, view:"side" };
+  return { ...M, act:"wipe", facing:1, view:"side", rate:5 }; };
+const hooks = { you:DET, buddy:()=>({ id:"_wu", L:WU }), people:()=>[maid()],
+  spots:()=>Object.entries(USE).map(([id,u]) => ({ k:u.k || "detail", ...(u.k === "item" ? { ids:[id] } : { id }), r:u.r, walk:u.walk, wy:u.wy, act:u.act, actT:u.actT, rate:u.rate, hold:u.hold, useAt:u.useAt, face:u.face, fresh:!seen.has(id), room:"study" })),
+  onSpot:q=>{ const id = q.ids ? q.ids[0] : q.id; seen.add(id); log("spot " + id); USE[id].go(); },
+  onPerson:id=>{ log("person "+id); maidTalk = performance.now() + 2600; talk("maid","先生，我只是來整理書房而已。",2600); },
+  onBuddy:id=>log("buddy"), onGround:()=>{}, bubble:()=>say, nameOf:id=>id==="maid"?"女傭":id==="_wu"?"小吳":"你", opt:()=>({}),
+  script:null, scriptDone:()=>true, refresh:()=>{}, areaNow:a=>log("area "+a), nearNow:l=>{ window._near=l.map(TOPW.spotKey); } };
+TOPW.mount(document.getElementById("worldcv"), def, "demo", hooks);
+</script>
