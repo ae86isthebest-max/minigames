@@ -172,7 +172,7 @@ const SP = (() => {
   function walkSide(f, n){
     const p = f / n * Math.PI * 2, s = Math.sin(p), c = Math.cos(p);
     // 腳往前時膝蓋伸直落地，往後擺回來的那一半膝蓋彎起（抬腳）
-    return { lean: 5, hF: 32 * s, kF: c > 0 ? 6 : 6 + 44 * -c, hB: -32 * s, kB: c < 0 ? 6 : 6 + 44 * c,
+    return { lean: 1, hF: 32 * s, kF: c > 0 ? 6 : 6 + 44 * -c, hB: -32 * s, kB: c < 0 ? 6 : 6 + 44 * c,
       sF: -30 * s, eF: 16 - 10 * s, sB: 30 * s, eB: 16 + 10 * s };
   }
   // 動作表：每一個動作是一串格（每格一組角度，沒寫的用站姿）
@@ -232,7 +232,7 @@ const SP = (() => {
     const hip = [RX, RY - 1 - drop - (q.lift || 0) * 0];
     if (q.lift) hip[1] = RY - 1 - Math.max(drop + q.lift, 4);
     const neck = step(hip, 180 + q.lean, LEN.torso - breathe * 0, -1);   // 往上
-    const shoulder = [neck[0] - 1, neck[1] + 2 + breathe];
+    const shoulder = [neck[0] + 0.5, neck[1] + 3 + breathe];   // 肩膀在身體中間，手往後擺也不會在背上凸起一舊（駝背）
     const legs = layer(), backL = layer(), body = layer(), front = layer(), headL = layer();
     // 遠的手、遠的腳（暗一點）
     const back = (c) => mul(c, 0.78);
@@ -260,7 +260,7 @@ const SP = (() => {
     const hasHat = !!P.hat;
     const rows = HEAD[hasHat ? "side_hat" : "side"].map(r => q.eyes === "shut" ? r.replace("we", "bb") : r).map(r => q.mouth ? r.replace("mk", "mm") : r);
     const hp = { h: P.hat, H: P.hatB, r: P.hair, k: P.skin, K: P.skinD, e: P.eye, w: P.white, b: P.brow, m: P.mouth };
-    const hx = Math.round(neck[0]) - 8 + 1, hy = Math.round(neck[1]) - 13;
+    const hx = Math.round(neck[0]) - 9, hy = Math.round(neck[1]) - 13;   // 頭擺正在身體上面，不向前伸
     grid(headL, rows, hx, hy, hp, false);
     arm(front, q.sF, q.eF, false, q.hand);
     [backL, legs, body, front].forEach(Ly => shade(Ly, -dir));
