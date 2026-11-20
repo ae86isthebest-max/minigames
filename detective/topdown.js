@@ -132,8 +132,9 @@ const TOPW = (() => {
   function nextLeg(){
     const s = cur.s, leg = s.plan && s.plan.shift();
     if (!leg){ s.path = []; const cb = s.after; s.after = null; if (cb) cb(); return; }
-    if (leg.exit){ const e = leg.exit, c = [e.r[0] + e.r[2] / 2, e.r[1] + e.r[3] / 2]; s.path = findPath(s.room, s.px, s.py, c[0], c[1]); s.leg = leg; return; }
-    s.path = findPath(s.room, s.px, s.py, leg.x, leg.y); s.leg = leg;
+    // 已經站在目的地（路徑是空的）：放一個原地的點，下一格就當作走到了（不然 s.after 永遠不會執行）
+    if (leg.exit){ const e = leg.exit, c = [e.r[0] + e.r[2] / 2, e.r[1] + e.r[3] / 2]; s.path = findPath(s.room, s.px, s.py, c[0], c[1]); s.leg = leg; if (!s.path.length) s.path = [[s.px, s.py]]; return; }
+    s.path = findPath(s.room, s.px, s.py, leg.x, leg.y); s.leg = leg; if (!s.path.length) s.path = [[s.px, s.py]];
   }
   // 穿過門／樓梯：畫面暗一下再亮，換房間
   function useExit(e){

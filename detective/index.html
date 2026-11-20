@@ -91,6 +91,8 @@ details.past{margin-bottom:14px}
 details.past summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6px 0}
 .scene{position:relative;margin:0 0 12px;border-radius:12px;overflow:hidden;border:2px solid var(--line);background:#000;line-height:0}
 .scene canvas{width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;display:block}
+/* 幕間的畫面：螢幕矮的時候（例如 1366×657）縮小，下一句／跳過按鈕才不會被擠出畫面 */
+.scene.inter-scene{width:min(100%, calc(max(180px, 100vh - 330px) * 1.7778 + 4px));margin-left:auto;margin-right:auto}
 .talk{margin-bottom:14px}
 .talk .scene{margin:0}
 .talk .you{font-size:13px;color:var(--muted);margin:0 2px 6px}
@@ -253,6 +255,8 @@ body.fs .toast{bottom:calc(14px + env(safe-area-inset-bottom))}
 <script src="case3_records.js"></script>
 <script src="case3_art.js"></script>
 <script src="case3_world.js"></script>
+<script src="topep.js"></script>
+<script src="case3_top.js"></script>
 <script src="case4.js"></script>
 <script src="case4_people.js"></script>
 <script src="case4_people2.js"></script>

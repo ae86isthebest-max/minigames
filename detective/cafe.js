@@ -97,7 +97,7 @@
   PX.draw = (cv, name, opt = {}) => { const hits = draw0(cv, name, opt);
     if (name === "cafe" && (opt.people || []).some(p => /^sit/.test(p.pose || ""))){ const night = opt.time === "night", ch = night ? "#8a8a90" : "#3a3a3e";
       [50, 104, 158].forEach(x => { R(x - 10, 80, 20, 3, "#e8e8e4"); R(x - 10, 82, 20, 1, "#b8b8b4"); R(x - 1, 83, 2, 14, "#5a5a5e"); R(x - 5, 97, 10, 2, "#5a5a5e"); R(x - 4, 76, 4, 4, "#f4f4f0"); R(x - 3, 75, 2, 1, "#6a4a32"); R(x + 2, 77, 3, 3, "#f4f4f0");
-        [-1, 1].forEach(d => { const cx = x + d * 9; if ((opt.people || []).some(p => Math.abs(p.x - cx) < 3 && /^sit/.test(p.pose || ""))){ R(cx - 4, 90, 9, 2, ch); R(cx - 4, 92, 1, 6, ch); R(cx + 4, 92, 1, 6, ch); } }); }); }
+        [-1, 1].forEach(d => { const cx = x + d * 15; if ((opt.people || []).some(p => Math.abs(p.x - cx) < 3 && /^sit/.test(p.pose || ""))){ R(cx - 4, 90, 9, 2, ch); R(cx - 4, 92, 1, 6, ch); R(cx + 4, 92, 1, 6, ch); } }); }); }
     return hits; };
 
   // 從標題、內容猜時間和天氣
@@ -118,16 +118,18 @@
   };
   const lookFor = id => CAFE_LOOK[id] || null;
   // 大家坐在外面：老闆站在店門口，其他人兩兩坐在兩張圓桌旁（沈岳一定坐第一張桌）
-  const SEATS = [[41,1],[59,-1],[95,1],[113,-1],[149,1],[167,-1]];
+  // 人物畫得比較大：每張桌子兩邊各坐一個（離桌子中心 15 格），先坐中間那張，再右邊，最後才坐門口那張（老闆站在門口）
+  const SEATS = [[89,1],[119,-1],[143,1],[173,-1],[35,1],[65,-1]];
   const seat = (cast, ep) => { const list = (cast || []).slice(), out = [];
     // 隔壁桌看報紙的律師（第 12 集起，固定坐最右邊那桌）
     const su = list.find(c => c.id === "su") || (ep >= 12 && typeof ARC !== "undefined" && ARC.look && ARC.look("su") ? { id:"su" } : null);
-    if (su){ list.splice(list.indexOf(su) >>> 0, list.includes(su) ? 1 : 0); out.push(Object.assign({}, su, { x:167, y:97, s:1.15, facing:-1, pose:"sit+read", look:lookFor("su") })); }
+    if (su){ list.splice(list.indexOf(su) >>> 0, list.includes(su) ? 1 : 0); out.push(Object.assign({}, su, { x:173, y:97, s:1.15, facing:-1, pose:"sit+read", look:lookFor("su") })); }
+    const seats = su ? SEATS.filter(q => q[0] !== 173) : SEATS;
     if (!list.some(c => c.id === "_you")) list.push({ id:"_you" });   // 你一定在座
     const bar = list.filter(c => c.id === "barista"), rest = list.filter(c => c.id !== "barista");
     rest.sort((a, b) => (b.id === "_you") - (a.id === "_you"));
-    bar.forEach(c => out.push(Object.assign({}, c, { x:20, y:99, s:1.2, facing:1, pose:c.pose || "stand+cup", look:lookFor(c.id) })));
-    rest.forEach((c, i) => { const [x, f] = SEATS[Math.min(i, SEATS.length - 1)], late = i >= 6;
+    bar.forEach(c => out.push(Object.assign({}, c, { x:12, y:99, s:1.2, facing:1, pose:c.pose || "stand+cup", look:lookFor(c.id) })));
+    rest.forEach((c, i) => { const [x, f] = seats[Math.min(i, seats.length - 1)], late = i >= seats.length;
       out.push(Object.assign({}, c, { x, y: late ? 99 : 97, s: late ? 1.2 : 1.15, facing: f, pose: late ? (c.pose || "stand") : "sit" + (c.pose && c.pose !== "stand" && c.pose !== "sit" ? "+" + c.pose.split("+").pop() : ""), look:lookFor(c.id) })); });
     return out; };
   const wire = (d, ep) => { if (!d) return d; if (d.sceneWanted !== "cafe" && d.scene !== "cafe") return d;

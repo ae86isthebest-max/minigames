@@ -447,7 +447,7 @@ function vInter(){
   }
   return `<div class="card" style="padding:12px"><div class="muted small" style="margin-bottom:8px">🎬 ${esc(L.title || "幕間")}</div>
     <div class="bubble court-bubble" data-type="${esc(st.text).replace(/"/g, "&quot;")}">${speaker ? `<b>${esc(speaker)}</b>` : "<b>　</b>"}<span class="say-text" style="white-space:pre-line"></span></div>
-    ${art() && L.scene ? sceneHTML(L.scene, { ...(L.opt || {}), phase:S.phase, cast }) : ""}
+    ${art() && L.scene ? sceneHTML(L.scene, { ...(L.opt || {}), phase:S.phase, cast }, "inter-scene") : ""}
     ${btns}</div>`;
 }
 // 結案畫面上的「重看幕間」按鈕
