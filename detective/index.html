@@ -412,6 +412,7 @@ body:has(.inter-scene) .toast, body:has(.wskip:not([hidden])) .toast, body.toast
 <script src="case50_items.js"></script>
 <script src="case50_art.js"></script>
 <script src="cafe.js"></script>
+<script src="topscene.js"></script>
 <script>
 /* =========================================================
    遊戲邏輯（所有案件共用）
@@ -572,6 +573,7 @@ function drawScenes(){
     const opt = JSON.parse(cv.dataset.opt||"{}");
     if (opt.who) opt.people = opt.who.map(id=>looksFor(id)).filter(Boolean);
     if (opt.cast) opt.people = opt.cast.map(c=>({ ...c, L: c.look || looksFor(c.id) })).filter(c=>c.L);
+    if (!cv.dataset.hot && typeof TOPSCENE !== "undefined" && TOPSCENE.draw(cv, cv.dataset.scene, opt)) return;
     const hits = PX.draw(cv, cv.dataset.scene, opt);
     if (cv.dataset.hot){
       const hot = JSON.parse(cv.dataset.hot);

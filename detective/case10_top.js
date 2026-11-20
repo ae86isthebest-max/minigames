@@ -599,6 +599,7 @@ C10T && (() => {
     solid:[[88,78,74,32],[8,90,54,48],[184,6,60,56]],
     exits:[ { r:[104,140,32,8], to:"tstair", at:[111,74], label:"三樓的樓梯", kind:"out", art:[102,136,36,12] } ]
   };
+  tflat.stage = { seats:[[172, 100, -1]] };   // 劇情畫面：許振業坐在桌邊那張椅子
   setLoc("tp_apt", { start:"tdoor", spawn:[112,128], rooms:{ tdoor, tstair, t4f, troof, tflat },
     spots:{
       o_mailbox:[16,12,40,30,36,70,"tdoor",A("look")],
