@@ -21,7 +21,7 @@ C17T && (() => {
   // 圓形（一行一行畫）
   const disc = (p, cx, cy, rad, col) => { for (let dy = -rad; dy <= rad; dy++){ const w = Math.round(Math.sqrt(rad * rad - dy * dy)); p.R(cx - w, cy + dy, w * 2 + 1, 1, col); } };
   // 黑布鞋一雙
-  const shoes = (p, x, y) => { p.R(x, y, 4, 7, O); p.R(x + 5, y, 4, 7, O); p.R(x + 1, y + 1, 2, 5, "#2a2a2e"); p.R(x + 6, y + 1, 2, 5, "#2a2a2e"); p.R(x + 1, y + 5, 2, 1, "#f4f4f0"); p.R(x + 6, y + 5, 2, 1, "#f4f4f0"); };
+  const shoes = (p, x, y) => { for (const sx of [x, x + 5]){ p.R(sx + 1, y, 2, 1, O); p.R(sx, y + 1, 4, 8, O); p.R(sx + 1, y + 1, 2, 7, "#2a2a30"); p.R(sx + 1, y + 2, 1, 2, "#4a4a52"); p.R(sx + 1, y + 5, 2, 3, "#121216"); p.R(sx, y + 9, 4, 1, O); p.R(sx + 1, y + 8, 2, 1, "#e8e4d8"); } };
 
   /* ---------- 廟埕：廟門、左邊的後巷口、阿月姨的麵攤、炮組的桌子、直播腳架、服務台、金爐、燈籠柱 ---------- */
   const tsquare = { name:"廟埕", w:320, h:160, wall:64,
@@ -53,7 +53,7 @@ C17T && (() => {
     },
     props:[
       // 轎班脫下來的黑布鞋（排在廟門左邊，鞋跟寫名字）
-      { y:74, draw(p, g, t, o){ if (o && o.shoes === false) return; for (let k = 0; k < 5; k++) shoes(p, 112 + k * 8 - (k > 2 ? 0 : 0), 66 + (k % 2)); p.R(112, 74, 40, 1, "rgba(0,0,0,.2)"); } },
+      { y:76, draw(p, g, t, o){ if (o && o.shoes === false) return; for (let k = 0; k < 4; k++) shoes(p, 110 + k * 11, 66 + (k % 2)); p.R(110, 76, 44, 1, "rgba(0,0,0,.2)"); } },
       // 麵攤：湯鍋（冒煙）、計時器、一疊碗
       { y:104, draw(p, g, t, o){ T.box(p, 42, 84, 54, 12, 12, "#c8ccd0", "#3a6a8a"); p.R(44, 97, 50, 6, "#e8e0cc"); p.R(48, 99, 22, 2, "#c8302a");
           p.R(46, 76, 16, 10, O); p.R(47, 77, 14, 8, "#8a8a8e"); p.R(48, 77, 12, 2, "#e8e0cc"); const s = Math.floor(t * 3) % 3; p.R(50 + s, 70, 2, 5, "rgba(240,240,240,.45)"); p.R(56 - s, 68, 2, 6, "rgba(240,240,240,.35)");
@@ -248,17 +248,17 @@ C17T && (() => {
     d17_scratch:[252,60,22,56,240,110,"talley",A("look",{ face:1 })]
   };
   const place = {
-    jiaming:[ { room:"tsquare", x:150, y:84, act:"wipe", facing:-1 }, null ],
+    jiaming:[ { room:"tsquare", x:194, y:90, act:"wipe", facing:-1 }, null ],
     de:[ { room:"tsquare", x:214, y:128, act:"cross", facing:1 }, { room:"tsquare", x:212, y:132, act:"wipe", facing:1 } ],
     pao:[ { room:"tsquare", x:92, y:132, act:"idle", facing:1 }, { room:"tsquare", x:88, y:140, act:"sweep", facing:-1 } ],
     meiling:[ { room:"tsquare", x:228, y:70, act:"idle", facing:1 }, { room:"tmain", x:148, y:132, act:"kneel", facing:1 } ],
-    ayue:[ { room:"tsquare", x:68, y:78, act:"idle", facing:1 } ],
+    ayue:[ { room:"tsquare", x:30, y:100, act:"idle", facing:1 } ],
     he:[ { room:"tsquare", x:190, y:136, act:"photo", facing:-1 }, { room:"talley", x:200, y:120, act:"photo", facing:1 } ],
     yun:[ { room:"tmain", x:228, y:74, act:"cry", facing:-1 }, null ],
     miao:[ { room:"tmain", x:84, y:90, act:"clasp", facing:-1 }, { room:"tmain", x:96, y:120, act:"sweep", facing:1 }, { room:"tmain", x:132, y:96, act:"idle", facing:1 } ],
     xu:[ { room:"toffice", x:78, y:128, act:"kneel", facing:-1 }, null ]
   };
-  const EX = { cop17:{ room:"tsquare", x:24, y:110, act:"idle", facing:1 }, emt17:{ room:"tsquare", x:296, y:140, act:"idle", facing:-1 } };
+  const EX = { cop17:{ room:"tsquare", x:22, y:138, act:"idle", facing:1 }, emt17:{ room:"tsquare", x:296, y:140, act:"idle", facing:-1 } };
   const extras = (W0.extras || []).map(e => EX[e.id] ? { ...e, ...EX[e.id] } : e);
   const intro = [ { set:{ room:"tsquare", px:160, py:156 }, hide:true }, { wait:0.3, hide:true }, { set:{ room:"tsquare", px:160, py:146 } },
     ...(W0.intro || []).filter(k => k.say || (k.wait && !k.hide)).map(k => k.say && k.say[0] === "wu" && /點畫面上的箭嘴|📍|清單不是全部/.test(k.say[1]) ? null : k).filter(Boolean),
