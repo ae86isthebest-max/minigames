@@ -105,6 +105,9 @@ C12T && (() => {
     exits:[ { r:[100,138,32,8], to:"zliving", at:[177,74], label:"客廳", kind:"out", art:[98,134,36,10] } ]
   };
 
+  // 第 15 集也去趙家：同一個家，同一套房間（共用）
+  if (typeof window !== "undefined") window.ZHAO12 = { zliving, zgirl };
+
   const spots = {
     o12_familyphoto:[18,10,40,28,38,72,"zliving",A("look")],
     o12_calendar:[64,10,20,28,74,72,"zliving",A("read")],

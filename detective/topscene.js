@@ -330,7 +330,7 @@ const TOPSCENE = (() => {
     const person = (q, t) => { const n = SP.frames(q.act), f = q.act === "idle" ? Math.floor(t * 2) % n : Math.floor(t * 4) % n;
       g.save(); g.globalAlpha = .28; g.fillStyle = "#000"; g.beginPath(); g.ellipse(Math.round(q.x), Math.round(q.y), 7, 2.2, 0, 0, 7); g.fill(); g.restore();
       SP.draw(g, q.x, q.y, q.L, { view:q.view, facing:q.face, act:q.act, f });
-      if (q.mark){ const b = Math.round(Math.sin(t * 4) * 1.5), mx = Math.round(q.x), my2 = Math.round(q.y) - 50 + b; p.R(mx - 4, my2, 9, 2, O); p.R(mx - 3, my2 + 2, 7, 2, O); p.R(mx - 2, my2 + 4, 5, 2, O); p.R(mx - 3, my2, 7, 1, "#f2c43a"); p.R(mx - 2, my2 + 2, 5, 1, "#f2c43a"); p.R(mx - 1, my2 + 4, 3, 1, "#f2c43a"); } };
+      if (q.mark){ const b = Math.round(Math.sin(t * 4) * 1.5), mx = Math.round(q.x), my2 = Math.round(q.y) - (/^sit/.test(q.act || "") ? 46 : 50) + b; p.R(mx - 4, my2, 9, 2, O); p.R(mx - 3, my2 + 2, 7, 2, O); p.R(mx - 2, my2 + 4, 5, 2, O); p.R(mx - 3, my2, 7, 1, "#f2c43a"); p.R(mx - 2, my2 + 2, 5, 1, "#f2c43a"); p.R(mx - 1, my2 + 4, 3, 1, "#f2c43a"); } };
     const backHead = (q, x) => { const L = q.L || {}, hair = L.hair || "#2a2220", top = L.coat || L.top || "#3a4250", skin = L.skin || "#e8c09a", long = /long|pony|bob|bun/.test(L.hairStyle || "");
       p.R(x - 22, 104, 44, 14, O); p.R(x - 21, 105, 42, 13, top); p.R(x - 5, 98, 10, 8, skin);                        // 肩膀、脖子
       p.R(x - 11, 82, 2, 6, skin); p.R(x + 9, 82, 2, 6, skin);                                                           // 耳朵
