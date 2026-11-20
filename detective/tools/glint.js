@@ -22,7 +22,7 @@ const { chromium } = require('playwright');
     const close = () => p.evaluate(() => { wTalk = null; wSay = null; peek = null; wRoom = null; wAct = null; TOPW.endUse(); render(); });
     const o = r[name] = {};
     o.top = await p.evaluate(() => WE === TOPW);
-    await put("security", 124, 100); await p.waitForTimeout(400); o.security = await near();
+    await put("security", 90, 96); await p.waitForTimeout(400); o.security = await near();
     await put("study", 40, 110); await p.waitForTimeout(400); o.study = await near();
     // 小東西：書房門邊的密碼鎖 v_keypad [0,88,7,12]。點在它右邊外面 3 格、上面 2 格
     await tapAt(10, 86); o.tapNear = await found();
@@ -31,13 +31,13 @@ const { chromium } = require('playwright');
     // 離很遠（牆上兩幅東西中間）不算
     await tapAt(180, 30); o.tapFar = await found();
     // 人擋在前面：保全室裡，讓周曉晴站在值班紀錄本（v_log）前面，整本被擋住
-    await close(); await p.evaluate(() => { C.world._.top.place._chow = C.world._.top.place.chow; C.world._.top.place.chow = { room:"security", x:65, y:76, act:"idle", view:"down" }; });
-    await put("security", 150, 120); await p.waitForTimeout(500);
+    await close(); await p.evaluate(() => { C.world._.top.place._chow = C.world._.top.place.chow; C.world._.top.place.chow = { room:"security", x:60, y:74, act:"idle", view:"down" }; });
+    await put("security", 130, 118); await p.waitForTimeout(500);
     const ui = () => p.evaluate(() => [wTalk, peek && peek.kind + ":" + peek.id, (S.found || []).join()].join("|"));
     const g = id => p.evaluate(id => { const q = curHooks.spots().find(q => q.id === id || (q.ids || []).includes(id)); return TOPW.glintAt(q); }, id);
     const snow = await g('v_snow'); o.pts = [snow, await p.evaluate(() => { const q = curHooks.spots().find(q => q.id === 'v_log'); const pp = curHooks.people().find(x => x.id === 'chow'); return [q.r, pp.x, pp.y]; })];
     o.cover = await g('v_log');
-    await tapAt(73, 50); o.body = await ui(); await close();                          // 點在人身上（頭）→ 找人
+    await tapAt(60, 44); o.body = await ui(); await close();                          // 點在人身上（頭）→ 找人
     await tapAt(o.cover.x, o.cover.y); o.covered = await ui(); await close();        // 整個被擋住的東西，點它閃的位置 → 先看東西
     await tapAt(o.cover.x, o.cover.y); o.coveredAgain = await ui(); await close();   // 看過之後再點同一個位置 → 才輪到人
     await p.evaluate(() => { C.world._.top.place.chow = C.world._.top.place._chow; delete C.world._.top.place._chow; render(); });
