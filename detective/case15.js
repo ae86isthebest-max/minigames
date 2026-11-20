@@ -63,7 +63,7 @@ const EP15 = {
     { id:"e_li", phase:0, atLoc:"safehouse", title:"督察組",
       text:"五樓走廊的燈太亮了。黎光耀站在安全屋門口，白襯衫的袖子捲到手肘，袖口有一點血。\n「我 01:00 到的。」他看著你，「這個地址，全世界只有九個人知道。」\n他翻開小本子：「你們查。我在旁邊看。」",
       clue:"黎光耀 01:00 到安全屋；他說這個地址只有九個人知道",
-      scene:{ title:"安全屋・五樓走廊", scene:"s15_hall", cast:[ { id:"_you", x:40 }, { id:"li", x:120, facing:-1, pose:"stand" }, { id:"lin", x:90, facing:1, pose:"sit" } ], lines:[
+      scene:{ title:"安全屋・五樓走廊", scene:"s15_hall", cast:[ { id:"_you", x:0 }, { id:"li", x:142, facing:-1, pose:"stand" }, { id:"lin", x:90, facing:1, pose:"sit" } ], lines:[
         { who:"narr", text:"五樓走廊的燈太亮了。黎光耀站在安全屋門口，白襯衫的袖子捲到手肘，袖口沾了一點血。" },
         { who:"li", text:"我 01:00 到的。看守的林志豪在 00:30 發現他。" },
         { who:"li", text:"這個地址，全世界只有九個人知道。" },
@@ -73,7 +73,7 @@ const EP15 = {
     { id:"e_li_vow", phase:0, atLoc:"safehouse", requires:["arc:c_ep5_vow"], title:"督察組的問題",
       text:"黎光耀把你叫到樓梯間。\n「我聽說，你從五月就在查一通電話。綁架案那天，有人用局裡的電話通風報信。」他看著你，「你為什麼沒有跟督察組說？」\n他問了很久。",
       clue:"黎光耀知道你從五月就在私下查那通通風報信的電話，把你叫去問了一輪",
-      scene:{ title:"安全屋・樓梯間", scene:"s15_hall", cast:[ { id:"_you", x:60 }, { id:"li", x:100, facing:-1, pose:"stand" } ], lines:[
+      scene:{ title:"安全屋・樓梯間", scene:"s15_hall", cast:[ { id:"_you", x:0 }, { id:"li", x:24, facing:-1, pose:"stand" } ], lines:[
         { who:"li", text:"我聽說，你從五月就在查一通電話。綁架案那天，有人用局裡的電話通風報信。" },
         { who:"li", text:"你為什麼沒有跟督察組說？" },
         { who:"you", text:"（他翻開小本子，一題一題地問。）", choices:[ { text:"一題一題地回答他", mins:20 } ] },
@@ -82,7 +82,7 @@ const EP15 = {
     { id:"e_li_deal", phase:0, atLoc:"safehouse", requires:["arc:c_zhao_deal"], title:"折起來的那一頁",
       text:"黎光耀從公事包裡拿出一份報告——你在第 12 集寫的那一份。有一頁被折起來過，折痕很深。\n「趙德安銀行裡那三十萬，你的報告裡沒有。」他說，「你跟他換了什麼？」\n他又問了一輪。",
       clue:"黎光耀發現你的報告少了趙德安銀行那三十萬，又問了你一輪",
-      scene:{ title:"安全屋・樓梯間", scene:"s15_hall", cast:[ { id:"_you", x:60 }, { id:"li", x:100, facing:-1, pose:"read" } ], lines:[
+      scene:{ title:"安全屋・樓梯間", scene:"s15_hall", cast:[ { id:"_you", x:0 }, { id:"li", x:24, facing:-1, pose:"read" } ], lines:[
         { who:"narr", text:"黎光耀從公事包裡拿出一份報告。有一頁被折起來過，折痕很深。" },
         { who:"li", text:"趙德安銀行裡那三十萬，你的報告裡沒有。你跟他換了什麼？" },
         { who:"you", text:"（你把「阿帽」兩個字告訴他。他寫下來，又問了很多。）", choices:[ { text:"把經過說清楚", mins:20 } ] },
