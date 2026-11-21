@@ -6,8 +6,11 @@ const {chromium}=require('playwright'); const PORT=process.env.PORT||8765;
 await p.goto(`http://localhost:${PORT}/index.html`); await p.waitForTimeout(500);
 // 原本用第 6 集；第 6 集起陸續改成俯視畫面（TOPW），改成從最後一集往前找：整集還是橫向畫面、沒有自己寫 EPn.car、開頭就有第二個地點、第一個地點的開場有車
 // 第 38 集起，沒有自己寫 EPn.car 的集數全部都是俯視畫面了：也可以用自己寫了 EPn.car 的橫向集數（run() 每一次都先把 EPn.car 拿掉、換成要試的設定）
-const CI=await p.evaluate(async()=>{ for (let i=CASES.length-1;i>=0;i--){ const c=CASES[i]; if (c.car===false || Object.values(c.world||{}).some(w=>w&&(w.top||w.car!==undefined))) continue;
-  localStorage.clear(); await openCase(i); for (let k=0;k<30&&inter;k++) closeSheet(); if (SHEETS.includes(tab)) closeSheet();
+// 第 50 集起全部都是俯視：第二輪把那一集換回原本的橫向設定（setLoc 留下的 prev，只在這個測試頁裡）來試
+const CI=await p.evaluate(async()=>{ for (const pass of [0,1]) for (let i=CASES.length-1;i>=0;i--){ const c=CASES[i]; if (c.car===false) continue;
+  if (pass) Object.keys(c.world||{}).forEach(k=>{ const w=c.world[k]; if (w&&w.top) c.world[k]=w.prev||{}; });
+  if (Object.values(c.world||{}).some(w=>w&&(w.top||w.car!==undefined))) continue;
+  c.locations.forEach(l=>WORLD.reset(l.id)); localStorage.clear(); await openCase(i); for (let k=0;k<30&&inter;k++) closeSheet(); if (SHEETS.includes(tab)) closeSheet();
   const l=C.locations.find(x=>locOpen(x) && x.id!==curLoc().id); if (l && WK.arrive(worldDef(l)).some(k=>k.car)) return i; } return -1; });
 const run=(car, locCar, fresh)=>p.evaluate(async ([car, locCar, fresh, CI])=>{ localStorage.clear(); try{ ARC.reset(); }catch(e){} window.uiConfirm=async()=>true; window.toast=()=>{};
   const E=CASES[CI]; delete E.car; if (car !== null) E.car = car; if (fresh) E.locations.forEach(l=>WORLD.reset(l.id));
