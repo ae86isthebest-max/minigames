@@ -403,7 +403,10 @@ const TOPW = (() => {
      每個房間畫成一格，還沒看過的東西用星星標出來；點星星＝走過去看，點房間＝走過去 ---------- */
   function plan(canvas, onPick){
     if (!cur || !cur.def.top.plan) return;
-    const s = cur.s, floors = cur.def.top.plan, dpr = Math.min(3, window.devicePixelRatio || 1);
+    // 一層樓／一組房間裡，一間都還沒開放：連標題都不畫（不然等於先告訴玩家有這個地方）
+    const open = rid => { const R = rooms()[rid]; return !!R && !(cur.hooks.planRoom && !cur.hooks.planRoom(rid)); };
+    const s = cur.s, floors = cur.def.top.plan.filter(f => Object.keys(f.rooms).some(open)), dpr = Math.min(3, window.devicePixelRatio || 1);
+    if (!floors.length) return;
     const cw = canvas.clientWidth || 300, pad = 6, head = 18, sc = (cw - pad * 2) / Math.max(...floors.map(f => f.w));
     const hs = floors.map(f => head + f.h * sc + 8), ch = hs.reduce((a, c) => a + c, 0);
     canvas.width = Math.round(cw * dpr); canvas.height = Math.round(ch * dpr); canvas.style.height = ch + "px";
@@ -414,7 +417,7 @@ const TOPW = (() => {
       g.fillStyle = "#cfc6b8"; g.font = "bold 12px sans-serif"; g.textBaseline = "top"; g.fillText(f.name, pad, y0 + 2);
       const oy = y0 + head;
       Object.entries(f.rooms).forEach(([rid, b]) => {
-        const R = rooms()[rid]; if (!R || (cur.hooks.planRoom && !cur.hooks.planRoom(rid))) return;
+        const R = rooms()[rid]; if (!open(rid)) return;
         const x = pad + b[0] * sc, y = oy + b[1] * sc, w = b[2] * sc, h = b[3] * sc, mine = rid === s.room, out = b[4] === "out";
         g.fillStyle = out ? "#1d2a20" : "#2a221b"; g.fillRect(x, y, w, h);
         g.strokeStyle = mine ? "#6fd46f" : "#7a6a58"; g.lineWidth = mine ? 2.5 : 1.2; g.strokeRect(x + .5, y + .5, w - 1, h - 1);
