@@ -242,6 +242,7 @@ C28T && (() => {
             { r:[252,66,24,8], to:"check", at:[128,126], label:"安檢所", kind:"door", art:[252,36,24,30] } ]
   };
 
+  if (typeof window !== "undefined") window.MARKET28 = market;
   setLoc("harbour", { start:"market", spawn:[150,132], rooms:{ market, check, berth },
     spots:{
       cctv28_pier:[20,72,22,14,31,118,"market",A("look")],

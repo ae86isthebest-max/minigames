@@ -263,6 +263,7 @@ C17T && (() => {
   const intro = [ { set:{ room:"tsquare", px:160, py:156 }, hide:true }, { wait:0.3, hide:true }, { set:{ room:"tsquare", px:160, py:146 } },
     ...(W0.intro || []).filter(k => k.say || (k.wait && !k.hide)).map(k => k.say && k.say[0] === "wu" && /點畫面上的箭嘴|📍|清單不是全部/.test(k.say[1]) ? null : k).filter(Boolean),
     { say:["wu", "想去哪裡，點畫面上的門口就會自己走過去。閃著星星的就是還沒看過的東西，按上面的「🧭 平面圖」看全部在哪裡。"], name:"小吳" } ];
+  if (typeof window !== "undefined") window.TSQ17 = tsquare;
   setLoc("temple", { start:"tsquare", spawn:[160,146], rooms:{ tsquare, tmain, toffice, talley }, spots, details, place, extras, intro,
     plan:[ { name:"天后宮", w:100, h:52, rooms:{ talley:[0,0,40,14,"out"], tmain:[40,14,40,20], toffice:[80,14,20,20], tsquare:[0,34,100,18,"out"] } } ] });
 })();

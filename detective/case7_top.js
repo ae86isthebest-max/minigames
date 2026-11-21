@@ -509,6 +509,7 @@ C7T && (() => {
   function mjTable(p, x, y, t){ T.box(p, x, y, 28, 20, 6, "#2a6a3a", "#5a3a22"); p.R(x + 2, y + 2, 24, 16, "#3a8a4a");
     for (let k = 0; k < 6; k++){ p.R(x + 4 + k * 3, y + 3, 2, 3, "#f4f0e0"); p.R(x + 4 + k * 3, y + 14, 2, 3, "#f4f0e0"); }
     for (const [cx, cy, f] of [[x - 6, y + 14, "right"], [x + 34, y + 14, "left"]]) T.chair(p, cx, cy, "#8a1a1a", f); }
+  if (typeof window !== "undefined") window.MJ7 = mjhall;
   setLoc("mahjong", { start:"mjhall", spawn:[158,150], rooms:{ mjhall },
     spots:{
       cctv_mahjong:[56,50,16,10,88,96,"mjhall",A("type",{ actT:2, face:-1 })],
