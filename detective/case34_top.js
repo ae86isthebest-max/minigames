@@ -175,6 +175,7 @@ C34T && (() => {
     exits:[ { r:[0,80,8,34], to:"evoffice", at:[216,74], label:"證物室前台", kind:"door", art:[0,78,8,38] } ]
   };
 
+  if (typeof window !== "undefined") window.PD34 = { meet, lobby };
   setLoc("police", { start:"meet", spawn:[150,136], rooms:{ meet, lobby, mail, canteen, evoffice, cshelf },
     spots:{
       cctv34_lobby:[64,64,20,14,90,112,"lobby",A("type",{ actT:2, face:-1 })],

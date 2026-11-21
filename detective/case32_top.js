@@ -210,6 +210,7 @@ C32T && (() => {
     exits:[ { r:[0,60,8,44], to:"back", at:[300,84], label:"魚市的後巷", kind:"door", art:[0,60,8,44] } ]
   };
 
+  if (typeof window !== "undefined") window.HALL32 = hall;
   setLoc("market", { start:"hall", spawn:[150,132], rooms:{ hall, back, bank },
     spots:{
       cctv32_alley:[20,72,22,14,31,118,"hall",A("type",{ actT:2 })],
