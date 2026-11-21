@@ -5,7 +5,8 @@ const {chromium}=require('playwright'); const PORT=process.env.PORT||8765;
 (async()=>{ const b=await chromium.launch(); const p=await b.newPage({viewport:{width:1180,height:820}}); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
 await p.goto(`http://localhost:${PORT}/index.html`); await p.waitForTimeout(500);
 // 原本用第 6 集；第 6 集起陸續改成俯視畫面（TOPW），改成從最後一集往前找：整集還是橫向畫面、沒有自己寫 EPn.car、開頭就有第二個地點、第一個地點的開場有車
-const CI=await p.evaluate(async()=>{ for (let i=CASES.length-1;i>=0;i--){ const c=CASES[i]; if (c.car!==undefined || Object.values(c.world||{}).some(w=>w&&(w.top||w.car!==undefined))) continue;
+// 第 38 集起，沒有自己寫 EPn.car 的集數全部都是俯視畫面了：也可以用自己寫了 EPn.car 的橫向集數（run() 每一次都先把 EPn.car 拿掉、換成要試的設定）
+const CI=await p.evaluate(async()=>{ for (let i=CASES.length-1;i>=0;i--){ const c=CASES[i]; if (c.car===false || Object.values(c.world||{}).some(w=>w&&(w.top||w.car!==undefined))) continue;
   localStorage.clear(); await openCase(i); for (let k=0;k<30&&inter;k++) closeSheet(); if (SHEETS.includes(tab)) closeSheet();
   const l=C.locations.find(x=>locOpen(x) && x.id!==curLoc().id); if (l && WK.arrive(worldDef(l)).some(k=>k.car)) return i; } return -1; });
 const run=(car, locCar, fresh)=>p.evaluate(async ([car, locCar, fresh, CI])=>{ localStorage.clear(); try{ ARC.reset(); }catch(e){} window.uiConfirm=async()=>true; window.toast=()=>{};
