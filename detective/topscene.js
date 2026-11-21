@@ -404,6 +404,7 @@ const TOPSCENE = (() => {
   };
 
   function resolve(name, opt){
+    try { if (typeof C !== "undefined" && C && C.topStages && C.topStages[name]){ const s0 = C.topStages[name](opt); if (s0) return s0; } } catch (e){}
     if (name === "police" && /頂樓/.test(opt.title || "")) return STAGES.roof(opt);
     if (ALIAS[name]) return STAGES[ALIAS[name]](opt);
     if (STAGES[name]) return STAGES[name](opt);

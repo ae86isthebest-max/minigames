@@ -183,6 +183,7 @@ C36T && (() => {
     exits:[ { r:[0,80,8,50], to:"lot", at:[310,106], label:"店後面的停車場", kind:"door", art:[0,78,8,54] } ]
   };
 
+  if (typeof window !== "undefined") window.LOT36 = lot;
   setLoc("shop", { start:"front", spawn:[220,104], rooms:{ front, inside, lot, lane },
     spots:{
       o36_shutter:[30,20,60,30,60,62,"front",A("look")],
