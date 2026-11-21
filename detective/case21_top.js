@@ -62,14 +62,14 @@ C21T && (() => {
       // 兩張摺疊椅對著火堆（一張搭著毯子）
       { y:116, draw(p){ chair(p, 112, 116, "#3a6a8a", false); chair(p, 154, 116, "#3a6a3a", true); } },
       // 社長帳篷門口的小凳子
-      { y:104, draw(p){ p.R(232, 98, 12, 6, O); p.R(233, 99, 10, 4, "#5a5a5a"); p.R(234, 103, 2, 3, O); p.R(240, 103, 2, 3, O); } },
+      { y:114, draw(p){ p.R(232, 108, 12, 6, O); p.R(233, 109, 10, 4, "#5a5a5a"); p.R(234, 113, 2, 3, O); p.R(240, 113, 2, 3, O); } },
       // 守夜表（夾板掛在營地的小桌子上）
       { y:132, draw(p){ T.box(p, 168, 124, 30, 8, 6, "#8a8e94", "#5a5e64", { legs:2 }); p.R(174, 118, 14, 10, O); p.R(175, 119, 12, 8, "#f4f0e0"); for (let k = 0; k < 3; k++) p.R(177, 121 + k * 2, 8, 1, "#3a3a6a"); p.R(178, 117, 6, 2, "#8a6a4a"); } },
       // 綁好的垃圾袋
       { y:138, draw(p){ p.R(206, 124, 14, 14, O); p.R(207, 125, 12, 12, "#2a2a2e"); p.R(210, 122, 6, 4, O); p.R(211, 123, 4, 2, "#2a2a2e"); p.R(208, 127, 4, 2, "#e9c43a"); } }
     ],
     front(p, g, t, o){ tone(g, this, o, .7); fog(g, this, t, o); },
-    solid:[[20,56,54,32],[80,46,112,22],[212,58,52,36],[96,82,26,26],[122,94,20,16],[104,104,16,14],[146,104,16,14],[230,96,16,10],[166,116,34,16],[204,120,18,18]],
+    solid:[[20,56,54,32],[80,46,112,22],[212,58,52,36],[96,82,26,26],[122,94,20,16],[104,104,16,14],[146,104,16,14],[230,106,16,10],[166,116,34,16],[204,120,18,18]],
     exits:[ { r:[280,86,8,30], to:"trail", at:[18,92], label:"往廁所的步道", kind:"out", art:[272,84,16,34] } ]
   };
 
@@ -196,14 +196,14 @@ C21T && (() => {
     d21_light:[232,62,44,42,262,112,"below",A("look",{ face:1 })]
   };
   const place = {
-    guanyu:[ { room:"camp", x:238, y:104, act:"sit", facing:-1, view:"side" }, null ],
+    guanyu:[ { room:"camp", x:238, y:114, act:"sit", facing:-1, view:"side" }, null ],
     zhaosi:[ { room:"camp", x:112, y:116, act:"sit", facing:1, view:"side" }, { room:"camp", x:112, y:116, act:"sit", facing:1, view:"side" } ],
     yutong:[ { room:"camp", x:172, y:108, act:"cry", facing:-1 }, { room:"camp", x:172, y:108, act:"idle", facing:-1 } ],
-    zhiming:[ { room:"camp", x:84, y:94, act:"idle", facing:-1 }, { room:"camp", x:84, y:94, act:"idle", facing:-1 } ],
+    zhiming:[ { room:"camp", x:100, y:140, act:"idle", facing:1 }, { room:"camp", x:100, y:140, act:"idle", facing:1 } ],
     zhang:[ { room:"below", x:244, y:114, act:"idle", facing:-1 }, { room:"below", x:244, y:114, act:"idle", facing:-1 } ],
     kui:[ { room:"cliff", x:132, y:110, act:"kneel", facing:1 }, null ]
   };
-  const EX = { cop21:{ room:"camp", x:246, y:126, act:"idle", facing:-1 } };
+  const EX = { cop21:{ room:"camp", x:272, y:138, act:"idle", facing:-1 } };
   const extras = (W0.extras || []).map(e => EX[e.id] ? { ...e, ...EX[e.id] } : e);
   const intro = [ { set:{ room:"camp", px:12, py:120 }, hide:true }, { wait:0.3, hide:true }, { set:{ room:"camp", px:60, py:124 } },
     ...(W0.intro || []).filter(k => k.say || (k.wait && !k.hide)).map(k => k.say && k.say[0] === "wu" && /點畫面上的箭嘴|📍|清單不是全部/.test(k.say[1]) ? null : k).filter(Boolean),
