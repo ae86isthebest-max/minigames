@@ -556,6 +556,7 @@ C28T && (() => {
     exits:[ { r:[96,124,40,6], to:"deck", at:[47,56], label:"後甲板", kind:"out", art:[96,124,40,6] } ]
   };
 
+  if (typeof window !== "undefined") window.FRONT28 = front;
   setLoc("pier", { start:"front", spawn:[310,134], rooms:{ front, oldpier, yard, deck, wheel },
     spots:{
       o28_truck:[260,96,70,28,296,132,"front",A("look")],

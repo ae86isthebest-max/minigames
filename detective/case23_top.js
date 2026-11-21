@@ -296,6 +296,7 @@ C23T && (() => {
     solid:[[88,50,74,44],[184,68,56,30],[28,106,26,14],[68,106,26,14],[154,110,42,30]],
     exits:[]
   };
+  if (typeof window !== "undefined") window.ICE23 = iice;
   setLoc("ice", { start:"iice", spawn:[40,136], rooms:{ iice },
     spots:{ o23_scooter:[154,108,42,32,140,124,"iice",A("crouch",{ face:1 })], o23_cards:[14,22,48,26,40,100,"iice",A("look")] },
     details:{ d23_shaver:[100,50,26,34,100,100,"iice",A("look")] },
