@@ -269,6 +269,7 @@ C20T && (() => {
     },
     extras:(EP.world.hospital || {}).extras || [],
     plan:[ { name:"澄港醫院急診室", w:100, h:30, rooms:{ er:[0,0,100,30] } } ] });
+  if (typeof window !== "undefined") window.ER20 = er;   // 澄港醫院急診（之後的集數同一間）
 
   /* ---------- 鑑識中心：螢幕上兩條完全不像的圖譜；採證台上一排證物袋「夜市 #1–#43」 ---------- */
   setLoc("lab", { start:"lab", spawn:[144,140],

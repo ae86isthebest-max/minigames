@@ -319,6 +319,36 @@ const TOPSCENE = (() => {
     return { room, row:[60, 230, 112], seats:[[76, 118, 1]] };
   };
 
+  // 漁港・阿珠冰店門口（晚上）：海和兩艘漁船、冰店鐵門拉下（藍招牌，和第 23 集同一間）、旁邊一支漆都掉光的公共電話、路燈、碼頭的水泥地
+  STAGES.pierPhone = (o) => {
+    const room = { w:288, h:150, wall:66,
+      floor(p, g, t){
+        p.R(0, 0, 288, 22, "#0a0f1c"); for (let k = 0; k < 12; k++) p.R((k * 41 + 7) % 288, 2 + (k * 11) % 16, 1, 1, "#8a8aa0");
+        p.R(0, 22, 288, 44, "#0e1a2a"); for (let k = 0; k < 14; k++) p.R((k * 29 + Math.floor(t * 6)) % 288, 28 + (k % 5) * 7, 10, 1, "#2a4a6a");
+        // 兩艘漁船（桅杆上一顆紅燈）
+        for (const [x, c] of [[18, "#c8402a"], [74, "#3a6aa8"]]){ p.R(x - 1, 46, 48, 12, O); p.R(x, 47, 46, 10, c); p.R(x, 47, 46, 2, sh(c, .2)); p.R(x + 12, 38, 16, 10, O); p.R(x + 13, 39, 14, 8, "#e8e4da"); p.R(x + 22, 20, 1, 20, "#8a8a8a"); p.R(x + 21, 19, 3, 3, Math.floor(t * 2) % 2 ? "#ff3a2a" : "#8a1a14"); }
+        // 冰店（兩層、鐵門拉下、藍招牌「阿珠冰」）
+        p.R(150, 0, 138, 66, "#3a3a42"); p.R(150, 0, 138, 2, "#4a4a52"); for (let c = 0; c < 4; c++){ p.R(158 + c * 32, 6, 18, 12, O); p.R(159 + c * 32, 7, 16, 10, c === 1 ? "#e8d890" : "#1a1c24"); }
+        p.R(162, 24, 80, 12, O); p.R(163, 25, 78, 10, "#3a8ac8"); for (let k = 0; k < 3; k++) p.R(180 + k * 16, 27, 10, 6, "#f4f4f0");
+        p.R(166, 38, 72, 28, O); p.R(167, 39, 70, 27, "#5a5e62"); for (let y = 41; y < 66; y += 3) p.R(167, y, 70, 1, "#4a4e52");
+        // 碼頭的水泥地、護欄
+        p.R(0, 62, 150, 4, "#5a5a5e"); for (let x = 4; x < 150; x += 16){ p.R(x, 54, 3, 10, O); p.R(x + 1, 55, 1, 8, "#8a8a8a"); } p.R(0, 56, 150, 2, "#8a8a8a");
+        p.R(0, 66, 288, 84, "#3a3a3e"); p.seed(23); for (let k = 0; k < 220; k++) p.R(p.rnd() * 288, 66 + p.rnd() * 84, 2, 1, k % 2 ? "#34343a" : "#424248");
+        for (let x = 0; x < 288; x += 24) p.R(x, 66, 1, 84, "#2e2e34");
+      },
+      props:[
+        // 公共電話（漆都掉光了）
+        { y:82, draw(p){ p.R(248, 40, 18, 32, O); p.R(249, 41, 16, 30, "#2a5a4a"); p.R(250, 43, 14, 14, "#8a9a8a"); p.R(252, 45, 10, 4, "#1a1a1a"); p.R(253, 51, 8, 4, "#5a5a5a"); p.R(262, 57, 2, 10, "#1a1a1a");
+            for (let k = 0; k < 7; k++) p.R(249 + (k * 5) % 15, 42 + (k * 7) % 28, 2, 2, "#6a7a6a"); p.R(252, 72, 3, 10, O); p.R(259, 72, 3, 10, O); } },
+        // 路燈
+        { y:96, draw(p, g){ T.streetLamp(p, g, 130, 96); } },
+        // 冰店門口的保麗龍箱
+        { y:80, draw(p){ T.box(p, 172, 70, 20, 8, 6, "#f4f4f0", "#c8c8c4"); T.box(p, 196, 72, 16, 6, 6, "#f4f4f0", "#c8c8c4"); } }
+      ],
+      front(p, g, t){ tone(g, 288, 150, "#0a0c1e", .3); T.glow(g, 138, 46, 70, "255,230,170", .14); } };
+    return { room, row:[110, 270, 112] };
+  };
+
   /* ---------- 地點裡的房間 ---------- */
   const ALIAS = { pol6:"interrog" };
   function resolve(name, opt){
@@ -332,6 +362,7 @@ const TOPSCENE = (() => {
     if (name === "funeral") return STAGES.funeralOut(opt);
     if (name === "c19_street") return STAGES.oldLane(opt);
     if (name === "c20_apart") return STAGES.messyFlat(opt);
+    if (name === "c26_pier") return STAGES.pierPhone(opt);
     return null;
   }
   function findRoom(name){
