@@ -174,6 +174,7 @@ C24T && (() => {
     exits:[ { r:[88,122,32,8], to:"lobby", at:[80,72], label:"大廳", kind:"out", art:[86,118,36,12] } ]
   };
 
+  if (typeof window !== "undefined") window.ANHE24 = { lobby, lounge };
   const spots = {
     cctv24_lounge:[46,72,18,14,80,96,"lobby",A("look",{ face:-1 })],
     o24_visitbook:[110,78,20,8,120,112,"lobby",A("read")],

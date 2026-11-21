@@ -186,6 +186,7 @@ C46T && (() => {
   };
 
   const XP = { x46_dog:{ room:"dock", x:66, y:134, act:"lie", facing:1 } };
+  if (typeof window !== "undefined") window.MARKET46 = { lot, dock };
   setLoc("market", { start:"lot", spawn:[200,128], rooms:{ lot, guard, office, dock, cold },
     spots:{
       cctv46_dock:[120,14,52,12,146,70,"guard",A("type",{ actT:2 })],

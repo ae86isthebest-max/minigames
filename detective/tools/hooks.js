@@ -10,7 +10,8 @@ await p.goto(`http://localhost:${PORT}/index.html`); await p.waitForTimeout(500)
 await p.evaluate(async()=>{ localStorage.clear(); try{ ARC.reset(); }catch(e){} window.uiConfirm=async()=>true; window.toast=()=>{};
   // 用哪一集：第 6 集起陸續改成俯視畫面（TOPW），這裡從最後一集往前找一集還是橫向畫面、開頭就有「兩個房間以上、全在室內」的另一個地點
   window.okLoc=l=>locOpen(l) && l.id!==curLoc().id && roomsOf(l).length>1 && roomsOf(l).every(r=>!(C.outScenes||[]).includes(r.scene)) && (worldDef(l).buildings||[]).length===1 && worldDef(l).buildings[0].x0<200;   // 一棟、房間全在室內、離街口不遠（取樣點在畫面裡）
-  for (let i=CASES.length-1;i>=0;i--){ const c=CASES[i]; if (Object.values(c.world||{}).some(w=>w&&w.top)) continue; await openCase(i); for (let k=0;k<30&&inter;k++) closeSheet(); if (SHEETS.includes(tab)) closeSheet(); if (C.locations.some(okLoc)) break; }
+  // 全部都改成俯視以後：第二輪把那一集換回原本的橫向設定（setLoc 留下的 prev，只在這個測試頁裡）來試
+  let found=false; for (const pass of [0,1]){ for (let i=CASES.length-1;i>=0;i--){ const c=CASES[i], tops=Object.values(c.world||{}).filter(w=>w&&w.top); if (tops.length && !pass) continue; Object.keys(c.world||{}).forEach(k=>{ const w=c.world[k]; if (w&&w.top) c.world[k]=w.prev||{}; }); await openCase(i); for (let k=0;k<30&&inter;k++) closeSheet(); if (SHEETS.includes(tab)) closeSheet(); if (C.locations.some(okLoc)){ found=true; break; } } if (found) break; }
   for (let i=0;i<30&&inter;i++) closeSheet(); if (SHEETS.includes(tab)) closeSheet(); WORLD.skip(); render(); });
 const lid=await p.evaluate(()=>C.locations.find(okLoc).id);
 const enter=async(opt)=>{ await p.evaluate(([lid,opt])=>{ const w=(C.world=C.world||{}); if (!('__k' in window)) window.__k=w[lid]; w[lid]=opt?{ ...(window.__k||{}), ...eval('('+opt+')') }:window.__k; if (w[lid]===undefined) delete w[lid];
