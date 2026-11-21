@@ -302,8 +302,19 @@ const TOPW = (() => {
   /* ---------- 畫 ---------- */
   function shadow(g, x, y, w){ g.save(); g.globalAlpha = 0.28; g.fillStyle = "#000"; g.beginPath(); g.ellipse(Math.round(x), Math.round(y), w / 2, 2.2, 0, 0, 7); g.fill(); g.restore(); }
   // 人的樣子：走路用 8 格；站著的人照 pose（sit／lie／kneel……之後再加），先用待機呼吸
+  // 狗（look.kind:"dog"）：俯視版自己畫一隻小狗（趴著 lie／坐著 sit，其他當站著）
+  function dogBody(g, q, t){
+    const L = q.L || {}, c = L.coat || "#f0dcb0", dk = "#2a1e14", f = q.face || 1, act = q.act || "";
+    const R = (a, b, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(q.x + (f > 0 ? a : -a - w)), Math.round(q.y + b), w, h); };
+    const tail = Math.floor(t * 3 + q.x) % 2;
+    if (act === "lie"){ R(-10, -7, 17, 7, dk); R(-9, -6, 15, 5, c); R(6, -10, 9, 8, dk); R(7, -9, 7, 6, c); R(7, -11, 3, 2, dk); R(11, -7, 1, 1, dk); R(14, -6, 1, 1, dk); R(5, -8, 2, 5, L.collar || "#3a6ac8"); R(8, -2, 6, 2, dk); R(9, -2, 4, 1, c); R(-13, -5 - tail, 3, 2, c); return; }
+    if (act === "sit"){ R(-6, -11, 11, 11, dk); R(-5, -10, 9, 10, c); R(0, -18, 10, 9, dk); R(1, -17, 8, 7, c); R(1, -19, 3, 2, dk); R(6, -15, 1, 1, dk); R(9, -14, 1, 1, dk); R(0, -10, 6, 2, L.collar || "#3a6ac8"); R(2, -2, 3, 2, dk); R(-9, -3 - tail, 3, 2, c); return; }
+    R(-9, -11, 16, 7, dk); R(-8, -10, 14, 5, c); R(6, -15, 9, 8, dk); R(7, -14, 7, 6, c); R(7, -16, 3, 2, dk); R(11, -12, 1, 1, dk); R(14, -11, 1, 1, dk); R(5, -12, 2, 5, L.collar || "#3a6ac8");
+    for (const a of [-7, -3, 2, 5]) R(a, -4, 2, 4, dk); R(-12, -12 - tail, 3, 2, c);
+  }
   function body(g, q, t){
     const L = q.L || {}, moving = q.moving;
+    if (L.kind === "dog") return dogBody(g, q, t);
     const act = moving ? "walk" : (SP.ACTS[q.act] ? q.act : "idle");
     // 做動作（查證、倒地……）一律用側面，才看得清楚手腳；只有走路和站著才分正面／背面
     const view = act !== "walk" && act !== "idle" ? "side" : q.dir === "up" ? "back" : q.dir === "down" ? "front" : "side";

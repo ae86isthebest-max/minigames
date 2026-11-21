@@ -43,8 +43,8 @@ C45T && (() => {
     ],
     front(p, g, t, o){ if (NT(o)){ T.glow(g, 56, 40, 40, "255,236,180", .14); T.glow(g, 150, 30, 60, "255,236,180", .1); } tone(g, this, o, 1); },
     solid:[[0,0,320,74],[260,60,34,16]],
-    exits:[ { r:[166,72,18,6], to:"desk", at:[24,104], label:"小門（忠二舍）", kind:"door", art:[166,46,18,26] },
-            { r:[64,72,20,6], to:"visit", at:[28,80], label:"接見室", kind:"door", art:[62,28,24,44] } ]
+    exits:[ { r:[166,72,18,6], to:"desk", at:[36,104], label:"小門（忠二舍）", kind:"door", art:[166,46,18,26] },
+            { r:[64,72,20,6], to:"visit", at:[36,80], label:"接見室", kind:"door", art:[62,28,24,44] } ]
   };
   // 登記處的門（往接見室）：畫在窗口的右邊
   const _gf = gate.floor; gate.floor = function(p, g, t, o){ _gf.call(this, p, g, t, o); T.backDoor(p, 64, 36, 20, 36, dA("gate", "visit"), "#6a5a4a", { frame:"#4a3a2a" }); p.R(66, 28, 16, 6, O); p.R(67, 29, 14, 4, "#e8e2d2"); };
@@ -138,8 +138,8 @@ C45T && (() => {
     front(p, g, t, o){ fluo(p, 70, 2, 50); fluo(p, 210, 2, 50, NT(o)); tone(g, this, o, .3); },
     solid:[[0,0,288,62],[48,76,88,22],[118,64,16,14],[148,70,54,18]],
     exits:[ { r:[0,84,6,28], to:"gate", at:[175,86], label:"大門", kind:"door", art:[0,82,8,32] },
-            { r:[222,60,26,8], to:"clinic", at:[22,98], label:"衛生科", kind:"door", art:[222,16,26,44] },
-            { r:[282,80,6,28], to:"hall", at:[24,92], label:"走廊", kind:"door", art:[280,78,8,32] } ]
+            { r:[222,60,26,8], to:"clinic", at:[36,98], label:"衛生科", kind:"door", art:[222,16,26,44] },
+            { r:[282,80,6,28], to:"hall", at:[36,92], label:"走廊", kind:"door", art:[280,78,8,32] } ]
   };
 
   /* ---------- 忠二舍・走廊：6 房到 12 房的灰色鐵門（瞻視窗、送餐口）；7 房的門上有封條；最裡面走廊底的牆上是巡邏的感應點；
@@ -161,7 +161,7 @@ C45T && (() => {
     front(p, g, t, o){ T.cam(p, 12, 4, 1, t); fluo(p, 80, 2, 50); fluo(p, 190, 2, 50); fluo(p, 290, 2, 50); tone(g, this, o, .25); },
     solid:[[0,0,352,62]],
     exits:[ { r:[0,72,6,28], to:"desk", at:[262,94], label:"值勤台", kind:"door", art:[0,70,8,32] },
-            { r:[DX(7),60,24,8], to:"cell", at:[22,76], label:"7 房", kind:"door", art:[DX(7),16,24,44] } ]
+            { r:[DX(7),60,24,8], to:"cell", at:[36,76], label:"7 房", kind:"door", art:[DX(7),16,24,44] } ]
   };
 
   /* ---------- 7 房（獨居房）：門、門邊的報告燈按鈕；垃圾桶；矮牆和後面的不鏽鋼馬桶；牆上的水泥台子（水杯、押票）；
@@ -256,10 +256,10 @@ C45T && (() => {
       d45_light:[80,0,30,4,60,116,"cell",A("look")]
     },
     place:{
-      ye:[ { room:"hall", x:DX(7) + 34, y:80, act:"write", facing:-1 }, { room:"desk", x:40, y:106, act:"read", facing:1 } ],
+      ye:[ { room:"hall", x:DX(7) + 34, y:80, act:"write", facing:-1 }, { room:"desk", x:64, y:112, act:"read", facing:1 } ],
       qi:[ { room:"desk", x:212, y:100, act:"idle", facing:-1 }, { room:"gate", x:120, y:100, act:"idle", facing:1 } ],
       luo:[ { room:"hall", x:300, y:80, act:"idle", facing:-1 }, { room:"desk", x:24, y:122, act:"idle", facing:1 } ],
-      wuu:[ { room:"desk", x:126, y:76, act:"sit", facing:-1 }, { room:"visit", x:30, y:96, act:"idle", facing:1 } ],
+      wuu:[ { room:"desk", x:126, y:76, act:"sit", facing:-1 }, { room:"visit", x:56, y:104, act:"idle", facing:1 } ],
       wen:[ { room:"clinic", x:120, y:104, act:"idle", facing:-1 }, { room:"clinic", x:120, y:104, act:"write", facing:-1 } ],
       chang:[ { room:"hall", x:DX(6) + 12, y:76, act:"idle", facing:1 }, { room:"hall", x:DX(6) + 12, y:76, act:"idle", facing:1 } ],
       son:[ { room:"gate", x:200, y:110, act:"hold", facing:-1 }, { room:"gate", x:250, y:112, act:"phone", facing:-1 } ],
@@ -362,7 +362,7 @@ C45T && (() => {
   const { EP, A, setLoc } = C45T;
   const H = typeof MK44HOME === "function" ? MK44HOME(C45T, { ep45:true }) : null;
   if (!H) return;
-  const front = Object.assign({}, H.front, { exits:H.front.exits.filter(e => e.to === "living").map(e => Object.assign({}, e, { to:"bed", at:[20,126], label:"大門（一樓後面的房間）" })) });
+  const front = Object.assign({}, H.front, { exits:H.front.exits.filter(e => e.to === "living").map(e => Object.assign({}, e, { to:"bed", at:[36,126], label:"大門（一樓後面的房間）" })) });
   const bed = Object.assign({}, H.bed, { exits:[ Object.assign({}, H.bed.exits.find(e => e.to === "living"), { to:"front", at:[168,84], label:"大門（門口）" }) ] });
   setLoc("jshome", { start:"front", spawn:[132,100], rooms:{ front, bed },
     spots:{
