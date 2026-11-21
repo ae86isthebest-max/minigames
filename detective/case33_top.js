@@ -167,6 +167,7 @@ C33T && (() => {
     exits:[ { r:[0,80,8,34], to:"vault", at:[262,98], label:"A 區", kind:"door", art:[0,78,8,38] } ]
   };
 
+  if (typeof window !== "undefined") window.PD33 = { evoffice, cshelf, dog };
   setLoc("police", { start:"lobby", spawn:[150,136], rooms:{ lobby, b1hall, jan, evoffice, vault, cshelf },
     spots:{
       cctv33_hall:[64,64,20,14,90,112,"lobby",A("type",{ actT:2, face:-1 })],
