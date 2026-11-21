@@ -349,6 +349,33 @@ const TOPSCENE = (() => {
     return { room, row:[110, 270, 112] };
   };
 
+  // 車裡（晚上、下雨）：從車頂往下看，前面是擋風玻璃和雨刷、外面的路燈；左邊駕駛座（方向盤）、右邊副駕駛座、中間的排檔和手機架
+  STAGES.carNight = (o) => {
+    const room = { w:288, h:150, wall:56,
+      floor(p, g, t){
+        p.R(0, 0, 288, 150, "#14161c");
+        // 擋風玻璃：雨、遠處的路燈和紅綠燈
+        p.R(60, 4, 168, 40, O); p.R(61, 5, 166, 38, "#0e1424"); for (let k = 0; k < 6; k++){ const x = 70 + ((k * 31 + Math.floor(t * 20)) % 150); p.R(x, 14 + (k % 3) * 6, 2, 2, k % 2 ? "#f8d878" : "#e8e8f0"); } p.R(190, 12, 3, 3, "#e83a2a");
+        for (let k = 0; k < 16; k++) p.R(64 + (k * 23) % 160, 6 + (k * 11 + Math.floor(t * 30)) % 34, 1, 3, "rgba(200,220,240,.45)");
+        const wa = Math.sin(t * 2.4) * .5 + .5; for (const x0 of [90, 160]){ for (let i = 0; i < 30; i++) p.R(Math.round(x0 + i * Math.cos(Math.PI * (1 - wa))), Math.round(42 - i * Math.sin(Math.PI * (1 - wa))), 1, 1, "#2a2a2e"); }
+        // 儀表板
+        p.R(40, 44, 208, 14, O); p.R(41, 45, 206, 12, "#2a2a30"); p.R(84, 47, 24, 6, "#0a1a2a"); p.R(88, 49, 6, 2, "#6ad0ff"); p.R(150, 46, 20, 9, O); p.R(151, 47, 18, 7, "#3a5a8a");
+        // 車廂地板、門板
+        p.R(40, 58, 208, 92, "#22242a"); p.R(40, 58, 10, 92, "#2e3036"); p.R(238, 58, 10, 92, "#2e3036"); p.R(0, 0, 40, 150, "#0a0c10"); p.R(248, 0, 40, 150, "#0a0c10");
+        for (let k = 0; k < 4; k++){ p.R(12, 30 + k * 30, 1, 10, "rgba(200,220,240,.3)"); p.R(270, 40 + k * 28, 1, 10, "rgba(200,220,240,.3)"); }
+      },
+      props:[
+        // 方向盤（左邊駕駛座前面）
+        { y:70, draw(p){ p.R(96, 58, 28, 8, O); p.R(97, 59, 26, 6, "#3a3a40"); p.R(108, 60, 4, 4, "#5a5a60"); } },
+        // 兩張座椅＋中間的排檔、手機架
+        { y:92, draw(p){ for (const x of [92, 168]){ p.R(x, 80, 36, 14, O); p.R(x + 1, 81, 34, 12, "#3a3c44"); p.R(x + 4, 82, 28, 3, "#4a4c54"); } p.R(138, 70, 12, 30, O); p.R(139, 71, 10, 28, "#2a2a30"); p.R(142, 80, 4, 6, "#5a5a60"); p.R(140, 60, 8, 8, O); p.R(141, 61, 6, 6, "#1e2a3a"); } },
+        // 後座
+        { y:132, draw(p){ p.R(60, 120, 168, 14, O); p.R(61, 121, 166, 12, "#3a3c44"); p.R(64, 122, 160, 3, "#4a4c54"); } }
+      ],
+      front(p, g, t){ T.glow(g, 144, 50, 40, "106,208,255", .06); tone(g, 288, 150, "#0a0c1e", .15); } };
+    return { room, row:[100, 190, 104], seats:[[110, 104, 1], [186, 104, 1]], seatOf:c => c.id === "he" ? [110, 104, 1] : [186, 104, 1] };
+  };
+
   /* ---------- 地點裡的房間 ---------- */
   const ALIAS = { pol6:"interrog" };
   function resolve(name, opt){
@@ -363,6 +390,7 @@ const TOPSCENE = (() => {
     if (name === "c19_street") return STAGES.oldLane(opt);
     if (name === "c20_apart") return STAGES.messyFlat(opt);
     if (name === "c26_pier") return STAGES.pierPhone(opt);
+    if (name === "c29_car") return STAGES.carNight(opt);
     return null;
   }
   function findRoom(name){
