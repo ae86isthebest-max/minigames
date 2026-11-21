@@ -191,7 +191,7 @@ export function person(opt = {}) {
   const front = add(rig, new THREE.Group(), 0, 0.55, 0.45);
   let ph = Math.random() * 6, amt = 0;
   return {
-    root, rig, head, back, front, arms,
+    root, rig, head, back, front, arms, legs,
     anim(dt, move) {
       amt += (move - amt) * Math.min(1, dt * 10);
       ph += dt * (4 + 7 * amt);

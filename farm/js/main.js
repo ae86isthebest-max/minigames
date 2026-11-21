@@ -32,7 +32,7 @@ const DEFS = [
   { id: 'counter', name: '收銀台', kind: 'counter1', zone: [4.6, -8.6], cost: { money: 0 }, any: ['tomato', 'coop'] },
   { id: 'cashier', name: '收銀員', kind: 'hire', role: 'cashier', counter: 0, zone: [6.6, -12.6], cost: { money: 80 }, req: ['counter'], any: ['shelfTomato', 'shelfEgg'] },
   { id: 'keeper', name: '飼養員', desc: '負責動物：割草餵雞餵牛餵羊，雞蛋牛奶羊毛放進倉庫', kind: 'hire', role: 'keeper', zone: [-1.4, 5.4], cost: { money: 90 }, req: ['coop', 'shelfEgg'] },
-  { id: 'corn', name: '玉米田', kind: 'crop', out: 'corn', plant: 'corn', grow: 8, pos: [9, 6.8], cost: { money: 160, wood: 10 }, req: ['cashier'] },
+  { id: 'corn', name: '玉米田', kind: 'crop', out: 'corn', plant: 'corn', grow: 6, pos: [9, 6.8], cost: { money: 160, wood: 10 }, req: ['cashier'] },
   { id: 'shelfCorn', name: '玉米架', kind: 'shelf', item: 'corn', pos: [1.4, SH_Z], cost: { money: 130 }, req: ['corn'] },
   { id: 'farmer', name: '農夫', desc: '負責田地和機器：收成放進倉庫，從倉庫拿材料進機器', kind: 'hire', role: 'farmer', zone: [-2, 1.6], cost: { money: 120 }, req: ['shelfCorn', 'coop'] },
   { id: 'dog', name: '小狗', desc: '跟著你跑，站遠一點也能把錢吸過來；買了才能請理貨員', kind: 'pet', zone: [-1, -4.6], cost: { money: 160, wood: 10 }, req: ['shelfCorn'] },
@@ -223,7 +223,7 @@ const GROW = {
   soyMachine: { start: 1, max: 4, cost: [2480, 4950, 9630], what: '磨豆漿機做更快' },
   oven: { start: 1, max: 4, cost: [3300, 6600, 12380], what: '麵包窯做更快' },
   cheese: { start: 1, max: 4, cost: [4130, 8250, 15130], what: '起司坊做更快' },
-  corn: { start: 3, max: 6, cost: [100, 170, 740], what: '＋1 棵玉米' },
+  corn: { start: 3, max: 9, cost: [100, 170, 740, 1200, 1800, 2600], what: '＋1 棵玉米' },
   soy: { start: 3, max: 6, cost: [1510, 2200, 3300], what: '＋1 棵黃豆' },
   wheat: { start: 4, max: 8, cost: [1930, 2610, 3440, 4400], what: '＋1 叢小麥' },
   orchard: { start: 2, max: 6, cost: [6600, 8800, 11000, 14300], what: '＋1 棵蘋果樹' },
@@ -1019,7 +1019,7 @@ const PLANTS = { tomato: P.tomatoPlant, corn: P.cornPlant, soy: P2.soyPlant, whe
 const CROP_LAYOUT = {
   // left half first (the original 2 x 2 bed), the right half appears from the 5th plant
   tomato: { w: 6.4, d: 2.4, half: true, spots: [[-2.4, -0.55], [-0.8, -0.55], [-2.4, 0.55], [-0.8, 0.55], [0.8, -0.55], [2.4, -0.55], [0.8, 0.55], [2.4, 0.55]] },
-  corn: { w: 3.2, d: 2.8, spots: [[-1, -0.7], [0, -0.7], [1, -0.7], [-1, 0.7], [0, 0.7], [1, 0.7]] },
+  corn: { w: 3.2, d: 2.8, spots: [[-1, -0.85], [0, -0.85], [1, -0.85], [-1, 0], [0, 0], [1, 0], [-1, 0.85], [0, 0.85], [1, 0.85]] },
   soy: { w: 3.4, d: 2.6, spots: [[-1.1, -0.6], [0, -0.6], [1.1, -0.6], [-1.1, 0.6], [0, 0.6], [1.1, 0.6]] },
   wheat: { w: 3.4, d: 2.6, spots: [[-1.1, -0.6], [-0.37, -0.6], [0.37, -0.6], [1.1, -0.6], [-1.1, 0.6], [-0.37, 0.6], [0.37, 0.6], [1.1, 0.6]] },
   apple: { w: 5.6, d: 3.8, spots: [[-1.9, -0.95], [0, -0.95], [1.9, -0.95], [-1.9, 0.95], [0, 0.95], [1.9, 0.95]] },
@@ -1509,6 +1509,7 @@ function makeWorker(role, at, counter, pop, tint) {
   w.cap = () => upVal('wcap') + (isFarmRole(role) ? FARM_CAP[mFarm()] : 0);
   if (role === 'farmer') { w.only = FARM_CROPS; w.home = [-2, 3]; }
   workers.push(w);
+  if (role !== 'cashier') buildRest();
   return w;
 }
 // at most a few path searches per frame (phones): whoever is over the budget waits a frame for theirs
@@ -1538,10 +1539,73 @@ function turn(p, face, dt) {
   p.root.rotation.y = r + diff * Math.min(1, dt * 12);
 }
 const listOf = (kind) => Object.values(stations).filter((s) => s.kind === kind);
+// ---------- 員工休息區: staff with nothing to do sit down here for a while, or stroll somewhere nobody else stands ----------
+const REST = { x: -9.7, z: 6.6, seats: [], built: false };
+for (const sz of [-1, 1]) for (const dx of [-0.75, 0, 0.75]) REST.seats.push({ x: REST.x + dx, z: REST.z + sz * 0.95, face: sz > 0 ? Math.PI : 0, w: null });
+function buildRest() {
+  if (REST.built) return; REST.built = true;
+  const g = new THREE.Group(); g.position.set(REST.x, 0, REST.z); scene.add(g);
+  K.add(g, K.mesh(G.rbox(3.6, 0.06, 3.1, 0.2), '#d9a46a', false, true), 0, 0.03, 0);
+  for (let i = -2; i <= 2; i++) K.add(g, K.mesh(G.rbox(3.5, 0.01, 0.03, 0.005), '#b5804f', false), 0, 0.064, i * 0.6);
+  // round table with a striped parasol
+  K.add(g, K.mesh(G.cyl(0.42, 0.42, 0.06, 16), '#fbfaf5'), 0, 0.62, 0);
+  K.add(g, K.mesh(G.cyl(0.06, 0.1, 0.6, 8), '#8f969f'), 0, 0.31, 0);
+  K.add(g, K.mesh(G.cyl(0.035, 0.035, 1.5, 6), '#8f969f'), 0, 1.35, 0);
+  K.add(g, K.mesh(G.cone(1.15, 0.45, 12), '#ff8a6b'), 0, 2.2, 0);
+  K.add(g, K.mesh(G.sphere(0.07, 8, 6), '#ffffff'), 0, 2.46, 0);
+  // two cups and a snack plate on the table
+  K.add(g, K.mesh(G.cyl(0.06, 0.05, 0.12, 8), '#ffffff'), -0.18, 0.71, 0.1);
+  K.add(g, K.mesh(G.cyl(0.06, 0.05, 0.12, 8), '#ffd34a'), 0.2, 0.71, -0.12);
+  K.add(g, K.mesh(G.cyl(0.14, 0.12, 0.03, 12), '#9fd86b'), 0.05, 0.665, 0.18);
+  // a bench on each side, backrest on the outside
+  for (const sz of [-1, 1]) {
+    K.add(g, K.mesh(G.rbox(2.3, 0.08, 0.42, 0.04), '#c9773f'), 0, 0.3, sz * 0.95);
+    K.add(g, K.mesh(G.rbox(2.3, 0.36, 0.07, 0.03), '#c9773f'), 0, 0.56, sz * 1.22);
+    for (const lx of [-1.0, 1.0]) K.add(g, K.mesh(G.rbox(0.08, 0.28, 0.36, 0.02), '#7a4a2a'), lx, 0.14, sz * 0.97);
+  }
+  // water cooler in the corner
+  const wc = K.add(g, new THREE.Group(), 1.45, 0, -1.15);
+  K.add(wc, K.mesh(G.rbox(0.42, 0.78, 0.4, 0.05), '#f4f6f8'), 0, 0.39, 0);
+  K.add(wc, K.mesh(G.cyl(0.17, 0.17, 0.42, 12), '#7fc8ff'), 0, 0.99, 0);
+  K.add(wc, K.mesh(G.rbox(0.08, 0.06, 0.06, 0.02), '#5aa9ff'), -0.08, 0.6, 0.22);
+  K.add(wc, K.mesh(G.rbox(0.08, 0.06, 0.06, 0.02), '#ff6b6b'), 0.08, 0.6, 0.22);
+  // a potted plant in the other corner
+  const pl = K.add(g, new THREE.Group(), -1.5, 0, -1.2);
+  K.add(pl, K.mesh(G.cyl(0.2, 0.15, 0.32, 10), '#d9774e'), 0, 0.16, 0);
+  K.add(pl, K.mesh(G.sphere(0.32, 10, 8), '#5fbf4a'), 0, 0.55, 0);
+  box(REST.x - 0.42, REST.z - 0.42, REST.x + 0.42, REST.z + 0.42);
+  box(REST.x + 1.2, REST.z - 1.4, REST.x + 1.7, REST.z - 0.9);
+  REST.tag = label('mtag', '<b>員工休息區</b>', (o) => o.set(REST.x, 2.9, REST.z)); REST.tag.near = 9;
+}
+function releaseSeat(w) { if (w.seat && w.seat.w === w) w.seat.w = null; w.seat = null; w.sit = 0; }
 function idleWander(w, dt, cx, cz) {
+  w.idl = 1;
   w.wait -= dt;
-  if (!w.wp || w.wait <= 0) { w.wp = [cx + (Math.random() - 0.5) * 3, cz + (Math.random() - 0.5) * 2]; w.wait = 2 + Math.random() * 2; }
-  go(w, w.wp[0], w.wp[1], dt, 1.6);
+  if (w.seat) {
+    const s = w.seat;
+    if (go(w, s.x, s.z, dt, 1.6)) { w.face = s.face; w.sit = 1; }
+    if (w.wait <= 0) { releaseSeat(w); w.wp = null; }
+    return;
+  }
+  if (!w.wp || w.wait <= 0) {
+    const p = w.p.root.position;
+    // now and then a break on the benches (only when the rest area is not far away)
+    if (REST.built && w.role !== 'manager' && Math.random() < 0.45 && dist2(p, REST.x, REST.z) < 24) {
+      const free = REST.seats.filter((q) => !q.w || !workers.includes(q.w));
+      if (free.length) { const q = free[Math.floor(Math.random() * free.length)]; q.w = w; w.seat = q; w.wait = 6 + Math.random() * 6; return; }
+    }
+    // otherwise stroll to a spot that is walkable and away from everybody else
+    let best = null;
+    for (let k = 0; k < 6; k++) {
+      const x = cx + (Math.random() - 0.5) * 7, z = cz + (Math.random() - 0.5) * 5;
+      if (!nav.free(x, z)) continue;
+      best = [x, z];
+      if (!workers.some((o) => o !== w && (dist2(o.p.root.position, x, z) < 1.4 || (o.wp && Math.hypot(o.wp[0] - x, o.wp[1] - z) < 1.4)))) break;
+    }
+    w.wp = best || [cx + (Math.random() - 0.5) * 3, cz + (Math.random() - 0.5) * 2];
+    w.wait = 3 + Math.random() * 3;
+  }
+  go(w, w.wp[0], w.wp[1], dt, 1.3);
 }
 // every warehouse adds its capacity to one shared stock (the workers use whichever is nearest)
 const storeCap = () => upVal('storeCap') * Math.max(1, listOf('store').length);
@@ -2740,7 +2804,13 @@ function step(dt) {
   playerInteract(dt);
   payZones(dt);
   updateWorld(dt, T);
-  for (const w of workers) { updateWorker(w, dt); turn(w.p, w.face, dt); w.p.anim(dt, w.moving); swayStack(w, w.moving ? upVal('wspeed') : 0, dt); }
+  for (const w of workers) {
+    w.idl = 0; updateWorker(w, dt); if (!w.idl && (w.seat || w.sit)) releaseSeat(w);
+    if (w.moving) w.sit = 0;
+    turn(w.p, w.face, dt); w.p.anim(dt, w.moving);
+    if (w.sit) { const r = w.p.rig; r.position.y = 0.0; r.rotation.x = 0; w.p.legs[0].rotation.x = -1.5; w.p.legs[1].rotation.x = -1.5; }
+    swayStack(w, w.moving ? upVal('wspeed') : 0, dt);
+  }
   maxTag(player);
   updateCustomers(dt);
   updateCars(dt);
