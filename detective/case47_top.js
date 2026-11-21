@@ -128,7 +128,7 @@ C47T && (() => {
   };
 
   const XP = { x47_kui:{ room:"lot", x:222, y:118, act:"write", facing:-1 }, x47_dog:{ room:"wall", x:88, y:96, act:"sit", facing:-1 } };
-  setLoc("sea", { start:"gate", spawn:[230,104], rooms:{ gate, lot, wall },
+  setLoc("sea", { start:"gate", spawn:[96,124], rooms:{ gate, lot, wall },
     spots:{
       cctv47_gate:[90,34,12,8,110,96,"gate",A("look")],
       cctv47_junction:[2,10,16,30,24,96,"gate",A("look")],
@@ -171,7 +171,7 @@ C47T && (() => {
       ye:[ null, { room:"lot", x:228, y:130, act:"read", facing:-1 } ]
     },
     extras:(W0.extras || []).map(e => Object.assign({}, e, XP[e.id] || {}, { pose:undefined })),
-    intro:[ { set:{ room:"gate", px:230, py:104 } }, ...(W0.intro || []).filter(k => k.say) ],
+    intro:[ { set:{ room:"gate", px:96, py:124 } }, ...(W0.intro || []).filter(k => k.say) ],
     plan:[ { name:"望海停車場", w:100, h:44, rooms:{ lot:[0,0,66,24,"out"], wall:[66,0,34,24,"out"], gate:[0,24,66,20,"out"] } } ] });
 })();
 

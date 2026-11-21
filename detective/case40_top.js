@@ -223,6 +223,7 @@ C40T && (() => {
     exits:[ { r:[0,86,8,30], to:"chall", at:[270,72], label:"一樓大廳", kind:"door", art:[0,84,8,34] } ]
   };
 
+  if (typeof window !== "undefined") window.PD40 = pd;
   const XP = { x40_he:{ room:"cfront", x:176, y:108, act:"write", facing:1 }, x40_guard:{ room:"chall", x:68, y:100, act:"idle", facing:-1 } };
   setLoc("court", { start:"cfront", spawn:[130,134], rooms:{ cfront, chall, pd },
     spots:{

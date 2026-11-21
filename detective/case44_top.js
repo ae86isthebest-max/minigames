@@ -496,6 +496,7 @@ C44T && (() => {
     exits:[ { r:[0,80,8,50], to:"hfront", at:[102,66], label:"窄走道（店門口）", kind:"door", art:[0,78,8,54] } ]
   };
 
+  if (typeof window !== "undefined") window.HFRONT44 = hfront;
   setLoc("harbour", { start:"hfront", spawn:[220,104], rooms:{ hfront, lane },
     spots:{
       o44_seal:[52,30,24,16,64,62,"hfront",A("look")],
