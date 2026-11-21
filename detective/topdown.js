@@ -375,7 +375,7 @@ const TOPW = (() => {
     (R.exits || []).forEach((e, i) => { if (e.when && !e.when(opt)) return; const key = cur.s.room + ":" + i; want.add(key);
       let el = cur.lab[key];
       if (!el){ el = cur.lab[key] = document.createElement("button"); el.className = "wnav go wexit";
-        el.textContent = (e.kind === "up" ? "⬆ " : e.kind === "down" ? "⬇ " : e.kind === "out" ? "" : "🚪 ") + (e.label || (roomOf(e.to) && roomOf(e.to).name) || "") + (e.kind === "out" ? " ➜" : "");
+        el.textContent = (e.kind === "up" ? "⬆ " : e.kind === "down" ? "⬇ " : e.kind === "out" ? (e.r[0] <= 8 && e.r[3] > e.r[2] ? "⬅ " : "") : "🚪 ") + (e.label || (roomOf(e.to) && roomOf(e.to).name) || "") + (e.kind === "out" && !(e.r[0] <= 8 && e.r[3] > e.r[2]) ? " ➜" : "");   // 貼著左邊的出口：箭頭朝左
         el.onpointerdown = ev => { ev.stopPropagation(); }; el.onclick = ev => { ev.stopPropagation(); if (cur.s.script || cur.s.fade || (cur.s.use && cur.s.use.then)) return; endUse(); cur.s.plan = [{ exit:e }]; cur.s.after = null; nextLeg(); cur.hooks.onGround && cur.hooks.onGround(); };
         wrap.appendChild(el); }
       const hr = exitHit(e), lx = hr[0] + hr[2] / 2, ly = e.lab ?? (hr[1] + hr[3] / 2);   // 字放在門／樓梯那件東西的正中間
