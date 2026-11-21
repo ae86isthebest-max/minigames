@@ -378,6 +378,31 @@ const TOPSCENE = (() => {
 
   /* ---------- 地點裡的房間 ---------- */
   const ALIAS = { pol6:"interrog" };
+  // 你家樓下（深夜，第 36 集起）：五層的舊公寓、一樓的大門和管理室的燈、停車場的入口；路燈；路邊一台灰色的車，車頭燈亮著沒有熄火；地上是濕的
+  STAGES.myBlock = (o) => {
+    const room = { w:288, h:150, wall:62,
+      floor(p, g, t){
+        p.R(0, 0, 288, 62, "#0e1320"); for (let k = 0; k < 8; k++) p.R((k * 47) % 288, 2 + (k * 13) % 8, 1, 1, "#5a6480");
+        p.R(20, 4, 220, 58, O); p.R(21, 5, 218, 57, "#3a3e48");
+        for (let f = 0; f < 3; f++) for (let w = 0; w < 8; w++){ const on = [[0, 0], [3, 0], [6, 1], [2, 1], [5, 2], [7, 2]].some(([a, b]) => a === w && b === f); p.R(30 + w * 26, 8 + f * 12, 14, 8, O); p.R(31 + w * 26, 9 + f * 12, 12, 6, on ? "#e8c878" : "#161a24"); }
+        p.R(57, 21, 12, 1, "#5a6070");   // 四樓左邊數來第二扇：你家（暗的）
+        p.R(78, 42, 30, 20, O); p.R(79, 43, 28, 19, "#b8a468"); p.R(92, 43, 2, 19, "#2a2e36"); p.R(76, 40, 34, 3, "#4a4e58"); T.glow(g, 93, 50, 30, "255,230,160", .16);   // 大門
+        p.R(116, 46, 26, 12, O); p.R(117, 47, 24, 10, "#c8d8a0"); p.R(128, 47, 1, 10, "#4a4e58");   // 管理室
+        p.R(176, 40, 40, 22, O); p.R(177, 41, 38, 21, "#1e2228");   // 停車場的入口
+        p.R(0, 62, 288, 22, "#3a3c40"); for (let i = 0; i < 288; i += 12) p.R(i, 62, 1, 22, "#32343a"); p.R(0, 84, 288, 2, "#5a5a5e");
+        p.R(0, 86, 288, 64, "#22262c"); p.seed(36); for (let k = 0; k < 180; k++) p.R(p.rnd() * 288, 86 + p.rnd() * 64, 2, 1, "#2a2e34");
+        for (const [x, y, w] of [[20, 100, 30], [150, 132, 40], [90, 140, 26]]){ p.R(x, y, w, 2, "#3a4658"); p.R(x + 2, y, w / 3, 1, "#5a6a80"); }
+      },
+      props:[
+        { y:84, draw(p, g){ T.streetLamp(p, g, 246, 84); T.glow(g, 252, 34, 46, "255,240,170", .12); } },
+        // 周振邦的車（車頭朝左、燈亮著）
+        { y:120, draw(p, g){ p.R(110, 94, 50, 26, O); p.R(111, 95, 48, 16, "#8a8e96"); p.R(122, 96, 6, 14, "#3a4a5a"); p.R(142, 96, 4, 14, "#3a4a5a"); p.R(111, 111, 48, 7, "#5a5e66"); for (const a of [116, 148]){ p.R(a, 117, 7, 4, O); }
+            p.R(110, 98, 1, 3, "#fff8d0"); p.R(110, 105, 1, 3, "#fff8d0"); g.save(); g.globalAlpha = .18; g.fillStyle = "#fffad2"; g.fillRect(60, 94, 50, 18); g.restore(); } }
+      ],
+      front(p, g, t){ tone(g, 288, 150, "#080c1e", .28); } };
+    return { room, row:[40, 120, 76] };
+  };
+
   function resolve(name, opt){
     if (name === "police" && /頂樓/.test(opt.title || "")) return STAGES.roof(opt);
     if (ALIAS[name]) return STAGES[ALIAS[name]](opt);
@@ -391,6 +416,7 @@ const TOPSCENE = (() => {
     if (name === "c20_apart") return STAGES.messyFlat(opt);
     if (name === "c26_pier") return STAGES.pierPhone(opt);
     if (name === "c29_car") return STAGES.carNight(opt);
+    if (name === "c36_home") return STAGES.myBlock(opt);
     return null;
   }
   function findRoom(name){
