@@ -200,7 +200,7 @@ C30T && (() => {
     ],
     front(p, g, t, o){ fluo(p, 70, 2, 50); fluo(p, 200, 2, 50); tone(g, this, o, .2); },
     solid:[[4,44,26,18],[48,68,92,22],[178,108,74,14]],
-    exits:[ { r:[150,58,24,8], to:"post", at:[20,74], label:"三樓・指揮所", kind:"door", art:[150,14,24,44] } ]
+    exits:[ { r:[150,58,24,8], to:"post", at:[36,74], label:"三樓・指揮所", kind:"door", art:[150,14,24,44] } ]
   };
 
   setLoc("police", { start:"post", spawn:[150,128], rooms:{ post, hold },
@@ -367,7 +367,7 @@ C30T && (() => {
     exits:[]
   };
 
-  setLoc("wh", { start:"alley", spawn:[20,110], rooms:{ alley },
+  setLoc("wh", { start:"alley", spawn:[44,110], rooms:{ alley },
     spots:{
       o30_cup:[54,120,24,16,68,118,"alley",A("crouch")],
       o30_meter:[158,24,16,18,166,66,"alley",A("look")],

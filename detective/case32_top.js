@@ -61,7 +61,7 @@ C32T && (() => {
     exits:[]
   };
 
-  setLoc("canal", { start:"bridge", spawn:[20,100], rooms:{ bridge },
+  setLoc("canal", { start:"bridge", spawn:[48,100], rooms:{ bridge },
     spots:{
       o32_body:[84,84,50,22,108,110,"bridge",A("kneel")],
       o32_shoes:[132,86,10,16,148,96,"bridge",A("crouch",{ face:-1 })],
@@ -77,10 +77,10 @@ C32T && (() => {
     },
     get place(){ return {
       hong:[ { room:"bridge", x:212, y:72, act:"write", facing:1 }, { room:"bridge", x:166, y:104, act:"cross", facing:1 } ],
-      chun:[ { room:"bridge", x:42, y:74, act:"wipe", facing:1 }, { room:"bridge", x:42, y:74, act:"wipe", facing:1 } ]
+      chun:[ { room:"bridge", x:20, y:74, act:"wipe", facing:1 }, { room:"bridge", x:20, y:74, act:"wipe", facing:1 } ]
     }; },
     extras:W0.extras || [],
-    intro:[ { set:{ room:"bridge", px:-10, py:100 }, hide:true }, { wait:0.3, hide:true }, { set:{ room:"bridge", px:20, py:100 } },
+    intro:[ { set:{ room:"bridge", px:20, py:100 }, hide:true }, { wait:0.3, hide:true }, { set:{ room:"bridge", px:48, py:100 } },
       ...(W0.intro || []).filter(k => k.say || (k.wait && !k.hide)).map(k => k.say && k.say[0] === "wu" && /點畫面上的箭嘴|📍|清單不是全部/.test(k.say[1]) ? null : k).filter(Boolean) ],
     plan:[ { name:"二號橋下（運河步道）", w:100, h:24, rooms:{ bridge:[0,0,100,24,"out"] } } ] });
 })();

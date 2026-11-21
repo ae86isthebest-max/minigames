@@ -125,7 +125,7 @@ C31T && (() => {
     exits:[ { r:[196,60,26,8], to:"cold", at:[206,124], label:"倉庫裡面", kind:"door", art:[196,18,26,42] } ]
   };
 
-  setLoc("wh", { start:"alley", spawn:[20,110], rooms:{ cold, alley },
+  setLoc("wh", { start:"alley", spawn:[44,110], rooms:{ cold, alley },
     spots:{
       o31_chair:[130,74,22,22,141,104,"cold",A("look")],
       o31_pin:[134,82,14,8,124,92,"cold",A("crouch",{ face:1 })],
@@ -270,7 +270,7 @@ C31T && (() => {
     exits:[]
   };
 
-  setLoc("pier3", { start:"p3", spawn:[14,100], rooms:{ p3 },
+  setLoc("pier3", { start:"p3", spawn:[44,100], rooms:{ p3 },
     spots:{
       o31_cabin:[28,40,64,44,64,94,"p3",A("look")],
       o31_cam:[194,66,14,14,214,92,"p3",A("look",{ face:-1 })],
@@ -352,7 +352,7 @@ C31T && (() => {
     exits:[]
   };
 
-  setLoc("pier7", { start:"quay", spawn:[20,96], rooms:{ quay },
+  setLoc("pier7", { start:"quay", spawn:[44,96], rooms:{ quay },
     spots:{
       cctv31_gate:[80,14,14,12,96,70,"quay",A("look",{ face:-1 })],
       doc31_dep:[28,28,30,20,43,70,"quay",A("read")],

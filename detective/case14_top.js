@@ -359,6 +359,7 @@ C14T && (() => {
   const intro = [ { set:{ room:"lobby", px:150, py:150 }, hide:true }, { wait:0.3, hide:true }, { set:{ room:"lobby", px:150, py:136 } },
     ...(W0.intro || []).filter(k => k.say || (k.wait && !k.hide)).map(k => k.say && k.say[0] === "wu" && /點畫面上的箭嘴|📍|清單不是全部/.test(k.say[1]) ? null : k).filter(Boolean),
     { say:["wu", "想去哪裡，點畫面上的門口、樓梯就會自己走過去。閃著星星的就是還沒看過的東西，按上面的「🧭 平面圖」看全部在哪裡。"], name:"小吳" } ];
+  if (typeof window !== "undefined") window.PD14 = { lobby, b1hall, evoffice, b1wall, b1floor, cardDoor, reader, rack };
   setLoc("police", { start:"lobby", spawn:[150,136], rooms:{ pdesk, admin, lobby, facility, b1hall, evoffice, evshelf }, spots, details, place, extras, intro,
     plan:[ { name:"澄港市警察局", w:100, h:66, rooms:{ pdesk:[0,0,48,12], admin:[52,0,48,12], lobby:[0,15,100,13], evshelf:[30,31,46,13], evoffice:[30,44,46,10], facility:[0,31,28,23], b1hall:[0,54,100,12] } } ] });
 })();

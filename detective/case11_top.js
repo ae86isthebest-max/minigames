@@ -212,6 +212,7 @@ C11T && (() => {
   const intro = [ { set:{ room:"gfront", px:150, py:142 }, hide:true }, { wait:0.3, hide:true }, { set:{ room:"gfront", px:150, py:132 } },
     ...(W0.intro || []).filter(k => k.say || (k.wait && !k.hide)).map(k => k.say && k.say[0] === "wu" && /點畫面上的箭嘴|📍|清單不是全部/.test(k.say[1]) ? null : k).filter(Boolean),
     { say:["wu", "想去哪裡，點畫面上的門口、樓梯就會自己走過去。閃著星星的就是還沒看過的東西，按上面的「🧭 平面圖」看全部在哪裡。"], name:"小吳" } ];
+  if (typeof window !== "undefined") window.GOLD11 = gfront;
   setLoc("gold", { start:"gfront", spawn:[150,132], rooms:{ gfront, gvault, goffice, galley }, spots, details, place, extras, intro,
     plan:[ { name:"金福銀樓", w:100, h:52, rooms:{ goffice:[60,0,40,14], galley:[0,14,100,10], gvault:[0,24,100,14], gfront:[0,38,100,14] } } ] });
 })();

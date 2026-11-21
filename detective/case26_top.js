@@ -457,7 +457,7 @@ C26T && (() => {
     solid:[[66,60,110,20],[10,72,22,26],[260,54,12,20]],
     exits:[]
   };
-  setLoc("court", { start:"chall", spawn:[20,108], rooms:{ chall },
+  setLoc("court", { start:"chall", spawn:[44,108], rooms:{ chall },
     spots:{
       o26_bill:[104,64,12,8,110,86,"chall",A("look")],
       o26_notice:[28,14,30,24,44,66,"chall",A("read")]
