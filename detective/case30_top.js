@@ -326,6 +326,7 @@ C30T && (() => {
     },
     extras:W("ice").extras || [],
     plan:[ { name:"阿珠冰店（南澳漁港）", w:100, h:36, rooms:{ shop:[0,0,60,18], front:[0,18,100,18,"out"] } } ] });
+  if (typeof window !== "undefined") window.ICE30 = { shop, front };
 })();
 
 /* ================= 冰店後面的巷子 ================= */
