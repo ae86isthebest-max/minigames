@@ -37,7 +37,11 @@ C19T && (() => {
     },
     props:[
       // 一台腳踏車（樓梯下面）
-      { y:136, draw(p){ for (const wx of [200, 224]){ p.R(wx - 6, 122, 12, 12, O); p.R(wx - 5, 123, 10, 10, "#2a2a2e"); p.R(wx - 3, 125, 6, 6, "#7a7e84"); p.R(wx - 2, 126, 4, 4, "#a8a49c"); } p.R(200, 120, 24, 3, O); p.R(201, 121, 22, 1, "#2a6a3a"); p.R(204, 114, 3, 8, "#2a6a3a"); p.R(202, 112, 8, 3, O); p.R(220, 112, 3, 10, "#2a6a3a"); p.R(216, 110, 12, 3, O); } }
+      { y:136, draw(p){ const ring = (cx, cy, r) => { for (let a = 0; a < 32; a++){ const x = Math.round(cx + Math.cos(a / 32 * 6.283) * r), y = Math.round(cy + Math.sin(a / 32 * 6.283) * r * .8); p.R(x - 1, y - 1, 3, 3, O); } for (let a = 0; a < 32; a++){ const x = Math.round(cx + Math.cos(a / 32 * 6.283) * r), y = Math.round(cy + Math.sin(a / 32 * 6.283) * r * .8); p.R(x, y, 1, 1, "#2a2a2e"); } p.R(cx - 1, cy - 1, 2, 2, "#8a8e94"); for (let a = 0; a < 4; a++) p.R(Math.round(cx + Math.cos(a * .785) * (r - 2)), Math.round(cy + Math.sin(a * .785) * (r - 2) * .8), 1, 1, "#7a7e84"); };
+          ring(200, 128, 7); ring(226, 128, 7);
+          // 車架（三角形）、座墊、龍頭
+          for (let k = 0; k <= 12; k++){ p.R(200 + k, 128 - Math.round(k * .8), 2, 2, "#2a6a3a"); p.R(213 + Math.round(k * .5), 118 + Math.round(k * .8), 2, 2, "#2a6a3a"); } p.R(210, 118, 14, 2, "#2a6a3a"); p.R(220, 112, 2, 8, "#2a6a3a"); p.R(208, 114, 2, 6, "#2a6a3a");
+          p.R(204, 112, 9, 3, O); p.R(205, 112, 7, 2, "#3a3a3a"); p.R(216, 110, 11, 3, O); p.R(217, 111, 9, 1, "#8a8e94"); } }
     ],
     front(p, g, t, o){ tone(g, this, o, .2); },
     solid:[[168,0,80,62],[192,108,40,28]],

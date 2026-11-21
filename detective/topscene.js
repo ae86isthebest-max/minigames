@@ -287,6 +287,38 @@ const TOPSCENE = (() => {
     return { room, row:[30, 260, 110] };
   };
 
+  // 被翻亂的小套房（晚上）：抽屜全被拉出來、空的書桌（筆電不見了）、翻倒的相機包、滿地的紙、單人床、窗外的路燈
+  STAGES.messyFlat = (o) => {
+    const room = { w:256, h:144, wall:58,
+      floor(p, g, t){
+        T.backWall(p, 0, 256, 58, "#d8d0c0", "plain", { base:"#6a5a4a" });
+        // 窗（外面黑黑的、一盞路燈）
+        p.R(150, 8, 40, 30, O); p.R(151, 9, 38, 28, "#c8ccd0"); p.R(153, 11, 34, 24, "#141a2a"); p.R(176, 14, 4, 3, "#f4e8a8"); T.glow(g, 178, 16, 14, "255,230,160", .2); p.R(170, 11, 1, 24, "#c8ccd0");
+        // 牆上貼的剪報（被撕掉一半）
+        for (let k = 0; k < 5; k++){ const x = 92 + (k % 3) * 16, y = 10 + Math.floor(k / 3) * 18; p.R(x, y, 13, 15, O); p.R(x + 1, y + 1, 11, 13, k === 2 ? "#e8e0c8" : "#f4f0e6"); p.R(x + 2, y + 3, 8, 1, "#3a3a3a"); p.R(x + 2, y + 6, 6, 1, "#3a3a3a"); } p.R(108, 28, 13, 4, "#d8d0c0");
+        p.R(0, 58, 256, 86, "#9a7a5a"); for (let j = 58; j < 144; j += 6){ p.R(0, j, 256, 1, "#8a6a4a"); for (let i = ((j / 6) % 3) * 22; i < 256; i += 66) p.R(i, j, 1, 6, "#8a6a4a"); }
+        // 滿地的紙
+        p.seed(20); for (let k = 0; k < 22; k++){ const x = 20 + p.rnd() * 210, y = 64 + p.rnd() * 70; p.R(x, y, 9, 6, O); p.R(x + 1, y + 1, 7, 4, k % 3 ? "#f4f4f0" : "#e8e0c8"); if (k % 2) p.R(x + 2, y + 2, 4, 1, "#7a7a8a"); }
+        T.sides(p, this, "#6a5a4a", []);
+      },
+      props:[
+        // 抽屜櫃：抽屜全被拉出來，一個掉在地上
+        { y:80, draw(p){ T.box(p, 14, 40, 40, 10, 30, "#7a6a5a", "#5a4a3a"); for (let k = 0; k < 4; k++){ p.R(16, 52 + k * 7, 36, 6, O); p.R(17, 53 + k * 7, 34, 4, "#3a2e24"); p.R(20 + k * 3, 50 + k * 7, 30, 4, O); p.R(21 + k * 3, 51 + k * 7, 28, 2, "#9a8a7a"); } p.R(24, 72, 30, 10, O); p.R(25, 73, 28, 8, "#8a7a6a"); p.R(27, 75, 24, 4, "#5a4a3a"); } },
+        // 空的書桌（筆電不見了，只剩一條充電線）＋倒在地上的椅子
+        { y:80, draw(p){ T.box(p, 196, 58, 52, 12, 10, "#a87a4a", "#6a4a2a"); p.R(206, 60, 20, 8, "rgba(60,40,30,.25)"); for (let k = 0; k < 10; k++) p.R(226 + k, 62 + Math.round(Math.sin(k) * 2), 1, 1, "#2a2a2a"); } },
+        { y:94, draw(p){ p.R(206, 84, 16, 8, O); p.R(207, 85, 14, 6, "#3a3a44"); p.R(222, 86, 6, 2, O); } },
+        // 翻倒的相機包（紅色內襯）
+        { y:104, draw(p){ p.R(150, 94, 22, 12, O); p.R(151, 95, 20, 10, "#3a3a3e"); p.R(153, 97, 10, 6, "#c83a2a"); p.R(172, 100, 6, 4, O); p.R(173, 101, 4, 2, "#2a2a2a"); } },
+        // 單人床（床墊被掀起來一角）
+        { y:132, draw(p){ T.box(p, 196, 96, 52, 34, 6, "#e8e4dc", "#8a7a6a"); p.R(196, 96, 52, 8, "#c8c4bc"); p.R(200, 98, 16, 6, "#f4f4f0"); p.R(232, 104, 16, 10, "rgba(120,100,80,.35)"); } },
+        // 坐墊（他坐在地上的地方）
+        { y:118, draw(p){ p.R(66, 112, 20, 8, O); p.R(67, 113, 18, 6, "#5a7a8a"); } }
+      ],
+      solid:[[12,38,44,46],[194,56,56,24],[194,94,56,44],[148,92,32,16]],
+      front(p, g, t){ p.R(128, 0, 1, 6, O); p.R(120, 6, 17, 4, O); p.R(121, 7, 15, 2, "#f4f0c0"); T.glow(g, 128, 12, 60, "255,235,190", .12); tone(g, 256, 144, "#1a1a2e", .15); } };
+    return { room, row:[60, 230, 112], seats:[[76, 118, 1]] };
+  };
+
   /* ---------- 地點裡的房間 ---------- */
   const ALIAS = { pol6:"interrog" };
   function resolve(name, opt){
@@ -299,6 +331,7 @@ const TOPSCENE = (() => {
     if (name === "hospital") return STAGES.hospHall(opt);
     if (name === "funeral") return STAGES.funeralOut(opt);
     if (name === "c19_street") return STAGES.oldLane(opt);
+    if (name === "c20_apart") return STAGES.messyFlat(opt);
     return null;
   }
   function findRoom(name){
