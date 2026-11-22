@@ -266,20 +266,30 @@ export function cow() {
   return { g, b };
 }
 
+// the cow barn: its paddock has room for ten full-size cows (two rows of five)
 export function barn() {
   const g = new THREE.Group();
-  g.add(blob(2.8));
-  add(g, mesh(G.rbox(2.8, 1.8, 2.0, 0.14), '#ff7a66'), 0, 0.9, -0.9);
-  add(g, mesh(G.prism(3.1, 1.0, 2.35), C.white), 0, 1.78, -0.9);
+  g.add(blob(3.4));
+  add(g, mesh(G.rbox(3.6, 1.8, 2.0, 0.14), '#ff7a66'), 0, 0.9, -0.9);
+  add(g, mesh(G.prism(3.9, 1.0, 2.35), C.white), 0, 1.78, -0.9);
   add(g, mesh(G.rbox(1.0, 1.25, 0.08, 0.05), C.white), 0, 0.62, 0.12);
   for (const s of [-1, 1]) add(g, mesh(G.rbox(0.06, 1.2, 0.09, 0.02), '#ff7a66'), s * 0.25, 0.62, 0.15).rotation.z = s * 0.7;
-  const trough = add(g, new THREE.Group(), -2.05, 0, 0.6);
+  for (const s of [-1, 1]) {
+    add(g, mesh(G.rbox(0.62, 0.56, 0.08, 0.05), C.white), s * 1.2, 1.05, 0.12);
+    add(g, mesh(G.rbox(0.44, 0.38, 0.06, 0.03), '#8fd0f0', false), s * 1.2, 1.05, 0.16);
+    // hay bales beside the building
+    add(g, mesh(G.rbox(0.72, 0.46, 0.6, 0.12), '#f0cf62'), s * 2.3, 0.23, -0.5);
+    add(g, mesh(G.rbox(0.54, 0.38, 0.5, 0.12), '#e8c04e'), s * 2.3, 0.63, -0.55);
+  }
+  add(g, mesh(G.rbox(4.9, 0.06, 3.4, 0.03), '#dcb878', false, true), 0, 0.04, 1.86);
+  add(g, pen(5.0, 3.5), 0, 0, 1.87);
+  for (const s of [-1, 1]) for (const y of [0.24, 0.48]) add(g, mesh(G.rbox(0.7, 0.13, 0.09, 0.04), '#e8b67c'), s * 2.15, y, 0.12);
+  const trough = add(g, new THREE.Group(), -3.15, 0, 0.8);
   add(trough, mesh(G.rbox(1.1, 0.32, 0.6, 0.06), C.wood), 0, 0.16, 0);
   add(trough, mesh(G.rbox(0.95, 0.05, 0.46, 0.02), C.woodDark), 0, 0.3, 0);
-  const nest = add(g, new THREE.Group(), 2.05, 0, 0.65);
+  const nest = add(g, new THREE.Group(), 3.1, 0, 0.8);
   add(nest, mesh(G.rbox(1.0, 0.22, 0.8, 0.06), C.woodLight), 0, 0.11, 0);
   add(nest, mesh(G.rbox(0.86, 0.04, 0.66, 0.02), '#cfe9ff'), 0, 0.22, 0);
-  add(g, pen(3.0, 1.8), 0, 0, 0.9);
   return { g, trough, nest };
 }
 

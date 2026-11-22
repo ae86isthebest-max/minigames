@@ -5,6 +5,8 @@ import * as P from './props.js';
 import * as P2 from './props2.js';
 import { Joystick } from './input.js';
 import { createNav } from './nav.js';
+import * as ST from './street.js';
+import { createBatcher } from './batch.js';
 import './update.js';
 
 const { C, G } = K;
@@ -170,7 +172,7 @@ const UPS = {
   barn: { tab: 2, name: '牛奶速度', ic: 'milk', need: 'barn', vals: [5, 4.2, 3.4, 2.7, 2.1, 1.6, 1.3, 1.05, 0.85, 0.7], cost: [330, 770, 1510, 2750, 4950, 8000, 14000, 24000, 40000], fmt: (v) => v + ' 秒一瓶' },
   grow: { tab: 2, name: '作物生長速度', ic: 'tomato', need: 'tomato', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6, 3, 3.5, 4, 4.6], cost: [100, 250, 1430, 2610, 4680, 8000, 14000, 24000, 40000], fmt: (v) => '×' + v },
   dogR: { tab: 2, name: '小狗吸錢範圍', noLv: false, ic: 'money', need: 'dog', vals: [3, 5, 7, 9, 11, 13], cost: [150, 1100, 2480, 5000, 9000], fmt: (v) => v + ' 格' },
-  price: { tab: 3, name: '商品售價', ic: 'money', need: 'cashier', vals: [1, 1.2, 1.45, 1.75, 2.05, 2.4, 2.8, 3.2, 3.7, 4.2, 4.8], cost: [200, 500, 3030, 6050, 11000, 18000, 30000, 50000, 80000, 130000], fmt: (v) => '×' + v },
+  price: { tab: 3, name: '商品售價', ic: 'money', need: 'cashier', vals: [1, 1.2, 1.45, 1.75, 2.05, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4], cost: [200, 500, 3030, 6050, 11000, 18000, 30000, 50000, 80000, 130000], fmt: (v) => '×' + v },
   shelfCap: { tab: 3, name: '貨架容量', ic: 'egg', need: 'cashier', vals: [8, 14, 20, 30, 40, 50, 60, 70, 80], cost: [120, 320, 1930, 3850, 9000, 15000, 25000, 40000], fmt: (v) => v + ' 個' + (v >= 30 ? '，疊得高高的' : '') },
   storeCap: { tab: 3, name: '倉庫容量', ic: 'hay', need: 'warehouse', vals: [500, 1000, 2000, 3500, 5000, 8000, 12000, 18000, 25000], cost: [5000, 15000, 35000, 80000, 150000, 250000, 400000, 650000], fmt: (v) => '每座倉庫放 ' + v + ' 個' },
   cust: { tab: 3, name: '客人數量', ic: 'run', need: 'cashier', vals: [1, 1.2, 1.4, 1.6, 1.8, 2, 2.3, 2.6, 3], cost: [250, 550, 3030, 5500, 9630, 16000, 28000, 48000], fmt: (v) => '×' + v },
@@ -184,8 +186,8 @@ const UPS = {
   basket: { tab: 3, name: '購物籃架', ic: 'bk', emo: '🧺', need: 'cashier', noLv: true, vals: [1, 1.35, 1.7], cost: [2200, 6880], fmt: (v) => ['還沒有購物籃', '購物籃：客人提著籃子，走更快、拿更快', '購物車：客人推著車，又快又順'][v === 1 ? 0 : v < 1.5 ? 1 : 2] },
   autoCash: { tab: 3, name: '自助結帳機', ic: 'money', need: 'cashier2', vals: [0, 1], cost: [16500], fmt: (v) => v ? '客人自己在機器結帳，錢直接入袋，不用收銀員' : '還是收銀員結帳、要自己收錢' },
   hayGrow: { tab: 2, name: '牧草長得更快', ic: 'hay', need: 'barn', vals: [1, 1.3, 1.6, 2, 2.5, 3], cost: [3000, 7000, 14000, 26000, 45000], fmt: (v) => '×' + v },
-  buyMore: { tab: 3, name: '客人買更多', ic: 'bk', emo: '🛒', need: 'market', vals: [1, 1.2, 1.4, 1.6, 1.8, 2], cost: [12000, 25000, 45000, 75000, 120000], fmt: (v) => '每位客人拿 ×' + v },
-  bonus: { tab: 3, name: '大訂單獎金', ic: 'money', need: 'market', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [10000, 22000, 40000, 70000, 110000], fmt: (v) => '貨車、直升機、特別客人付 ×' + v },
+  buyMore: { tab: 3, name: '客人買更多', ic: 'bk', emo: '🛒', need: 'market', vals: [1, 1.1, 1.2, 1.3, 1.4, 1.5], cost: [12000, 25000, 45000, 75000, 120000], fmt: (v) => ['客人買得普普通通', '客人會多買一些', '客人買得更多', '客人買了好多', '客人買得超多', '客人買到提不動'][Math.round((v - 1) * 10)] },
+  bonus: { tab: 3, name: '大訂單獎金', ic: 'money', need: 'market', vals: [1, 1.1, 1.2, 1.3, 1.4, 1.5], cost: [10000, 22000, 40000, 70000, 110000], fmt: (v) => '貨車、直升機、特別客人：' + ['一般獎金', '獎金多一些', '獎金更豐厚', '獎金很豐厚', '獎金超豐厚', '獎金大豐收'][Math.round((v - 1) * 10)] },
 };
 const upVal = (k) => UPS[k].vals[Math.min(state.up[k] || 0, UPS[k].vals.length - 1)];
 // extra staff bought from the 員工 tab (on top of the ones unlocked on the map)
@@ -358,6 +360,8 @@ const renderer = K.makeRenderer(canvas);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(C.grass2);
 const camera = new THREE.PerspectiveCamera(34, 1, 0.5, 220);
+const areaLight = new THREE.PointLight('#ffe2a8', 0, 16, 1.6);
+scene.add(areaLight);
 const lights = K.makeLights(scene);
 const joy = new Joystick(canvas, $('ui'));
 joy.onStart = () => { if (actx && actx.state === 'suspended') actx.resume(); };
@@ -365,13 +369,30 @@ joy.onStart = () => { if (actx && actx.state === 'suspended') actx.resume(); };
 const colliders = [];
 // workers find their way around everything solid (walls, fences, buildings) with a path grid
 // z1 reaches past the 擴建 farmland (south fence at z 62 once it is bought)
-const nav = createNav(colliders, { x0: -22, x1: 30, z0: -36, z1: 64 });
+// staff walk over the road on the zebras only (the player is free to cross anywhere)
+const ROAD = { x0: 14.2, x1: 17.0, mid: 15.6, west: 13.75, east: 17.75 };
+const roadBlocks = [];
+{
+  let z = -36;
+  for (const c of ST.CROSSINGS) { roadBlocks.push({ x0: ROAD.x0, x1: ROAD.x1, z0: z, z1: c - 0.98 }); z = c + 0.98; }
+  roadBlocks.push({ x0: ROAD.x0, x1: ROAD.x1, z0: z, z1: 64 });
+}
+const nav = createNav(colliders, { x0: -22, x1: 30, z0: -36, z1: 64 }, 0.5, 0.35, roadBlocks);
 const box = (x0, z0, x1, z1) => { const b = { x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1) }; colliders.push(b); nav.dirty(); return b; };
 function unbox(b) { const i = colliders.indexOf(b); if (i >= 0) colliders.splice(i, 1); nav.dirty(); }
 function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
 // ---------- item icons: each item's 3D model rendered once to a small picture ----------
+const kindLists = new Map();
 const ICON = {};
+// label HTML is built and compared every frame: keep the picture addresses short
+function shortUrl(dataUrl) {
+  try {
+    const bin = atob(dataUrl.slice(dataUrl.indexOf(',') + 1)), bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
+  } catch (e) { return dataUrl; }
+}
 // one template per item; every copy shares its geometry (no new GPU buffers for each flying egg)
 const TPL = {};
 const itemClone = (t) => (TPL[t] || (TPL[t] = P.itemMesh(t))).clone();
@@ -388,7 +409,7 @@ function makeIcons() {
       const bb = new THREE.Box3().setFromObject(m), c = bb.getCenter(new THREE.Vector3()), s = bb.getSize(new THREE.Vector3()).length();
       cam.position.set(c.x + s * 0.9, c.y + s * 1.25, c.z + s * 1.7); cam.lookAt(c);
       r.render(sc, cam);
-      ICON[type] = '<img class="ii" src="' + r.domElement.toDataURL() + '" alt="">';
+      ICON[type] = '<img class="ii" src="' + shortUrl(r.domElement.toDataURL()) + '" alt="">';
       sc.remove(m);
     }
     r.dispose(); r.forceContextLoss();
@@ -553,11 +574,12 @@ function bulbs(x0, x1, z) {
 let shopArea = null;
 const areas = [];
 function makeArea(x0, z0, x1, z1, lamps, lx, lz) {
-  const light = new THREE.PointLight('#ffe2a8', 0, 16, 1.6); light.position.set(lx, 3.2, lz); scene.add(light);
-  const A = { x0, z0, x1, z1, light, lamps, k: 0 };
+  const A = { x0, z0, x1, z1, at: new THREE.Vector3(lx, 3.2, lz), dist: 16, lamps, k: 0 };
   areas.push(A);
   return A;
 }
+// tree rows run across the whole map: none may stand on the road or its sidewalks
+function offRoad(x) { return x < 11.6 || x > 19.5; }
 function buildWorld() {
   const D = new THREE.Group();
   // ground, road and curbs in 20-unit pieces: one 160-unit triangle that passes behind the camera
@@ -566,7 +588,9 @@ function buildWorld() {
   const rnd = mulberry(7);
   for (let i = 0; i < 40; i++) {
     const r = 1.5 + rnd() * 3.5, p = K.mesh(G.circle(r, 9), rnd() < 0.5 ? C.grass2 : C.grass3, false, true);
-    p.position.set(-34 + rnd() * 72, 0.003 + i * 0.0011, -30 + rnd() * 70); p.scale.set(1, 1, 0.6 + rnd() * 0.6); p.rotation.y = rnd() * 3; D.add(p);
+    p.position.set(-34 + rnd() * 72, 0.003 + i * 0.00016, -30 + rnd() * 70); p.scale.set(1, 1, 0.6 + rnd() * 0.6); p.rotation.y = rnd() * 3;
+    // never on top of the road or the drop-off ring beside it
+    if (p.position.x + r < 9.8 || p.position.x - r > 18) D.add(p);
   }
   // dirt path: out of the shop door, a branch east to the road, and the main path west then south through the farm
   const pathPts = [];
@@ -612,26 +636,45 @@ function buildWorld() {
   const S = new THREE.Group();
   S.add(P.fenceLine(-21, 32, 12, 32));
   for (let i = 0; i < 20; i++) { const t = P.tree(); t.g.position.set(-24 - rnd() * 6 + (i % 3), 0, -24 + i * 3.1); t.g.scale.setScalar(0.9 + rnd() * 0.5); D.add(t.g); }
-  for (let i = 0; i < 16; i++) { const t = P.tree(); t.g.position.set(-20 + i * 3.1 + rnd(), 0, 35 + rnd() * 3); t.g.scale.setScalar(0.85 + rnd() * 0.4); S.add(t.g); }
+  for (let i = 0; i < 16; i++) { const t = P.tree(); t.g.position.set(-20 + i * 3.1 + rnd(), 0, 35 + rnd() * 3); t.g.scale.setScalar(0.85 + rnd() * 0.4); if (offRoad(t.g.position.x)) S.add(t.g); }
   southG = K.add(scene, new THREE.Group()); K.bake(S, southG);
   southBox = box(-21, 31.8, 12, 32.2);
   // more woods west and east of the 擴建 farmland (outside the play area, so they can always be there)
   const rnd2 = mulberry(11);
   for (let i = 0; i < 9; i++) { const t = P.tree(); t.g.position.set(-24 - rnd2() * 6 + (i % 3), 0, 38 + i * 3.2); t.g.scale.setScalar(0.9 + rnd2() * 0.5); D.add(t.g); }
-  for (let i = 0; i < 7; i++) { const t = P.tree(); t.g.position.set(31 + rnd2() * 3, 0, 37 + i * 5 + rnd2() * 2); D.add(t.g); }
-  for (let i = 0; i < 12; i++) { const t = P.tree(); t.g.position.set(-22 + i * 3.4 + rnd(), 0, -36.6 - rnd() * 2.5); D.add(t.g); }
-  for (let i = 0; i < 12; i++) { const t = P.tree(); t.g.position.set(31 + rnd() * 3, 0, -24 + i * 5 + rnd() * 2); D.add(t.g); }
+  for (let i = 0; i < 7; i++) { const t = P.tree(); t.g.position.set(31 + rnd2() * 3, 0, 37 + i * 5 + rnd2() * 2); if (t.g.position.z > 60.5) D.add(t.g); }
+  for (let i = 0; i < 12; i++) { const t = P.tree(); t.g.position.set(-22 + i * 3.4 + rnd(), 0, -36.6 - rnd() * 2.5); if (t.g.position.x > 10.5 && t.g.position.x < 12.6) D.add(t.g); }
+  for (let i = 0; i < 12; i++) { const t = P.tree(); t.g.position.set(31 + rnd() * 3, 0, -24 + i * 5 + rnd() * 2); if (t.g.position.z < -21) D.add(t.g); }
   for (const [x, z, r] of [[11.5, -16, 0.6], [-11.5, -5.2, 0.5], [6, 30.5, 0.55], [-9, 30.6, 0.5], [12, 15.5, 0.6], [-19.5, 12, 0.6], [-19.5, 2, 0.5]]) K.add(D, P.bush(r), x, 0, z);
   const fl = ['#ff7eb6', '#ffffff', '#ffd34a', '#a98bff', '#ff8a6b'];
   for (let i = 0; i < 70; i++) K.add(D, P.flower(fl[i % 5]), -20 + rnd() * 32, 0, -3.5 + rnd() * 35);
   for (const [x, z, s] of [[-19, 28, 0.45], [-15, 14, 0.3], [11.5, 13, 0.4], [10, 30, 0.5]]) K.add(D, P.rock(s), x, 0, z);
   for (const z of [-14, -2, 10, 22]) K.add(D, P.lamp(), 13, 0, z);
   K.bake(D, scene);
+  ST.buildStreet(scene, { box, keep: keepClear() });
+  ST.lightUp(lights);
   K.bakeStatic(backWalls.g1);
   const lamps = [];
   for (const x of [-4.5, 0.5, 5.5]) { const l = P2.wallLamp(); l.g.position.set(x, 1.35, -17.3); scene.add(l.g); lamps.push(l); }
   shopArea = makeArea(-6.8, -17.4, 7.9, -7.3, lamps, 0.5, -12);
   buildBin();
+}
+// spots that street decoration must leave free: every zone, upgrade spot and the footprint of every building
+function keepClear() {
+  const k = [];
+  for (const d of DEFS) {
+    if (d.kind === 'mapgate' && !BRANCHES_OPEN) continue;
+    const z = zoneSpot(d);
+    if (z) k.push([z[0], z[1], 0.95]);
+    if (d.upAt) k.push([d.upAt[0], d.upAt[1], 0.95]);
+    if (!d.pos) continue;
+    const [x, pz] = d.pos;
+    if (d.kind === 'producer') { k.push([x, pz - 0.5, 1.6], [x - 3.15, pz + 0.8, 0.5], [x + 3.1, pz + 0.8, 0.5]); if (d.out === 'milk') for (const dx of [-1.6, 0, 1.6]) k.push([x + dx, pz + 1.9, 1.8]); else k.push([x, pz + 1.1, 1.5]); k.push([...frontOf(d), 0.95]); }
+    if (d.kind === 'machine') k.push([x, pz, 1.2], [x - 1.2, pz + 0.7, 0.8], [x + 1.2, pz + 0.7, 0.8]);
+    if (d.kind === 'crop') { const L = CROP_LAYOUT[d.plant]; for (const dx of [-0.3, 0, 0.3]) k.push([x + dx * L.w, pz, L.d / 2 + 0.2]); k.push([...frontOf(d), 0.95]); }
+  }
+  k.push([-5.3, -2.0, 0.95], [-5.3, 1.9, 3.3], [REST.x, REST.z, 1.9], [5, 4, 0.5], [5, 5.05, 0.8]);
+  return k;
 }
 // ---------- 擴建：南邊農地 ----------
 // the old south fence and its tree line come down, the land to z 62 opens: fences, woods, the main path carries on south
@@ -642,11 +685,11 @@ function applyExpand(anim) {
   const D = new THREE.Group(), rnd = mulberry(23);
   for (let i = 0; i < 18; i++) {
     const r = 1.4 + rnd() * 3, p = K.mesh(G.circle(r, 9), rnd() < 0.5 ? C.grass2 : C.grass3, false, true);
-    p.position.set(-19 + rnd() * 30, 0.004 + i * 0.0011, 34 + rnd() * 26); p.scale.set(1, 1, 0.6 + rnd() * 0.6); p.rotation.y = rnd() * 3; D.add(p);
+    p.position.set(-19 + rnd() * 30, 0.004 + i * 0.00016, 34 + rnd() * 26); p.scale.set(1, 1, 0.6 + rnd() * 0.6); p.rotation.y = rnd() * 3; D.add(p);
   }
   D.add(P.fenceLine(-21, 32, -21, 62)); D.add(P.fenceLine(-21, 62, 12, 62));
   box(-21.2, 32, -20.8, 62); box(-21, 61.8, 12, 62.2);
-  for (let i = 0; i < 16; i++) { const t = P.tree(); t.g.position.set(-20 + i * 3.1 + rnd(), 0, 65 + rnd() * 3); t.g.scale.setScalar(0.85 + rnd() * 0.4); D.add(t.g); }
+  for (let i = 0; i < 16; i++) { const t = P.tree(); t.g.position.set(-20 + i * 3.1 + rnd(), 0, 65 + rnd() * 3); t.g.scale.setScalar(0.85 + rnd() * 0.4); if (offRoad(t.g.position.x)) D.add(t.g); }
   // the main path carries on south through the new land
   const pts = [], n = Math.round((60 - 30.6) / 1.15);
   for (let i = 0; i <= n; i++) pts.push([-0.6, 30.6 + (60 - 30.6) * i / n]);
@@ -666,6 +709,8 @@ function applyExpand(anim) {
   for (let i = 0; i < 26; i++) K.add(D, P.flower(fl[i % 5]), -20.3 + rnd() * 1.4, 0, 33 + rnd() * 28);
   for (let i = 0; i < 20; i++) K.add(D, P.flower(fl[(i + 2) % 5]), -19 + rnd() * 30, 0, 60.6 + rnd() * 1.0);
   for (const z of [34, 46, 58]) K.add(D, P.lamp(), 13, 0, z);
+  ST.southDetail(D, keepClear());
+  for (const z of [34, 46, 58]) box(12.9, z - 0.1, 13.1, z + 0.1);
   expandG = K.add(scene, new THREE.Group());
   K.bake(D, expandG);
   if (anim) { for (const [x, z] of [[-10, 40], [4, 40], [-10, 52], [4, 52], [-0.6, 33]]) confetti(x, z); toast('🎉 南邊農地開放了！往下走看看'); }
@@ -726,7 +771,8 @@ function label(cls, html, getPos) {
   labels.push(L);
   return L;
 }
-function setLabel(L, html) { if (L.html !== html) { L.html = html; L.el.innerHTML = html; L.w = 0; lblSig = -1; } }
+function setLabel(L, html) { if (L.html !== html) { L.html = html; L.dirty = true; if (L.disp) writeLabel(L); } }
+function writeLabel(L) { L.dirty = false; L.el.innerHTML = L.html; L.w = 0; lblSig = -1; }
 function dropLabel(L) { L.el.remove(); const i = labels.indexOf(L); if (i >= 0) labels.splice(i, 1); }
 // clearer labels: zone names sit on a soft plate, far-away zones shrink, and labels that would cover
 // each other are nudged upwards (the one nearer the bottom of the screen keeps its place)
@@ -747,6 +793,7 @@ function placeLabels() {
     if (L.near && dist > L.near) { lblShow(L, false); continue; }
     tmpV.project(camera);
     if (tmpV.z > 1 || tmpV.x < -1.3 || tmpV.x > 1.3 || tmpV.y < -1.3 || tmpV.y > 1.3) { lblShow(L, false); continue; }
+    if (L.dirty) writeLabel(L);
     lblShow(L, true);
     // half-pixel steps: a label that hasn't moved writes the same transform (or none at all)
     L.sx = Math.round((tmpV.x + 1) / 2 * w * 2) / 2; L.sy = Math.round((1 - tmpV.y) / 2 * h * 2) / 2;
@@ -1033,7 +1080,7 @@ function build(def, instant) {
   const id = def.id;
   if (!state.built.includes(id)) state.built.push(id);
   const s = { id, def, kind: def.kind };
-  stations[id] = s;
+  stations[id] = s; kindLists.clear();
   const pos = def.pos || def.zone;
   if (def.kind === 'producer') {
     // 牛棚 (milk), 羊圈 (wool) and 雞舍 (eggs)
@@ -1048,8 +1095,9 @@ function build(def, instant) {
     for (let i = 0; i < STOCK_VIS; i++) outSl.push({ x: -0.3 + (i % 4) * 0.2, y: 0.22 + Math.floor(i / 8) * (def.out === 'wool' ? 0.2 : 0.22), z: -0.18 + (Math.floor(i / 4) % 2) * 0.3, s: 0.85 });
     s.inStack = itemStack(b.trough, 'hay', inSl); s.outStack = itemStack(b.nest, def.out, outSl);
     if (isBarn) {
-      for (let i = 0; i < 10; i++) { const c = P.cow(); c.g.position.set(pos[0], 0, pos[1] + 0.9); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.9], rx: 0.06, rz: 0.05, t: Math.random() * 5, tx: 0, tz: 0, cow: true }); }
-      box(pos[0] - 1.5, pos[1] - 2, pos[0] + 1.5, pos[1] + 0.2); penBoxes(pos[0], pos[1] + 0.9, 3.0, 1.8);
+      for (let i = 0; i < 10; i++) { const c = P.cow(); c.g.position.set(pos[0], 0, pos[1] + 0.9); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.9], rx: 0, rz: 0, t: Math.random() * 5, tx: 0, tz: 0, cow: true }); }
+      box(pos[0] - 1.85, pos[1] - 2, pos[0] + 1.85, pos[1] + 0.2); penBoxes(pos[0], pos[1] + 1.87, 5.0, 3.5);
+      for (const k of [-1, 1]) box(pos[0] + k * 1.85, pos[1] - 0.85, pos[0] + k * 2.65, pos[1] + 0.2);
     } else if (isFold) {
       for (let i = 0; i < 6; i++) { const c = P.sheep(); c.g.position.set(pos[0] - 0.9 + (i % 3) * 0.9, 0, pos[1] + 0.5 + Math.floor(i / 3) * 0.75); c.g.scale.setScalar(0.8); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.9], rx: 1.0, rz: 0.45, t: Math.random() * 5, tx: 0, tz: 0 }); }
       box(pos[0] - 1.5, pos[1] - 2, pos[0] + 1.5, pos[1] + 0.2); penBoxes(pos[0], pos[1] + 0.9, 3.0, 1.8);
@@ -1075,6 +1123,8 @@ function build(def, instant) {
     for (let i = 0; i < STOCK_VIS; i++) outSl.push({ x: -0.3 + (i % 4) * 0.2, y: 0.25 + Math.floor(i / 8) * ITEMS[def.out].h * 0.75, z: -0.18 + (Math.floor(i / 4) % 2) * 0.3, s: 0.75 });
     s.inStack = itemStack(m.inTray, def.in, inSl); s.outStack = itemStack(m.outTray, def.out, outSl);
     box(pos[0] - 0.85, pos[1] - 0.8, pos[0] + 0.85, pos[1] + 0.4);
+    ST.machineYard(m.g);
+    { const [bx, bz, r] = ST.BARREL; box(pos[0] + bx - r, pos[1] + bz - r, pos[0] + bx + r, pos[1] + bz + r); }
     const st = state.stock[id]; if (st) { s.inN = st.a || 0; s.outN = st.b || 0; }
     s.inLabel = label('badge', '', (o) => o.copy(tw).setY(0.95)); s.inLabel.near = 0;
     s.outLabel = label('badge', '', (o) => o.copy(nw).setY(0.95)); s.outLabel.near = 0;
@@ -1088,7 +1138,8 @@ function build(def, instant) {
     else if (L.half) {
       const a = P.plot(L.w / 2, L.d); a.position.x = -L.w / 4; g.add(a);
       const b = P.plot(L.w / 2, L.d); b.position.x = L.w / 4; b.userData.dyn = true; b.visible = false; g.add(b); s.plot2 = b;
-    } else g.add(P.plot(L.w, L.d));
+      ST.sunflowers(a, L.w / 2, L.d); ST.sunflowers(b, L.w / 2, L.d); K.bakeStatic(b);
+    } else { g.add(P.plot(L.w, L.d)); ST.sunflowers(g, L.w, L.d); }
     s.plants = [];
     for (const [x, z] of L.spots) {
       const pl = PLANTS[def.plant](); pl.g.position.set(x, def.plant === 'apple' ? 0 : 0.2, z); pl.g.userData.dyn = true; pl.fruit.userData.dyn = true; g.add(pl.g); K.bakeStatic(pl.g); K.bakeStatic(pl.fruit);
@@ -1202,18 +1253,17 @@ function applyGrow(s) {
     pl.active = on;
   });
 }
-// cows stand side by side in the pen, all facing the front: one row up to 3, then two rows
+// every cow is the same size and has its own place: a new cow never moves or shrinks the others
+// front row first, each row filled from the middle outwards
+const COW_SIZE = 0.85, COW_COLS = [0, -1, 1, -2, 2];
 function layoutCows(s, n) {
   const [px, pz] = s.def.pos;
-  const rows = n <= 3 ? 1 : 2, cols = Math.ceil(n / rows);
-  const sc = n <= 3 ? 0.85 : n <= 6 ? 0.68 : 0.56, gx = Math.min(0.9, 2.6 / cols);
   s.animals.forEach((a, i) => {
     if (i >= n) return;
-    const r = Math.floor(i / cols), c = i % cols, inRow = Math.min(cols, n - r * cols);
-    const x = px + (c - (inRow - 1) / 2) * gx, z = pz + (rows === 1 ? 0.9 : 0.55 + r * 0.8);
+    const x = px + COW_COLS[i % 5] * 0.94, z = pz + (i < 5 ? 2.55 : 0.85);
     a.home = [x, z]; a.tx = x; a.tz = z;
     a.g.position.set(x, 0, z); a.g.rotation.y = 0;
-    a.b.scale.setScalar(sc); a.g.children[0].scale.setScalar(sc);
+    a.b.scale.setScalar(COW_SIZE); a.g.children[0].scale.setScalar(COW_SIZE);
   });
 }
 function machTag(s) {
@@ -1245,7 +1295,10 @@ const DOORS = [
   { x: -9.6, w: 2.1, on: () => isBuilt('market') },
   { x: -19.2, w: 2.0, on: () => isBuilt('doorD') },
 ];
-const ENTRY = [14.2, -3.5], OUT_Z = -4.9, LEAVE_Z = -7.85;
+const ENTRY = [13.5, -4.3], OUT_Z = -4.9, LEAVE_Z = -7.85;
+const STREET_END = [13.5, 3.2]; // before the freight platform
+// car park: the lane in, the lane out, the footpath between the lanes and the near row, the east sidewalk
+const LOT = { in: -9.4, out: -11.2, walk: -8.1, kerb: 18.68 };
 const openDoors = () => DOORS.filter((d) => d.on());
 function nearestDoor(x) { let best = DOORS[0]; for (const d of openDoors()) if (Math.abs(d.x - x) < Math.abs(best.x - x)) best = d; return best; }
 // glass front wall from the west end of the shop to the east wall, with a gap and a sliding door for every open door
@@ -1309,7 +1362,7 @@ function applyHall(anim) {
   const sign = P2.signBoard('新館', 3.2, '#ff7eb6'); sign.position.set(-6.45, 3.0, HALL_Z + 0.1); g.add(sign);
   box(-21, HALL_Z - 0.2, 8.15, HALL_Z + 0.2); box(-21, HALL_Z, -20.6, DEPT_Z); box(7.75, HALL_Z, 8.15, DEPT_Z);
   for (const x of [-18, -12, -1, 5]) { const l = P2.wallLamp(); l.g.position.set(x, 1.9, HALL_Z + 0.3); scene.add(l.g); shopArea.lamps.push(l); }
-  shopArea.z0 = HALL_Z + 0.2; shopArea.light.position.z = -20; shopArea.light.distance = 48;
+  shopArea.z0 = HALL_Z + 0.2; shopArea.at.z = -20; shopArea.dist = 48;
   K.bakeStatic(g); hallG = g;
   if (state.up.floor) applyFloor(false);
   if (anim) { popIn(g); confetti(-6.5, -29.5); }
@@ -1326,7 +1379,7 @@ function applyDept(anim) {
   deptBackWall(isBuilt('hall'));
   box(-21, DEPT_Z, -20.6, -17.4); box(7.75, DEPT_Z, 8.15, -17.4);
   for (const l of shopArea.lamps) l.g.position.z = DEPT_Z + 0.3;
-  shopArea.z0 = DEPT_Z + 0.2; shopArea.light.position.z = -16; shopArea.light.distance = 40;
+  shopArea.z0 = DEPT_Z + 0.2; shopArea.at.z = -16; shopArea.dist = 40;
   K.bakeStatic(g); deptG = g;
   buildFront();
   if (state.up.floor) applyFloor(false);
@@ -1352,7 +1405,7 @@ function buildMarket(instant) {
   for (const x of [-18, -13.5, -9]) { const l = P2.wallLamp(); l.g.position.set(x, 1.9, -17.3); scene.add(l.g); shopArea.lamps.push(l); }
   K.add(g, K.mesh(G.circle(1.1, 24), '#ff8fb1', false, true), VIP.x, 0.02, VIP.z);
   K.add(g, K.mesh(G.circle(0.85, 24), '#ffd1e0', false, true), VIP.x, 0.025, VIP.z);
-  shopArea.x0 = -20.8; shopArea.light.position.x = -6.5; shopArea.light.distance = 26;
+  shopArea.x0 = -20.8; shopArea.at.x = -6.5; shopArea.dist = 26;
   if (standWall.g) { scene.remove(standWall.g); standWall.g = null; unbox(standWall.b); }
   if (state.up.look) applyShopLook(false);
   if (state.up.floor) applyFloor(false);
@@ -1402,7 +1455,7 @@ function refreshZones() {
 // 開分店 needs this many of the new product lines (a line counts once its first shelf is up)
 function linesBuilt() { return NEW_LINES.filter(isBuilt).length; }
 function frontOf(def) {
-  if (def.kind === 'producer') return [def.pos[0], def.pos[1] + (def.out === 'milk' || def.out === 'wool' ? 3.9 : 3.4)];
+  if (def.kind === 'producer') return [def.pos[0], def.pos[1] + (def.out === 'milk' ? 5.2 : def.out === 'wool' ? 3.9 : 3.4)];
   if (def.kind === 'crop') { const L = CROP_LAYOUT[def.plant]; return [def.pos[0] - (L.half ? L.w / 4 : 0), def.pos[1] + L.d / 2 + 1.5]; }
   if (def.kind === 'machine') return def.upAt || [def.pos[0], def.pos[1] + 2.6];
   return def.pos;
@@ -1515,12 +1568,30 @@ function makeWorker(role, at, counter, pop, tint) {
 // at most a few path searches per frame (phones): whoever is over the budget waits a frame for theirs
 const NAV_PER_FRAME = 4;
 let navBudget = NAV_PER_FRAME;
+// to the other side of the road: via the zebra with the shortest way round, keeping to the right
+// (three short straight legs, so it is cheaper than searching the whole map)
+function walkRoute(sx, sz, tx, tz) {
+  const east = tx > ROAD.mid;
+  if ((sx > ROAD.mid) === east || (sx > ROAD.west + 0.2 && sx < ROAD.east - 0.2)) return nav.path(sx, sz, tx, tz);
+  const ax = east ? ROAD.west : ROAD.east, bx = east ? ROAD.east : ROAD.west, south = isBuilt('expand');
+  let best = ST.CROSSINGS[0], bd = 1e9;
+  for (const c of ST.CROSSINGS) {
+    if (c > 31 && !south) break;
+    const d = Math.hypot(ax - sx, c - sz) + Math.hypot(tx - bx, tz - c);
+    if (d < bd) { bd = d; best = c; }
+  }
+  const z = best + (east ? 0.28 : -0.28);
+  return nav.path(sx, sz, ax, z).concat([[bx, z]], nav.path(bx, z, tx, tz));
+}
 function go(w, x, z, dt, speed) {
   const key = x.toFixed(2) + ',' + z.toFixed(2);
   if (w.routeKey !== key || !w.route || !w.route.length) {
     if (navBudget <= 0) { w.moving = 0; return false; }
-    navBudget--; w.routeKey = key; const p = w.p.root.position; w.route = nav.path(p.x, p.z, x, z);
+    navBudget--; w.routeKey = key; const p = w.p.root.position;
+    w.route = w.straight && ((p.x > 12.4 && p.x < 18.8) || (x > 12.4 && x < 18.8)) ? [[x, z]] : walkRoute(p.x, p.z, x, z);
   }
+  const px = w.p.root.position.x;
+  if (px > 12.8 && px < 18.6) speed *= 1.6; // hurry over the road (makes up for going round by the zebra)
   while (w.route.length > 1 && walkTo(w, w.route[0][0], w.route[0][1], dt, speed)) w.route.shift();
   if (w.route.length > 1) return false;
   return walkTo(w, w.route[0][0], w.route[0][1], dt, speed);
@@ -1538,7 +1609,12 @@ function turn(p, face, dt) {
   while (diff > Math.PI) diff -= Math.PI * 2; while (diff < -Math.PI) diff += Math.PI * 2;
   p.root.rotation.y = r + diff * Math.min(1, dt * 12);
 }
-const listOf = (kind) => Object.values(stations).filter((s) => s.kind === kind);
+// cached until something is built; callers must copy before sorting
+function listOf(kind) {
+  let a = kindLists.get(kind);
+  if (!a) kindLists.set(kind, a = Object.values(stations).filter((s) => s.kind === kind));
+  return a;
+}
 // ---------- 員工休息區: staff with nothing to do sit down here for a while, or stroll somewhere nobody else stands ----------
 const REST = { x: -9.7, z: 6.6, seats: [], built: false };
 for (const sz of [-1, 1]) for (const dx of [-0.75, 0, 0.75]) REST.seats.push({ x: REST.x + dx, z: REST.z + sz * 0.95, face: sz > 0 ? Math.PI : 0, w: null });
@@ -1921,7 +1997,7 @@ function spawnManager(k, quiet) {
 function keeperJob(w, L) {
   // only go for a decent load (the south pens are a long walk from the shop), fullest nest first
   const min = Math.max(3, Math.round(Math.min(w.cap(), 30) * 0.6));
-  for (const s of listOf('producer').sort((a, b) => b.outN - a.outN)) {
+  for (const s of listOf('producer').slice().sort((a, b) => b.outN - a.outN)) {
     if (s.outN < Math.min(min, s.outMax - 2)) continue;
     const it = s.def.out;
     if (useStore() && storeRoom() > 2 && (state.store[it] || 0) < storeCap() * 0.3) return { dst: nearestStore(s.outPt), src: s, item: it, phase: 'get' };
@@ -1995,7 +2071,7 @@ function spawnCustomer(from) {
   const p = K.person(customerLook(false));
   const start = from || [ENTRY[0], ENTRY[1] + 4];
   p.root.position.set(start[0], 0, start[1]); scene.add(p.root);
-  const path = from ? [[from[0], -10], [14.2, -10], ENTRY] : [ENTRY];
+  const path = from ? [[from[0] - 1, from[1]], [from[0] - 1, LOT.walk], [LOT.kerb, LOT.walk], [LOT.kerb, ENTRY[1]], ENTRY] : [ENTRY];
   const L = laneOf(sh), door = nearestDoor(sh.front.x);
   path.push(...doorIn(door));
   // back rows: down the side aisle to their walkway; the front-middle shelves: round the counters
@@ -2143,7 +2219,7 @@ function leaveShop(c) {
   if (pz < -9.3) { const x0 = ln ? ax : px; gx = LEAVE_GAPS.reduce((b, g) => (Math.abs(g - x0) < Math.abs(b - x0) ? g : b), LEAVE_GAPS[0]); pre.push([ln ? ax : px, -12.1], [gx, -12.1]); }
   const door = c.paid ? exitDoor(c.ci) : nearestDoor(gx);
   c.path = [...pre, ...doorOut(door, gx)];
-  if (c.home) c.path.push([14.2, -10], [c.home[0], -10], c.home); else c.path.push([ENTRY[0], ENTRY[1] + 14]);
+  if (c.home) c.path.push([LOT.kerb, ENTRY[1]], [LOT.kerb, LOT.walk], [c.home[0] - 1, LOT.walk], [c.home[0] - 1, c.home[1]], c.home); // between the cars, clear of a car turning in else c.path.push(STREET_END);
 }
 function pay(c) {
   const goods = c.list ? c.list.reduce((a, e) => a + e.got * ITEMS[e.item].price, 0) : c.got * ITEMS[c.item].price;
@@ -2163,8 +2239,27 @@ function parkCar() {
   const slot = park.slots.find((s) => !s.used);
   if (!slot) { spawnCustomer(); return; }
   slot.used = true;
-  const g = P2.car(pick(CAR_COLS)); g.position.set(14.8, 0, -50); scene.add(g);
-  park.cars.push({ g, slot, st: 'come', path: [[14.8, -10.5], [slot.x, -10.5], [slot.x, slot.z]], t: 0, waiting: false });
+  let z = -50;
+  for (const o of park.cars) if (o.st === 'come' && o.g.position.x < 15.2) z = Math.min(z, o.g.position.z - 4);
+  const g = P2.car(pick(CAR_COLS)); g.position.set(ST.SOUTH_LANE, 0, z); scene.add(g);
+  park.cars.push({ g, body: ST.vehicle(g, 1.2, 0.72), slot, st: 'come', path: [[ST.SOUTH_LANE, LOT.in], [slot.x, LOT.in], [slot.x, slot.z]], t: 0, waiting: false });
+}
+function carWaits(car, dx) {
+  if (Math.abs(dx) <= 0.2) return false;
+  const x = car.g.position.x;
+  const pullingOut = car.st === 'go' && x > 18.9 && x < 19.7, pullingIn = car.st === 'come' && x < 15.1;
+  return (pullingOut || pullingIn) && traffic.junctionBusy();
+}
+const onFoot = [], driving = [];
+function prepareTraffic() {
+  onFoot.length = driving.length = 0;
+  for (const w of workers) onFoot.push(w);
+  for (const c of customers) onFoot.push(c);
+  if (vip.c) onFoot.push(vip.c);
+  if (pets.dog && pets.dog.walker) onFoot.push(pets.dog.walker);
+  for (const c of park.cars) if (c.path.length) driving.push(c.body);
+  if (truck.g && truck.g.visible) driving.push(truck.body);
+  traffic.begin(driving, onFoot, player.p.root.position);
 }
 function updateCars(dt) {
   for (let i = park.cars.length - 1; i >= 0; i--) {
@@ -2173,14 +2268,21 @@ function updateCars(dt) {
       const [tx, tz] = car.path[0];
       const dx = tx - g.position.x, dz = tz - g.position.z, d = Math.hypot(dx, dz);
       if (d < 0.15) car.path.shift();
-      else { const s = Math.min(d, 9 * dt); g.position.x += dx / d * s; g.position.z += dz / d * s; g.rotation.y = Math.atan2(dx, dz); }
+      else if (carWaits(car, dx)) car.body.v = 0;
+      else {
+        const b = car.body, ox = b.dx, oz = b.dz; b.dx = dx / d; b.dz = dz / d;
+        const s = Math.min(d, traffic.advance(b, dt, 9));
+        if (!s) { b.dx = ox; b.dz = oz; } // it only swings round once the way is free
+        g.position.x += b.dx * s; g.position.z += b.dz * s;
+        if (s > 0) g.rotation.y = Math.atan2(dx, dz);
+      }
     } else if (car.st === 'come') {
       car.st = 'parked'; car.waiting = true;
       const c = spawnCustomer([car.slot.x, car.slot.z]);
       if (c) { c.home = [car.slot.x, car.slot.z]; c.car = car; } else car.waiting = false;
     } else if (car.st === 'parked' && !car.waiting) {
       car.t += dt;
-      if (car.t > 1.2) { car.st = 'go'; car.path = [[car.slot.x, -10.5], [16.2, -10.5], [16.2, 60]]; }
+      if (car.t > 1.2) { car.st = 'go'; car.path = [[car.slot.x, LOT.out], [ST.LANE, LOT.out], [ST.LANE, -62]]; }
     } else if (car.st === 'go') { scene.remove(g); car.slot.used = false; park.cars.splice(i, 1); }
   }
 }
@@ -2195,7 +2297,7 @@ function updatePets(dt, t) {
     const dd = Math.hypot(back.x - d.g.position.x, back.z - d.g.position.z);
     let mv = 0;
     if (dd > 0.3) {
-      const w = d.walker || (d.walker = { p: { root: d.g }, face: 0, moving: 0 });
+      const w = d.walker || (d.walker = { p: { root: d.g }, face: 0, moving: 0, straight: true }); // the dog follows you across anywhere
       const sx = Math.round(back.x * 2) / 2, sz = Math.round(back.z * 2) / 2;
       const before = d.g.position.clone();
       go(w, sx, sz, dt, dd > 3 ? 10 : 6);
@@ -2270,29 +2372,29 @@ function updateVip(dt) {
     c.patience -= dt;
     setLabel(c.label, '<div class="zn">⭐ 特別客人 ' + Math.ceil(c.patience) + '秒</div>' + orderRows(c) + '<div class="rew">' + ICON.money + fmtMoney(c.value) + '</div>');
     if (dist2(player.p.root.position, VIP.x, VIP.z) < 1.9) feedOrder(c.order, (o) => { o.copy(c.p.root.position); o.y = 1.3; }, dt, c);
-    if (orderDone(c.order)) { payBonus(c.value, V3(VIP.x, 2, VIP.z)); confetti(VIP.x, VIP.z); c.st = 'leave'; c.label.show = false; c.path = [ENTRY, [ENTRY[0], ENTRY[1] + 14]]; }
-    else if (c.patience <= 0) { c.st = 'leave'; c.label.show = false; c.path = [ENTRY, [ENTRY[0], ENTRY[1] + 14]]; const v = payPartial(c, V3(VIP.x, 2, VIP.z)); toast(v ? '特別客人時間到，已交的貨照付 $' + fmtMoney(v) : '特別客人走了…'); }
+    if (orderDone(c.order)) { payBonus(c.value, V3(VIP.x, 2, VIP.z)); confetti(VIP.x, VIP.z); c.st = 'leave'; c.label.show = false; c.path = [ENTRY, STREET_END]; }
+    else if (c.patience <= 0) { c.st = 'leave'; c.label.show = false; c.path = [ENTRY, STREET_END]; const v = payPartial(c, V3(VIP.x, 2, VIP.z)); toast(v ? '特別客人時間到，已交的貨照付 $' + fmtMoney(v) : '特別客人走了…'); }
   }
   if (c.st === 'leave' && stepPath(c, dt, 2.8)) { scene.remove(c.p.root); dropLabel(c.label); vip.c = null; vip.t = rand(70, 120); return; }
   turn(c.p, c.face, dt); c.p.anim(dt, c.moving);
 }
 
 const truck = { ready: false, st: 'away', t: 25, g: null };
-const DOCK = { x: 14.6, z: 6, drop: [12.9, 6] };
+const DOCK = { x: ST.SOUTH_LANE, z: 6, drop: [12.9, 6] };
 function updateTruck(dt) {
   if (!truck.ready) return;
   if (!truck.g) {
-    const tr = P.truck(); truck.g = tr.g; truck.bed = tr.bed; truck.g.position.set(DOCK.x, 0, -45); scene.add(truck.g); truck.g.visible = false;
+    const tr = P.truck(); truck.g = tr.g; truck.bed = tr.bed; truck.body = ST.vehicle(tr.g, 1.82, 0.86); truck.g.position.set(DOCK.x, 0, -45); scene.add(truck.g); truck.g.visible = false;
     truck.label = label('zone order', '', (o) => o.set(DOCK.drop[0], 0.4, DOCK.drop[1] + 0.2)); truck.label.show = false;
   }
   truck.t -= dt;
   if (truck.st === 'away' && truck.t <= 0) {
     truck.total = startOrder(truck, 2, 4, 9, 3, 0);
-    truck.st = 'come'; truck.g.visible = true; truck.g.position.z = -45;
+    truck.st = 'come'; truck.g.visible = true; truck.g.position.z = -45; truck.body.v = 8;
   }
   if (truck.st === 'come') {
-    truck.g.position.z += Math.min(DOCK.z - truck.g.position.z, 12 * dt);
-    if (DOCK.z - truck.g.position.z < 0.05) { truck.st = 'wait'; truck.t = 90 + truck.total * 0.5; truck.label.show = true; toast('🚚 訂單卡車到了！可以分很多趟送'); }
+    truck.g.position.z += Math.min(DOCK.z - truck.g.position.z, traffic.advance(truck.body, dt, 9));
+    if (DOCK.z - truck.g.position.z < 0.05) { truck.st = 'wait'; truck.body.v = 0; truck.body.turnOfCar = false; truck.t = 90 + truck.total * 0.5; truck.label.show = true; toast('🚚 訂單卡車到了！可以分很多趟送'); }
   }
   if (truck.st === 'wait') {
     setLabel(truck.label, '<div class="zn">🚚 訂單 ' + Math.ceil(truck.t) + '秒</div>' + orderRows(truck) + '<div class="rew">' + ICON.money + fmtMoney(truck.value) + '</div>');
@@ -2301,8 +2403,8 @@ function updateTruck(dt) {
     else if (truck.t <= 0) { truck.st = 'leave'; truck.label.show = false; const v = payPartial(truck, V3(DOCK.drop[0], 1.6, DOCK.drop[1])); toast(v ? '卡車開走了，已裝的貨照付 $' + fmtMoney(v) : '卡車開走了…'); }
   }
   if (truck.st === 'leave') {
-    truck.g.position.z += 12 * dt;
-    if (truck.g.position.z > 50) { truck.st = 'away'; truck.t = rand(60, 100); truck.g.visible = false; }
+    truck.g.position.z += traffic.advance(truck.body, dt, 9);
+    if (truck.g.position.z > 74) { truck.st = 'away'; truck.t = rand(60, 100); truck.g.visible = false; }
   }
 }
 
@@ -2737,13 +2839,16 @@ function updateDoorsAndLights(dt) {
     sh.door.open(sh.dk);
   }
   const pp = player.p.root.position;
+  let bright = null;
   for (const A of areas) {
     const inside = pp.x > A.x0 && pp.x < A.x1 && pp.z > A.z0 && pp.z < A.z1;
     A.k += ((inside ? 1 : 0) - A.k) * Math.min(1, dt * 4);
-    A.light.intensity = A.k * 26;
+    if (!bright || A.k > bright.k) bright = A;
     const lit = A.k > 0.5;
     if (A.lit !== lit) { A.lit = lit; A.lamps.forEach((l) => l.lit(lit)); }
   }
+  // (the number of lights must never change: every extra one is computed for every pixel)
+  if (bright) { areaLight.position.copy(bright.at); areaLight.distance = bright.dist; areaLight.intensity = bright.k * 26; }
 }
 
 // ---------- camera ----------
@@ -2770,6 +2875,7 @@ function updateCamera(dt, snap) {
 
 // ---------- boot ----------
 buildWorld();
+const traffic = ST.createTraffic(scene);
 buildField();
 buildTrees();
 if (state.built.length && !state.built.includes('counter')) state.built.splice(1, 0, 'counter');
@@ -2786,12 +2892,14 @@ applyKiosk(false);
 resize(); updateCamera(0, true); updateMoney();
 
 let last = performance.now(), saveT = 0, T = 0;
+const batcher = params.has('nobatch') ? null : createBatcher(scene);
+function draw() { if (batcher) batcher.render(renderer, camera); else renderer.render(scene, camera); }
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now;
   step(dt);
   updateCamera(dt);
-  renderer.render(scene, camera);
+  draw();
   placeLabels();
   saveT += dt; if (saveT > 4) { saveT = 0; save(); }
 }
@@ -2813,9 +2921,11 @@ function step(dt) {
   }
   maxTag(player);
   updateCustomers(dt);
-  updateCars(dt);
   updatePets(dt, T);
   updateVip(dt);
+  prepareTraffic(); // after everyone walked, before any vehicle moves
+  updateCars(dt);
+  traffic.update(dt, park.cars);
   updateTruck(dt);
   updateHeli(dt);
   updateEvents(dt);
@@ -2857,13 +2967,13 @@ addEventListener('pagehide', save);
 
 // test hooks
 window.__farm = {
-  state, stations, player, zones, customers, workers, truck, heli, vip, park, events, DEFS, COUNTERS, colliders, tufts, pets,
+  traffic, park, CROSSINGS: ST.CROSSINGS, state, stations, player, zones, customers, workers, truck, heli, vip, park, events, DEFS, COUNTERS, colliders, tufts, pets,
   DEF, GROW, nav, linesBuilt, growDefs, zoneSpot, ITEMS,
   DOORS, COUNTERS_Q: () => COUNTERS.map((k) => k.qs),
   three: { scene, camera, renderer, THREE },
   // average ms per frame for the whole game step + render + labels (CPU side)
   stepMs(n) { const t0 = performance.now(); for (let i = 0; i < n; i++) step(1 / 30); return (performance.now() - t0) / n; },
-  bench(n) { const t0 = performance.now(); for (let i = 0; i < n; i++) { step(1 / 30); updateCamera(1 / 30); renderer.render(scene, camera); placeLabels(); } return (performance.now() - t0) / n; },
+  bench(n) { const t0 = performance.now(); for (let i = 0; i < n; i++) { step(1 / 30); updateCamera(1 / 30); draw(); placeLabels(); } return (performance.now() - t0) / n; },
   give(type, n) { for (let i = 0; i < n && room(player) > 0; i++) stackAdd(player, type); },
   giveTo(w, type, n) { for (let i = 0; i < n; i++) stackAdd(w, type); },
   cash(n) { state.money += n; updateMoney(); },
@@ -2875,5 +2985,6 @@ window.__farm = {
   guide, guideTarget, exportSave, importSave,
   look(n, f, a) { state.up.look = n; state.up.floor = f || 0; state.up.ad = a || 0; applyShopLook(false); applyFloor(false); applyAd(false); },
   calls: () => renderer.info.render.calls,
+  draw,
   lineup(x, z) { Object.keys(ITEMS).forEach((t, i) => { const m = P.itemMesh(t); m.scale.setScalar(2); m.position.set(x + (i % 5) * 1.1, 0, z + Math.floor(i / 5) * 1.2); scene.add(m); }); },
 };
