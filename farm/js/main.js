@@ -170,7 +170,7 @@ const UPS = {
   barn: { tab: 2, name: '牛奶速度', ic: 'milk', need: 'barn', vals: [5, 4.2, 3.4, 2.7, 2.1, 1.6, 1.3, 1.05, 0.85, 0.7], cost: [330, 770, 1510, 2750, 4950, 8000, 14000, 24000, 40000], fmt: (v) => v + ' 秒一瓶' },
   grow: { tab: 2, name: '作物生長速度', ic: 'tomato', need: 'tomato', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6, 3, 3.5, 4, 4.6], cost: [100, 250, 1430, 2610, 4680, 8000, 14000, 24000, 40000], fmt: (v) => '×' + v },
   dogR: { tab: 2, name: '小狗吸錢範圍', noLv: false, ic: 'money', need: 'dog', vals: [3, 5, 7, 9, 11, 13], cost: [150, 1100, 2480, 5000, 9000], fmt: (v) => v + ' 格' },
-  price: { tab: 3, name: '商品售價', ic: 'money', need: 'cashier', vals: [1, 1.2, 1.45, 1.75, 2.05, 2.4, 2.8, 3.2, 3.7, 4.2, 4.8], cost: [200, 500, 3030, 6050, 11000, 18000, 30000, 50000, 80000, 130000], fmt: (v) => '×' + v },
+  price: { tab: 3, name: '商品售價', ic: 'money', need: 'cashier', vals: [1, 1.2, 1.45, 1.75, 2.05, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4], cost: [200, 500, 3030, 6050, 11000, 18000, 30000, 50000, 80000, 130000], fmt: (v) => '×' + v },
   shelfCap: { tab: 3, name: '貨架容量', ic: 'egg', need: 'cashier', vals: [8, 14, 20, 30, 40, 50, 60, 70, 80], cost: [120, 320, 1930, 3850, 9000, 15000, 25000, 40000], fmt: (v) => v + ' 個' + (v >= 30 ? '，疊得高高的' : '') },
   storeCap: { tab: 3, name: '倉庫容量', ic: 'hay', need: 'warehouse', vals: [500, 1000, 2000, 3500, 5000, 8000, 12000, 18000, 25000], cost: [5000, 15000, 35000, 80000, 150000, 250000, 400000, 650000], fmt: (v) => '每座倉庫放 ' + v + ' 個' },
   cust: { tab: 3, name: '客人數量', ic: 'run', need: 'cashier', vals: [1, 1.2, 1.4, 1.6, 1.8, 2, 2.3, 2.6, 3], cost: [250, 550, 3030, 5500, 9630, 16000, 28000, 48000], fmt: (v) => '×' + v },
@@ -184,8 +184,8 @@ const UPS = {
   basket: { tab: 3, name: '購物籃架', ic: 'bk', emo: '🧺', need: 'cashier', noLv: true, vals: [1, 1.35, 1.7], cost: [2200, 6880], fmt: (v) => ['還沒有購物籃', '購物籃：客人提著籃子，走更快、拿更快', '購物車：客人推著車，又快又順'][v === 1 ? 0 : v < 1.5 ? 1 : 2] },
   autoCash: { tab: 3, name: '自助結帳機', ic: 'money', need: 'cashier2', vals: [0, 1], cost: [16500], fmt: (v) => v ? '客人自己在機器結帳，錢直接入袋，不用收銀員' : '還是收銀員結帳、要自己收錢' },
   hayGrow: { tab: 2, name: '牧草長得更快', ic: 'hay', need: 'barn', vals: [1, 1.3, 1.6, 2, 2.5, 3], cost: [3000, 7000, 14000, 26000, 45000], fmt: (v) => '×' + v },
-  buyMore: { tab: 3, name: '客人買更多', ic: 'bk', emo: '🛒', need: 'market', vals: [1, 1.2, 1.4, 1.6, 1.8, 2], cost: [12000, 25000, 45000, 75000, 120000], fmt: (v) => '每位客人拿 ×' + v },
-  bonus: { tab: 3, name: '大訂單獎金', ic: 'money', need: 'market', vals: [1, 1.25, 1.5, 1.8, 2.2, 2.6], cost: [10000, 22000, 40000, 70000, 110000], fmt: (v) => '貨車、直升機、特別客人付 ×' + v },
+  buyMore: { tab: 3, name: '客人買更多', ic: 'bk', emo: '🛒', need: 'market', vals: [1, 1.1, 1.2, 1.3, 1.4, 1.5], cost: [12000, 25000, 45000, 75000, 120000], fmt: (v) => ['客人買得普普通通', '客人會多買一些', '客人買得更多', '客人買了好多', '客人買得超多', '客人買到提不動'][Math.round((v - 1) * 10)] },
+  bonus: { tab: 3, name: '大訂單獎金', ic: 'money', need: 'market', vals: [1, 1.1, 1.2, 1.3, 1.4, 1.5], cost: [10000, 22000, 40000, 70000, 110000], fmt: (v) => '貨車、直升機、特別客人：' + ['一般獎金', '獎金多一些', '獎金更豐厚', '獎金很豐厚', '獎金超豐厚', '獎金大豐收'][Math.round((v - 1) * 10)] },
 };
 const upVal = (k) => UPS[k].vals[Math.min(state.up[k] || 0, UPS[k].vals.length - 1)];
 // extra staff bought from the 員工 tab (on top of the ones unlocked on the map)
@@ -566,7 +566,9 @@ function buildWorld() {
   const rnd = mulberry(7);
   for (let i = 0; i < 40; i++) {
     const r = 1.5 + rnd() * 3.5, p = K.mesh(G.circle(r, 9), rnd() < 0.5 ? C.grass2 : C.grass3, false, true);
-    p.position.set(-34 + rnd() * 72, 0.003 + i * 0.0011, -30 + rnd() * 70); p.scale.set(1, 1, 0.6 + rnd() * 0.6); p.rotation.y = rnd() * 3; D.add(p);
+    p.position.set(-34 + rnd() * 72, 0.003 + i * 0.0011, -30 + rnd() * 70); p.scale.set(1, 1, 0.6 + rnd() * 0.6); p.rotation.y = rnd() * 3;
+    // never on top of the road or the drop-off ring beside it
+    if (p.position.x + r < 9.8 || p.position.x - r > 18) D.add(p);
   }
   // dirt path: out of the shop door, a branch east to the road, and the main path west then south through the farm
   const pathPts = [];
@@ -1048,8 +1050,9 @@ function build(def, instant) {
     for (let i = 0; i < STOCK_VIS; i++) outSl.push({ x: -0.3 + (i % 4) * 0.2, y: 0.22 + Math.floor(i / 8) * (def.out === 'wool' ? 0.2 : 0.22), z: -0.18 + (Math.floor(i / 4) % 2) * 0.3, s: 0.85 });
     s.inStack = itemStack(b.trough, 'hay', inSl); s.outStack = itemStack(b.nest, def.out, outSl);
     if (isBarn) {
-      for (let i = 0; i < 10; i++) { const c = P.cow(); c.g.position.set(pos[0], 0, pos[1] + 0.9); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.9], rx: 0.06, rz: 0.05, t: Math.random() * 5, tx: 0, tz: 0, cow: true }); }
-      box(pos[0] - 1.5, pos[1] - 2, pos[0] + 1.5, pos[1] + 0.2); penBoxes(pos[0], pos[1] + 0.9, 3.0, 1.8);
+      for (let i = 0; i < 10; i++) { const c = P.cow(); c.g.position.set(pos[0], 0, pos[1] + 0.9); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.9], rx: 0, rz: 0, t: Math.random() * 5, tx: 0, tz: 0, cow: true }); }
+      box(pos[0] - 1.85, pos[1] - 2, pos[0] + 1.85, pos[1] + 0.2); penBoxes(pos[0], pos[1] + 1.87, 5.0, 3.5);
+      for (const k of [-1, 1]) box(pos[0] + k * 1.85, pos[1] - 0.85, pos[0] + k * 2.65, pos[1] + 0.2);
     } else if (isFold) {
       for (let i = 0; i < 6; i++) { const c = P.sheep(); c.g.position.set(pos[0] - 0.9 + (i % 3) * 0.9, 0, pos[1] + 0.5 + Math.floor(i / 3) * 0.75); c.g.scale.setScalar(0.8); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.9], rx: 1.0, rz: 0.45, t: Math.random() * 5, tx: 0, tz: 0 }); }
       box(pos[0] - 1.5, pos[1] - 2, pos[0] + 1.5, pos[1] + 0.2); penBoxes(pos[0], pos[1] + 0.9, 3.0, 1.8);
@@ -1202,18 +1205,17 @@ function applyGrow(s) {
     pl.active = on;
   });
 }
-// cows stand side by side in the pen, all facing the front: one row up to 3, then two rows
+// every cow is the same size and has its own place: a new cow never moves or shrinks the others
+// front row first, each row filled from the middle outwards
+const COW_SIZE = 0.85, COW_COLS = [0, -1, 1, -2, 2];
 function layoutCows(s, n) {
   const [px, pz] = s.def.pos;
-  const rows = n <= 3 ? 1 : 2, cols = Math.ceil(n / rows);
-  const sc = n <= 3 ? 0.85 : n <= 6 ? 0.68 : 0.56, gx = Math.min(0.9, 2.6 / cols);
   s.animals.forEach((a, i) => {
     if (i >= n) return;
-    const r = Math.floor(i / cols), c = i % cols, inRow = Math.min(cols, n - r * cols);
-    const x = px + (c - (inRow - 1) / 2) * gx, z = pz + (rows === 1 ? 0.9 : 0.55 + r * 0.8);
+    const x = px + COW_COLS[i % 5] * 0.94, z = pz + (i < 5 ? 2.55 : 0.85);
     a.home = [x, z]; a.tx = x; a.tz = z;
     a.g.position.set(x, 0, z); a.g.rotation.y = 0;
-    a.b.scale.setScalar(sc); a.g.children[0].scale.setScalar(sc);
+    a.b.scale.setScalar(COW_SIZE); a.g.children[0].scale.setScalar(COW_SIZE);
   });
 }
 function machTag(s) {
@@ -1402,7 +1404,7 @@ function refreshZones() {
 // 開分店 needs this many of the new product lines (a line counts once its first shelf is up)
 function linesBuilt() { return NEW_LINES.filter(isBuilt).length; }
 function frontOf(def) {
-  if (def.kind === 'producer') return [def.pos[0], def.pos[1] + (def.out === 'milk' || def.out === 'wool' ? 3.9 : 3.4)];
+  if (def.kind === 'producer') return [def.pos[0], def.pos[1] + (def.out === 'milk' ? 5.2 : def.out === 'wool' ? 3.9 : 3.4)];
   if (def.kind === 'crop') { const L = CROP_LAYOUT[def.plant]; return [def.pos[0] - (L.half ? L.w / 4 : 0), def.pos[1] + L.d / 2 + 1.5]; }
   if (def.kind === 'machine') return def.upAt || [def.pos[0], def.pos[1] + 2.6];
   return def.pos;
