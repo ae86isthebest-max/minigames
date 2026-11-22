@@ -5,6 +5,7 @@ import * as P from './props.js';
 import * as P2 from './props2.js';
 import { Joystick } from './input.js';
 import { createNav } from './nav.js';
+import * as ST from './street.js';
 import './update.js';
 
 const { C, G } = K;
@@ -558,6 +559,8 @@ function makeArea(x0, z0, x1, z1, lamps, lx, lz) {
   areas.push(A);
   return A;
 }
+// tree rows run across the whole map: none may stand on the road or its sidewalks
+function offRoad(x) { return x < 11.6 || x > 19.5; }
 function buildWorld() {
   const D = new THREE.Group();
   // ground, road and curbs in 20-unit pieces: one 160-unit triangle that passes behind the camera
@@ -566,7 +569,7 @@ function buildWorld() {
   const rnd = mulberry(7);
   for (let i = 0; i < 40; i++) {
     const r = 1.5 + rnd() * 3.5, p = K.mesh(G.circle(r, 9), rnd() < 0.5 ? C.grass2 : C.grass3, false, true);
-    p.position.set(-34 + rnd() * 72, 0.003 + i * 0.0011, -30 + rnd() * 70); p.scale.set(1, 1, 0.6 + rnd() * 0.6); p.rotation.y = rnd() * 3;
+    p.position.set(-34 + rnd() * 72, 0.003 + i * 0.00016, -30 + rnd() * 70); p.scale.set(1, 1, 0.6 + rnd() * 0.6); p.rotation.y = rnd() * 3;
     // never on top of the road or the drop-off ring beside it
     if (p.position.x + r < 9.8 || p.position.x - r > 18) D.add(p);
   }
@@ -614,26 +617,45 @@ function buildWorld() {
   const S = new THREE.Group();
   S.add(P.fenceLine(-21, 32, 12, 32));
   for (let i = 0; i < 20; i++) { const t = P.tree(); t.g.position.set(-24 - rnd() * 6 + (i % 3), 0, -24 + i * 3.1); t.g.scale.setScalar(0.9 + rnd() * 0.5); D.add(t.g); }
-  for (let i = 0; i < 16; i++) { const t = P.tree(); t.g.position.set(-20 + i * 3.1 + rnd(), 0, 35 + rnd() * 3); t.g.scale.setScalar(0.85 + rnd() * 0.4); S.add(t.g); }
+  for (let i = 0; i < 16; i++) { const t = P.tree(); t.g.position.set(-20 + i * 3.1 + rnd(), 0, 35 + rnd() * 3); t.g.scale.setScalar(0.85 + rnd() * 0.4); if (offRoad(t.g.position.x)) S.add(t.g); }
   southG = K.add(scene, new THREE.Group()); K.bake(S, southG);
   southBox = box(-21, 31.8, 12, 32.2);
   // more woods west and east of the 擴建 farmland (outside the play area, so they can always be there)
   const rnd2 = mulberry(11);
   for (let i = 0; i < 9; i++) { const t = P.tree(); t.g.position.set(-24 - rnd2() * 6 + (i % 3), 0, 38 + i * 3.2); t.g.scale.setScalar(0.9 + rnd2() * 0.5); D.add(t.g); }
-  for (let i = 0; i < 7; i++) { const t = P.tree(); t.g.position.set(31 + rnd2() * 3, 0, 37 + i * 5 + rnd2() * 2); D.add(t.g); }
-  for (let i = 0; i < 12; i++) { const t = P.tree(); t.g.position.set(-22 + i * 3.4 + rnd(), 0, -36.6 - rnd() * 2.5); D.add(t.g); }
-  for (let i = 0; i < 12; i++) { const t = P.tree(); t.g.position.set(31 + rnd() * 3, 0, -24 + i * 5 + rnd() * 2); D.add(t.g); }
+  for (let i = 0; i < 7; i++) { const t = P.tree(); t.g.position.set(31 + rnd2() * 3, 0, 37 + i * 5 + rnd2() * 2); if (t.g.position.z > 60.5) D.add(t.g); }
+  for (let i = 0; i < 12; i++) { const t = P.tree(); t.g.position.set(-22 + i * 3.4 + rnd(), 0, -36.6 - rnd() * 2.5); if (t.g.position.x > 10.5 && t.g.position.x < 12.6) D.add(t.g); }
+  for (let i = 0; i < 12; i++) { const t = P.tree(); t.g.position.set(31 + rnd() * 3, 0, -24 + i * 5 + rnd() * 2); if (t.g.position.z < -21) D.add(t.g); }
   for (const [x, z, r] of [[11.5, -16, 0.6], [-11.5, -5.2, 0.5], [6, 30.5, 0.55], [-9, 30.6, 0.5], [12, 15.5, 0.6], [-19.5, 12, 0.6], [-19.5, 2, 0.5]]) K.add(D, P.bush(r), x, 0, z);
   const fl = ['#ff7eb6', '#ffffff', '#ffd34a', '#a98bff', '#ff8a6b'];
   for (let i = 0; i < 70; i++) K.add(D, P.flower(fl[i % 5]), -20 + rnd() * 32, 0, -3.5 + rnd() * 35);
   for (const [x, z, s] of [[-19, 28, 0.45], [-15, 14, 0.3], [11.5, 13, 0.4], [10, 30, 0.5]]) K.add(D, P.rock(s), x, 0, z);
   for (const z of [-14, -2, 10, 22]) K.add(D, P.lamp(), 13, 0, z);
   K.bake(D, scene);
+  ST.buildStreet(scene, { box, keep: keepClear() });
+  ST.lightUp(lights);
   K.bakeStatic(backWalls.g1);
   const lamps = [];
   for (const x of [-4.5, 0.5, 5.5]) { const l = P2.wallLamp(); l.g.position.set(x, 1.35, -17.3); scene.add(l.g); lamps.push(l); }
   shopArea = makeArea(-6.8, -17.4, 7.9, -7.3, lamps, 0.5, -12);
   buildBin();
+}
+// spots that street decoration must leave free: every zone, upgrade spot and the footprint of every building
+function keepClear() {
+  const k = [];
+  for (const d of DEFS) {
+    if (d.kind === 'mapgate' && !BRANCHES_OPEN) continue;
+    const z = zoneSpot(d);
+    if (z) k.push([z[0], z[1], 0.95]);
+    if (d.upAt) k.push([d.upAt[0], d.upAt[1], 0.95]);
+    if (!d.pos) continue;
+    const [x, pz] = d.pos;
+    if (d.kind === 'producer') { k.push([x, pz - 0.5, 1.6], [x - 3.15, pz + 0.8, 0.5], [x + 3.1, pz + 0.8, 0.5]); if (d.out === 'milk') for (const dx of [-1.6, 0, 1.6]) k.push([x + dx, pz + 1.9, 1.8]); else k.push([x, pz + 1.1, 1.5]); k.push([...frontOf(d), 0.95]); }
+    if (d.kind === 'machine') k.push([x, pz, 1.2], [x - 1.2, pz + 0.7, 0.8], [x + 1.2, pz + 0.7, 0.8]);
+    if (d.kind === 'crop') { const L = CROP_LAYOUT[d.plant]; for (const dx of [-0.3, 0, 0.3]) k.push([x + dx * L.w, pz, L.d / 2 + 0.2]); k.push([...frontOf(d), 0.95]); }
+  }
+  k.push([-5.3, -2.0, 0.95], [-5.3, 1.9, 3.3], [REST.x, REST.z, 1.9], [5, 4, 0.5], [5, 5.05, 0.8]);
+  return k;
 }
 // ---------- 擴建：南邊農地 ----------
 // the old south fence and its tree line come down, the land to z 62 opens: fences, woods, the main path carries on south
@@ -644,11 +666,11 @@ function applyExpand(anim) {
   const D = new THREE.Group(), rnd = mulberry(23);
   for (let i = 0; i < 18; i++) {
     const r = 1.4 + rnd() * 3, p = K.mesh(G.circle(r, 9), rnd() < 0.5 ? C.grass2 : C.grass3, false, true);
-    p.position.set(-19 + rnd() * 30, 0.004 + i * 0.0011, 34 + rnd() * 26); p.scale.set(1, 1, 0.6 + rnd() * 0.6); p.rotation.y = rnd() * 3; D.add(p);
+    p.position.set(-19 + rnd() * 30, 0.004 + i * 0.00016, 34 + rnd() * 26); p.scale.set(1, 1, 0.6 + rnd() * 0.6); p.rotation.y = rnd() * 3; D.add(p);
   }
   D.add(P.fenceLine(-21, 32, -21, 62)); D.add(P.fenceLine(-21, 62, 12, 62));
   box(-21.2, 32, -20.8, 62); box(-21, 61.8, 12, 62.2);
-  for (let i = 0; i < 16; i++) { const t = P.tree(); t.g.position.set(-20 + i * 3.1 + rnd(), 0, 65 + rnd() * 3); t.g.scale.setScalar(0.85 + rnd() * 0.4); D.add(t.g); }
+  for (let i = 0; i < 16; i++) { const t = P.tree(); t.g.position.set(-20 + i * 3.1 + rnd(), 0, 65 + rnd() * 3); t.g.scale.setScalar(0.85 + rnd() * 0.4); if (offRoad(t.g.position.x)) D.add(t.g); }
   // the main path carries on south through the new land
   const pts = [], n = Math.round((60 - 30.6) / 1.15);
   for (let i = 0; i <= n; i++) pts.push([-0.6, 30.6 + (60 - 30.6) * i / n]);
@@ -668,6 +690,8 @@ function applyExpand(anim) {
   for (let i = 0; i < 26; i++) K.add(D, P.flower(fl[i % 5]), -20.3 + rnd() * 1.4, 0, 33 + rnd() * 28);
   for (let i = 0; i < 20; i++) K.add(D, P.flower(fl[(i + 2) % 5]), -19 + rnd() * 30, 0, 60.6 + rnd() * 1.0);
   for (const z of [34, 46, 58]) K.add(D, P.lamp(), 13, 0, z);
+  ST.southDetail(D, keepClear());
+  for (const z of [34, 46, 58]) box(12.9, z - 0.1, 13.1, z + 0.1);
   expandG = K.add(scene, new THREE.Group());
   K.bake(D, expandG);
   if (anim) { for (const [x, z] of [[-10, 40], [4, 40], [-10, 52], [4, 52], [-0.6, 33]]) confetti(x, z); toast('🎉 南邊農地開放了！往下走看看'); }
@@ -1078,6 +1102,8 @@ function build(def, instant) {
     for (let i = 0; i < STOCK_VIS; i++) outSl.push({ x: -0.3 + (i % 4) * 0.2, y: 0.25 + Math.floor(i / 8) * ITEMS[def.out].h * 0.75, z: -0.18 + (Math.floor(i / 4) % 2) * 0.3, s: 0.75 });
     s.inStack = itemStack(m.inTray, def.in, inSl); s.outStack = itemStack(m.outTray, def.out, outSl);
     box(pos[0] - 0.85, pos[1] - 0.8, pos[0] + 0.85, pos[1] + 0.4);
+    ST.machineYard(m.g);
+    { const [bx, bz, r] = ST.BARREL; box(pos[0] + bx - r, pos[1] + bz - r, pos[0] + bx + r, pos[1] + bz + r); }
     const st = state.stock[id]; if (st) { s.inN = st.a || 0; s.outN = st.b || 0; }
     s.inLabel = label('badge', '', (o) => o.copy(tw).setY(0.95)); s.inLabel.near = 0;
     s.outLabel = label('badge', '', (o) => o.copy(nw).setY(0.95)); s.outLabel.near = 0;
@@ -1091,7 +1117,8 @@ function build(def, instant) {
     else if (L.half) {
       const a = P.plot(L.w / 2, L.d); a.position.x = -L.w / 4; g.add(a);
       const b = P.plot(L.w / 2, L.d); b.position.x = L.w / 4; b.userData.dyn = true; b.visible = false; g.add(b); s.plot2 = b;
-    } else g.add(P.plot(L.w, L.d));
+      ST.sunflowers(a, L.w / 2, L.d); ST.sunflowers(b, L.w / 2, L.d); K.bakeStatic(b);
+    } else { g.add(P.plot(L.w, L.d)); ST.sunflowers(g, L.w, L.d); }
     s.plants = [];
     for (const [x, z] of L.spots) {
       const pl = PLANTS[def.plant](); pl.g.position.set(x, def.plant === 'apple' ? 0 : 0.2, z); pl.g.userData.dyn = true; pl.fruit.userData.dyn = true; g.add(pl.g); K.bakeStatic(pl.g); K.bakeStatic(pl.fruit);
@@ -2168,6 +2195,32 @@ function parkCar() {
   const g = P2.car(pick(CAR_COLS)); g.position.set(14.8, 0, -50); scene.add(g);
   park.cars.push({ g, slot, st: 'come', path: [[14.8, -10.5], [slot.x, -10.5], [slot.x, slot.z]], t: 0, waiting: false });
 }
+function carWaits(car, dx, dz) {
+  const p = car.g.position;
+  if (Math.abs(dx) > 0.2) {
+    const pullingOut = car.st === 'go' && p.x > 18.9 && p.x < 19.7, pullingIn = car.st === 'come' && p.x < 15.1;
+    return (pullingOut || pullingIn) && traffic.junctionBusy();
+  }
+  return car.st === 'go' && dz < 0 && Math.abs(p.x - ST.LANE) < 0.3 && traffic.blockedNorth(p);
+}
+const onFoot = [];
+function updateTraffic(dt) {
+  onFoot.length = 0;
+  onFoot.push(player.p.root.position);
+  for (const w of workers) onFoot.push(w.p.root.position);
+  for (const c of customers) onFoot.push(c.p.root.position);
+  if (vip.c) onFoot.push(vip.c.p.root.position);
+  traffic.update(dt, onFoot, park.cars);
+  traffic.keepOut(player.p.root.position, 0.4, dt);
+  for (const w of workers) {
+    const bumped = traffic.keepOut(w.p.root.position, 0.25, dt, w.face);
+    // a corner of their route lies under that car: skip it
+    if (bumped && w.route) while (w.route.length > 1 && traffic.covers(w.route[0][0], w.route[0][1])) w.route.shift();
+    if (w.bumped && !bumped) w.routeKey = ''; // once past the car: a fresh route from where they are now
+    w.bumped = bumped;
+  }
+  for (const c of customers) traffic.keepOut(c.p.root.position, 0.25, dt, c.face);
+}
 function updateCars(dt) {
   for (let i = park.cars.length - 1; i >= 0; i--) {
     const car = park.cars[i], g = car.g;
@@ -2175,6 +2228,7 @@ function updateCars(dt) {
       const [tx, tz] = car.path[0];
       const dx = tx - g.position.x, dz = tz - g.position.z, d = Math.hypot(dx, dz);
       if (d < 0.15) car.path.shift();
+      else if (carWaits(car, dx, dz)) { /* giving way */ }
       else { const s = Math.min(d, 9 * dt); g.position.x += dx / d * s; g.position.z += dz / d * s; g.rotation.y = Math.atan2(dx, dz); }
     } else if (car.st === 'come') {
       car.st = 'parked'; car.waiting = true;
@@ -2182,7 +2236,7 @@ function updateCars(dt) {
       if (c) { c.home = [car.slot.x, car.slot.z]; c.car = car; } else car.waiting = false;
     } else if (car.st === 'parked' && !car.waiting) {
       car.t += dt;
-      if (car.t > 1.2) { car.st = 'go'; car.path = [[car.slot.x, -10.5], [16.2, -10.5], [16.2, 60]]; }
+      if (car.t > 1.2) { car.st = 'go'; car.path = [[car.slot.x, -10.5], [ST.LANE, -10.5], [ST.LANE, -62]]; }
     } else if (car.st === 'go') { scene.remove(g); car.slot.used = false; park.cars.splice(i, 1); }
   }
 }
@@ -2772,6 +2826,7 @@ function updateCamera(dt, snap) {
 
 // ---------- boot ----------
 buildWorld();
+const traffic = ST.createTraffic(scene);
 buildField();
 buildTrees();
 if (state.built.length && !state.built.includes('counter')) state.built.splice(1, 0, 'counter');
@@ -2816,6 +2871,7 @@ function step(dt) {
   maxTag(player);
   updateCustomers(dt);
   updateCars(dt);
+  updateTraffic(dt);
   updatePets(dt, T);
   updateVip(dt);
   updateTruck(dt);
@@ -2859,7 +2915,7 @@ addEventListener('pagehide', save);
 
 // test hooks
 window.__farm = {
-  state, stations, player, zones, customers, workers, truck, heli, vip, park, events, DEFS, COUNTERS, colliders, tufts, pets,
+  traffic, park, state, stations, player, zones, customers, workers, truck, heli, vip, park, events, DEFS, COUNTERS, colliders, tufts, pets,
   DEF, GROW, nav, linesBuilt, growDefs, zoneSpot, ITEMS,
   DOORS, COUNTERS_Q: () => COUNTERS.map((k) => k.qs),
   three: { scene, camera, renderer, THREE },

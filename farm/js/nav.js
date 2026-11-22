@@ -28,7 +28,7 @@ export function createNav(colliders, b, cell = 0.5, radius = 0.35) {
   }
   // straight walk possible between two points?
   function clear(x0, z0, x1, z1) {
-    const d = Math.hypot(x1 - x0, z1 - z0), n = Math.ceil(d / (cell * 0.5));
+    const d = Math.hypot(x1 - x0, z1 - z0), n = Math.ceil(d / (cell * 0.16)); // fine steps: lamp posts and tree trunks are thin
     for (let k = 1; k < n; k++) { const t = k / n; if (!free(ci(x0 + (x1 - x0) * t), cj(z0 + (z1 - z0) * t))) return false; }
     return true;
   }
