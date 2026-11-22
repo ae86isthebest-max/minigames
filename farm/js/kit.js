@@ -33,7 +33,7 @@ function cached(key, make) {
   return g;
 }
 export const G = {
-  rbox: (w, h, d, r = 0.08, s = 3) => cached('rb' + [w, h, d, r, s], () => new RoundedBoxGeometry(w, h, d, s, Math.min(r, w / 2 - 0.001, h / 2 - 0.001, d / 2 - 0.001))),
+  rbox: (w, h, d, r = 0.08, s = 2) => cached('rb' + [w, h, d, r, s], () => new RoundedBoxGeometry(w, h, d, s, Math.min(r, w / 2 - 0.001, h / 2 - 0.001, d / 2 - 0.001))),
   sphere: (r, ws = 14, hs = 10) => cached('sp' + [r, ws, hs], () => new THREE.SphereGeometry(r, ws, hs)),
   cyl: (rt, rb, h, s = 14) => cached('cy' + [rt, rb, h, s], () => new THREE.CylinderGeometry(rt, rb, h, s)),
   capsule: (r, l, s = 10) => cached('ca' + [r, l, s], () => new THREE.CapsuleGeometry(r, l, 4, s)),
@@ -138,7 +138,7 @@ export function blob(r) {
 }
 
 // Faceless capsule person. Root sits at the feet, faces +z. Call anim(dt, speed01) every frame.
-const personCache = new Map();
+const personCache = new Map(), bodyShapes = new Map();
 export function person(opt = {}) {
   const prevOL = OUTLINE; OUTLINE = 0.038;
   const body = opt.body || C.pink, root = new THREE.Group(), rig = new THREE.Group();
@@ -180,7 +180,18 @@ export function person(opt = {}) {
   // each one was never freed (memory kept growing until the phone's browser reloaded the page)
   const key = [body, opt.head || '', opt.apron || ''].join('|');
   let proto = personCache.get(key);
-  if (!proto) { proto = mergeList(statics, rig.matrixWorld.clone().invert()); personCache.set(key, proto); }
+  if (!proto) {
+    proto = mergeList(statics, rig.matrixWorld.clone().invert());
+    const shape = opt.apron ? 'apron' : 'plain', plain = !opt.apron && !opt.head;
+    for (const m of proto) {
+      const part = m.material.side === THREE.BackSide ? 'edge|' + shape : plain && m.material === vcMat ? 'body|' + shape : '';
+      if (!part) continue;
+      if (part.startsWith('body')) m.material = mat(body);
+      const same = bodyShapes.get(part);
+      if (same) { m.geometry.dispose(); m.geometry = same; } else bodyShapes.set(part, m.geometry);
+    }
+    personCache.set(key, proto);
+  }
   const merged = proto.map((m) => { const n = new THREE.Mesh(m.geometry, m.material); n.castShadow = m.castShadow; n.receiveShadow = m.receiveShadow; n.renderOrder = m.renderOrder; return n; });
   rig.remove(torso); rig.remove(head);
   for (const m of merged) rig.add(m);
@@ -258,6 +269,24 @@ function mergeList(list, rootInv) {
   return out;
 }
 function isDyn(o, root) { for (let p = o; p && p !== root; p = p.parent) if (p.userData.dyn) return true; return root.userData.dyn === true && false; }
+// things built the same way (every cow, shelf, warehouse…) share one merged geometry, so they can be drawn together
+const mergedCache = new Map(), relM = new THREE.Matrix4();
+function mergeShared(list, inv) {
+  let key = '';
+  for (const o of list) {
+    key += o.geometry.uuid + o.material.uuid + (o.castShadow ? 1 : 0) + (o.receiveShadow ? 1 : 0) + o.renderOrder;
+    for (const v of relM.multiplyMatrices(inv, o.matrixWorld).elements) key += ',' + Math.round(v * 1e4);
+    key += ';';
+  }
+  let proto = mergedCache.get(key);
+  if (!proto) mergedCache.set(key, proto = mergeList(list, inv));
+  return proto.map(sameMesh);
+}
+function sameMesh(m) {
+  const n = new THREE.Mesh(m.geometry, m.material);
+  n.castShadow = m.castShadow; n.receiveShadow = m.receiveShadow; n.renderOrder = m.renderOrder;
+  return n;
+}
 // merge the static parts of `group` in place (dynamic parts stay as they are)
 export function bakeStatic(group) {
   group.updateMatrixWorld(true);
@@ -265,7 +294,7 @@ export function bakeStatic(group) {
   group.traverse((o) => { if (o.isMesh && !isDyn(o, group)) list.push(o); });
   if (list.length < 3) return;
   const inv = group.matrixWorld.clone().invert();
-  const merged = mergeList(list, inv);
+  const merged = mergeShared(list, inv);
   for (const o of list) if (o.parent) o.parent.remove(o);
   for (const m of merged) group.add(m);
 }

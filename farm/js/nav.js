@@ -1,6 +1,7 @@
 // Grid path-finding so workers walk around walls, fences and buildings instead of through them.
 // Shared by every map: createNav(colliders, bounds) → { dirty(), path(sx, sz, tx, tz) }.
-export function createNav(colliders, b, cell = 0.5, radius = 0.35) {
+// pathOnly: areas that block routes but are not solid (the road between the crossings)
+export function createNav(colliders, b, cell = 0.5, radius = 0.35, pathOnly = []) {
   const W = Math.ceil((b.x1 - b.x0) / cell), H = Math.ceil((b.z1 - b.z0) / cell);
   let grid = null, stale = true;
   const cx = (i) => b.x0 + (i + 0.5) * cell, cz = (j) => b.z0 + (j + 0.5) * cell;
@@ -8,7 +9,7 @@ export function createNav(colliders, b, cell = 0.5, radius = 0.35) {
   const cj = (z) => Math.max(0, Math.min(H - 1, Math.floor((z - b.z0) / cell)));
   function rebuild() {
     grid = new Uint8Array(W * H);
-    for (const c of colliders) {
+    for (const c of colliders.concat(pathOnly)) {
       const i0 = ci(c.x0 - radius), i1 = ci(c.x1 + radius), j0 = cj(c.z0 - radius), j1 = cj(c.z1 + radius);
       for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
         const x = cx(i), z = cz(j);
@@ -26,10 +27,17 @@ export function createNav(colliders, b, cell = 0.5, radius = 0.35) {
     }
     return null;
   }
-  // straight walk possible between two points?
+  // straight walk possible between two points? visits every cell the line crosses (not the one it starts in)
   function clear(x0, z0, x1, z1) {
-    const d = Math.hypot(x1 - x0, z1 - z0), n = Math.ceil(d / (cell * 0.16)); // fine steps: lamp posts and tree trunks are thin
-    for (let k = 1; k < n; k++) { const t = k / n; if (!free(ci(x0 + (x1 - x0) * t), cj(z0 + (z1 - z0) * t))) return false; }
+    let i = ci(x0), j = cj(z0);
+    const ti = ci(x1), tj = cj(z1), dx = x1 - x0, dz = z1 - z0, si = dx > 0 ? 1 : -1, sj = dz > 0 ? 1 : -1;
+    const tdx = dx ? Math.abs(cell / dx) : Infinity, tdz = dz ? Math.abs(cell / dz) : Infinity;
+    let tx = dx ? (b.x0 + (i + (si > 0 ? 1 : 0)) * cell - x0) / dx : Infinity;
+    let tz = dz ? (b.z0 + (j + (sj > 0 ? 1 : 0)) * cell - z0) / dz : Infinity;
+    for (let left = Math.abs(ti - i) + Math.abs(tj - j); left > 0; left--) {
+      if ((tx < tz && i !== ti) || j === tj) { i += si; tx += tdx; } else { j += sj; tz += tdz; }
+      if (!free(i, j)) return false;
+    }
     return true;
   }
   const g = new Float32Array(W * H), from = new Int32Array(W * H), seen = new Uint32Array(W * H);

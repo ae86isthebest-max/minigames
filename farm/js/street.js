@@ -18,6 +18,9 @@ function boxGeo(w, h, d) {
 const rb = (g, w, h, d, col, x, y, z, cast = true, r = 0.06) => K.add(g, K.mesh(r >= 0.12 ? G.rbox(w, h, d, r, 1) : boxGeo(w, h, d), col, cast, true), x, y, z);
 const cy = (g, rt, rBottom, h, col, x, y, z, cast = true, s = 8) => K.add(g, K.mesh(G.cyl(rt, rBottom, h, s), col, cast, true), x, y, z);
 const flat = (g, w, d, col, x, y, z) => K.add(g, K.mesh(G.plane(w, d), col, false, true), x, y, z);
+// zebra crossings, at the places people actually cross: shop + car park, helipad, one for each warehouse row
+export const CROSSINGS = [-4.3, 9, 18.5, 28.2, 37.9, 47.2, 56.6];
+const atCrossing = (z, r) => CROSSINGS.some((c) => Math.abs(c - z) < r);
 function rng(a) { return () => ((a = (a * 16807) % 2147483647) / 2147483647); }
 
 const WALLS = ['#ffd9b8', '#bfe0f5', '#ffe69a', '#f7bfd0', '#c9e8c0', '#d9c9f0', '#fff3dd'];
@@ -130,12 +133,17 @@ export function buildStreet(scene, { box, keep }) {
       flat(D, 1.02, 1.12, k % 2 ? '#e6cfb4' : '#dcc09f', x, 0.0108, z);
     }
     for (const x of [13.28, 17.72]) {
-      if (x < 15 && dock) continue;
+      if ((x < 15 && dock) || atCrossing(z, 0.85)) continue; // lowered kerb at a crossing
       rb(D, 0.22, 0.18, 1.18, k % 4 < 2 ? '#f4f1e8' : '#f2c94c', x, 0.09, z, false, 0.03);
     }
   }
   // road detail: two crossings, edge lines, manholes
-  for (const z of [-4.3, 30]) for (let k = 0; k < 6; k++) rb(D, 0.36, 0.015, 1.7, '#fbfaf5', 13.8 + k * 0.68, 0.025, z, false, 0.005);
+  for (const z of CROSSINGS) {
+    for (let k = 0; k < 6; k++) flat(D, 0.36, 1.7, '#fbfaf5', 13.8 + k * 0.68, 0.025, z);
+    // stop lines, on the side each lane comes from
+    flat(D, 1.5, 0.12, '#fbfaf5', 14.7, 0.022, z - 1.2);
+    flat(D, 1.5, 0.12, '#fbfaf5', 16.6, 0.022, z + 1.2);
+  }
   for (let z = -40; z < 62; z += 10) {
     for (const x of [13.65, 17.35]) rb(D, 0.08, 0.012, 9.2, '#e9edf0', x, 0.018, z + 5, false, 0.005);
     cy(D, 0.36, 0.36, 0.015, '#747b86', 16.4, 0.022, z + 3, false, 12);
@@ -262,79 +270,134 @@ export function lightUp(lights) {
   lights.sun.intensity = 2.75; lights.sun.color.set('#ffe9c4');
 }
 
-// ---------- passing cars: northbound lane (Taiwan drives on the right) ----------
-export const LANE = 16.6;
-const HW = 0.78, HL = 1.28; // half width and half length of a car
-const NORTH = -62, SOUTH = 78, SPEED = 4.2;
-// cars leaving or entering the car park cross here
-const CROSS = { z0: -12.4, z1: -8.6 };
+// ---------- traffic: every vehicle gives way to everyone on foot ----------
+// Staff and customers cross on the zebras only (main.js keeps their routes off the road), the player anywhere.
+//   * a vehicle brakes for anyone in the space in front of it;
+//   * nobody steps into the space a moving vehicle needs to stop in, or into a vehicle;
+//   * after 4 s of a steady stream of staff, the vehicle takes its turn: those already crossing finish, the rest wait;
+//   * a vehicle never queues on top of a zebra.
+// Cost: a few box checks, only for the handful of people who are near the road.
+export const LANE = 16.6, SOUTH_LANE = 14.84;
+const NORTH = -62, SOUTH = 78, SPEED = 4.2, BRAKE = 16, SIDE = 0.22;
+const CROSS = { z0: -12.4, z1: -8.5 }; // the car park junction
+export function vehicle(g, hl, hw, dx = 0, dz = 1) {
+  return { g, hl, hw, dx, dz, v: 0, held: 0, turnOfCar: false };
+}
+function reach(o) {
+  const e = o.v > 0.05 ? 0.2 + o.v * o.v / (2 * BRAKE) : 0;
+  return o.turnOfCar ? Math.max(e, 1.6) : e;
+}
+function inside(o, x, z, ext, pad) {
+  const rx = x - o.g.position.x, rz = z - o.g.position.z, f = rx * o.dx + rz * o.dz;
+  if (f <= -o.hl - pad || f >= o.hl + pad + ext) return false;
+  return Math.abs(rx * o.dz - rz * o.dx) < o.hw + pad;
+}
 export function createTraffic(scene) {
   const cars = ['#ff7a66', '#5aa9ff', '#ffd34a', '#7fcf6a', '#b48cff'].map((col, i) => {
     const g = car(col);
     g.position.set(LANE, 0, -40 + i * 24); g.rotation.y = Math.PI;
     K.bakeStatic(g); scene.add(g);
-    return { g, v: SPEED, held: 0 };
+    return vehicle(g, 1.28, 0.74, 0, -1);
   });
-  const ahead = (z, o) => o.x > LANE - 1.5 && o.x < LANE + 1.5 && o.z < z - HL + 0.2 && o.z > z - HL - 2.2;
+  const moving = [], near = [];
+  let you = null;
+
+  // how far may vehicle o go this frame?
+  function advance(o, dt, max, mustStop = false) {
+    const p = o.g.position, stopIn = o.v * o.v / (2 * BRAKE);
+    let stop = mustStop, hard = false, people = false, player = false;
+    // in the car's own turn it only waits for those already in its way
+    const look = o.turnOfCar ? reach(o) : stopIn + 1.35;
+    for (let i = 0; i < near.length; i++) {
+      const q = near[i], rx = q.x - p.x, rz = q.z - p.z, f = rx * o.dx + rz * o.dz;
+      if (f <= -o.hl || f >= o.hl + SIDE + look) continue;
+      if (Math.abs(rx * o.dz - rz * o.dx) >= o.hw + (q === you ? 0.4 : SIDE - 0.01)) continue; // a wider berth for the player
+      stop = people = true;
+      if (q === you) player = true;
+      if (f < o.hl + 0.5) hard = true;
+    }
+    for (let i = 0; i < moving.length; i++) {
+      const b = moving[i];
+      if (b === o || b.dx * o.dx + b.dz * o.dz < 0.7) continue; // only whoever drives in front, the same way
+      const rx = b.g.position.x - p.x, rz = b.g.position.z - p.z, f = rx * o.dx + rz * o.dz;
+      if (f <= 0 || Math.abs(rx * o.dz - rz * o.dx) >= o.hw + b.hw) continue;
+      const gap = f - o.hl - b.hl;
+      if (gap < stopIn + 0.8) { stop = true; if (gap < 0.35) hard = true; }
+      // no room on the other side of a zebra: wait before it
+      if (o.dz && b.v < 0.5) {
+        for (const c of CROSSINGS) {
+          const before = (c - p.z) * o.dz - o.hl - 1.0, room = gap - before - 2.0;
+          if (before >= 0 && before < stopIn + 0.3 && gap > before && room < o.hl * 2 + 0.4) stop = true;
+        }
+      }
+    }
+    if (people) {
+      o.held += dt;
+      if (!player && o.held > 4) o.turnOfCar = true;
+      if (player || o.held > 7) { o.held = 0; o.turnOfCar = false; }
+    } else if (o.v > 1.5) { o.held = 0; o.turnOfCar = false; }
+    o.v = hard ? 0 : stop ? Math.max(0, o.v - BRAKE * dt) : Math.min(max, o.v + 6 * dt);
+    return o.v * dt;
+  }
+
   return {
     cars,
-    // people: positions of everyone on foot; parked: the car park's own cars
-    update(dt, people, parked) {
-      const crossing = parked.some((c) => c.path.length && Math.abs(c.g.position.z + 10.5) < 2.5 && c.g.position.x > 14.6 && c.g.position.x < 20);
-      for (const c of cars) {
+    // the car park's cars that are driving, and the order truck
+    begin(others, people, player) {
+      moving.length = near.length = 0;
+      for (const c of cars) moving.push(c);
+      for (const o of others) moving.push(o);
+      you = player;
+      for (const q of people) {
+        const p = q.p.root.position;
+        if (p.x < 12.6 || p.x > 29) { q.tx = p.x; q.tz = p.z; continue; }
+        if (q.tx !== undefined) hold(q, p);
+        q.tx = p.x; q.tz = p.z;
+        near.push(p);
+      }
+      // the player is never held back, only kept out of the bodywork
+      for (const o of moving) {
+        if (!inside(o, player.x, player.z, 0, 0.36)) continue;
+        const rx = player.x - o.g.position.x, rz = player.z - o.g.position.z;
+        const f = rx * o.dx + rz * o.dz, l = rx * o.dz - rz * o.dx;
+        let nf = f, nl = l;
+        if (o.hl - Math.abs(f) < o.hw - Math.abs(l)) nf = (f < 0 ? -1 : 1) * (o.hl + 0.36);
+        else nl = (l < 0 ? -1 : 1) * (o.hw + 0.36);
+        player.x = o.g.position.x + nf * o.dx + nl * o.dz;
+        player.z = o.g.position.z + nf * o.dz - nl * o.dx;
+      }
+      near.push(player);
+    },
+    advance,
+    update(dt, parked) {
+      let junction = false;
+      for (const c of parked) {
         const p = c.g.position;
-        let stop = crossing && p.z - HL >= CROSS.z1 && p.z - HL < CROSS.z1 + 0.8;
-        // it always waits for the player (people[0]); staff who hold it up for long get nudged aside at a crawl
-        let held = false;
-        for (let i = 0; i < people.length && !held; i++) if (ahead(p.z, people[i])) { held = true; if (i === 0) stop = true; }
-        c.held = held ? c.held + dt : c.v > 2 ? 0 : c.held; // a stream of staff counts as one wait
-        if (held && c.held < 3) stop = true;
-        for (let i = 0; i < parked.length && !stop; i++) {
-          const q = parked[i].g.position;
-          stop = Math.abs(q.x - LANE) < 1.6 && q.z < p.z && q.z > p.z - 3.5;
-        }
-        for (let i = 0; i < cars.length && !stop; i++) {
-          const q = cars[i].g.position;
-          stop = cars[i] !== c && q.z < p.z && q.z > p.z - 4;
-        }
-        c.v = stop ? Math.max(0, c.v - 14 * dt) : Math.min(held ? 0.8 : SPEED, c.v + 4 * dt);
-        p.z -= c.v * dt;
-        // back to the far south (off screen) once there is room
-        if (p.z < NORTH) {
-          if (cars.every((o) => o === c || o.g.position.z < SOUTH - 5)) p.z = SOUTH;
-          else p.z = NORTH;
-        }
+        if (c.body.dx && p.x > 15.2 && p.x < 17.9 && p.z > CROSS.z0 && p.z < CROSS.z1) junction = true;
       }
-    },
-    // a car of the car park may only pull across when the junction is free
-    junctionBusy() { return cars.some((c) => c.g.position.z - HL < CROSS.z1 && c.g.position.z + HL > CROSS.z0); },
-    blockedNorth(p) { return cars.some((c) => c.g.position.z < p.z && c.g.position.z > p.z - 3.5); },
-    covers(x, z) { return Math.abs(x - LANE) < HW + 0.45 && cars.some((c) => Math.abs(z - c.g.position.z) < HL + 0.45); },
-    // nobody stands inside a car: back to the side they came from, then along it to walk around
-    keepOut(p, r, dt, face) {
-      if (Math.abs(p.x - LANE) >= HW + r) return false;
       for (const c of cars) {
-        const cz = c.g.position.z, dz = p.z - cz;
-        if (Math.abs(dz) >= HL + r) continue;
-        const inX = HW + r - Math.abs(p.x - LANE), inZ = HL + r - Math.abs(dz);
-        if (inZ < inX) {
-          p.z = cz + (dz < 0 ? -1 : 1) * (HL + r);
-          // head-on: step sideways, or the car and the person would wait for each other for ever
-          if (face !== undefined) {
-            const fx = Math.sin(face), side = Math.abs(fx) > 0.25 ? Math.sign(fx) : (p.x < LANE ? -1 : 1);
-            p.x += side * 6 * dt;
-          }
-          return true;
-        }
-        p.x = LANE + (p.x < LANE ? -1 : 1) * (HW + r);
-        if (face !== undefined) {
-          const fz = Math.cos(face), dir = Math.abs(fz) > 0.25 ? Math.sign(fz) : (dz < 0 ? -1 : 1);
-          p.z += dir * 8 * dt;
-        }
-        return true;
+        const p = c.g.position, front = p.z - c.hl;
+        p.z -= advance(c, dt, SPEED, junction && front >= CROSS.z1 && front < CROSS.z1 + 1.2);
+        // back to the far south (off screen) once there is room
+        if (p.z < NORTH) p.z = cars.every((o) => o === c || o.g.position.z < SOUTH - 5) ? SOUTH : NORTH;
       }
-      return false;
     },
+    junctionBusy() { return cars.some((c) => c.g.position.z - c.hl < CROSS.z1 + 0.7 && c.g.position.z + c.hl > CROSS.z0); },
   };
-}
 
+  function refused(o, q, x, z) {
+    if (inside(o, x, z, 0, SIDE) && !inside(o, q.tx, q.tz, 0, SIDE)) return true;
+    const e = reach(o);
+    return e > 0 && inside(o, x, z, e, SIDE) && !inside(o, q.tx, q.tz, e, SIDE);
+  }
+  // a step into a vehicle's space is taken back, or turned into a step along it
+  function hold(q, p) {
+    if (!moving.some((o) => refused(o, q, p.x, p.z))) { if (q.waits) q.waits--; return; }
+    // last resort against a jam: after 8 s of waiting they squeeze through
+    q.waits = (q.waits || 0) + 1;
+    if (q.waits > 240) return;
+    if (!moving.some((o) => refused(o, q, p.x, q.tz))) { p.z = q.tz; return; }
+    p.x = q.tx;
+    if (moving.some((o) => refused(o, q, p.x, p.z))) p.z = q.tz;
+  }
+}

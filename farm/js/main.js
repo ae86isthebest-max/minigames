@@ -6,6 +6,7 @@ import * as P2 from './props2.js';
 import { Joystick } from './input.js';
 import { createNav } from './nav.js';
 import * as ST from './street.js';
+import { createBatcher } from './batch.js';
 import './update.js';
 
 const { C, G } = K;
@@ -359,6 +360,8 @@ const renderer = K.makeRenderer(canvas);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(C.grass2);
 const camera = new THREE.PerspectiveCamera(34, 1, 0.5, 220);
+const areaLight = new THREE.PointLight('#ffe2a8', 0, 16, 1.6);
+scene.add(areaLight);
 const lights = K.makeLights(scene);
 const joy = new Joystick(canvas, $('ui'));
 joy.onStart = () => { if (actx && actx.state === 'suspended') actx.resume(); };
@@ -366,13 +369,30 @@ joy.onStart = () => { if (actx && actx.state === 'suspended') actx.resume(); };
 const colliders = [];
 // workers find their way around everything solid (walls, fences, buildings) with a path grid
 // z1 reaches past the 擴建 farmland (south fence at z 62 once it is bought)
-const nav = createNav(colliders, { x0: -22, x1: 30, z0: -36, z1: 64 });
+// staff walk over the road on the zebras only (the player is free to cross anywhere)
+const ROAD = { x0: 14.2, x1: 17.0, mid: 15.6, west: 13.75, east: 17.75 };
+const roadBlocks = [];
+{
+  let z = -36;
+  for (const c of ST.CROSSINGS) { roadBlocks.push({ x0: ROAD.x0, x1: ROAD.x1, z0: z, z1: c - 0.98 }); z = c + 0.98; }
+  roadBlocks.push({ x0: ROAD.x0, x1: ROAD.x1, z0: z, z1: 64 });
+}
+const nav = createNav(colliders, { x0: -22, x1: 30, z0: -36, z1: 64 }, 0.5, 0.35, roadBlocks);
 const box = (x0, z0, x1, z1) => { const b = { x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1) }; colliders.push(b); nav.dirty(); return b; };
 function unbox(b) { const i = colliders.indexOf(b); if (i >= 0) colliders.splice(i, 1); nav.dirty(); }
 function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
 // ---------- item icons: each item's 3D model rendered once to a small picture ----------
+const kindLists = new Map();
 const ICON = {};
+// label HTML is built and compared every frame: keep the picture addresses short
+function shortUrl(dataUrl) {
+  try {
+    const bin = atob(dataUrl.slice(dataUrl.indexOf(',') + 1)), bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
+  } catch (e) { return dataUrl; }
+}
 // one template per item; every copy shares its geometry (no new GPU buffers for each flying egg)
 const TPL = {};
 const itemClone = (t) => (TPL[t] || (TPL[t] = P.itemMesh(t))).clone();
@@ -389,7 +409,7 @@ function makeIcons() {
       const bb = new THREE.Box3().setFromObject(m), c = bb.getCenter(new THREE.Vector3()), s = bb.getSize(new THREE.Vector3()).length();
       cam.position.set(c.x + s * 0.9, c.y + s * 1.25, c.z + s * 1.7); cam.lookAt(c);
       r.render(sc, cam);
-      ICON[type] = '<img class="ii" src="' + r.domElement.toDataURL() + '" alt="">';
+      ICON[type] = '<img class="ii" src="' + shortUrl(r.domElement.toDataURL()) + '" alt="">';
       sc.remove(m);
     }
     r.dispose(); r.forceContextLoss();
@@ -554,8 +574,7 @@ function bulbs(x0, x1, z) {
 let shopArea = null;
 const areas = [];
 function makeArea(x0, z0, x1, z1, lamps, lx, lz) {
-  const light = new THREE.PointLight('#ffe2a8', 0, 16, 1.6); light.position.set(lx, 3.2, lz); scene.add(light);
-  const A = { x0, z0, x1, z1, light, lamps, k: 0 };
+  const A = { x0, z0, x1, z1, at: new THREE.Vector3(lx, 3.2, lz), dist: 16, lamps, k: 0 };
   areas.push(A);
   return A;
 }
@@ -752,7 +771,8 @@ function label(cls, html, getPos) {
   labels.push(L);
   return L;
 }
-function setLabel(L, html) { if (L.html !== html) { L.html = html; L.el.innerHTML = html; L.w = 0; lblSig = -1; } }
+function setLabel(L, html) { if (L.html !== html) { L.html = html; L.dirty = true; if (L.disp) writeLabel(L); } }
+function writeLabel(L) { L.dirty = false; L.el.innerHTML = L.html; L.w = 0; lblSig = -1; }
 function dropLabel(L) { L.el.remove(); const i = labels.indexOf(L); if (i >= 0) labels.splice(i, 1); }
 // clearer labels: zone names sit on a soft plate, far-away zones shrink, and labels that would cover
 // each other are nudged upwards (the one nearer the bottom of the screen keeps its place)
@@ -773,6 +793,7 @@ function placeLabels() {
     if (L.near && dist > L.near) { lblShow(L, false); continue; }
     tmpV.project(camera);
     if (tmpV.z > 1 || tmpV.x < -1.3 || tmpV.x > 1.3 || tmpV.y < -1.3 || tmpV.y > 1.3) { lblShow(L, false); continue; }
+    if (L.dirty) writeLabel(L);
     lblShow(L, true);
     // half-pixel steps: a label that hasn't moved writes the same transform (or none at all)
     L.sx = Math.round((tmpV.x + 1) / 2 * w * 2) / 2; L.sy = Math.round((1 - tmpV.y) / 2 * h * 2) / 2;
@@ -1059,7 +1080,7 @@ function build(def, instant) {
   const id = def.id;
   if (!state.built.includes(id)) state.built.push(id);
   const s = { id, def, kind: def.kind };
-  stations[id] = s;
+  stations[id] = s; kindLists.clear();
   const pos = def.pos || def.zone;
   if (def.kind === 'producer') {
     // 牛棚 (milk), 羊圈 (wool) and 雞舍 (eggs)
@@ -1274,7 +1295,10 @@ const DOORS = [
   { x: -9.6, w: 2.1, on: () => isBuilt('market') },
   { x: -19.2, w: 2.0, on: () => isBuilt('doorD') },
 ];
-const ENTRY = [14.2, -3.5], OUT_Z = -4.9, LEAVE_Z = -7.85;
+const ENTRY = [13.5, -4.3], OUT_Z = -4.9, LEAVE_Z = -7.85;
+const STREET_END = [13.5, 3.2]; // before the freight platform
+// car park: the lane in, the lane out, the footpath between the lanes and the near row, the east sidewalk
+const LOT = { in: -9.4, out: -11.2, walk: -8.1, kerb: 18.68 };
 const openDoors = () => DOORS.filter((d) => d.on());
 function nearestDoor(x) { let best = DOORS[0]; for (const d of openDoors()) if (Math.abs(d.x - x) < Math.abs(best.x - x)) best = d; return best; }
 // glass front wall from the west end of the shop to the east wall, with a gap and a sliding door for every open door
@@ -1338,7 +1362,7 @@ function applyHall(anim) {
   const sign = P2.signBoard('新館', 3.2, '#ff7eb6'); sign.position.set(-6.45, 3.0, HALL_Z + 0.1); g.add(sign);
   box(-21, HALL_Z - 0.2, 8.15, HALL_Z + 0.2); box(-21, HALL_Z, -20.6, DEPT_Z); box(7.75, HALL_Z, 8.15, DEPT_Z);
   for (const x of [-18, -12, -1, 5]) { const l = P2.wallLamp(); l.g.position.set(x, 1.9, HALL_Z + 0.3); scene.add(l.g); shopArea.lamps.push(l); }
-  shopArea.z0 = HALL_Z + 0.2; shopArea.light.position.z = -20; shopArea.light.distance = 48;
+  shopArea.z0 = HALL_Z + 0.2; shopArea.at.z = -20; shopArea.dist = 48;
   K.bakeStatic(g); hallG = g;
   if (state.up.floor) applyFloor(false);
   if (anim) { popIn(g); confetti(-6.5, -29.5); }
@@ -1355,7 +1379,7 @@ function applyDept(anim) {
   deptBackWall(isBuilt('hall'));
   box(-21, DEPT_Z, -20.6, -17.4); box(7.75, DEPT_Z, 8.15, -17.4);
   for (const l of shopArea.lamps) l.g.position.z = DEPT_Z + 0.3;
-  shopArea.z0 = DEPT_Z + 0.2; shopArea.light.position.z = -16; shopArea.light.distance = 40;
+  shopArea.z0 = DEPT_Z + 0.2; shopArea.at.z = -16; shopArea.dist = 40;
   K.bakeStatic(g); deptG = g;
   buildFront();
   if (state.up.floor) applyFloor(false);
@@ -1381,7 +1405,7 @@ function buildMarket(instant) {
   for (const x of [-18, -13.5, -9]) { const l = P2.wallLamp(); l.g.position.set(x, 1.9, -17.3); scene.add(l.g); shopArea.lamps.push(l); }
   K.add(g, K.mesh(G.circle(1.1, 24), '#ff8fb1', false, true), VIP.x, 0.02, VIP.z);
   K.add(g, K.mesh(G.circle(0.85, 24), '#ffd1e0', false, true), VIP.x, 0.025, VIP.z);
-  shopArea.x0 = -20.8; shopArea.light.position.x = -6.5; shopArea.light.distance = 26;
+  shopArea.x0 = -20.8; shopArea.at.x = -6.5; shopArea.dist = 26;
   if (standWall.g) { scene.remove(standWall.g); standWall.g = null; unbox(standWall.b); }
   if (state.up.look) applyShopLook(false);
   if (state.up.floor) applyFloor(false);
@@ -1544,12 +1568,30 @@ function makeWorker(role, at, counter, pop, tint) {
 // at most a few path searches per frame (phones): whoever is over the budget waits a frame for theirs
 const NAV_PER_FRAME = 4;
 let navBudget = NAV_PER_FRAME;
+// to the other side of the road: via the zebra with the shortest way round, keeping to the right
+// (three short straight legs, so it is cheaper than searching the whole map)
+function walkRoute(sx, sz, tx, tz) {
+  const east = tx > ROAD.mid;
+  if ((sx > ROAD.mid) === east || (sx > ROAD.west + 0.2 && sx < ROAD.east - 0.2)) return nav.path(sx, sz, tx, tz);
+  const ax = east ? ROAD.west : ROAD.east, bx = east ? ROAD.east : ROAD.west, south = isBuilt('expand');
+  let best = ST.CROSSINGS[0], bd = 1e9;
+  for (const c of ST.CROSSINGS) {
+    if (c > 31 && !south) break;
+    const d = Math.hypot(ax - sx, c - sz) + Math.hypot(tx - bx, tz - c);
+    if (d < bd) { bd = d; best = c; }
+  }
+  const z = best + (east ? 0.28 : -0.28);
+  return nav.path(sx, sz, ax, z).concat([[bx, z]], nav.path(bx, z, tx, tz));
+}
 function go(w, x, z, dt, speed) {
   const key = x.toFixed(2) + ',' + z.toFixed(2);
   if (w.routeKey !== key || !w.route || !w.route.length) {
     if (navBudget <= 0) { w.moving = 0; return false; }
-    navBudget--; w.routeKey = key; const p = w.p.root.position; w.route = nav.path(p.x, p.z, x, z);
+    navBudget--; w.routeKey = key; const p = w.p.root.position;
+    w.route = w.straight && ((p.x > 12.4 && p.x < 18.8) || (x > 12.4 && x < 18.8)) ? [[x, z]] : walkRoute(p.x, p.z, x, z);
   }
+  const px = w.p.root.position.x;
+  if (px > 12.8 && px < 18.6) speed *= 1.6; // hurry over the road (makes up for going round by the zebra)
   while (w.route.length > 1 && walkTo(w, w.route[0][0], w.route[0][1], dt, speed)) w.route.shift();
   if (w.route.length > 1) return false;
   return walkTo(w, w.route[0][0], w.route[0][1], dt, speed);
@@ -1567,7 +1609,12 @@ function turn(p, face, dt) {
   while (diff > Math.PI) diff -= Math.PI * 2; while (diff < -Math.PI) diff += Math.PI * 2;
   p.root.rotation.y = r + diff * Math.min(1, dt * 12);
 }
-const listOf = (kind) => Object.values(stations).filter((s) => s.kind === kind);
+// cached until something is built; callers must copy before sorting
+function listOf(kind) {
+  let a = kindLists.get(kind);
+  if (!a) kindLists.set(kind, a = Object.values(stations).filter((s) => s.kind === kind));
+  return a;
+}
 // ---------- 員工休息區: staff with nothing to do sit down here for a while, or stroll somewhere nobody else stands ----------
 const REST = { x: -9.7, z: 6.6, seats: [], built: false };
 for (const sz of [-1, 1]) for (const dx of [-0.75, 0, 0.75]) REST.seats.push({ x: REST.x + dx, z: REST.z + sz * 0.95, face: sz > 0 ? Math.PI : 0, w: null });
@@ -1950,7 +1997,7 @@ function spawnManager(k, quiet) {
 function keeperJob(w, L) {
   // only go for a decent load (the south pens are a long walk from the shop), fullest nest first
   const min = Math.max(3, Math.round(Math.min(w.cap(), 30) * 0.6));
-  for (const s of listOf('producer').sort((a, b) => b.outN - a.outN)) {
+  for (const s of listOf('producer').slice().sort((a, b) => b.outN - a.outN)) {
     if (s.outN < Math.min(min, s.outMax - 2)) continue;
     const it = s.def.out;
     if (useStore() && storeRoom() > 2 && (state.store[it] || 0) < storeCap() * 0.3) return { dst: nearestStore(s.outPt), src: s, item: it, phase: 'get' };
@@ -2024,7 +2071,7 @@ function spawnCustomer(from) {
   const p = K.person(customerLook(false));
   const start = from || [ENTRY[0], ENTRY[1] + 4];
   p.root.position.set(start[0], 0, start[1]); scene.add(p.root);
-  const path = from ? [[from[0], -10], [14.2, -10], ENTRY] : [ENTRY];
+  const path = from ? [[from[0] - 1, from[1]], [from[0] - 1, LOT.walk], [LOT.kerb, LOT.walk], [LOT.kerb, ENTRY[1]], ENTRY] : [ENTRY];
   const L = laneOf(sh), door = nearestDoor(sh.front.x);
   path.push(...doorIn(door));
   // back rows: down the side aisle to their walkway; the front-middle shelves: round the counters
@@ -2172,7 +2219,7 @@ function leaveShop(c) {
   if (pz < -9.3) { const x0 = ln ? ax : px; gx = LEAVE_GAPS.reduce((b, g) => (Math.abs(g - x0) < Math.abs(b - x0) ? g : b), LEAVE_GAPS[0]); pre.push([ln ? ax : px, -12.1], [gx, -12.1]); }
   const door = c.paid ? exitDoor(c.ci) : nearestDoor(gx);
   c.path = [...pre, ...doorOut(door, gx)];
-  if (c.home) c.path.push([14.2, -10], [c.home[0], -10], c.home); else c.path.push([ENTRY[0], ENTRY[1] + 14]);
+  if (c.home) c.path.push([LOT.kerb, ENTRY[1]], [LOT.kerb, LOT.walk], [c.home[0] - 1, LOT.walk], [c.home[0] - 1, c.home[1]], c.home); // between the cars, clear of a car turning in else c.path.push(STREET_END);
 }
 function pay(c) {
   const goods = c.list ? c.list.reduce((a, e) => a + e.got * ITEMS[e.item].price, 0) : c.got * ITEMS[c.item].price;
@@ -2192,34 +2239,27 @@ function parkCar() {
   const slot = park.slots.find((s) => !s.used);
   if (!slot) { spawnCustomer(); return; }
   slot.used = true;
-  const g = P2.car(pick(CAR_COLS)); g.position.set(14.8, 0, -50); scene.add(g);
-  park.cars.push({ g, slot, st: 'come', path: [[14.8, -10.5], [slot.x, -10.5], [slot.x, slot.z]], t: 0, waiting: false });
+  let z = -50;
+  for (const o of park.cars) if (o.st === 'come' && o.g.position.x < 15.2) z = Math.min(z, o.g.position.z - 4);
+  const g = P2.car(pick(CAR_COLS)); g.position.set(ST.SOUTH_LANE, 0, z); scene.add(g);
+  park.cars.push({ g, body: ST.vehicle(g, 1.2, 0.72), slot, st: 'come', path: [[ST.SOUTH_LANE, LOT.in], [slot.x, LOT.in], [slot.x, slot.z]], t: 0, waiting: false });
 }
-function carWaits(car, dx, dz) {
-  const p = car.g.position;
-  if (Math.abs(dx) > 0.2) {
-    const pullingOut = car.st === 'go' && p.x > 18.9 && p.x < 19.7, pullingIn = car.st === 'come' && p.x < 15.1;
-    return (pullingOut || pullingIn) && traffic.junctionBusy();
-  }
-  return car.st === 'go' && dz < 0 && Math.abs(p.x - ST.LANE) < 0.3 && traffic.blockedNorth(p);
+function carWaits(car, dx) {
+  if (Math.abs(dx) <= 0.2) return false;
+  const x = car.g.position.x;
+  const pullingOut = car.st === 'go' && x > 18.9 && x < 19.7, pullingIn = car.st === 'come' && x < 15.1;
+  return (pullingOut || pullingIn) && traffic.junctionBusy();
 }
-const onFoot = [];
-function updateTraffic(dt) {
-  onFoot.length = 0;
-  onFoot.push(player.p.root.position);
-  for (const w of workers) onFoot.push(w.p.root.position);
-  for (const c of customers) onFoot.push(c.p.root.position);
-  if (vip.c) onFoot.push(vip.c.p.root.position);
-  traffic.update(dt, onFoot, park.cars);
-  traffic.keepOut(player.p.root.position, 0.4, dt);
-  for (const w of workers) {
-    const bumped = traffic.keepOut(w.p.root.position, 0.25, dt, w.face);
-    // a corner of their route lies under that car: skip it
-    if (bumped && w.route) while (w.route.length > 1 && traffic.covers(w.route[0][0], w.route[0][1])) w.route.shift();
-    if (w.bumped && !bumped) w.routeKey = ''; // once past the car: a fresh route from where they are now
-    w.bumped = bumped;
-  }
-  for (const c of customers) traffic.keepOut(c.p.root.position, 0.25, dt, c.face);
+const onFoot = [], driving = [];
+function prepareTraffic() {
+  onFoot.length = driving.length = 0;
+  for (const w of workers) onFoot.push(w);
+  for (const c of customers) onFoot.push(c);
+  if (vip.c) onFoot.push(vip.c);
+  if (pets.dog && pets.dog.walker) onFoot.push(pets.dog.walker);
+  for (const c of park.cars) if (c.path.length) driving.push(c.body);
+  if (truck.g && truck.g.visible) driving.push(truck.body);
+  traffic.begin(driving, onFoot, player.p.root.position);
 }
 function updateCars(dt) {
   for (let i = park.cars.length - 1; i >= 0; i--) {
@@ -2228,15 +2268,21 @@ function updateCars(dt) {
       const [tx, tz] = car.path[0];
       const dx = tx - g.position.x, dz = tz - g.position.z, d = Math.hypot(dx, dz);
       if (d < 0.15) car.path.shift();
-      else if (carWaits(car, dx, dz)) { /* giving way */ }
-      else { const s = Math.min(d, 9 * dt); g.position.x += dx / d * s; g.position.z += dz / d * s; g.rotation.y = Math.atan2(dx, dz); }
+      else if (carWaits(car, dx)) car.body.v = 0;
+      else {
+        const b = car.body, ox = b.dx, oz = b.dz; b.dx = dx / d; b.dz = dz / d;
+        const s = Math.min(d, traffic.advance(b, dt, 9));
+        if (!s) { b.dx = ox; b.dz = oz; } // it only swings round once the way is free
+        g.position.x += b.dx * s; g.position.z += b.dz * s;
+        if (s > 0) g.rotation.y = Math.atan2(dx, dz);
+      }
     } else if (car.st === 'come') {
       car.st = 'parked'; car.waiting = true;
       const c = spawnCustomer([car.slot.x, car.slot.z]);
       if (c) { c.home = [car.slot.x, car.slot.z]; c.car = car; } else car.waiting = false;
     } else if (car.st === 'parked' && !car.waiting) {
       car.t += dt;
-      if (car.t > 1.2) { car.st = 'go'; car.path = [[car.slot.x, -10.5], [ST.LANE, -10.5], [ST.LANE, -62]]; }
+      if (car.t > 1.2) { car.st = 'go'; car.path = [[car.slot.x, LOT.out], [ST.LANE, LOT.out], [ST.LANE, -62]]; }
     } else if (car.st === 'go') { scene.remove(g); car.slot.used = false; park.cars.splice(i, 1); }
   }
 }
@@ -2251,7 +2297,7 @@ function updatePets(dt, t) {
     const dd = Math.hypot(back.x - d.g.position.x, back.z - d.g.position.z);
     let mv = 0;
     if (dd > 0.3) {
-      const w = d.walker || (d.walker = { p: { root: d.g }, face: 0, moving: 0 });
+      const w = d.walker || (d.walker = { p: { root: d.g }, face: 0, moving: 0, straight: true }); // the dog follows you across anywhere
       const sx = Math.round(back.x * 2) / 2, sz = Math.round(back.z * 2) / 2;
       const before = d.g.position.clone();
       go(w, sx, sz, dt, dd > 3 ? 10 : 6);
@@ -2326,29 +2372,29 @@ function updateVip(dt) {
     c.patience -= dt;
     setLabel(c.label, '<div class="zn">⭐ 特別客人 ' + Math.ceil(c.patience) + '秒</div>' + orderRows(c) + '<div class="rew">' + ICON.money + fmtMoney(c.value) + '</div>');
     if (dist2(player.p.root.position, VIP.x, VIP.z) < 1.9) feedOrder(c.order, (o) => { o.copy(c.p.root.position); o.y = 1.3; }, dt, c);
-    if (orderDone(c.order)) { payBonus(c.value, V3(VIP.x, 2, VIP.z)); confetti(VIP.x, VIP.z); c.st = 'leave'; c.label.show = false; c.path = [ENTRY, [ENTRY[0], ENTRY[1] + 14]]; }
-    else if (c.patience <= 0) { c.st = 'leave'; c.label.show = false; c.path = [ENTRY, [ENTRY[0], ENTRY[1] + 14]]; const v = payPartial(c, V3(VIP.x, 2, VIP.z)); toast(v ? '特別客人時間到，已交的貨照付 $' + fmtMoney(v) : '特別客人走了…'); }
+    if (orderDone(c.order)) { payBonus(c.value, V3(VIP.x, 2, VIP.z)); confetti(VIP.x, VIP.z); c.st = 'leave'; c.label.show = false; c.path = [ENTRY, STREET_END]; }
+    else if (c.patience <= 0) { c.st = 'leave'; c.label.show = false; c.path = [ENTRY, STREET_END]; const v = payPartial(c, V3(VIP.x, 2, VIP.z)); toast(v ? '特別客人時間到，已交的貨照付 $' + fmtMoney(v) : '特別客人走了…'); }
   }
   if (c.st === 'leave' && stepPath(c, dt, 2.8)) { scene.remove(c.p.root); dropLabel(c.label); vip.c = null; vip.t = rand(70, 120); return; }
   turn(c.p, c.face, dt); c.p.anim(dt, c.moving);
 }
 
 const truck = { ready: false, st: 'away', t: 25, g: null };
-const DOCK = { x: 14.6, z: 6, drop: [12.9, 6] };
+const DOCK = { x: ST.SOUTH_LANE, z: 6, drop: [12.9, 6] };
 function updateTruck(dt) {
   if (!truck.ready) return;
   if (!truck.g) {
-    const tr = P.truck(); truck.g = tr.g; truck.bed = tr.bed; truck.g.position.set(DOCK.x, 0, -45); scene.add(truck.g); truck.g.visible = false;
+    const tr = P.truck(); truck.g = tr.g; truck.bed = tr.bed; truck.body = ST.vehicle(tr.g, 1.82, 0.86); truck.g.position.set(DOCK.x, 0, -45); scene.add(truck.g); truck.g.visible = false;
     truck.label = label('zone order', '', (o) => o.set(DOCK.drop[0], 0.4, DOCK.drop[1] + 0.2)); truck.label.show = false;
   }
   truck.t -= dt;
   if (truck.st === 'away' && truck.t <= 0) {
     truck.total = startOrder(truck, 2, 4, 9, 3, 0);
-    truck.st = 'come'; truck.g.visible = true; truck.g.position.z = -45;
+    truck.st = 'come'; truck.g.visible = true; truck.g.position.z = -45; truck.body.v = 8;
   }
   if (truck.st === 'come') {
-    truck.g.position.z += Math.min(DOCK.z - truck.g.position.z, 12 * dt);
-    if (DOCK.z - truck.g.position.z < 0.05) { truck.st = 'wait'; truck.t = 90 + truck.total * 0.5; truck.label.show = true; toast('🚚 訂單卡車到了！可以分很多趟送'); }
+    truck.g.position.z += Math.min(DOCK.z - truck.g.position.z, traffic.advance(truck.body, dt, 9));
+    if (DOCK.z - truck.g.position.z < 0.05) { truck.st = 'wait'; truck.body.v = 0; truck.body.turnOfCar = false; truck.t = 90 + truck.total * 0.5; truck.label.show = true; toast('🚚 訂單卡車到了！可以分很多趟送'); }
   }
   if (truck.st === 'wait') {
     setLabel(truck.label, '<div class="zn">🚚 訂單 ' + Math.ceil(truck.t) + '秒</div>' + orderRows(truck) + '<div class="rew">' + ICON.money + fmtMoney(truck.value) + '</div>');
@@ -2357,8 +2403,8 @@ function updateTruck(dt) {
     else if (truck.t <= 0) { truck.st = 'leave'; truck.label.show = false; const v = payPartial(truck, V3(DOCK.drop[0], 1.6, DOCK.drop[1])); toast(v ? '卡車開走了，已裝的貨照付 $' + fmtMoney(v) : '卡車開走了…'); }
   }
   if (truck.st === 'leave') {
-    truck.g.position.z += 12 * dt;
-    if (truck.g.position.z > 50) { truck.st = 'away'; truck.t = rand(60, 100); truck.g.visible = false; }
+    truck.g.position.z += traffic.advance(truck.body, dt, 9);
+    if (truck.g.position.z > 74) { truck.st = 'away'; truck.t = rand(60, 100); truck.g.visible = false; }
   }
 }
 
@@ -2793,13 +2839,16 @@ function updateDoorsAndLights(dt) {
     sh.door.open(sh.dk);
   }
   const pp = player.p.root.position;
+  let bright = null;
   for (const A of areas) {
     const inside = pp.x > A.x0 && pp.x < A.x1 && pp.z > A.z0 && pp.z < A.z1;
     A.k += ((inside ? 1 : 0) - A.k) * Math.min(1, dt * 4);
-    A.light.intensity = A.k * 26;
+    if (!bright || A.k > bright.k) bright = A;
     const lit = A.k > 0.5;
     if (A.lit !== lit) { A.lit = lit; A.lamps.forEach((l) => l.lit(lit)); }
   }
+  // (the number of lights must never change: every extra one is computed for every pixel)
+  if (bright) { areaLight.position.copy(bright.at); areaLight.distance = bright.dist; areaLight.intensity = bright.k * 26; }
 }
 
 // ---------- camera ----------
@@ -2843,12 +2892,14 @@ applyKiosk(false);
 resize(); updateCamera(0, true); updateMoney();
 
 let last = performance.now(), saveT = 0, T = 0;
+const batcher = params.has('nobatch') ? null : createBatcher(scene);
+function draw() { if (batcher) batcher.render(renderer, camera); else renderer.render(scene, camera); }
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now;
   step(dt);
   updateCamera(dt);
-  renderer.render(scene, camera);
+  draw();
   placeLabels();
   saveT += dt; if (saveT > 4) { saveT = 0; save(); }
 }
@@ -2870,10 +2921,11 @@ function step(dt) {
   }
   maxTag(player);
   updateCustomers(dt);
-  updateCars(dt);
-  updateTraffic(dt);
   updatePets(dt, T);
   updateVip(dt);
+  prepareTraffic(); // after everyone walked, before any vehicle moves
+  updateCars(dt);
+  traffic.update(dt, park.cars);
   updateTruck(dt);
   updateHeli(dt);
   updateEvents(dt);
@@ -2915,13 +2967,13 @@ addEventListener('pagehide', save);
 
 // test hooks
 window.__farm = {
-  traffic, park, state, stations, player, zones, customers, workers, truck, heli, vip, park, events, DEFS, COUNTERS, colliders, tufts, pets,
+  traffic, park, CROSSINGS: ST.CROSSINGS, state, stations, player, zones, customers, workers, truck, heli, vip, park, events, DEFS, COUNTERS, colliders, tufts, pets,
   DEF, GROW, nav, linesBuilt, growDefs, zoneSpot, ITEMS,
   DOORS, COUNTERS_Q: () => COUNTERS.map((k) => k.qs),
   three: { scene, camera, renderer, THREE },
   // average ms per frame for the whole game step + render + labels (CPU side)
   stepMs(n) { const t0 = performance.now(); for (let i = 0; i < n; i++) step(1 / 30); return (performance.now() - t0) / n; },
-  bench(n) { const t0 = performance.now(); for (let i = 0; i < n; i++) { step(1 / 30); updateCamera(1 / 30); renderer.render(scene, camera); placeLabels(); } return (performance.now() - t0) / n; },
+  bench(n) { const t0 = performance.now(); for (let i = 0; i < n; i++) { step(1 / 30); updateCamera(1 / 30); draw(); placeLabels(); } return (performance.now() - t0) / n; },
   give(type, n) { for (let i = 0; i < n && room(player) > 0; i++) stackAdd(player, type); },
   giveTo(w, type, n) { for (let i = 0; i < n; i++) stackAdd(w, type); },
   cash(n) { state.money += n; updateMoney(); },
@@ -2933,5 +2985,6 @@ window.__farm = {
   guide, guideTarget, exportSave, importSave,
   look(n, f, a) { state.up.look = n; state.up.floor = f || 0; state.up.ad = a || 0; applyShopLook(false); applyFloor(false); applyAd(false); },
   calls: () => renderer.info.render.calls,
+  draw,
   lineup(x, z) { Object.keys(ITEMS).forEach((t, i) => { const m = P.itemMesh(t); m.scale.setScalar(2); m.position.set(x + (i % 5) * 1.1, 0, z + Math.floor(i / 5) * 1.2); scene.add(m); }); },
 };
