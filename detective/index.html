@@ -452,6 +452,7 @@ body:has(.inter-scene) .toast, body:has(.wskip:not([hidden])) .toast, body.toast
 <script src="case50_art.js"></script>
 <script src="case50_top.js"></script>
 <script src="cafe.js"></script>
+<script src="planfrom.js"></script>
 <script src="topscene.js"></script>
 <script>
 /* =========================================================
@@ -825,7 +826,15 @@ function topSteps(def, steps){
   return steps.filter(k => !k.car && !(k.walk && typeof k.walk[1] === "number" && k.walk[2] === undefined)).map(k => k.set && k.set.px !== undefined ? { ...k, hide:false, set:{ room, px:sp[0], py:sp[1] } } : k.hide && !k.say ? null : k).filter(Boolean);
 }
 function pendingScript(l, def){ const r = pendingScript0(l, def); return r && TOP(def) && r.key !== l.id ? { ...r, steps:topSteps(def, r.steps) } : r; }   // 開場（key＝地點 id）用 def.top.intro，不用轉
+// 平面圖是哪裡來的（planfrom.js）：第一次到一個有平面圖的地方，拍檔說一句；開平面圖時最上面也寫
+const planFrom = l => { const t = typeof PLAN_FROM !== "undefined" && l && PLAN_FROM[C.id + ":" + l.id]; return t || ""; };
 function pendingScript0(l, def){
+  const r = pendingScript00(l, def), t = TOP(def) && def.top.plan && planFrom(l);
+  if (!t || (S.introSeen || {})["plan:" + l.id]) return r;
+  const say = SOLO() ? { say:["you", "（" + t + "）"], name:"你" } : { say:["wu", t], name:BUD().name };   // 一個人的時候，是自己心裡想的
+  return r ? { ...r, steps:[...r.steps, say], plan:l.id } : { key:"plan:" + l.id, steps:[{ set:{} }, say], plan:l.id };
+}
+function pendingScript00(l, def){
   const seen = S.introSeen || {};
   const intro = TOP(def) && def.top.intro || def.intro;   // 俯視畫面有自己一套開場（站位不同，對白一樣）
   if (S.phase===0 && intro && !seen[l.id]) return { key:l.id, steps:intro };
@@ -938,6 +947,7 @@ const hasPlan = l => { const d = l && worldDef(l); return !!(d && TOP(d) && d.to
 function togglePlan(){ const on = !wGo; closePanel(); if (on){ wGo = true; render(); } }
 function planCard(){
   return `<div class="card" style="padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center"><b>🧭 平面圖</b><button class="back" style="margin:0" onclick="closePanel()">✕</button></div>
+    ${planFrom(curLoc()) ? `<div class="small" style="margin:4px 0 2px;opacity:.85">📄 ${esc(planFrom(curLoc()))}</div>` : ""}
     <div class="muted small" style="margin:2px 0 6px">⭐ 是還沒看過的東西，點星星你會自己走過去看；點房間就走到那裡。<span style="color:#6fd46f">●</span> 是你。走路不花時間。</div>
     <canvas id="plancv" style="width:100%;display:block;touch-action:manipulation"></canvas><p class="muted small plann" style="margin:6px 2px 0;padding-bottom:56px"></p></div>`;
 }
@@ -1201,7 +1211,7 @@ function worldHooks(l, def){
     // 平面圖上要不要畫這個房間：還沒開放的房間（roomOpen）、def.top.rooms[id].when 不成立的，都不畫（不劇透）
     planRoom: rid => { const rm = roomsOf(l).find(r=>r.id===rid); if (rm && !roomOpen(rm)) return false; const R = TOP(def) && def.top.rooms[rid]; return !(R && R.when && !R.when({ phase:S.phase })); },
     script: ps && soloSteps(ps.steps),
-    scriptDone: set => { if (set){ if (ps && ps.key){ S.introSeen = S.introSeen || {}; S.introSeen[ps.key] = 1; save(); } wArrive = null; wNews = []; } return !ps; },
+    scriptDone: set => { if (set){ if (ps && (ps.key || ps.plan)){ S.introSeen = S.introSeen || {}; if (ps.key) S.introSeen[ps.key] = 1; if (ps.plan) S.introSeen["plan:" + ps.plan] = 1; save(); } wArrive = null; wNews = []; } return !ps; },
     refresh: () => render(),
     cover: () => fsCover,
     noSpark: true,
