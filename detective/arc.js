@@ -357,6 +357,25 @@ function interMaybe(k, force){
   return interStart(k, L, C.id + ":" + k, force);
 }
 function interReplay(k){ if (interMaybe(k, true)){ render(); scrollTo(0, 0); } }
+// 案情頁的「重看開場」：開場幕間看過了（或已經開始調查、不會再自動播），隨時可以重看；看完回到原來的頁面
+const interBriefBtn = () => (C.before && C.before.lines && !inter && (ARC.seen(C.id + ":before") || S.asked.length || S.seen.length || S.phase || S.done))
+  ? `<button class="btn" style="text-align:center;margin:0 0 12px" onclick="interReplayBefore()">🎬 重看開場：${esc(C.before.title || "開場")}</button>` : "";
+function interReplayBefore(){
+  const back = { tab, openLoc, sheetFrom: typeof sheetFrom !== "undefined" ? sheetFrom : null };
+  if (!interMaybe("before", true)) return;
+  inter.back = back;
+  if (fsMode()) openSheet("accuse"); else { tab = "accuse"; render(); }
+  scrollTo(0, 0);
+}
+// 按「跳過」或左上角關掉：先問一聲（重看的時候不用問）
+async function interSkip(){
+  if (!inter) return;
+  if (!inter.force){
+    const where = inter.k === "before" ? "之後想再看：" + (typeof menuTip === "function" ? menuTip() : "打開選單") + "，打開「📁 案情」，最上面有「🎬 重看開場」。" : inter.k === "after" ? "之後可以在結案畫面重看。" : "跳過之後，這一段不能重看。";
+    if (!await uiConfirm("要跳過這一段劇情嗎？\n" + where)) return;
+  }
+  if (inter) interNext(1);
+}
 // 案件進行中播一段場面（例如綁匪來電、突然被鎖在房間裡）：def 跟幕間同一個格式，key 是這一集裡不重複的名字
 function interPlay(def, key, force){
   if (!def || !def.lines) return false;
@@ -419,7 +438,7 @@ function interEnd(){
   if (interQueue.length && !inter){ const [d, ky, f] = interQueue.shift(); if (interStart(null, d, ky, f, back)){ render(); scrollTo(0, 0); return; } }
   if (inter) return;
   if (k === "before" && !force){ if (fsMode()) { closeSheet(); return; } tab = art() ? (travel() ? "map" : "scene") : "brief"; }
-  else if (!k && back){ if (fsMode() && !["notes", "brief", "accuse"].includes(back.tab)) { closeSheet(); return; } tab = back.tab; openLoc = back.openLoc; }
+  else if (back){ if (fsMode() && !["notes", "brief", "accuse"].includes(back.tab)) { closeSheet(); return; } tab = back.tab; openLoc = back.openLoc; if (k && back.sheetFrom !== undefined && typeof sheetFrom !== "undefined") sheetFrom = back.sheetFrom; }
   render(); scrollTo(0, 0);
 }
 // 換場：台詞可以帶 cut:{ title, scene, opt, cast }，從這一句起換到另一個場景（像劇集剪接）
@@ -443,7 +462,7 @@ function vInter(){
     const picked = st.choices && !inter.pend.length ? st.choices[interPickGet(interPid())] : null;
     btns = `${picked ? `<p class="muted small" style="margin:8px 2px 0">你的選擇：${esc(picked.text)}</p>` : ""}
       <button class="btn primary" style="margin-top:12px" onclick="interNext(0)">${more ? "下一句 ▶" : (inter.k === "before" && !inter.force ? "開始調查 ▶" : inter.k ? "看完了" : "繼續 ▶")}</button>
-      ${more ? `<button class="btn" style="text-align:center" onclick="interNext(1)">跳過</button>` : ""}`;
+      ${more ? `<button class="btn" style="text-align:center" onclick="interSkip()">跳過</button>` : ""}`;
   }
   return `<div class="card" style="padding:12px"><div class="muted small" style="margin-bottom:8px">🎬 ${esc(L.title || "幕間")}</div>
     <div class="bubble court-bubble" data-type="${esc(st.text).replace(/"/g, "&quot;")}">${speaker ? `<b>${esc(speaker)}</b>` : "<b>　</b>"}<span class="say-text" style="white-space:pre-line"></span></div>

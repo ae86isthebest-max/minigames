@@ -905,7 +905,7 @@ function goFull(){
 // 電腦：Esc 關掉問話／選單／筆記，回到現場
 addEventListener("keydown", e=>{
   if (e.key !== "Escape" || !fsMode() || document.querySelector(".dlg")) return;
-  if (SHEETS.includes(tab)) closeSheet(); else if (wGo || wRoom || wBuddy || wTalk || wAct || peek || wSay) closePanel();
+  if (inter) interSkip(); else if (SHEETS.includes(tab)) closeSheet(); else if (wGo || wRoom || wBuddy || wTalk || wAct || peek || wSay) closePanel();
 });
 function exitFull(){ try { if (document.fullscreenElement) document.exitFullscreen(); else if (document.webkitFullscreenElement) document.webkitExitFullscreen(); } catch(e){} }
 const isFull = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
@@ -1138,7 +1138,7 @@ function sheetWrap(v){
   const t = { notes:"📓 筆記", brief:"📁 案情", accuse: inter ? "🎬 " + (inter.L.title || "幕間") : S.done || SOLO() ? "⚖️ 結案" : "⚖️ 跟" + BUD().name + "結案" }[tab];
   const lead = inter ? "" : tab==="accuse" && !S.done && buddyId() ? wuSay("好，把你想到的都說出來吧。就算推理錯了也不會公布真相，我們還可以回去再查。")
     : tab==="notes" && buddyId() ? wuSay("這是我幫你記下來的東西，按重點、時間線、人物、證物都可以翻。") : "";
-  return `<div class="fs-root"><div class="fs-hud"><button class="hb go" onclick="closeSheet()">✕ 回到${travel() && !sheetFrom ? "地圖" : "現場"}</button><b class="hn">${t}</b><span class="sp"></span>
+  return `<div class="fs-root"><div class="fs-hud"><button class="hb go" onclick="${inter ? "interSkip()" : "closeSheet()"}">${inter ? "⏭ 跳過" : `✕ 回到${travel() && !sheetFrom ? "地圖" : "現場"}`}</button><b class="hn">${t}</b><span class="sp"></span>
     ${CLK() ? `<span>🕐 ${nowStr()}・剩 ${minLabel(timeLeft())}</span>` : ""}</div><div class="fs-sheet" data-tab="${sheetKey()}"><div class="in">${lead}${v}</div></div></div>`;
 }
 /* 人不可以疊在一起（自動排的場景）：坐著、跪著、寫字的人跟家具有關係，先佔位置；
@@ -1419,7 +1419,7 @@ function vBrief(){
   const next = m && !lastPhase() && !S.done
     ? `<button class="btn" style="text-align:center;border-color:var(--accent);color:var(--accent)" onclick="nextPhase()">${PW.icon} ${PW.end}，進入「${esc(phasesOf(C)[S.phase+1].short)}」 ›</button>` : "";
   const pending = tests().filter(t=>S.labq[t.id]!==undefined && !testReady(t));
-  return `${head}
+  return `${typeof interBriefBtn==="function"?interBriefBtn():""}${head}
   ${pending.length?`<div class="card"><h3>⏳ 化驗中</h3>${pending.map(t=>`<p class="small" style="margin:4px 0">🧪 ${esc(t.title)}<span class="muted">（${S.labq[t.id]+t.days-S.phase} ${PW.unit}後）</span></p>`).join("")}</div>`:""}
   <div class="card"><h3>🎯 任務</h3><p style="margin:0">${C.goal}</p></div>
   <details class="card"><summary><b>玩法</b></summary><p class="small muted" style="margin:8px 0 0">${rules}</p></details>
