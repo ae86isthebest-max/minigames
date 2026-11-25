@@ -303,15 +303,20 @@ export function createTraffic(scene) {
   let you = null;
 
   // how far may vehicle o go this frame?
-  function advance(o, dt, max, mustStop = false) {
+  // turning: the car is about to swing round, so anyone where its body will be counts too
+  function advance(o, dt, max, mustStop = false, turning = false) {
     const p = o.g.position, stopIn = o.v * o.v / (2 * BRAKE);
     let stop = mustStop, hard = false, people = false, player = false;
     // in the car's own turn it only waits for those already in its way
     const look = o.turnOfCar ? reach(o) : stopIn + 1.35;
     for (let i = 0; i < near.length; i++) {
       const q = near[i], rx = q.x - p.x, rz = q.z - p.z, f = rx * o.dx + rz * o.dz;
-      if (f <= -o.hl || f >= o.hl + SIDE + look) continue;
-      if (Math.abs(rx * o.dz - rz * o.dx) >= o.hw + (q === you ? 0.4 : SIDE - 0.01)) continue; // a wider berth for the player
+      // only who is in front (someone beside it waits for it to pass, so waiting for them would lock both)
+      if (f <= (turning ? -o.hl - SIDE : o.hl - 0.1) || f >= o.hl + SIDE + look) continue;
+      // a wider berth for the player; while swinging round only the bodywork itself counts (the footpath
+      // between two parking places is exactly one car's half-width + a person away)
+      const side = q === you ? 0.4 : turning && f < o.hl - 0.1 ? 0.1 : SIDE - 0.01;
+      if (Math.abs(rx * o.dz - rz * o.dx) >= o.hw + side) continue;
       stop = people = true;
       if (q === you) player = true;
       if (f < o.hl + 0.5) hard = true;
