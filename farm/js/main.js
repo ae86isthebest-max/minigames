@@ -1095,15 +1095,15 @@ function build(def, instant) {
     for (let i = 0; i < STOCK_VIS; i++) outSl.push({ x: -0.3 + (i % 4) * 0.2, y: 0.22 + Math.floor(i / 8) * (def.out === 'wool' ? 0.2 : 0.22), z: -0.18 + (Math.floor(i / 4) % 2) * 0.3, s: 0.85 });
     s.inStack = itemStack(b.trough, 'hay', inSl); s.outStack = itemStack(b.nest, def.out, outSl);
     if (isBarn) {
-      for (let i = 0; i < 10; i++) { const c = P.cow(); c.g.position.set(pos[0], 0, pos[1] + 0.9); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.9], rx: 0, rz: 0, t: Math.random() * 5, tx: 0, tz: 0, cow: true }); }
+      for (let i = 0; i < 10; i++) { const c = P.cow(); c.g.position.set(pos[0], 0, pos[1] + 0.9); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.9], rx: 0, rz: 0, t: Math.random() * 5, tx: c.g.position.x, tz: c.g.position.z, cow: true }); }
       box(pos[0] - 1.85, pos[1] - 2, pos[0] + 1.85, pos[1] + 0.2); penBoxes(pos[0], pos[1] + 1.87, 5.0, 3.5);
       for (const k of [-1, 1]) box(pos[0] + k * 1.85, pos[1] - 0.85, pos[0] + k * 2.65, pos[1] + 0.2);
     } else if (isFold) {
-      for (let i = 0; i < 6; i++) { const c = P.sheep(); c.g.position.set(pos[0] - 0.9 + (i % 3) * 0.9, 0, pos[1] + 0.5 + Math.floor(i / 3) * 0.75); c.g.scale.setScalar(0.8); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.9], rx: 1.0, rz: 0.45, t: Math.random() * 5, tx: 0, tz: 0 }); }
+      for (let i = 0; i < 6; i++) { const c = P.sheep(); c.g.position.set(pos[0] - 0.9 + (i % 3) * 0.9, 0, pos[1] + 0.5 + Math.floor(i / 3) * 0.75); c.g.scale.setScalar(0.8); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.9], rx: 1.0, rz: 0.45, t: Math.random() * 5, tx: c.g.position.x, tz: c.g.position.z }); }
       box(pos[0] - 1.5, pos[1] - 2, pos[0] + 1.5, pos[1] + 0.2); penBoxes(pos[0], pos[1] + 0.9, 3.0, 1.8);
       buildSheepGrass();
     } else {
-      for (let i = 0; i < 8; i++) { const c = P.chicken(); c.g.position.set(pos[0] - 0.75 + (i % 4) * 0.5, 0, pos[1] + 0.7 + Math.floor(i / 4) * 0.7); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.75], rx: 0.95, rz: 0.4, t: Math.random() * 5, tx: 0, tz: 0 }); }
+      for (let i = 0; i < 8; i++) { const c = P.chicken(); c.g.position.set(pos[0] - 0.75 + (i % 4) * 0.5, 0, pos[1] + 0.7 + Math.floor(i / 4) * 0.7); scene.add(c.g); K.bakeStatic(c.b); s.animals.push({ ...c, home: [pos[0], pos[1] + 0.75], rx: 0.95, rz: 0.4, t: Math.random() * 5, tx: c.g.position.x, tz: c.g.position.z }); }
       box(pos[0] - 1.2, pos[1] - 1.45, pos[0] + 1.2, pos[1] + 0.25);
       Object.assign(s, { yard: b.yard, yard2: b.yard2, big: false, penB: penBoxes(pos[0], pos[1] + 0.6, 2.4, 1.4) });
     }
@@ -1298,7 +1298,7 @@ const DOORS = [
 const ENTRY = [13.5, -4.3], OUT_Z = -4.9, LEAVE_Z = -7.85;
 const STREET_END = [13.5, 3.2]; // before the freight platform
 // car park: the lane in, the lane out, the footpath between the lanes and the near row, the east sidewalk
-const LOT = { in: -9.4, out: -11.2, walk: -8.1, kerb: 18.68 };
+const LOT = { in: -9.4, out: -11.2, walk: -8.1, kerb: 18.5 };
 const openDoors = () => DOORS.filter((d) => d.on());
 function nearestDoor(x) { let best = DOORS[0]; for (const d of openDoors()) if (Math.abs(d.x - x) < Math.abs(best.x - x)) best = d; return best; }
 // glass front wall from the west end of the shop to the east wall, with a gap and a sliding door for every open door
@@ -2271,7 +2271,7 @@ function updateCars(dt) {
       else if (carWaits(car, dx)) car.body.v = 0;
       else {
         const b = car.body, ox = b.dx, oz = b.dz; b.dx = dx / d; b.dz = dz / d;
-        const s = Math.min(d, traffic.advance(b, dt, 9));
+        const s = Math.min(d, traffic.advance(b, dt, 9, false, b.dx * ox + b.dz * oz < 0.9));
         if (!s) { b.dx = ox; b.dz = oz; } // it only swings round once the way is free
         g.position.x += b.dx * s; g.position.z += b.dz * s;
         if (s > 0) g.rotation.y = Math.atan2(dx, dz);
@@ -2769,6 +2769,13 @@ function updateWorld(dt, t) {
         if (!a.g.visible) continue;
         a.t -= dt;
         if (a.t <= 0) { a.t = 1.5 + Math.random() * 3; a.tx = a.home[0] + (Math.random() - 0.5) * 2 * a.rx; a.tz = a.home[1] + (Math.random() - 0.5) * 2 * a.rz; }
+        // never outside the pen (old saves, a bigger yard appearing, anything): back inside at once
+        if (a.rx) {
+          const p = a.g.position, hx = a.home[0], hz = a.home[1];
+          p.x = Math.max(hx - a.rx - 0.1, Math.min(hx + a.rx + 0.1, p.x));
+          p.z = Math.max(hz - a.rz - 0.1, Math.min(hz + a.rz + 0.1, p.z));
+          a.tx = Math.max(hx - a.rx, Math.min(hx + a.rx, a.tx)); a.tz = Math.max(hz - a.rz, Math.min(hz + a.rz, a.tz));
+        }
         const dx = a.tx - a.g.position.x, dz = a.tz - a.g.position.z, d = Math.hypot(dx, dz);
         if (d > 0.05) { const st = Math.min(d, 0.7 * dt); a.g.position.x += dx / d * st; a.g.position.z += dz / d * st; a.g.rotation.y = Math.atan2(dx, dz); a.b.position.y = Math.abs(Math.sin(t * 12)) * 0.04; }
         else { a.b.rotation.x = s.inN > 0 ? Math.max(0, Math.sin(t * 3 + a.home[0])) * 0.3 : 0; a.b.position.y = 0; if (a.cow) a.g.rotation.y *= 0.9; }
